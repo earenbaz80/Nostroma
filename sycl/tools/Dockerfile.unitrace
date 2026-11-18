@@ -1,0 +1,13 @@
+# strata-sycl-dev + Intel pti-gpu unitrace (per-kernel Level Zero profiling).
+# It runs as root on purpose: it is a profiling tool, and the counters unitrace reads are the kind a plain account may not be able
+# to open (not measured on an Arc yet: nothing here has been run rootless). It is never published - it is a tool used from a shell,
+# over a 13 GB dev image - and the engine that serves Strata does not come from it (docs/INTEL.md).
+# audit: root-ok — herramienta de perfilado sobre la imagen de desarrollo, no se publica; puede necesitar contadores que una cuenta común no abre
+# Build:
+#   docker build -t strata-sycl-dev:unitrace -f sycl/tools/Dockerfile.unitrace sycl/tools
+FROM strata-sycl-dev
+RUN . /opt/intel/oneapi/setvars.sh --force >/dev/null 2>&1; \
+    git clone --depth 1 https://github.com/intel/pti-gpu.git /opt/pti-gpu && \
+    cd /opt/pti-gpu/tools/unitrace && mkdir build && cd build && \
+    cmake -DCMAKE_BUILD_TYPE=Release .. >/dev/null && make -j"$(nproc)" >/dev/null 2>&1 && ./unitrace --version
+ENV PATH=/opt/pti-gpu/tools/unitrace/build:$PATH
