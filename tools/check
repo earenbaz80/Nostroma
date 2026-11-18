@@ -7,7 +7,8 @@ Runs, each in its own step with its own timeout, in a scratch folder (build tree
   py-tests        pytest tests/   (without tests/snapshot, which has its own step)
   py-serve        pytest serve/
   py-tools        pytest tools/test_*.py
-  py-optional     tools/dflash2, tools/trellis tests; need torch and are skipped without it
+  py-optional     tools/dflash2 and tools/trellis tests; they need torch and the DFlash2 lab files of the owner PC or libtqenc.so
+                  (tools/trellis/build.sh), so pytest collects no test on a runner and no CI job runs it
   host-typecheck  apps/host: npm run typecheck
   host-test       apps/host: npm test (a per-test timeout, so a hang fails one test instead of the run)
   host-build      apps/host: npm run build

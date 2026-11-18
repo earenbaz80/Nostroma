@@ -2,7 +2,8 @@ name: Checks
 
 # The fast checks (tools/check), one job per step so a failure names its step: the CPU CMake preset, the Python suites, the host's
 # typecheck / test / build, and the pending audit (tools/audit_pending.py).  No GPU, no model and no download of weights.  The config snapshot has its own workflow (snapshot.yml)
-# and the backend compile checks theirs (backends.yml).  Run the same thing by hand:  python tools/check --only <step>
+# and the backend compile checks theirs (backends.yml).  py-optional is not in the matrix on purpose: it needs torch and the DFlash2
+# lab files or libtqenc.so, which no runner has, so pytest collects no test there.  Run the same thing by hand:  python tools/check --only <step>
 
 on:
   push:
