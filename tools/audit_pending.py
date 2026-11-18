@@ -277,18 +277,26 @@ def check_updater(root: Path):
 ROOT_OK = re.compile(r"^#\s*audit:\s*root-ok\s*(?:[—–:-]\s*)?(.+)$")
 
 
-#: Un ARG que fija una imagen se llama como una imagen (BASE, BASE_IMAGE, CUDA_IMAGE, PYTHON_IMAGE...) y su valor es UNA referencia.
-#: Se mira el nombre y no el valor porque `ARG FLAVOR=cuda` no elige una imagen; y el valor tiene que ser una referencia sola, así
-#: `ARG CUDA_ARCHITECTURES="75;80"` (lista) y `ARG PYTHON_VERSION=3.12` (versión) quedan afuera. `ARG BASE=ubuntu`, sin tag ni
+#: Un ARG que fija una imagen se llama como una imagen (BASE, BASE_IMAGE, CUDA_IMAGE, RUNTIME_BASE, PYTHON_IMAGE...) y su valor es UNA
+#: referencia. Se mira el nombre y no el valor porque `ARG FLAVOR=cuda` no elige una imagen; y el valor tiene que ser una referencia sola,
+#: así `ARG CUDA_ARCHITECTURES="75;80"` (lista) y `ARG PYTHON_VERSION=3.12` (versión) quedan afuera. `ARG BASE=ubuntu`, sin tag ni
 #: registro, entra: es una imagen que no está pinneada.
-IMAGE_ARG_NAME = re.compile(r"image|base|ubuntu|nvidia|cuda|python|node", re.I)
+#: El nombre se compara por palabras, separadas por `_`, `-` o el cambio a mayúscula, y no por subcadena: `ARG DATABASE=postgres`
+#: contiene "base" y no es una imagen.
+IMAGE_ARG_WORDS = {"image", "base", "ubuntu", "nvidia", "cuda", "python", "node"}
 IMAGE_REF = re.compile(r"^[a-z0-9][\w.\-]*(?:/[\w.\-/]+)*(?::[\w.\-]+)?$", re.I)
 NOT_AN_IMAGE = re.compile(r"[;,\s]|^v?\d+(?:\.\d+)*$|^(?:on|off|true|false|auto|yes|no|none)$", re.I)
 
 
+def names_an_image(name: str) -> bool:
+    """¿El nombre de este `ARG` es el de una imagen?  Por palabra: `DATABASE` no, `BASE_IMAGE` sí."""
+    spaced = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", "_", name)
+    return any(word in IMAGE_ARG_WORDS for word in re.split(r"[^a-z0-9]+", spaced.lower()) if word)
+
+
 def image_arg_unpinned(name: str, value: str) -> bool:
     """¿Este `ARG` de un Dockerfile fija una imagen sin digest?"""
-    return (bool(IMAGE_ARG_NAME.search(name)) and "@sha256:" not in value
+    return (names_an_image(name) and "@sha256:" not in value
             and bool(IMAGE_REF.match(value)) and not NOT_AN_IMAGE.search(value))
 
 
@@ -730,6 +738,8 @@ def build_fixture(root: Path) -> None:
     (root / "Dockerfile").write_text(
         "# audit: root-ok — esto no vale para una imagen publicada\n"
         "FROM ubuntu:24.04\n"
+        # contiene "base" y no es una imagen: es el único ARG de esta imagen, así que una regla por subcadena se vería acá
+        "ARG DATABASE=postgres\n"
         "EXPOSE 8080\n"
         'CMD ["python3", "-m", "http.server"]\n',
         encoding="utf-8",
@@ -928,10 +938,11 @@ def run_selftest() -> int:
             if not (declared_ok and published_ok):
                 failures += 1
 
-            # control: `ARG BASE=ubuntu` sin pin se ve; el sabor, la lista de arquitecturas y la versión no son imágenes
+            # control: `ARG BASE=ubuntu` sin pin se ve; el sabor, la lista de arquitecturas, la versión y DATABASE (que contiene
+            # "base") no son imágenes
             argrows = [str(r[3]) for r in rows if r[1] == "ARG de imagen"]
             seen_base = any("devimg/Dockerfile" in d and "ARG BASE=ubuntu" in d for d in argrows)
-            noise = [d for d in argrows if re.search(r"FLAVOR|ARCHITECTURES|PYTHON_VERSION", d)]
+            noise = [d for d in argrows if re.search(r"FLAVOR|ARCHITECTURES|PYTHON_VERSION|DATABASE", d)]
             args_ok = seen_base and not noise
             print(f"  {'ok    ' if args_ok else 'FALLO '}[2] ARG de imagen: BASE sin pin visto={seen_base}, "
                   f"falsos={len(noise)}")
