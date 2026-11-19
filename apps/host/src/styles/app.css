@@ -1165,6 +1165,17 @@ button {
 .brand--lockup .brand__fallback {
   font-size: 19px;
 }
+/* The wordmark beside the mark: real text in the app's face, sized from the mark's height. */
+.brand__word {
+  margin-left: calc(var(--brand-h, 24px) * .34);
+  font-family: var(--st-font);
+  font-size: calc(var(--brand-h, 24px) * .62);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -.01em;
+  color: var(--st-ink);
+  white-space: nowrap;
+}
 .nav__brand-compact {
   display: none;
 }
