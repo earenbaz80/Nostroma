@@ -160,3 +160,32 @@ body::after {
     background-image: none;
   }
 }
+
+/* ---------------------------------------------------- the mark, as a live LED */
+/* The N is a picture, so the pulse lives in its halo: a phosphor glow that
+   breathes the way a status LED on an old machine did. Only the mark glows;
+   the name beside it stays still, which is what keeps it from reading as a
+   loading state. With reduced motion (the system setting or the app's own
+   Motion control) the glow holds at its dim value instead of pulsing. */
+:root {
+  --nostroma-led-halo: rgba(143, 82, 0, 0.28);
+  --nostroma-led-core: rgba(143, 82, 0, 0.55);
+}
+[data-theme='dark'] {
+  --nostroma-led-halo: rgba(255, 176, 0, 0.45);
+  --nostroma-led-core: rgba(255, 231, 194, 0.9);
+}
+@keyframes nostroma-led {
+  0%, 100% { filter: drop-shadow(0 0 0 var(--nostroma-led-halo)) drop-shadow(0 0 1px var(--nostroma-led-core)); }
+  50% { filter: drop-shadow(0 0 5px var(--nostroma-led-halo)) drop-shadow(0 0 2px var(--nostroma-led-core)); }
+}
+.brand__img {
+  animation: nostroma-led 2.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .brand__img { animation: none; filter: drop-shadow(0 0 1px var(--nostroma-led-core)); }
+}
+[data-motion='reduced'] .brand__img {
+  animation: none;
+  filter: drop-shadow(0 0 1px var(--nostroma-led-core));
+}
