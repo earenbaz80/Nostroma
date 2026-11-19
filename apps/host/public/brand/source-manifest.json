@@ -1,9 +1,11 @@
 {
   "source_root": "/Users/nikoveit/Documents/Strata-Design/design-iteration/Strata-Logo-DesignFiles",
   "preparation": "scripts/prepare-brand-assets.py",
+  "lockups": "scripts/prepare-brand-lockups.py",
   "font": "public/fonts/GTWalsheimPro-Bold.woff2",
   "font_sha256": "041cee9382bcbbc2e42bbbf5ef33c1efafd0bb4074554c5e861c9b1c7991b95d",
   "note": "Derived SVGs omit source C2PA metadata; original masters remain untouched and each source hash is recorded here.",
+  "rebrand": "The mark, both lockups, the favicon and the raster icons were redrawn with the N monogram after the rename to Nostroma, so these files no longer come from the masters in source_root. Each source row stays as the record of the supplied design file, and each output_sha256 is the hash of the file in this checkout. scripts/prepare-brand-assets.py still draws the supplied design from those masters, so running it here would restore the old lockup and favicon; it also needs the masters, which this checkout does not have.",
   "files": [
     {
       "source": "logo/strata-mark-light.svg",
@@ -24,14 +26,14 @@
       "source_sha256": "b9b077df326da8c0bdb5505ee7a6659ab3de986d481354c8d216722c673370f1",
       "output": "brand/strata-lockup-light.svg",
       "output_sha256": "6a33ac50ece501ae0cd2794635b5dcfaf227e1846db361dd688c6e6ae5f49dfb",
-      "method": "redrawn mark beside the name outlined from public/fonts/Exo2-Variable.woff2 at its 700 instance, cap height 21.8 and baseline 37.75 as before; not derived from the master"
+      "method": "mark kept 3.556/30.222 as supplied, name outlined from public/fonts/Exo2-Variable.woff2 at its 700 instance with cap height 21.8, baseline 37.75 and -0.01em tracking; scripts/prepare-brand-lockups.py reproduces this file byte for byte"
     },
     {
       "source": "logo/strata-lockup-dark.svg",
       "source_sha256": "ec689b25498bf177eb8dd50f980d34ba05cd7f38403fca73c1bf9d231fde5e3b",
       "output": "brand/strata-lockup-dark.svg",
       "output_sha256": "bd1e1dbc62dd1dffb5e075be330954ed3aecf665c5fc77f6d6aec2f7d576f0dc",
-      "method": "redrawn mark beside the name outlined from public/fonts/Exo2-Variable.woff2 at its 700 instance, cap height 21.8 and baseline 37.75 as before; not derived from the master"
+      "method": "mark kept 3.556/30.222 as supplied, name outlined from public/fonts/Exo2-Variable.woff2 at its 700 instance with cap height 21.8, baseline 37.75 and -0.01em tracking; scripts/prepare-brand-lockups.py reproduces this file byte for byte"
     },
     {
       "source": "web/favicon.svg",
@@ -110,6 +112,5 @@
       "output_sha256": "7685f061bad78f5a9a835d32e283869e3b359338b3bdd0ed0673c73cf21ce338",
       "method": "root-local app identity and hash-route launch, with the product name changed to Nostroma"
     }
-  ],
-  "rebrand": "The mark, both lockups, the favicon and the raster icons were redrawn with the N monogram after the rename to Nostroma, so these files no longer come from the masters in source_root. Each source row stays as the record of the supplied design file, and each output_sha256 is the hash of the file in this checkout. scripts/prepare-brand-assets.py still draws the supplied design from those masters, so running it here would restore the old lockup and favicon; it also needs the masters, which this checkout does not have."
+  ]
 }
