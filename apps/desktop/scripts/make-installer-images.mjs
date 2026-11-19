@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
  * The installer's pictures, drawn from the app's own design: the light surface and ink colours of the app (src/styles tokens), the
- * brand lockup and mark files, GT Walsheim Bold for the words (baked into the pictures, because NSIS cannot use a web font).
+ * brand lockup and mark files, and the app's own face, Exo 2, for the words (baked into the pictures, because NSIS cannot
+ * use a web font).
  *
  *   node apps/desktop/scripts/make-installer-images.mjs [--out <folder>] [--preview <folder>]
  *
@@ -21,23 +22,23 @@ const out = resolve(args.out ?? join(here, '../src-tauri/nsis'));
 mkdirSync(out, { recursive: true });
 const { chromium } = await import(pathToFileURL(join(host, 'node_modules/playwright-core/index.mjs')).href).catch(() => import('playwright-core'));
 const CHROME = process.env.CHROME ?? ['C:/Program Files/Google/Chrome/Application/chrome.exe', '/usr/bin/google-chrome'].find(existsSync);
-const font = pathToFileURL(join(host, 'public/fonts/GTWalsheimPro-Bold.woff2')).href;
-const fontMedium = pathToFileURL(join(host, 'public/fonts/GTWalsheimPro-Medium.woff2')).href;
+// the face the app sets, one variable file for both weights the pictures use
+const font = pathToFileURL(join(host, 'public/fonts/Exo2-Variable.woff2')).href;
 const lockup = readFileSync(join(host, 'public/brand/strata-lockup-light.svg'), 'utf8');
 const mark = readFileSync(join(host, 'public/brand/strata-mark-light.svg'), 'utf8');
 
-// the app's light tokens
-const SURFACE = '#f9fafb', INK = '#171b1e', MUTED = '#5b646b', ACCENT = '#10b981', LINE = '#e3e8ea';
-const css = `@font-face{font-family:GT;font-weight:700;src:url(${font})}@font-face{font-family:GT;font-weight:500;src:url(${fontMedium})}
-*{box-sizing:border-box}body{margin:0;font-family:GT,'Segoe UI',sans-serif;color:${INK};background:${SURFACE}}`;
+// the app's light tokens, from src/styles/nostroma-crt.css: amber paper under amber ink
+const SURFACE = '#fbf4e3', PAPER = '#f3e8d2', INK = '#2b1e0a', MUTED = '#6b5228', ACCENT = '#8f5200', LINE = '#d7c39b';
+const css = `@font-face{font-family:UI;font-weight:400 900;src:url(${font})}
+*{box-sizing:border-box}body{margin:0;font-family:UI,'Segoe UI',sans-serif;color:${INK};background:${SURFACE}}`;
 
 const pages = {
-  sidebar: { w: 164, h: 314, html: `<div style="width:164px;height:314px;padding:22px 18px;display:flex;flex-direction:column;background:linear-gradient(180deg,#f9fafb 0%,#eef6f2 100%);border-right:1px solid ${LINE}">
+  sidebar: { w: 164, h: 314, html: `<div style="width:164px;height:314px;padding:22px 18px;display:flex;flex-direction:column;background:linear-gradient(180deg,${SURFACE} 0%,${PAPER} 100%);border-right:1px solid ${LINE}">
     <div style="height:26px">${lockup.replace('<svg', '<svg style="height:26px;width:auto;display:block"')}</div>
     <div style="margin-top:auto">
       <div style="font-weight:700;font-size:22px;line-height:1.12;letter-spacing:-.01em">State of<br>the art.<br>At home.</div>
-      <div style="margin-top:10px;font-weight:500;font-size:11px;line-height:1.5;color:${MUTED}">AI on your own computer.<br>Private. Fast. Easy.</div>
-      <div style="margin-top:16px;height:3px;width:34px;border-radius:2px;background:${ACCENT}"></div>
+      <div style="margin-top:10px;font-weight:500;font-size:11px;line-height:1.5;letter-spacing:-.01em;color:${MUTED}">AI on your own computer.<br>Private. Fast. Easy.</div>
+      <div style="margin-top:16px;height:3px;width:34px;background:${ACCENT}"></div>
     </div></div>` },
   header: { w: 150, h: 57, html: `<div style="width:150px;height:57px;display:flex;align-items:center;justify-content:flex-end;padding-right:12px;background:${SURFACE}">${lockup.replace('<svg', '<svg style="height:22px;width:auto;display:block"')}</div>` },
 };
