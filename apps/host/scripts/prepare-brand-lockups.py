@@ -63,7 +63,7 @@ BRAND = APP / "public" / "brand"
 FONT = APP / "public" / "fonts" / "Exo2-Variable.woff2"
 
 DRAWN_WITH = "4.68.0"      # fontTools release that drew the committed paths
-WORD = "Nostroma"
+WORD = "ostroma"
 WEIGHT = 700
 CAP_HEIGHT = 21.8          # the cap height the lockup has always used
 BASELINE = 37.75           # its baseline
