@@ -48,3 +48,6 @@ import './styles/engine-tab.css';
 // Loaded last: the shared depth, material and interaction treatment. See the
 // header of the file for the order of the layers and why it sits here.
 import './styles/liquid.css';
+
+// Nostroma's skin: amber-phosphor palette and square corners, over everything.
+import './styles/nostroma-crt.css';

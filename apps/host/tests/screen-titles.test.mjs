@@ -13,7 +13,10 @@ test('every screen header title uses the chat title step, from one rule', () => 
   assert.match(rule[1], /font-size:\s*var\(--st-fs-md\)/);
   assert.match(liquid, /\.main__head \.main__title \{ font-weight: 600; \}/);
   const imports = [...read('src/main.tsx').matchAll(/import '\.\/styles\/([^']+)'/g)].map(m => m[1]);
-  assert.equal(imports.at(-1), 'liquid.css', 'liquid.css loads last, so no sheet after it can resize a title');
+  /* The Nostroma skin is imported after liquid.css and only sets colours, corners and the
+     screen texture; it must never set a type size, or it would resize these titles. */
+  assert.equal(imports.at(-1), 'nostroma-crt.css', 'the skin loads last, so no sheet after it can resize a title');
+  assert.equal(imports.at(-2), 'liquid.css', 'liquid.css still loads after app.css, where the title step is raised');
 });
 
 test('the chat title and the screen titles are the same size', () => {

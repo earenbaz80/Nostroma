@@ -1,0 +1,162 @@
+/* ============================================================================
+   Nostroma — retro CRT layer
+   ----------------------------------------------------------------------------
+   A skin on top of the kit, not a fork of it. Imported last from src/main.tsx,
+   so every declaration here wins over the kit and app.css at equal specificity.
+   To go back to the original look, delete that one import line (and the brand
+   SVG recolour, below it in git).
+
+   What it changes:
+     · the palette — amber phosphor, with CGA-era green/cyan/yellow/red accents
+     · the geometry — every radius is 0; nothing in the app has a rounded corner
+     · a light CRT texture — scanlines and a soft vignette over the whole window
+
+   The two themes stay different on purpose: the dark theme is the amber-on-black
+   terminal, the light theme is the same phosphor printed on paper, so the
+   appearance setting in Settings still does something.
+   ========================================================================== */
+
+/* ------------------------------------------------------- light: amber paper */
+:root {
+  --st-bg: #f3e8d2;
+  --st-surface: #fbf4e3;
+  --st-surface-2: #eee0c1;
+  --st-line: #d7c39b;
+  --st-line-soft: #e6d7b4;
+  --st-ink: #2b1e0a;
+  --st-ink-soft: #48351a;
+  --st-ink-muted: #6b5228; /* 6.1:1 on the page, so muted copy still clears AA */
+  --st-icon: #4a3618;
+
+  --st-accent: #8f5200;         /* amber, deepened so white ink on it clears AA */
+  --st-accent-hover: #6d3e00;
+  --st-accent-ink: #fff6e2;
+  --st-accent-tint: #f6e4bd;
+  --st-accent-text: #7a4400;
+  --st-focus: #0a5563;          /* teal, the old terminal's cursor */
+
+  --st-info: #0a5b6b;   --st-info-tint: #d9ecef;   --st-info-text: #084a57;
+  --st-warn: #7a5200;   --st-warn-tint: #f7e7c3;   --st-warn-text: #6b4600;
+  --st-danger: #9c2230; --st-danger-tint: #f7dcd9; --st-danger-text: #871c28;
+
+  --st-code-bg: #14100a;  --st-code-ink: #ffcf8f;
+
+  /* The older blocks in app.css still read these; they must follow the theme
+     or an audit dialog and the on/off switch stay green. */
+  --st-audit-primary: #8f5200;
+  --st-audit-primary-dark: #6d3e00;
+  --st-audit-primary-dark-hover: #5a3300;
+  --st-audit-primary-ink: #fff6e2;
+  --st-audit-primary-hover: #6d3e00;
+  --st-audit-amber: #7a4400;
+  --st-audit-amber-dark: #ffb000;
+
+  /* CRT texture: a hairline every third pixel plus a vignette at the edges. */
+  --st-crt-line: rgba(43, 30, 10, 0.14);
+  --st-crt-vignette: rgba(43, 30, 10, 0.16);
+}
+
+/* A later block in app.css deepens the light accent with a higher-specificity
+   selector, so the light-only overrides need the same one to win. */
+:root:not([data-theme='dark']) {
+  --st-accent-ink: #fff6e2;
+  --st-accent-hover: #6d3e00;
+  --st-accent-text: #7a4400;
+  --st-accent-surface-ink: #7a4400;
+}
+
+/* ------------------------------------------------ dark: amber phosphor CRT */
+[data-theme='dark'] {
+  --st-bg: #0b0803;
+  --st-surface: #14100a;
+  --st-surface-2: #1d1710;
+  --st-line: #3d2f19;
+  --st-line-soft: #261e12;
+  --st-ink: #ffe7c2;
+  --st-ink-soft: #f2cf9c;
+  --st-ink-muted: #bf9555; /* 7.9:1 on the page */
+  --st-icon: #e6c193;
+
+  --st-accent: #ffb000;         /* P3 amber phosphor */
+  --st-accent-hover: #ffc338;
+  --st-accent-ink: #1a1200;
+  --st-accent-tint: rgba(255, 176, 0, 0.13);
+  --st-accent-text: #ffc34d;
+  --st-focus: #6fe9ff;
+
+  --st-info: #5ad7ff;   --st-info-tint: rgba(90, 215, 255, 0.13);  --st-info-text: #9ae9ff;
+  --st-warn: #ffe14d;   --st-warn-tint: rgba(255, 225, 77, 0.13);  --st-warn-text: #ffe98f;
+  --st-danger: #ff5a5a; --st-danger-tint: rgba(255, 90, 90, 0.13); --st-danger-text: #ff9a9a;
+
+  --st-code-bg: #060402;  --st-code-ink: #ffcf8f;
+
+  --st-audit-primary: #ffb000;
+  /* app.css paints the primary button in dark mode with these two, so they are
+     a deep amber, not the phosphor itself: a solid #ffb000 fill measured 0.523
+     luminance, over the 0.15 ceiling `npm run luminance` enforces. */
+  --st-audit-primary-dark: #4a3200;        /* luminance 0.037 */
+  --st-audit-primary-dark-hover: #5e3f00;  /* luminance 0.056 */
+  --st-audit-primary-ink: #1a1200;
+  --st-audit-primary-hover: #ffc338;
+  --st-audit-white: #ffe7c2;               /* the button label in dark */
+  --st-audit-amber: #ffc34d;
+  --st-audit-amber-dark: #ffe14d;
+
+  --st-crt-line: rgba(0, 0, 0, 0.42);
+  --st-crt-vignette: rgba(0, 0, 0, 0.55);
+}
+
+/* -------------------------------------------------------------- no corners */
+/* The token values first, so anything that computes from them agrees, then a
+   blanket rule for the ~460 literal radii (50%, 10px, 20px, pills) the app and
+   its CSS carry. This is the one thing the skin is allowed to be !important
+   about: "no rounded corners" means none, including circles. */
+:root {
+  --st-r-sm: 0px;
+  --st-r-md: 0px;
+  --st-r-lg: 0px;
+  --st-r-xl: 0px;
+  --st-r-pill: 0px;
+  --st-r-nested: 0px;
+  --st-r-nested-sm: 0px;
+}
+*,
+*::before,
+*::after {
+  border-radius: 0 !important;
+  corner-shape: round !important; /* square corners stay square, never superellipse */
+}
+
+/* --------------------------------------------------------------- the glass */
+/* Selection is the phosphor itself; focus is the same light as an outline with
+   a short glow, the one place a glow reads as a screen and not as decoration. */
+::selection {
+  background: var(--st-accent);
+  color: var(--st-accent-ink);
+}
+:focus-visible {
+  outline: 2px solid var(--st-focus);
+  outline-offset: 2px;
+  box-shadow: 0 0 12px color-mix(in srgb, var(--st-focus) 55%, transparent);
+}
+
+/* Scanlines and vignette, painted by the page itself so they cover every
+   surface — transcript, sidebar, dialogs — without touching layout. The layer
+   never takes a click. */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  pointer-events: none;
+  background-image:
+    repeating-linear-gradient(180deg, var(--st-crt-line) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at center, transparent 58%, var(--st-crt-vignette) 100%);
+}
+@media (prefers-reduced-transparency: reduce) {
+  /* Not a transparency effect in the material sense, but the same audience:
+     people who ask for less visual noise get a flat screen. */
+  body::after {
+    background-image: none;
+  }
+}
