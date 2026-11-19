@@ -16,6 +16,33 @@
    appearance setting in Settings still does something.
    ========================================================================== */
 
+/* ------------------------------------------------------------ the typeface */
+/* Exo 2 replaces the kit's GT Walsheim everywhere the app sets --st-font, and
+   it is the only latin face in the stack, so no word ever changes face halfway.
+   One variable file covers 400-900 and every letter the nine shipped languages
+   use: latin, latin-ext (ą ł ż ś ć), cyrillic and its punctuation. It has no
+   arrows (→ ↗), which fall to the system list, and no CJK, so Japanese,
+   Korean and Chinese text is set by the system fonts as a whole.
+   --st-font-mono points at the same face, so code, paths and counters are set
+   in it too; only the fallbacks behind it are monospaced. */
+@font-face {
+  font-family: "Exo 2";
+  src: url("/fonts/Exo2-Variable.woff2") format("woff2");
+  font-weight: 400 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --st-font: "Exo 2", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* The mono contexts (code, paths, counters) follow the same face, so the
+     whole app is set in one typeface. Indentation still survives — a space is
+     one width in any font — and tabular figures keep digits from jittering
+     where numbers stand in a column. */
+  --st-font-mono: "Exo 2", ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
 /* ------------------------------------------------------- light: amber paper */
 :root {
   --st-bg: #f3e8d2;
