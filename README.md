@@ -15,10 +15,10 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Niko1221/Strata/releases/latest"><img src="https://img.shields.io/github/v/release/Niko1221/Strata?label=download&color=0ab887" alt="Download Strata"></a>
+  <a href="https://github.com/Niko1221/Strata/releases/latest"><img src="https://img.shields.io/github/v/release/Niko1221/Strata?label=download&color=0ab887" alt="Download Nostroma"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/Niko1221/Strata" alt="MIT license"></a>
-  <a href="https://github.com/sponsors/Niko1221"><img src="https://img.shields.io/badge/Sponsor-EA4AAA?logo=githubsponsors&logoColor=fff" alt="Sponsor Strata on GitHub Sponsors"></a>
-  <a href="https://buymeacoffee.com/strataengine"><img src="https://img.shields.io/badge/Buy_me_a_coffee-FFDD00?logo=buymeacoffee&logoColor=000" alt="Support Strata on Buy Me a Coffee"></a>
+  <a href="https://github.com/sponsors/Niko1221"><img src="https://img.shields.io/badge/Sponsor-EA4AAA?logo=githubsponsors&logoColor=fff" alt="Sponsor Nostroma on GitHub Sponsors"></a>
+  <a href="https://buymeacoffee.com/strataengine"><img src="https://img.shields.io/badge/Buy_me_a_coffee-FFDD00?logo=buymeacoffee&logoColor=000" alt="Support Nostroma on Buy Me a Coffee"></a>
 </p>
 
 <p align="center"><sub><b>English</b> · <a href="README.zh-CN.md">简体中文</a> · <a href="README.ja.md">日本語</a> · <a href="README.de.md">Deutsch</a> · <a href="README.fr.md">Français</a> · <a href="README.es.md">Español</a> · <a href="README.pt-BR.md">Português</a> · <a href="README.pl.md">Polski</a></sub></p>
@@ -62,7 +62,7 @@ Not sure what fits? [Choose a model for your computer](docs/MODELS.md#pick-by-me
 
 ### Desktop app
 
-**[Download Strata for Windows, Linux or Mac →](https://github.com/Niko1221/Strata/releases/latest)**
+**[Download Nostroma for Windows, Linux or Mac →](https://github.com/Niko1221/Strata/releases/latest)**
 
 Install the app, choose a model, and start chatting. There is one installer for each system. On first start the app
 downloads the engine for your graphics card. [Help with the installer](docs/INSTALL.md#the-app).
@@ -70,7 +70,7 @@ downloads the engine for your graphics card. [Help with the installer](docs/INST
 <sub>Files: `Strata-0.2.15-windows-x64-setup.exe` · `Strata-0.2.15-linux-x86_64.AppImage` · `Strata-0.2.15-macos-arm64.dmg`</sub>
 
 <p align="center">
-  <img src="docs/media/app-chat.png" width="900" alt="Strata desktop app with a chat and live code preview side by side">
+  <img src="docs/media/app-chat.png" width="900" alt="Nostroma desktop app with a chat and live code preview side by side">
   <br><sub>Chat, files and a live preview in one window.</sub>
 </p>
 
@@ -78,7 +78,7 @@ downloads the engine for your graphics card. [Help with the installer](docs/INST
 
 ### Terminal app
 
-Prefer the terminal? Install Strata, then run **`strata launch`**.
+Prefer the terminal? Install Nostroma, then run **`strata launch`**.
 
 <details open>
 <summary><b>Install commands</b></summary>
@@ -106,7 +106,7 @@ Follow the prompts to download and start a model. [Terminal guide](docs/TERMINAL
 </details>
 
 <p align="center">
-  <img src="docs/media/terminal-monitor.png" width="900" alt="Strata terminal app showing model activity, speed, memory and recent requests">
+  <img src="docs/media/terminal-monitor.png" width="900" alt="Nostroma terminal app showing model activity, speed, memory and recent requests">
   <br><sub>Watch your model and hardware while it runs.</sub>
 </p>
 
@@ -146,16 +146,16 @@ Run **`strata connect`** to see setup instructions for your tool. [Connection gu
 [All guides](docs) · [Troubleshooting](docs/TROUBLESHOOTING.md) · [Report a bug](https://github.com/Niko1221/Strata/issues/new/choose) ·
 [Benchmarks](docs/COMMUNITY_BENCHMARKS.md) · [How it works](docs/HOW_IT_WORKS.md) · [Contribute](CONTRIBUTING.md)
 
-## Support Strata
+## Support Nostroma
 
 **Help keep local AI open to everyone.** A GitHub sponsorship or a coffee helps fund development and testing on more hardware.
 
-<a href="https://github.com/sponsors/Niko1221"><img src="https://img.shields.io/badge/Sponsor_on_GitHub-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="GitHub Sponsors: sponsor Strata" height="48"></a>
-<a href="https://buymeacoffee.com/strataengine"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me a Coffee: support Strata" height="48"></a>
+<a href="https://github.com/sponsors/Niko1221"><img src="https://img.shields.io/badge/Sponsor_on_GitHub-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="GitHub Sponsors: sponsor Nostroma" height="48"></a>
+<a href="https://buymeacoffee.com/strataengine"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me a Coffee: support Nostroma" height="48"></a>
 
 ### Loyal supporters
 
-Thank you to everyone who supports Strata.
+Thank you to everyone who supports Nostroma.
 
 <!-- supporters:start (one line per public supporter, newest last; copy a line and change the GitHub name in all four places) -->
 <a href="https://github.com/ryan4yin"><img src="https://github.com/ryan4yin.png?size=96" width="48" height="48" alt="ryan4yin" title="ryan4yin"></a>
