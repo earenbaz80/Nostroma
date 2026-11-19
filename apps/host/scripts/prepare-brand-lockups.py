@@ -14,6 +14,12 @@ Writes both files and prints their sizes. `--check` writes nothing and exits 1
 if a file on disk differs from what this script would produce, which is what the
 hashes in public/brand/source-manifest.json were taken from.
 
+The path data comes from fontTools' SVGPathPen, and the way it formats numbers
+can change between releases. The files in the repository were drawn with
+fontTools 4.68.0 (DRAWN_WITH); when --check finds a difference it names that
+version next to the one that is running, so a formatting change in fontTools is
+not mistaken for a change in the lockup.
+
 Needs fontTools, and Brotli because the face is stored as WOFF2:
 
     python3 apps/host/scripts/prepare-brand-lockups.py [--check]
@@ -25,6 +31,7 @@ import sys
 import tempfile
 from pathlib import Path
 
+import fontTools
 from fontTools.pens.boundsPen import BoundsPen
 from fontTools.pens.svgPathPen import SVGPathPen
 from fontTools.ttLib import TTFont
@@ -34,6 +41,7 @@ APP = Path(__file__).resolve().parent.parent
 BRAND = APP / "public" / "brand"
 FONT = APP / "public" / "fonts" / "Exo2-Variable.woff2"
 
+DRAWN_WITH = "4.68.0"      # fontTools release that drew the committed paths
 WORD = "Nostroma"
 WEIGHT = 700
 CAP_HEIGHT = 21.8          # the cap height the lockup has always used
@@ -139,9 +147,18 @@ def main() -> None:
         text = lockup(theme)
         if check:
             current = target.read_text() if target.is_file() else ""
-            same = current == text
-            print(f"{target.relative_to(APP)}: {'matches' if same else 'DIFFERS'}")
-            status |= 0 if same else 1
+            if current == text:
+                print(f"{target.relative_to(APP)}: matches")
+            else:
+                drawn = f"fontTools {DRAWN_WITH}"
+                if fontTools.version != DRAWN_WITH:
+                    drawn += f", and this run has fontTools {fontTools.version}"
+                print(
+                    f"{target.relative_to(APP)}: DIFFERS from the file on disk, drawn with {drawn}. "
+                    "SVGPathPen's number format can change between releases, so check whether the "
+                    "outline changed or only its formatting before editing the file."
+                )
+                status = 1
         else:
             target.write_text(text)
             print(f"wrote {target.relative_to(APP)} ({len(text)} bytes)")
