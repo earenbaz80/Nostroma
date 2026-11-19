@@ -23,15 +23,15 @@
       "source": "logo/strata-lockup-light.svg",
       "source_sha256": "b9b077df326da8c0bdb5505ee7a6659ab3de986d481354c8d216722c673370f1",
       "output": "brand/strata-lockup-light.svg",
-      "output_sha256": "270912f61458d5aa91899412744fb43b71e22709e27e897e36f20514f707f568",
-      "method": "redrawn mark beside the name outlined from public/fonts/GTWalsheimPro-Bold.woff2; no longer derived from the master"
+      "output_sha256": "6a33ac50ece501ae0cd2794635b5dcfaf227e1846db361dd688c6e6ae5f49dfb",
+      "method": "redrawn mark beside the name outlined from public/fonts/Exo2-Variable.woff2 at its 700 instance, cap height 21.8 and baseline 37.75 as before; not derived from the master"
     },
     {
       "source": "logo/strata-lockup-dark.svg",
       "source_sha256": "ec689b25498bf177eb8dd50f980d34ba05cd7f38403fca73c1bf9d231fde5e3b",
       "output": "brand/strata-lockup-dark.svg",
-      "output_sha256": "f23c8253179c938271ad670cee237cb034b94d5026ebd88381d98db4c4602796",
-      "method": "redrawn mark beside the name outlined from public/fonts/GTWalsheimPro-Bold.woff2; no longer derived from the master"
+      "output_sha256": "bd1e1dbc62dd1dffb5e075be330954ed3aecf665c5fc77f6d6aec2f7d576f0dc",
+      "method": "redrawn mark beside the name outlined from public/fonts/Exo2-Variable.woff2 at its 700 instance, cap height 21.8 and baseline 37.75 as before; not derived from the master"
     },
     {
       "source": "web/favicon.svg",
