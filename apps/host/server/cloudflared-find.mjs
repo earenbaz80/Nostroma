@@ -32,7 +32,7 @@ export function versionAtLeast(found, minimum = MIN_VERSION) {
 }
 
 const SOURCE_LABEL = {
-  strata: 'Strata’s own connector folder',
+  strata: 'Nostroma’s own connector folder',
   component: 'the optional connector component',
   path: 'found on your PATH',
   system: 'a usual install location',
@@ -119,7 +119,7 @@ export function describeConnector(found) {
 /** A person-readable reason when nothing usable was found but something unusable was. Null when nothing was seen. */
 export function skippedMessage(skipped) {
   const old = skipped.find(s => s.reason === 'too-old');
-  if (old) return `The cloudflared at ${old.path} is version ${old.version}, which is too old. Strata needs ${MIN_VERSION} or newer. Update cloudflared, then retry.`;
+  if (old) return `The cloudflared at ${old.path} is version ${old.version}, which is too old. Nostroma needs ${MIN_VERSION} or newer. Update cloudflared, then retry.`;
   const broken = skipped.find(s => s.reason === 'does-not-run' || s.reason === 'not-cloudflared');
   if (broken) return `The file at ${broken.path} did not run as cloudflared. Reinstall cloudflared, then retry.`;
   return null;
@@ -183,7 +183,7 @@ export function otherTunnelMessage(pids) {
 /** The refusal for Strata's own tunnel already running. */
 export function ownTunnelMessage(pids) {
   if (!pids?.length) return null;
-  return `Strata’s tunnel for this address is already running (PID ${pidList(pids)}), so Strata did not start a second one. Stop it first (or use it as it is), then connect again here.`;
+  return `Nostroma’s tunnel for this address is already running (PID ${pidList(pids)}), so Nostroma did not start a second one. Stop it first (or use it as it is), then connect again here.`;
 }
 
 function defaultProbe(cmd, args) {

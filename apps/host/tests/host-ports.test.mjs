@@ -31,10 +31,10 @@ test('the plain sentences name the cause and the one next step', () => {
 
 test('F12: the permission-denied sentence follows the platform, Windows keeps its own', () => {
   const win = listenProblem({ code: 'EACCES' }, 8792, '127.0.0.1', 'win32');
-  assert.match(win, /^Windows or a firewall does not let Strata use port 8792\. Hyper-V, WSL and Docker/);
+  assert.match(win, /^Windows or a firewall does not let Nostroma use port 8792\. Hyper-V, WSL and Docker/);
   for (const platform of ['linux', 'darwin']) {
     const other = listenProblem({ code: 'EACCES' }, 80, '127.0.0.1', platform);
-    assert.equal(other, 'This system does not let Strata use port 80. On Linux and macOS, ports below 1024 need administrator rights. Start Strata with another port (STRATA_PORT), for example 8801.');
+    assert.equal(other, 'This system does not let Nostroma use port 80. On Linux and macOS, ports below 1024 need administrator rights. Start Nostroma with another port (STRATA_PORT), for example 8801.');
     assert.doesNotMatch(other, /Windows|Hyper-V|netsh/);
   }
   assert.equal(listenProblem({ code: 'EACCES' }, 80), listenProblem({ code: 'EACCES' }, 80, '127.0.0.1', process.platform));

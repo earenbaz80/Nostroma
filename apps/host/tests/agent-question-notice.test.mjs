@@ -10,7 +10,7 @@ const A = await import(`data:text/javascript;base64,${Buffer.from(compiled.outpu
 const src = name => readFileSync(new URL(`../src/${name}`, import.meta.url), 'utf8').replace(/\r\n/g, '\n');
 
 test('the question notice is the approval notice\'s title with no new sentence, under the same opt-in', async () => {
-  assert.deepEqual(A.questionNotice(), { title: 'Strata needs your answer', body: '' });
+  assert.deepEqual(A.questionNotice(), { title: 'Nostroma needs your answer', body: '' });
   assert.equal(A.questionNotice().title, A.approvalNotice('x').title);
   assert.equal(await A.questionAsked(false, false), false, 'off unless the person turned it on');
   assert.equal(await A.questionAsked(true, true), false, 'the person is looking at Strata');

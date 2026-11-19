@@ -23,7 +23,7 @@ test('a whole drive is not filled with models: it becomes Strata (data) and Stra
 test('a folder that cannot be made is said in words', t => {
   const dir = scratch(t);
   writeFileSync(join(dir, 'a-file'), 'x');
-  assert.throws(() => makeFolder(join(dir, 'a-file', 'Strata')), /Strata could not create .*Choose another folder\./);
+  assert.throws(() => makeFolder(join(dir, 'a-file', 'Strata')), /Nostroma could not create .*Choose another folder\./);
   assert.equal(makeFolder(join(dir, 'new', 'Strata')), join(dir, 'new', 'Strata'));
   assert.equal(existsSync(join(dir, 'new', 'Strata')), true);
 });

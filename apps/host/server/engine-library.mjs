@@ -26,7 +26,7 @@ export async function listEngines(control) {
  * answers at once with the one next step (stop it first); a delete of an engine nothing uses is allowed, Control refuses the one in use.
  */
 export async function changeEngine(control, action, body, { modelsRunning = () => false } = {}) {
-  if (typeof control?.useEngine !== 'function') return { status: 501, body: { error: 'Engines can be switched and deleted in the installed Strata app.' } };
+  if (typeof control?.useEngine !== 'function') return { status: 501, body: { error: 'Engines can be switched and deleted in the installed Nostroma app.' } };
   const family = body?.family, folder = body?.folder;
   if (!(FAMILIES.includes(family) || SHAPE_FAMILY.test(String(family ?? ''))) || typeof folder !== 'string' || !/^[0-9A-Za-z][\w.+-]*$/.test(folder)) {
     return { status: 400, body: { error: 'Choose an engine from the list.' } };

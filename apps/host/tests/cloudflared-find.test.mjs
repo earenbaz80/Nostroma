@@ -44,7 +44,7 @@ test('a system cloudflared 2026.5.0 in /usr/bin is used, with its version and wh
   assert.match(describeConnector(result.found), /cloudflared 2026\.5\.0 · \/usr\/bin\/cloudflared \(found on your PATH\)/);
 });
 
-test('Strata’s own copy wins over a system one; an old or broken copy is skipped, with a plain reason', async () => {
+test('Nostroma’s own copy wins over a system one; an old or broken copy is skipped, with a plain reason', async () => {
   const there = new Set(['/h/cf/cloudflared', '/usr/local/bin/cloudflared']);
   const versions = { '/h/cf/cloudflared': 'cloudflared version 2021.3.0', '/usr/local/bin/cloudflared': 'cloudflared version 2025.8.1' };
   const both = await findConnector({ directory: '/h/cf', platform: 'linux', env: { PATH: '' }, home: '/h', usable: async p => there.has(p), run: async p => versions[p] });
@@ -52,7 +52,7 @@ test('Strata’s own copy wins over a system one; an old or broken copy is skipp
   assert.equal(both.skipped[0].reason, 'too-old');
   const onlyOld = await findConnector({ directory: '/h/cf', platform: 'linux', env: { PATH: '' }, home: '/h', usable: async p => p === '/h/cf/cloudflared', run: async () => 'cloudflared version 2021.3.0' });
   assert.equal(onlyOld.found, null);
-  assert.match(skippedMessage(onlyOld.skipped), /version 2021\.3\.0, which is too old\. Strata needs 2022\.1\.0 or newer/);
+  assert.match(skippedMessage(onlyOld.skipped), /version 2021\.3\.0, which is too old\. Nostroma needs 2022\.1\.0 or newer/);
   const broken = await findConnector({ directory: '/h/cf', platform: 'linux', env: { PATH: '' }, home: '/h', usable: async p => p === '/h/cf/cloudflared', run: async () => { throw new Error('exec format error'); } });
   assert.equal(broken.found, null);
   assert.match(skippedMessage(broken.skipped), /did not run as cloudflared/);
@@ -61,7 +61,7 @@ test('Strata’s own copy wins over a system one; an old or broken copy is skipp
   assert.equal(skippedMessage(none.skipped), null);
 });
 
-test('STRATA_CLOUDFLARED picks exactly one file; STRATA_CLOUDFLARED_SEARCH=own keeps to Strata’s folders', async () => {
+test('STRATA_CLOUDFLARED picks exactly one file; STRATA_CLOUDFLARED_SEARCH=own keeps to Nostroma’s folders', async () => {
   const one = connectorCandidates({ directory: '/h/cf', platform: 'linux', env: { PATH: '/usr/bin', STRATA_CLOUDFLARED: '/opt/mine/cloudflared' }, home: '/h' });
   assert.deepEqual(one, [{ path: '/opt/mine/cloudflared', source: 'setting' }]);
   const own = connectorCandidates({ directory: '/h/cf', componentDirectory: '/h/c', platform: 'linux', env: { PATH: '/usr/bin', STRATA_CLOUDFLARED_SEARCH: 'own' }, home: '/h' });
@@ -95,7 +95,7 @@ test('running detection lists every cloudflared with its pid; our own child is i
   assert.deepEqual([w.running, w.kind, w.pids], [true, 'service', [8864]]);
 });
 
-test('only a tunnel that is clearly Strata’s own (same port, or same token) counts as Strata’s; the rest are other people’s', () => {
+test('only a tunnel that is clearly Nostroma’s own (same port, or same token) counts as Nostroma’s; the rest are other people’s', () => {
   const running = { running: true, procs: [
     { pid: 1, command: 'cloudflared tunnel --no-autoupdate --url http://127.0.0.1:8793' },
     { pid: 2, command: 'cloudflared tunnel --url http://127.0.0.1:18793' },
@@ -108,7 +108,7 @@ test('only a tunnel that is clearly Strata’s own (same port, or same token) co
   assert.equal(otherTunnelMessage([4242]), 'cloudflared is already running for another tunnel (PID 4242).');
   assert.equal(otherTunnelMessage([1, 2]), 'cloudflared is already running for other tunnels (PIDs 1, 2).');
   assert.equal(otherTunnelMessage([]), null);
-  assert.match(ownTunnelMessage([7]), /Strata’s tunnel for this address is already running \(PID 7\), so Strata did not start a second one/);
+  assert.match(ownTunnelMessage([7]), /Nostroma’s tunnel for this address is already running \(PID 7\), so Nostroma did not start a second one/);
 });
 
 function fakeOrigin() { return { started: 0, async start() { this.started++; }, async stop() {} }; }
@@ -131,11 +131,11 @@ test('another tunnel running (a service for something else) is listed in plain w
   await cf.stop();
 });
 
-test('Strata’s own tunnel (same port) already running is not doubled; the same token is the same tunnel; another token is not', async () => {
+test('Nostroma’s own tunnel (same port) already running is not doubled; the same token is the same tunnel; another token is not', async () => {
   const origin = fakeOrigin(); let launched = 0;
   const same = mk('http://127.0.0.1:8793', [{ pid: 31, command: 'cloudflared tunnel --no-autoupdate --url http://127.0.0.1:8793' }], () => { launched++; return fake(); }, origin);
   assert.deepEqual((await same.inspect()).external.own, [31]);
-  await assert.rejects(same.start({ mode: 'quick' }), /Strata’s tunnel for this address is already running \(PID 31\), so Strata did not start a second one/);
+  await assert.rejects(same.start({ mode: 'quick' }), /Nostroma’s tunnel for this address is already running \(PID 31\), so Nostroma did not start a second one/);
   assert.equal(launched, 0);
   assert.equal(origin.started, 0, 'the private origin is not opened either');
   const token = 'A'.repeat(30);

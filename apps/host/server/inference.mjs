@@ -68,7 +68,7 @@ async function probeStrata(baseUrl) {
       .catch(() => null);
     return {
       kind: 'strata',
-      name: 'Strata engine',
+      name: 'Nostroma engine',
       baseUrl,
       models: (models?.data ?? []).map((m) => m.id).filter(Boolean),
       modelId: status.model ?? null,
@@ -99,7 +99,7 @@ export async function detectBackend({ force = false } = {}) {
     const status = supervisor.status();
     backend = {
       kind: 'engine',
-      name: 'Strata engine · llama.cpp',
+      name: 'Nostroma engine · llama.cpp',
       baseUrl: `http://127.0.0.1:${status.port}/v1`,
       models: status.modelId ? [status.modelId] : [],
     };
@@ -131,12 +131,12 @@ export async function detectBackend({ force = false } = {}) {
   if (requiresRealEngine()) {
     backend = {
       kind: 'unavailable',
-      name: 'No Strata engine',
+      name: 'No Nostroma engine',
       baseUrl: null,
       models: [],
       error:
-        `No Strata engine answered at ${strataUrl()} and no supervised engine is running. ` +
-        'Start Strata (or load a model) and retry. Simulated output is disabled in this build.',
+        `No Nostroma engine answered at ${strataUrl()} and no supervised engine is running. ` +
+        'Start Nostroma (or load a model) and retry. Simulated output is disabled in this build.',
     };
     checkedAt = Date.now();
     return backend;
@@ -144,7 +144,7 @@ export async function detectBackend({ force = false } = {}) {
 
   backend = {
     kind: 'demo',
-    name: 'Strata demo engine',
+    name: 'Nostroma demo engine',
     baseUrl: null,
     models: [],
     binary: null,
@@ -160,7 +160,7 @@ export function currentBackend() {
     const status = supervisor.status();
     return {
       kind: 'engine',
-      name: 'Strata engine · llama.cpp',
+      name: 'Nostroma engine · llama.cpp',
       baseUrl: `http://127.0.0.1:${status.port}/v1`,
       models: status.modelId ? [status.modelId] : [],
     };
@@ -227,7 +227,7 @@ export async function streamChat({ message, history = [], systemPrompt = '', mod
 
   if (be.kind === 'unavailable') {
     // Fail loudly and specifically. This is a real, non-simulated error path.
-    throw new Error(be.error ?? 'No Strata engine is available.');
+    throw new Error(be.error ?? 'No Nostroma engine is available.');
   }
 
   return demoCompletion({ message, modelLabel, onFrame, signal, engine, candidates });
@@ -530,7 +530,7 @@ async function demoCompletion({ message, modelLabel, onFrame, signal, engine, ca
  */
 export function inferenceLine({ backend, engine = null, settled = true }) {
   if (!settled) return 'unpacking the bundled engine… (about a minute the first time)';
-  if (backend?.kind !== 'unavailable' || !engine) return backend?.name ?? 'No Strata engine';
-  if (engine.usable) return `Strata engine${engine.engine?.version ? ' ' + engine.engine.version : ''} is installed; no model is loaded yet`;
-  return engine.notice ? `No Strata engine for this PC. ${engine.notice}` : backend.name;
+  if (backend?.kind !== 'unavailable' || !engine) return backend?.name ?? 'No Nostroma engine';
+  if (engine.usable) return `Nostroma engine${engine.engine?.version ? ' ' + engine.engine.version : ''} is installed; no model is loaded yet`;
+  return engine.notice ? `No Nostroma engine for this PC. ${engine.notice}` : backend.name;
 }

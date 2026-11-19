@@ -83,13 +83,13 @@ export function checkRunConfig(text, { known = KNOWN_KEYS } = {}) {
   for (const [key, value] of Object.entries(config)) {
     if (!known.has(key) && !key.startsWith('ui_')) {   // ui_* are the app's own notes in the file (resource profile, picture device)
       const near = nearestKey(key, known);
-      add('warning', near ? 'unknown-key-near' : 'unknown-key', key, { key, near: near ?? '' }, `"${key}" is not a setting Strata reads, so it is ignored.${near ? ` Did you mean "${near}"?` : ''}`);
+      add('warning', near ? 'unknown-key-near' : 'unknown-key', key, { key, near: near ?? '' }, `"${key}" is not a setting Nostroma reads, so it is ignored.${near ? ` Did you mean "${near}"?` : ''}`);
       continue;
     }
     if (value === null) continue;
     if (key === 'args') {
       if (!Array.isArray(value) || value.some(v => typeof v !== 'string')) add('error', 'args-type', key, {}, '"args" must be a list of quoted text entries, for example ["--ple-io", "mmap"]. Numbers need quotes too.');
-      else if (value.some(v => ['--host', '--port', '--api-key'].includes(v))) add('warning', 'args-managed', key, {}, 'Strata manages the network address, port and API key itself, so --host, --port and --api-key in "args" are not honoured.');
+      else if (value.some(v => ['--host', '--port', '--api-key'].includes(v))) add('warning', 'args-managed', key, {}, 'Nostroma manages the network address, port and API key itself, so --host, --port and --api-key in "args" are not honoured.');
     } else if (key === 'env') {
       if (!value || typeof value !== 'object' || Array.isArray(value)) add('error', 'env-type', key, {}, '"env" must be an object of names with quoted text values, for example { "STRATA_X": "1" }.');
       else for (const [name, v] of Object.entries(value)) {
@@ -100,7 +100,7 @@ export function checkRunConfig(text, { known = KNOWN_KEYS } = {}) {
       else for (const [name, n] of Object.entries(value)) {
         if (n === null) continue;
         if (name === 'experimental_speed_projection') { if (typeof n !== 'boolean') add('error', 'bool', key, { key: `sampling.${name}` }, `"sampling.${name}" must be true or false.`); continue; }
-        if (!SAMPLING[name]) { add('warning', 'unknown-key', key, { key: `sampling.${name}`, near: '' }, `"sampling.${name}" is not a setting Strata reads, so it is ignored.`); continue; }
+        if (!SAMPLING[name]) { add('warning', 'unknown-key', key, { key: `sampling.${name}`, near: '' }, `"sampling.${name}" is not a setting Nostroma reads, so it is ignored.`); continue; }
         const [lo, hi] = SAMPLING[name];
         if (typeof n !== 'number' || !Number.isFinite(n) || n < lo || n > hi || (WHOLE.has(name) && !Number.isInteger(n))) add('error', WHOLE.has(name) ? 'whole-range' : 'number-range', key, { key: `sampling.${name}`, min: lo, max: hi, value: show(n) }, `"sampling.${name}" must be ${WHOLE.has(name) ? 'a whole ' : 'a '}number from ${lo} to ${hi}, not ${show(n)}.`);
       }

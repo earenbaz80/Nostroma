@@ -29,7 +29,7 @@ export function plainUpdateError(error, subject = 'engine', retry = undefined) {
   const raw = String(error?.message ?? error ?? '');
   const code = error?.code ?? '';
   const exit = error?.exitCode ?? null;
-  const button = `Update ${subject === 'engine' ? 'engine' : 'Strata'}`;
+  const button = `Update ${subject === 'engine' ? 'engine' : 'Nostroma'}`;
   const keep = 'Your current version still works.';
   let message = `The update didn't finish and nothing was changed. ${keep}`;
   let next = `Press ${button} in Settings to try again.`;
@@ -56,7 +56,7 @@ export function plainUpdateError(error, subject = 'engine', retry = undefined) {
     const long = /longer than Windows allows|path.*too long/i.test(raw);
     message = long
       ? "The engine's folder is too deep for Windows, so it could not be put in place."
-      : 'The engine was downloaded and checked, but Windows or a security program would not let Strata put it in place.';
+      : 'The engine was downloaded and checked, but Windows or a security program would not let Nostroma put it in place.';
     next = long
       ? `Open Details, then follow the folder advice there, and press ${button} in Settings.`
       : `Wait a minute, then press ${button} in Settings. If it happens again, pause your virus scanner's live scanning for a few minutes while it runs.`;
@@ -64,7 +64,7 @@ export function plainUpdateError(error, subject = 'engine', retry = undefined) {
     message = "There isn't an engine for this PC's graphics card yet.";
     next = 'Check for updates again later.';
   } else if (/trusts no update key/i.test(raw)) {
-    message = "Updates aren't available in this version of Strata yet.";
+    message = "Updates aren't available in this version of Nostroma yet.";
     next = 'They will be after the next version.';
   } else if (/signature|SHA-256|does not match|not trusted|expired|older than|replayed|integrity|refused/i.test(raw) || exit === 5) {
     message = `The update didn't pass its safety check, so it was not installed. ${keep}`;

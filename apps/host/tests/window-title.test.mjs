@@ -6,10 +6,10 @@ import {resolve, join} from 'node:path';
 const root = resolve(import.meta.dirname, '..');
 const read = (p) => readFileSync(resolve(root, p), 'utf8');
 
-test('the window title is "Strata" on every page', () => {
-  assert.match(read('index.html'), /<title>Strata<\/title>/);
-  assert.match(read('server/index.mjs'), /<title>Strata<\/title>/);
-  assert.match(read('../desktop/src-tauri/src/main.rs'), /WebviewWindowBuilder::new\(app, "main"[^\n]*\.title\("Strata"\)/);
+test('the window title is "Nostroma" on every page', () => {
+  assert.match(read('index.html'), /<title>Nostroma<\/title>/);
+  assert.match(read('server/index.mjs'), /<title>Nostroma<\/title>/);
+  assert.match(read('../desktop/src-tauri/src/main.rs'), /WebviewWindowBuilder::new\(app, "main"[^\n]*\.title\("Nostroma"\)/);
 });
 
 test('no screen sets document.title to anything else', () => {

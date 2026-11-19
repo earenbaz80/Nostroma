@@ -161,7 +161,7 @@ export function withPlain(raw) {
 }
 
 /** What a launch that printed nothing proves, and no more. */
-export const LAUNCHED_TEXT = 'The command finished without an error, so the program was started. Strata cannot confirm that a window or page actually opened.';
+export const LAUNCHED_TEXT = 'The command finished without an error, so the program was started. Nostroma cannot confirm that a window or page actually opened.';
 
 /** A command whose whole point is to open something: it has no output to show when it worked. */
 const LAUNCH = /(^|[\s;|&(])(start-process|start|invoke-item|ii|explorer(?:\.exe)?|xdg-open|open|notepad(?:\.exe)?|code)(?=[\s;|&)]|$)/i;

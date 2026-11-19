@@ -105,7 +105,7 @@ test('an unavailable Documents default retains the upstream fallback without cre
  const result=spawnSync(process.execPath,['--input-type=module','-e',`
   import assert from 'node:assert/strict';import {join} from 'node:path';import {existsSync} from 'node:fs';
   const store=await import('./server/store.mjs');
-  assert.match(store.MODELS_DIR_NOTICE,/Strata could not use/);
+  assert.match(store.MODELS_DIR_NOTICE,/Nostroma could not use/);
   assert.equal(store.nativeDataDirectory(store.MODELS_DIR),store.MODELS_DIR);
   assert.equal(existsSync(join(store.HOME,'Strata-data')),false);
  `],{cwd:fileURLToPath(new URL('..',import.meta.url)),env,encoding:'utf8',windowsHide:true});

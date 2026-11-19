@@ -18,7 +18,7 @@ export function createAppUpdater({ env = process.env, fetcher = fetch, sleep = m
     const response = await fetcher(`${base}${path}`, { method, headers: { authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(timeoutMs) });
     let body = null;
     try { body = await response.json(); } catch { /* no body */ }
-    if (!response.ok) throw new Error(body?.error ?? `The Strata app could not check for updates (${response.status}).`);
+    if (!response.ok) throw new Error(body?.error ?? `The Nostroma app could not check for updates (${response.status}).`);
     return body;
   }
   return {

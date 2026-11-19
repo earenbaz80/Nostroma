@@ -40,7 +40,7 @@ export function writeShellPrefs(patch, file = shellPrefsFile()) {
   const next = readShellPrefs(file);
   if (patch && 'port' in patch) {
     const wanted = patch.port === null || patch.port === '' || patch.port === 0 ? 0 : Number(patch.port);
-    if (wanted !== 0 && !validPort(wanted)) throw new Error('Choose a port between 1024 and 65535, or leave it empty to let Strata choose.');
+    if (wanted !== 0 && !validPort(wanted)) throw new Error('Choose a port between 1024 and 65535, or leave it empty to let Nostroma choose.');
     next.port = wanted;
   }
   if (patch && 'tray' in patch) next.tray = patch.tray === true;

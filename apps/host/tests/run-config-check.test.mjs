@@ -71,7 +71,7 @@ test('an unknown key is a warning with the nearest real name, and does not hold 
     ['warning', 'unknown-key-near', 'paralel', 'parallel', 2],
     ['warning', 'unknown-key-near', 'idle_unload_secs', 'idle_unload_s', 3],
     ['warning', 'unknown-key', 'totally_made_up_thing', '', 4]]);
-  assert.match(result.issues[0].message, /"paralel" is not a setting Strata reads, so it is ignored\. Did you mean "parallel"\?/);
+  assert.match(result.issues[0].message, /"paralel" is not a setting Nostroma reads, so it is ignored\. Did you mean "parallel"\?/);
   assert.equal(nearestKey('Lazy-Load'), 'lazy_load');
   assert.equal(nearestKey('zzzzzzzz'), null);
 });

@@ -33,10 +33,10 @@ export function createAutoTune({ launcher, workDir, spawnProcess = spawn, pollMs
       const child = spawnProcess(l.command, [...(l.prefix ?? []), ...args], { cwd: l.cwd, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'], env: l.env });
       let out = '', err = '', done = false;
       const finish = (fn, v) => { if (done) return; done = true; clearTimeout(alarm); fn(v); };
-      const alarm = setTimeout(() => { try { child.kill(); } catch { /* gone */ } finish(reject, new Error('Strata did not answer in time.')); }, timeoutMs);
+      const alarm = setTimeout(() => { try { child.kill(); } catch { /* gone */ } finish(reject, new Error('Nostroma did not answer in time.')); }, timeoutMs);
       child.stdout?.on('data', c => { out += c; });
       child.stderr?.on('data', c => { err += c; if (err.length > 100_000) err = err.slice(-50_000); });
-      child.on('error', e => finish(reject, new Error(`Strata could not start: ${e.message}`)));
+      child.on('error', e => finish(reject, new Error(`Nostroma could not start: ${e.message}`)));
       child.on('close', code => {
         let json = null;
         const text = out.trim();

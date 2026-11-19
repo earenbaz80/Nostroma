@@ -142,13 +142,13 @@ test('Faster long prompts is for Qwen3.8-Flash-Next only: no row for Qwen3.6-35B
   assert.equal(speedSwitchApplies('faster_long_prompts', { backend: 'cuda', gpus: [RTX], arch: 'qwen35moe' }), false);
 });
 
-test('the picture reader: offered for a Qwen model that reads pictures, in the Image reading group, with Strata\'s own and llama.cpp\'s as the two options', () => {
+test('the picture reader: offered for a Qwen model that reads pictures, in the Image reading group, with Nostroma\'s own and llama.cpp\'s as the two options', () => {
   const ids = context => speedSwitchRows({}, context).map(r => r.id);
   for (const backend of ['cuda', 'hip', 'sycl', 'metal', 'cpu', null]) assert.ok(ids({ backend, gpus: [R9700], vision: true }).includes('picture_reader'), `${backend}`);
   assert.ok(!ids({ backend: 'cuda', gpus: [RTX] }).includes('picture_reader'), 'pictures off');
   assert.ok(!ids({ deepseek: true, backend: 'cuda', gpus: [RTX], vision: true }).includes('picture_reader'), 'a DeepSeek settings file: no switch');
   const sw = SPEED_SWITCHES.find(s => s.id === 'picture_reader');
-  assert.deepEqual([sw.group, sw.default, sw.words], ['Image reading', 'on', { on: 'Strata\'s own (recommended)', off: 'llama.cpp\'s' }]);
+  assert.deepEqual([sw.group, sw.default, sw.words], ['Image reading', 'on', { on: 'Nostroma\'s own (recommended)', off: 'llama.cpp\'s' }]);
   assert.deepEqual(setSpeedSwitch({ PATH: '/bin' }, 'picture_reader', false), { PATH: '/bin', STRATA_VISION_TOWER: 'mtmd' });
   assert.deepEqual(setSpeedSwitch({ PATH: '/bin', STRATA_VISION_TOWER: 'mtmd' }, 'picture_reader', true), { PATH: '/bin' });
   const screen = read('../src/components/NativeSettings.tsx');
@@ -217,7 +217,7 @@ test('through the host: Qwen3.6-35B-A3B (its run config has an arch) gets no Fas
   } finally { await f.cleanup(); }
 });
 
-test('through the host: choosing llama.cpp\'s picture reader writes STRATA_VISION_TOWER=mtmd into the model\'s file, and Strata\'s own again gives back the same file', async () => {
+test('through the host: choosing llama.cpp\'s picture reader writes STRATA_VISION_TOWER=mtmd into the model\'s file, and Nostroma\'s own again gives back the same file', async () => {
   const f = nativeFixture();
   try {
     f.setHardware({ ram_gb: 64, gpus: [RTX] });
@@ -226,7 +226,7 @@ test('through the host: choosing llama.cpp\'s picture reader writes STRATA_VISIO
     const before = readFileSync(path, 'utf8');
     const first = f.control.settings('iq2_xs');
     const row = first.speedSwitches.find(s => s.id === 'picture_reader');
-    assert.deepEqual([row.on, row.group, row.words.on, row.words.off], [true, 'Image reading', 'Strata\'s own (recommended)', 'llama.cpp\'s']);
+    assert.deepEqual([row.on, row.group, row.words.on, row.words.off], [true, 'Image reading', 'Nostroma\'s own (recommended)', 'llama.cpp\'s']);
     const picked = f.control.save('iq2_xs', { values: { env: { ...first.values.env, ...ENV.picture_reader } } });
     assert.equal(JSON.parse(readFileSync(path, 'utf8')).env.STRATA_VISION_TOWER, 'mtmd');
     assert.equal(picked.speedSwitches.find(s => s.id === 'picture_reader').on, false);
@@ -256,12 +256,16 @@ test('the Expert settings show the rows in the existing row layout with an On / 
   const languages = ['en', 'zh', 'ja', 'de', 'es', 'ru', 'pt', 'ko', 'fr'];
   const catalog = lang => JSON.parse(read(`../src/locales/fix-${lang}.json`));
   const words = [...SPEED_SWITCHES.flatMap(s => [s.label, s.hint, ...Object.values(s.words ?? {})]), 'On (recommended)', 'Off (recommended)'];
-  const english = Object.values(catalog('en'));
-  for (const word of words) assert.ok(english.includes(word), `English catalog: ${word}`);
+  /* The catalogues keep upstream's wording; the host speaks the product's name. Both spellings
+     resolve to the same entry (src/lib/i18n.ts), so the words are compared brand-normalised. */
+  const brand = text => text.replace(/Strata/g, 'Nostroma');
+  const english = Object.values(catalog('en')).map(brand);
+  const wanted = words.map(brand);
+  for (const word of words) assert.ok(english.includes(brand(word)), `English catalog: ${word}`);
   for (const lang of languages.slice(1)) {
     const translated = Object.values(catalog(lang));
     const en = catalog('en');
-    for (const [id, text] of Object.entries(en)) if (words.includes(text)) {
+    for (const [id, text] of Object.entries(en)) if (wanted.includes(brand(text))) {
       assert.ok(catalog(lang)[id] && catalog(lang)[id] !== text, `${lang} ${id} is translated`);
       assert.ok(translated.includes(catalog(lang)[id]));
       assert.ok(!/\{\d+\}/.test(catalog(lang)[id]));

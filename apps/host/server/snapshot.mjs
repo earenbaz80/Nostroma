@@ -11,7 +11,7 @@ export function snapshotBytes(data) {
 }
 export async function saveSnapshot(data, { platform = process.platform, run = exec, write = writeFile } = {}) {
   const bytes = snapshotBytes(data);
-  const name = `Strata-Monitor-${new Date().toISOString().replace(/[:.]/g, '-')}.png`;
+  const name = `Nostroma-Monitor-${new Date().toISOString().replace(/[:.]/g, '-')}.png`;
   let result;
   try {
     if (platform === 'darwin') result = await run('osascript', ['-e', `POSIX path of (choose file name with prompt "Save Monitor screenshot" default name "${name}")`]);

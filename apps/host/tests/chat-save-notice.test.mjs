@@ -38,9 +38,9 @@ test('the catalog finds the notice: the German page shows it in German, with the
   await i18n.setTranslationLanguage('de');
   assert.equal(i18n.tr(TITLE), 'Einige Chats konnten nicht gespeichert werden');
   assert.equal(i18n.tr(BUTTON), 'Nicht gespeicherte Chats kopieren');
-  assert.match(i18n.tr(BODY, [3]), /^Der Chat-Speicher von Strata ist voll, daher gibt es die neuesten Änderungen an 3 Chat\(s\) nur in diesem Fenster/);
+  assert.match(i18n.tr(BODY, [3]), /^Der Chat-Speicher von Nostroma ist voll, daher gibt es die neuesten Änderungen an 3 Chat\(s\) nur in diesem Fenster/);
   i18n.setTranslationLanguage('en');
-  assert.equal(i18n.tr(BODY, [3]), "Strata's chat storage is full, so the newest changes to 3 chat(s) are only in this window. Delete old chats to make room; they then save by themselves.");
+  assert.equal(i18n.tr(BODY, [3]), "Nostroma's chat storage is full, so the newest changes to 3 chat(s) are only in this window. Delete old chats to make room; they then save by themselves.");
 });
 
 test('a full disk raises the notice once with a working copy button; offline raises nothing; saving by itself takes the notice away', async () => {
@@ -85,7 +85,7 @@ test('a full disk raises the notice once with a working copy button; offline rai
     const shown = toasts().filter((t) => t.title === TITLE);
     assert.equal(shown.length, 1, 'shown once');
     assert.equal(shown[0].tone, 'error');
-    assert.equal(shown[0].body, "Strata's chat storage is full, so the newest changes to 1 chat(s) are only in this window. Delete old chats to make room; they then save by themselves.");
+    assert.equal(shown[0].body, "Nostroma's chat storage is full, so the newest changes to 1 chat(s) are only in this window. Delete old chats to make room; they then save by themselves.");
     assert.equal(shown[0].action.label, BUTTON);
     await store.flushSessions();
     assert.equal(toasts().filter((t) => t.title === TITLE).length, 1, 'a second failed save does not show it again');

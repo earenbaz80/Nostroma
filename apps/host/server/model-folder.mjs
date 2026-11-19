@@ -35,7 +35,7 @@ export function libraryFolderFromPick(picked) {
 /** Make a folder the person asked for; a refusal of the disk is said in words. */
 export function makeFolder(path) {
   try { mkdirSync(path, { recursive: true }); }
-  catch (error) { throw new Error(`Strata could not create ${path} (${error.code === 'EACCES' || error.code === 'EPERM' ? 'access was denied' : error.code === 'ENOSPC' ? 'the drive is full' : error.message}). Choose another folder.`); }
+  catch (error) { throw new Error(`Nostroma could not create ${path} (${error.code === 'EACCES' || error.code === 'EPERM' ? 'access was denied' : error.code === 'ENOSPC' ? 'the drive is full' : error.message}). Choose another folder.`); }
   return path;
 }
 

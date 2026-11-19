@@ -25,6 +25,6 @@ export function missingFilesError(model, names) {
   const error = new Error(list.length
     ? `Some model files are missing: ${shown}. Use Download / repair to restore them.`
     : 'Some model files are missing. Use Download / repair to restore them.');
-  error.details = [list.length ? `Missing for ${model}: ${list.join(', ')}` : `Missing for ${model}: Strata could not tell which files`];
+  error.details = [list.length ? `Missing for ${model}: ${list.join(', ')}` : `Missing for ${model}: Nostroma could not tell which files`];
   return error;
 }

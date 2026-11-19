@@ -17,7 +17,7 @@ const prompt = process.env.STRATA_TIMESKIP_PROMPT ?? '';
 const attempt = Number(process.env.STRATA_TIMESKIP_ATTEMPT ?? 1);
 
 if (!base || !secret || !prompt) {
-  console.error('The revision step needs the Strata app to be running.');
+  console.error('The revision step needs the Nostroma app to be running.');
   process.exit(2);
 }
 

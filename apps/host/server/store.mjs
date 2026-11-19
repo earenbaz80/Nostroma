@@ -77,7 +77,7 @@ export function pickModelsDirectory({ saved, home, preferred, fixedByEnv = false
   accessSync(preferred, constants.R_OK | constants.W_OK | constants.X_OK);
   return { directory: realpathSync(preferred), notice: '' };
  } catch (error) {
-  return { directory: legacy, notice: `Strata could not use ${preferred} for models (${error.code ?? error.message}), so models go to ${legacy}. You can pick another folder in Settings.` };
+  return { directory: legacy, notice: `Nostroma could not use ${preferred} for models (${error.code ?? error.message}), so models go to ${legacy}. You can pick another folder in Settings.` };
  }
 }
 const MODELS_PICK = pickModelsDirectory({ saved: state.modelsDir, home: HOME, preferred: DEFAULT_MODELS_DIRECTORY, fixedByEnv: !!process.env.STRATA_MODELS_DIR });
@@ -124,7 +124,7 @@ export function validateModelsDirectory(input) {
   if (isDriveRoot(directory)) directory = realpathSync(makeFolder(libraryFolderFromPick(directory).path));
   const data = realpathSync(DATA_DIR);
   const contains = (parent, child) => { const r = relative(parent, child); return !r || !r.startsWith('..') && !isAbsolute(r); };
-  if (directory === parse(directory).root || contains(directory, data) || contains(data, directory)) throw new Error('Choose a separate folder for models, outside Strata’s app data.');
+  if (directory === parse(directory).root || contains(directory, data) || contains(data, directory)) throw new Error('Choose a separate folder for models, outside Nostroma’s app data.');
   return resolve(directory);
 }
 

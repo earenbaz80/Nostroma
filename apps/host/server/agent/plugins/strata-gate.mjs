@@ -458,7 +458,7 @@ export function apply(ctx, config = {}) {
     commandCtx.commands.register({
       definitionId: 'strata-gate',
       name: 'strata-gate',
-      description: 'Reports that the Strata approval gate is active',
+      description: 'Reports that the Nostroma approval gate is active',
       handler: () => ({ kind: 'success', text: 'strata-gate active' }),
     });
   });

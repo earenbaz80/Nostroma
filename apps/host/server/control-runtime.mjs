@@ -144,7 +144,7 @@ export function runCli(control, args, { env = process.env, timeoutMs = 60_000, s
     const finish = (fn, value) => { if (done) return; done = true; clearTimeout(alarm); fn(value); };
     const alarm = setTimeout(() => {
       try { child.kill(); } catch { /* already gone */ }
-      finish(reject, new ControlError(`Strata Control did not answer within ${Math.round(timeoutMs / 1000)} s (${args.slice(0, 2).join(' ')}).`, { code: 'control_timeout' }));
+      finish(reject, new ControlError(`Nostroma Control did not answer within ${Math.round(timeoutMs / 1000)} s (${args.slice(0, 2).join(' ')}).`, { code: 'control_timeout' }));
     }, timeoutMs);
     child.stdout.on('data', c => {
       out += c; if (out.length > 4_000_000) child.kill();
@@ -159,7 +159,7 @@ export function runCli(control, args, { env = process.env, timeoutMs = 60_000, s
       }
     });
     child.stderr.on('data', c => { err += c; if (err.length > 200_000) err = err.slice(-100_000); });
-    child.on('error', e => finish(reject, new ControlError(`Strata Control could not start: ${e.message}`, { code: 'control_missing' })));
+    child.on('error', e => finish(reject, new ControlError(`Nostroma Control could not start: ${e.message}`, { code: 'control_missing' })));
     child.on('close', code => {
       let json = null;
       const text = out.trim();

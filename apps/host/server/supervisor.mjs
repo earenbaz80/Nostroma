@@ -135,7 +135,7 @@ export function logs(limit = 200) {
  */
 export async function start() {
   state.status = 'error';
-  state.error = 'Strata runs models on its own engine only.';
+  state.error = 'Nostroma runs models on its own engine only.';
   hubRef?.send('engine-status', status());
   throw new Error(state.error);
 }

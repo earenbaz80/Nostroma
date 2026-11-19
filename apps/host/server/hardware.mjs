@@ -230,7 +230,7 @@ function buildChecks(hw) {
           id: 'gpu',
           label: 'GPU and driver',
           state: 'warn',
-          detail: 'No GPU accelerator found — Strata will run on the CPU',
+          detail: 'No GPU accelerator found — Nostroma will run on the CPU',
           value: accel.label,
         }
       : {
@@ -285,13 +285,13 @@ function buildVerdict(hw) {
   if (warned.length) {
     return {
       ok: true,
-      headline: 'This computer can run Strata.',
-      detail: `${warned.map((w) => w.label).join(' and ')} ${warned.length > 1 ? 'are' : 'is'} a limit — Strata will pick a lighter model.`,
+      headline: 'This computer can run Nostroma.',
+      detail: `${warned.map((w) => w.label).join(' and ')} ${warned.length > 1 ? 'are' : 'is'} a limit — Nostroma will pick a lighter model.`,
     };
   }
   return {
     ok: true,
-    headline: 'This computer can run Strata comfortably.',
+    headline: 'This computer can run Nostroma comfortably.',
     detail: 'Everything needed for the recommended model is present.',
   };
 }

@@ -138,9 +138,9 @@ test('approval notifications: shell first, the page second, nothing when off or 
   assert.equal(await A.approvalNeeded(true, 'write_file', true), false, 'the person is looking at Strata');
   A.setTranslationLanguage('de');
   assert.match(A.approvalNotice('write_file').body, /write_file/);
-  assert.notEqual(A.approvalNotice('write_file').title, 'Strata needs your answer');
+  assert.notEqual(A.approvalNotice('write_file').title, 'Nostroma needs your answer');
   A.setTranslationLanguage('en');
-  assert.equal(A.approvalNotice('').body, 'The assistant wants to use a tool. Open Strata to approve or deny.');
+  assert.equal(A.approvalNotice('').body, 'The assistant wants to use a tool. Open Nostroma to approve or deny.');
 });
 
 test('every new string exists in all eight languages with the same slots, and does not collide with another catalog', async () => {
@@ -164,8 +164,10 @@ test('every new string exists in all eight languages with the same slots, and do
   for (const l of languages) {
     A.setTranslationLanguage(l);
     assert.equal(A.tr('Energy since start'), gh[l].gh01, l);
+    /* The English string is the key, so the call keeps upstream's wording; the app swaps the
+       brand on the way out (src/lib/i18n.ts), and the expected text has to be swapped too. */
     assert.equal(A.tr('Port {0} is used by another program, so Strata started on port {1}. Chats and settings saved on port {0} are not shown until Strata can use it again. Close the other program and restart Strata.', [47831, 51234]),
-      gh[l][busyId].replaceAll('{0}', '47831').replaceAll('{1}', '51234'), l);
+      gh[l][busyId].replaceAll('{0}', '47831').replaceAll('{1}', '51234').replaceAll('Strata', 'Nostroma'), l);
   }
   A.setTranslationLanguage('en');
 });

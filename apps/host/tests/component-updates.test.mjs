@@ -1,4 +1,4 @@
-import './helpers/isolate-profile.mjs';   // a test run never writes the owner's real Strata profile
+import './helpers/isolate-profile.mjs';   // a test run never writes the owner's real Nostroma profile
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
@@ -114,7 +114,7 @@ test('the Settings check says so, in plain words, when the own update check of t
   assert.match(nothing.strata.details, /error decoding response body/);
   const withControl = await checkComponentUpdates({ control: feed({ installed: '0.2.5', offered: '0.2.6', status: 'available' }), appUpdater: failing, appVersion: '0.2.5' });
   assert.equal(withControl.strata.status, 'available');
-  assert.match(withControl.strata.message, /new version of Strata is available.*couldn't check for a new version of the app itself/s);
+  assert.match(withControl.strata.message, /new version of Nostroma is available.*couldn't check for a new version of the app itself/s);
   assert.match(withControl.strata.details, /decoding/);
   const fine = await checkComponentUpdates({ control: feed(), appUpdater: { check: async () => ({ available: false }) }, appVersion: '0.2.5' });
   assert.equal(fine.strata.status, 'current');
@@ -156,7 +156,7 @@ test('the Settings update check maps the feed to the existing result shape', asy
   result = await checkComponentUpdates({ control: make(report()), appUpdater, appVersion: '0.1.0' });
   assert.equal(result.strata.status, 'available');
   assert.equal(result.strata.latestVersion, '0.2.0');
-  assert.match(result.strata.message, /new version of Strata is available\. Faster starts/);
+  assert.match(result.strata.message, /new version of Nostroma is available\. Faster starts/);
 });
 
 test('the shell bridge client exists only inside the desktop app, speaks to loopback with the token, and polls to the end', async () => {
@@ -271,7 +271,7 @@ test('packaged: no update while a model is loaded; calibration is still refused'
   } finally { await f.native.close(); f.cleanup(); }
 });
 
-test('packaged: "Update Strata" updates Control through the feed, then the app through the shell', async () => {
+test('packaged: "Update Nostroma" updates Control through the feed, then the app through the shell', async () => {
   const f = fixture({ withApp: true });
   try {
     await f.native.refresh(true);
@@ -279,7 +279,7 @@ test('packaged: "Update Strata" updates Control through the feed, then the app t
     assert.equal(job.state, 'done', job.error);
     assert.deepEqual(f.calls.map(c => c[0]), ['update', 'app-install']);
     assert.deepEqual(f.calls[0], ['update', false, true]);
-    assert.match(job.summary, /app update is installed\. Strata will restart/);
+    assert.match(job.summary, /app update is installed\. Nostroma will restart/);
   } finally { await f.native.close(); f.cleanup(); }
 });
 
@@ -339,7 +339,7 @@ test('packaged: "Update engine" works in the first seconds, before the native sn
   const f = fixture();
   try {
     assert.equal(f.native.state().available, false, 'nothing has been read yet');
-    const started = f.native.operation('update-engine', {});      // used to throw "Connect the native Strata installation first."
+    const started = f.native.operation('update-engine', {});      // used to throw "Connect the native Nostroma installation first."
     const job = await finish(f.native, started.id);
     assert.equal(job.state, 'done', job.error);
   } finally { await f.native.close(); f.cleanup(); }
@@ -379,7 +379,7 @@ test('first-run card data: an offer with its size, nothing-fits with reasons, of
   assert.equal(offline.status, 'offline');
 });
 
-test('without the shell bridge "Update Strata" still updates Control and says nothing false about the app', async () => {
+test('without the shell bridge "Update Nostroma" still updates Control and says nothing false about the app', async () => {
   const f = fixture();
   try {
     await f.native.refresh(true);

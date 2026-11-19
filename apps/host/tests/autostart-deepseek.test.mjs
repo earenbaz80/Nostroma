@@ -1,4 +1,4 @@
-/** A remembered DeepSeek model (Strata 0.2.13 and earlier) at the host's start: not started, the approved refusal logged, and the app's
+/** A remembered DeepSeek model (Nostroma 0.2.13 and earlier) at the host's start: not started, the approved refusal logged, and the app's
  *  settings file (data/state.json) byte-identical afterwards: the product changes nothing of the person's. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -23,7 +23,7 @@ test('a remembered DeepSeek model is not started, the refusal is logged, and sta
     const id = autostartModel(store.get(), REAL, (l) => lines.push(l));
     assert.equal(id, null);
     assert.deepEqual(lines, [refusalLine('deepseek-v4.1-flash-ist-das-2.00bpw')]);
-    assert.match(lines[0], /is a DeepSeek model\. This version of Strata no longer runs DeepSeek models, so it was not started\.$/);
+    assert.match(lines[0], /is a DeepSeek model\. This version of Nostroma no longer runs DeepSeek models, so it was not started\.$/);
     assert.equal(store.get().loaded, 'deepseek-v4.1-flash-ist-das-2.00bpw', 'the remembered value is kept');
     assert.deepEqual(readFileSync(file), before, 'state.json is byte-identical');
   } finally {

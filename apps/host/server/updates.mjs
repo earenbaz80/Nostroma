@@ -17,20 +17,20 @@ export async function checkUpdates({ appVersion, engineVersion }, fetcher = fetc
   let strata;
   try {
     const response = await fetcher(RELEASES, { headers: { accept: 'application/vnd.github+json' }, signal: AbortSignal.timeout(10000) });
-    if (!response.ok) throw new Error(response.status === 403 || response.status === 429 ? 'The release service is busy. Try again later.' : 'Could not reach the Strata release feed. Try again.');
+    if (!response.ok) throw new Error(response.status === 403 || response.status === 429 ? 'The release service is busy. Try again later.' : 'Could not reach the Nostroma release feed. Try again.');
     const releases = await response.json();
     if (!Array.isArray(releases)) throw new Error('The release service returned an invalid response.');
     const candidates = releases.filter(r => !r.draft && !r.prerelease && versionParts(r.tag_name));
     candidates.sort((a, b) => compare(versionParts(b.tag_name), versionParts(a.tag_name)));
     const latest = candidates[0];
     const installed = versionParts(appVersion);
-    if (!latest) strata = { status: 'no-releases', message: 'No stable Strata release is published in this feed yet.' };
+    if (!latest) strata = { status: 'no-releases', message: 'No stable Nostroma release is published in this feed yet.' };
     else if (!installed) strata = { status: 'unavailable', message: 'This installation has no comparable version number.' };
     else {
       const newer = compare(versionParts(latest.tag_name), installed) > 0;
       // Release content is untrusted. Only link back to the known repository.
       const releaseUrl = typeof latest.html_url === 'string' && latest.html_url.startsWith(RELEASE_PREFIX) ? latest.html_url : undefined;
-      strata = { status: newer ? 'available' : 'current', latestVersion: latest.tag_name, releaseUrl, message: newer ? `Strata ${latest.tag_name} is available.` : 'Strata is up to date.' };
+      strata = { status: newer ? 'available' : 'current', latestVersion: latest.tag_name, releaseUrl, message: newer ? `Nostroma ${latest.tag_name} is available.` : 'Nostroma is up to date.' };
     }
   } catch (error) {
     strata = { status: 'error', message: looksOffline(error) ? OFFLINE_MESSAGE : error.name === 'TimeoutError' ? 'The release check timed out. Try again.' : error.message ?? 'Could not check for updates.' };
@@ -45,7 +45,7 @@ export async function checkUpdates({ appVersion, engineVersion }, fetcher = fetc
 }
 
 /** The engine row after a version failed its test start on this computer (owner-approved wording, 11-09). */
-export const engineFailedBeforeText = (offered, installed) => `Engine ${offered ?? 'update'} didn't start correctly on this computer, so Strata kept engine ${installed ?? 'in use'}. Press Update engine to try again.`;
+export const engineFailedBeforeText = (offered, installed) => `Engine ${offered ?? 'update'} didn't start correctly on this computer, so Nostroma kept engine ${installed ?? 'in use'}. Press Update engine to try again.`;
 
 /**
  * The packaged app's update check: the signed feed, read by Control (`strata update --check`), plus the shell's own verdict
@@ -95,10 +95,10 @@ export async function checkComponentUpdates({ control, appUpdater = null, appVer
   }
   const controlNew = control_.status === 'available' ? control_.offered : null;
   const strata = { installedVersion: appVersion ?? control_.installed ?? control.version ?? null, canInstall: !!((appNew && !appCannot) || controlNew) };
-  const appCheckLine = "Strata couldn't check for a new version of the app itself. Try again later.";
-  if (appNew || controlNew) Object.assign(strata, { status: 'available', latestVersion: appNew ?? controlNew, message: `A new version of Strata is available.${appNotes ? ` ${appNotes}` : ''}${appNew && appCannot ? ` ${appCannot}` : ''}${appCheckFailed ? ` ${appCheckLine}` : ''}` });
+  const appCheckLine = "Nostroma couldn't check for a new version of the app itself. Try again later.";
+  if (appNew || controlNew) Object.assign(strata, { status: 'available', latestVersion: appNew ?? controlNew, message: `A new version of Nostroma is available.${appNotes ? ` ${appNotes}` : ''}${appNew && appCannot ? ` ${appCannot}` : ''}${appCheckFailed ? ` ${appCheckLine}` : ''}` });
   else if (appCheckFailed) Object.assign(strata, { status: 'error', message: appCheckLine });
-  else Object.assign(strata, { status: 'current', message: 'Strata is up to date.' });
+  else Object.assign(strata, { status: 'current', message: 'Nostroma is up to date.' });
   if (appCheckFailed) strata.details = appCheckFailed;
   return { checkedAt, feed: report.feed, strata, engine: engineView, serving: report.serving ?? [] };
 }

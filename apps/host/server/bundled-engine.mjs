@@ -141,7 +141,7 @@ export function wrongMakeNotice(manifest, here) {
   const built = manifest.backend;
   const families = [...new Set((manifest.archs ?? []).map(a => HIP_FAMILIES.find(([, list]) => list.includes(a))?.[0]).filter(Boolean))];
   const builtFor = built === 'hip' && families.length ? `AMD ${families.join(' and ')}` : MAKE_NAME[built] ?? built;
-  return `This Strata is for ${builtFor} cards. Your PC has an ${MAKE_NAME[here] ?? here} card: download the ${MAKE_NAME[here] ?? here} version from ${RELEASES_URL}`;
+  return `This Nostroma is for ${builtFor} cards. Your PC has an ${MAKE_NAME[here] ?? here} card: download the ${MAKE_NAME[here] ?? here} version from ${RELEASES_URL}`;
 }
 
 /** One engine can ship as several builds of the same backend (CUDA 13 and CUDA 12 differ in the oldest driver they run on). */

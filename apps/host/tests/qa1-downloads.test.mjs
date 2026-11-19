@@ -107,7 +107,7 @@ test('the recommended four come first; the others are what the "More versions" l
 test('the three NVFP4 versions have clear names and one line that tells them apart', () => {
   lib.setTranslationLanguage('en');
   const names = ['NVFP4', 'NVFP4-NVIDIA', 'NVFP4-QAD'].map(m => lib.nativeVersionLabel(m));
-  assert.deepEqual(names, ['NVFP4 (Strata’s version)', 'NVFP4 (NVIDIA’s version)', 'NVFP4 (NVIDIA, trained for FP4)']);
+  assert.deepEqual(names, ['NVFP4 (Nostroma’s version)', 'NVFP4 (NVIDIA’s version)', 'NVFP4 (NVIDIA, trained for FP4)']);
   assert.equal(new Set(names).size, 3);
   const lines = ['NVFP4', 'NVFP4-NVIDIA', 'NVFP4-QAD'].map(m => lib.versionNote(m));
   assert.match(lines[0], /best quality/i);

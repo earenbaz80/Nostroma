@@ -46,7 +46,16 @@ export function loadCatalog(value:Language):Promise<void>{
 }
 const entities:Record<string,string>={amp:'&',lt:'<',gt:'>',quot:'"',apos:"'",nbsp:'\u00a0'};
 const decode=(text:string)=>text.replace(/&(#x[\da-f]+|#\d+|amp|lt|gt|quot|apos|nbsp);/gi,(whole,key:string)=>key[0]==='#'?String.fromCodePoint(key[1].toLowerCase()==='x'?parseInt(key.slice(2),16):parseInt(key.slice(1),10)):entities[key]??whole);
-const ids=new Map(Object.entries(english).map(([id,value])=>[decode(value),id]));
+/* This checkout is Nostroma. The nine catalogues are upstream's and stay byte-identical, so the
+   language tests keep their meaning and no translation goes missing: the brand is swapped on the way
+   out instead of in 1,850 translated strings. Paths and links keep the upstream name, because they
+   still point at the real folder (~/Documents/Strata/Models) or at the upstream repository. */
+const BRAND=/(?<![\/\\])\bStrata\b(?!\s*[\/\\])/g;
+const brandName=(text:string)=>text.replace(BRAND,'Nostroma');
+/* English is the key of a string, and the host now says the brand the other way round, so both
+   spellings resolve to the same id: "Nostroma engine …" still finds its translation in every
+   language, which is why the host's sentences keep their catalogues without editing them. */
+const ids=new Map(Object.entries(english).flatMap(([id,value])=>[[decode(value),id],[decode(brandName(value)),id]]));
 let language:Language='en';
 export const validLanguage=(value:unknown):value is Language=>LANGUAGES.some(item=>item.value===value);
 export const currentLanguage=()=>language;
@@ -56,7 +65,11 @@ export function setTranslationLanguage(value:Language):Promise<void>{language=va
 /** Resolves when the current language's strings are in. */
 export const translationsReady=()=>loadCatalog(language);
 const escape=(value:string)=>value.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-const patterns=Object.entries(english).filter(([,value])=>/\{\d+\}/.test(value)).map(([id,value])=>{
+/* A sentence with slots is matched, not looked up, so the branded spelling gets its own pattern:
+   the host sends "Nostroma needs {0} or newer" and still finds the catalogue entry written with
+   upstream's name. */
+const sentenceSources=Object.entries(english).flatMap(([id,value])=>value===brandName(value)?[[id,value]]:[[id,value],[id,brandName(value)]]);
+const patterns=sentenceSources.filter(([,value])=>/\{\d+\}/.test(value)).map(([id,value])=>{
  const slots:number[]=[];let expression='',at=0;
  for(const match of value.matchAll(/\{(\d+)\}/g)){expression+=escape(value.slice(at,match.index))+'([\\s\\S]*?)';slots.push(Number(match[1]));at=match.index!+match[0].length;}
  expression+=escape(value.slice(at));
@@ -73,6 +86,6 @@ export function tr<T>(value:T,values?:readonly unknown[]):T{
  if(!id&&language!=='en')for(const candidate of patterns){const match=candidate.pattern.exec(key);if(match){id=candidate.id;const found:unknown[]=[];candidate.slots.forEach((slot,index)=>{const captured=match[index+1];found[slot]=localizedTemplateSlots[candidate.id]?.includes(slot)?tr(captured):captured;});slots=found;break;}}
  let text=decode(id?(dictionary[id]??english[id as keyof typeof english]):key);
  if(slots)text=text.replace(/\{(\d+)\}/g,(_,index)=>String(slots![Number(index)]??''));
- if(!id&&!values)return decode(value) as T;
- return (leading+text+trailing) as T;
+ if(!id&&!values)return brandName(decode(value)) as T;
+ return (leading+brandName(text)+trailing) as T;
 }

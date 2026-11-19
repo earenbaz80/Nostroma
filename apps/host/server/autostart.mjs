@@ -6,7 +6,7 @@
 export const DEEPSEEK_ID = /deepseek/i;
 
 export function refusalLine(id) {
-  return `autostart failed: ${id} is a DeepSeek model. This version of Strata no longer runs DeepSeek models, so it was not started.`;
+  return `autostart failed: ${id} is a DeepSeek model. This version of Nostroma no longer runs DeepSeek models, so it was not started.`;
 }
 
 /** The model id to start, or null. Reads `state` only; `log` gets the refusal line for a DeepSeek id. */

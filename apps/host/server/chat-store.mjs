@@ -44,7 +44,7 @@ export function storeFailure(error) {
   if (error instanceof ChatStoreError) return error;
   const code = error?.code;
   if (code === 'ENOSPC' || code === 'EDQUOT' || code === 'EFBIG') return new ChatStoreError('The disk is full.', 507, 'disk-full');
-  if (code === 'EACCES' || code === 'EPERM' || code === 'EROFS') return new ChatStoreError('Strata may not write its chat folder.', 403, 'permission');
+  if (code === 'EACCES' || code === 'EPERM' || code === 'EROFS') return new ChatStoreError('Nostroma may not write its chat folder.', 403, 'permission');
   return new ChatStoreError(error?.message ?? 'The chat could not be written.', 500, code ?? 'write-failed');
 }
 

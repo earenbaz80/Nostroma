@@ -1,4 +1,4 @@
-import './helpers/isolate-profile.mjs';   // a test run never writes the owner's real Strata profile
+import './helpers/isolate-profile.mjs';   // a test run never writes the owner's real Nostroma profile
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
@@ -108,7 +108,7 @@ test('an engine version that failed its test start here is offered again with th
   assert.equal(result.engine.status, 'available');
   assert.equal(result.engine.canInstall, true);
   assert.equal(result.engine.retry, true);
-  assert.equal(result.engine.message, "Engine 0.1.59 didn't start correctly on this computer, so Strata kept engine 0.1.58. Press Update engine to try again.");
+  assert.equal(result.engine.message, "Engine 0.1.59 didn't start correctly on this computer, so Nostroma kept engine 0.1.58. Press Update engine to try again.");
   assert.equal(result.engine.message, engineFailedBeforeText('0.1.59', '0.1.58'));
   assert.equal(result.engine.details, note, 'the reason stays behind Details');
   assert.doesNotMatch(result.engine.message, /up to date/);

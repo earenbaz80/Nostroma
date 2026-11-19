@@ -453,7 +453,7 @@ const execFileAsync = promisify(execFile);
    What Strata puts in front of every conversation. Counted so the context
    breakdown can show where the window actually goes rather than reporting a
    single opaque total. */
-const SYSTEM_PROMPT = `You are Strata, a local inference assistant running entirely on this computer.
+const SYSTEM_PROMPT = `You are Nostroma, a local inference assistant running entirely on this computer.
 Answer plainly and briefly. Use only tools actually offered to you. Ask for file content when no file tool is available.
 Say when you do not know. Never claim to have done something you have not done.`;
 
@@ -573,7 +573,7 @@ function clientName(req) {
   if (/curl/i.test(ua)) return 'curl';
   if (/python|httpx|requests/i.test(ua)) return 'Python client';
   if (/node|undici|axios/i.test(ua)) return 'Node client';
-  if (/strata/i.test(ua)) return 'Strata chat';
+  if (/strata/i.test(ua)) return 'Nostroma chat';
   return 'Local client';
 }
 
@@ -586,9 +586,9 @@ async function runRemoteTurn({ selection, message, history, images = [], thinkin
     const { connection, model } = modelProviders.resolve(selection);
     if (connection.protocol === 'openai-chat' && model.reasoning == null) await visionProbe.check(connection, model.id);
     const appliedSkills = selectSkills(skillState, message, workspaceId);
-    entry = serving.open({ client: 'Strata chat', endpoint: connection.protocol === 'anthropic' ? '/messages' : connection.protocol === 'openai-responses' ? '/responses' : '/chat/completions', model: `${connection.name} · ${model.name}`, cancel: () => controller.abort(new DOMException('Cancelled by the user', 'AbortError')) });
+    entry = serving.open({ client: 'Nostroma chat', endpoint: connection.protocol === 'anthropic' ? '/messages' : connection.protocol === 'openai-responses' ? '/responses' : '/chat/completions', model: `${connection.name} · ${model.name}`, cancel: () => controller.abort(new DOMException('Cancelled by the user', 'AbortError')) });
     serving.mark(entry.id, { state: 'generating' });
-    const result = await modelProviders.stream({ selection, message, history, images, thinking, signal: requestSignal, systemPrompt: ['You are Strata, a helpful assistant. Answer clearly. Do not claim to have read files or performed actions unless their results are included in the conversation.', skillInstructions(appliedSkills)].filter(Boolean).join('\n\n'), onFrame: frame => {
+    const result = await modelProviders.stream({ selection, message, history, images, thinking, signal: requestSignal, systemPrompt: ['You are Nostroma, a helpful assistant. Answer clearly. Do not claim to have read files or performed actions unless their results are included in the conversation.', skillInstructions(appliedSkills)].filter(Boolean).join('\n\n'), onFrame: frame => {
       if (frame.type === 'start') noteSkillUse(appliedSkills);
       if (frame.type === 'done') serving.mark(entry.id, { tokensIn: frame.tokensIn, tokensOut: frame.tokensOut, usageSource: frame.usageSource });
       onFrame({ ...frame, requestId: entry.id, model: model.name, contextMax: model.contextMax, remoteModel: true, ...(frame.type === 'start' ? { skills: appliedSkills.map(s => s.name) } : {}) });
@@ -623,7 +623,7 @@ async function runAgentTurn({ res, controller, chatId, body, message, workspaceI
   }
   const started = Date.now();
   // A turn the engine is serving must be visible to the rest of the host (Serving, unload guards).
-  const entry = instance ? serving.open({ client: 'Strata chat', endpoint: '/agent', model: instance.apiModelId, instanceId: instance.id, gpuIds: instance.gpus.map(String), cancel: () => { void agent.stop(chatId); } }) : null;
+  const entry = instance ? serving.open({ client: 'Nostroma chat', endpoint: '/agent', model: instance.apiModelId, instanceId: instance.id, gpuIds: instance.gpus.map(String), cancel: () => { void agent.stop(chatId); } }) : null;
   if (entry) serving.mark(entry.id, { state: 'generating' });
   const settle = (tokensOut, error) => { if (entry) serving.finish(entry.id, { tokensOut, durationMs: Date.now() - started, ...(error ? { error } : {}) }); };
   try {
@@ -654,7 +654,7 @@ async function runTurn({ message, history = [], onFrame, signal, client, workspa
   if (remoteModel) return runRemoteTurn({ selection: remoteModel, message, history, images, thinking, onFrame, signal, workspaceId });
   if(native.hasLive()||nativeModelId){
     let instance;try{instance=native.resolveInstance(nativeModelId??native.state().defaultId);}catch(e){const message=plainNoModel(e.message);onFrame({type:'error',message});return {error:message};}const started=Date.now(),cancel=new AbortController();
-    const entry=serving.open({client:client??'Strata chat',endpoint:'/chat/completions',model:instance.apiModelId,instanceId:instance.id,gpuIds:instance.gpus.map(String),cancel:()=>cancel.abort()});
+    const entry=serving.open({client:client??'Nostroma chat',endpoint:'/chat/completions',model:instance.apiModelId,instanceId:instance.id,gpuIds:instance.gpus.map(String),cancel:()=>cancel.abort()});
     try{serving.mark(entry.id,{state:'generating'});const applied=selectSkills(skillState,message,workspaceId);const result=await proxyCompletion({baseUrl:`http://127.0.0.1:${instance.port}/v1`,modelId:instance.apiModelId,authorization:instance.key,message,history,images,extra:{strata_mcp:useTools===true,...(thinkingBudget>0&&String(thinking).toLowerCase()!=='off'?{reasoning_budget_tokens:thinkingBudget}:{}),reasoning_effort:({off:'none',max:'high'}[String(thinking).toLowerCase()]??String(thinking).toLowerCase())},systemPrompt:[SYSTEM_PROMPT,skillInstructions(applied)].filter(Boolean).join('\n\n'),signal:signal?AbortSignal.any([signal,cancel.signal]):cancel.signal,onFrame:frame=>onFrame({...frame,requestId:entry.id,model:instance.label,contextMax:instance.metrics?.engine?.max_context??instance.context,skills:applied.map(s=>s.name)})});serving.mark(entry.id,{...result,usageSource:result.usageSource});serving.finish(entry.id,{tokensOut:result.tokensOut,durationMs:Date.now()-started});return result;}catch(e){serving.finish(entry.id,{durationMs:Date.now()-started,error:e.message});onFrame({type:'error',message:e.message,requestId:entry.id});return {error:e.message};}
   }
   runtimeState();
@@ -670,7 +670,7 @@ async function runTurn({ message, history = [], onFrame, signal, client, workspa
 
   const controller = new AbortController();
   const requestSignal = signal ? AbortSignal.any([signal, controller.signal]) : controller.signal;
-  const entry = serving.open({ client: client ?? 'Strata chat', endpoint: '/chat/completions', model: instance.apiModelId, instanceId:instance.id, gpuIds:instance.gpuIds, cancel: () => controller.abort(new DOMException('Cancelled by the user', 'AbortError')) });
+  const entry = serving.open({ client: client ?? 'Nostroma chat', endpoint: '/chat/completions', model: instance.apiModelId, instanceId:instance.id, gpuIds:instance.gpuIds, cancel: () => controller.abort(new DOMException('Cancelled by the user', 'AbortError')) });
   const started = Date.now();
   let result = { tokensIn: null, tokensOut: null };
   // Time to first token: the gap between asking and the first token arriving.
@@ -981,7 +981,7 @@ const server = http.createServer(async (req, res) => {
   try {
     if (path.startsWith('/api/') && req.headers.origin) {
       const origin = new URL(req.headers.origin);
-      if (!['localhost', '127.0.0.1', '[::1]'].includes(origin.hostname)) return error(res, 403, 'Open the local Strata app to use host controls.');
+      if (!['localhost', '127.0.0.1', '[::1]'].includes(origin.hostname)) return error(res, 403, 'Open the local Nostroma app to use host controls.');
     }
     if (path.startsWith('/api/')) {
       const modelOperation = !['GET', 'OPTIONS'].includes(method) && /^\/api\/(models|local-models|runtime|image-models|engine|native)(\/|$)/.test(path) && !['/api/runtime/plan', '/api/engine/validate', '/api/local-models/inspect'].includes(path);
@@ -1071,7 +1071,7 @@ async function api(req, res, path, method, url) {
    /* Diagnostics to a file: the engine messages the app kept, failed operations, and the tail of each model's server log under Control.
       Written to the user's Downloads folder (the window cannot save a download); the path is returned to show. */
    const NL=String.fromCharCode(10);
-   const lines=[`Strata diagnostics ${new Date().toISOString()}`,`Version ${native.state().version??'unknown'}`,'','== Engine messages =='];
+   const lines=[`Nostroma diagnostics ${new Date().toISOString()}`,`Version ${native.state().version??'unknown'}`,'','== Engine messages =='];
    for(const l of native.logs())lines.push(`${l.at} ${l.instanceId}: ${l.line}`);
    lines.push('','== Operations ==');for(const j of native.state().jobs)lines.push(`${j.startedAt} ${j.kind} ${j.state}${j.error?`: ${j.error}`:''}${j.details?`${NL}  ${j.details}`:''}`);
    try{const logs=join(dirname(componentsDirectory()),'logs');const names=readdirSync(logs).filter(n=>/^desktop-.*\.log$/.test(n)).sort();const crash=names.filter(n=>n.startsWith('desktop-crash-')).slice(-3).reverse();const runs=names.filter(n=>!n.startsWith('desktop-crash-')).slice(-2).reverse();lines.push('',`== Desktop shell: window crash logs (${crash.length} newest) ==`);for(const n of crash)lines.push('',`-- ${n}`,readFileSync(join(logs,n),'utf8'));lines.push('',`== Desktop shell: last lines of the newest ${runs.length} run logs ==`);for(const n of runs)lines.push('',`-- ${n}`,...readFileSync(join(logs,n),'utf8').split(NL).slice(-300));}catch{/* no desktop logs (not the Linux app, or no crash) */}
@@ -1423,7 +1423,7 @@ async function api(req, res, path, method, url) {
   if (path === '/api/engine/from-file' && method === 'POST') {
     // The person chose an engine package in the page (the offline path). The bytes come here; Control checks and installs them.
     const name = String(req.headers['x-file-name'] ?? 'engine.tar.gz').replace(/[^A-Za-z0-9._-]/g, '_').slice(-120);
-    if (!/\.(tar\.gz|tgz|tar\.xz|zip)$/i.test(name)) return error(res, 400, 'This is not a Strata engine package. Choose the .tar.gz or .zip file from the release page.');
+    if (!/\.(tar\.gz|tgz|tar\.xz|zip)$/i.test(name)) return error(res, 400, 'This is not a Nostroma engine package. Choose the .tar.gz or .zip file from the release page.');
     const folder = join(store.DATA_DIR, 'incoming-engine');
     mkdirSync(folder, { recursive: true, mode: 0o700 });
     const target = join(folder, name);
@@ -1565,7 +1565,7 @@ async function api(req, res, path, method, url) {
         return json(res,200,runtimeModels.libraryState(models.library()));
       }
       // Strata's own engine only: 0.2.14 started a llama.cpp llama-server here (an imported GGUF, the starter list) in the real-engine mode
-      return error(res,409,'Strata runs models only on its own engine, so this model can\'t load here. Open Models and choose a model there, or use "Use a local GGUF…" for a file you already have.');
+      return error(res,409,'Nostroma runs models only on its own engine, so this model can\'t load here. Open Models and choose a model there, or use "Use a local GGUF…" for a file you already have.');
     }
   }
 
@@ -1923,7 +1923,7 @@ async function api(req, res, path, method, url) {
   if (path === '/api/workspaces/pick' && method === 'POST') {
     try {
       const typed = await typedFolder((await readBody(req)).path, { isAbsolute });
-      const picked = typed ? { path: typed } : await chooseFolder('Choose a folder for Strata');
+      const picked = typed ? { path: typed } : await chooseFolder('Choose a folder for Nostroma');
       if (picked.unavailable) {const u=chooserUnavailable(picked);return error(res,501,u.message,{code:u.code});};
       if (picked.cancelled) return json(res, 200, { cancelled: true });
       return json(res, 200, { path: picked.path });
@@ -2086,7 +2086,7 @@ async function api(req, res, path, method, url) {
     const agentSkip = process.env.STRATA_AGENT === 'off' ? 'The agent is turned off (STRATA_AGENT=off).'
       : body.agent === false || body.tools === false ? 'This chat runs without the agent.'
       : !chatId ? 'This request did not name a chat.'
-      : !(body.remoteModel || native.hasLive()) ? 'The agent needs a loaded Strata model or an API model.'
+      : !(body.remoteModel || native.hasLive()) ? 'The agent needs a loaded Nostroma model or an API model.'
       : null;
     if (chatId && !agentSkip) {
       const capability = agent.status();
@@ -2111,7 +2111,7 @@ async function api(req, res, path, method, url) {
       onFrame: plain,
       signal: controller.signal,
       req,
-      client: 'Strata chat',
+      client: 'Nostroma chat',
       workspaceId,
       sessionId: typeof body.sessionId === 'string' ? body.sessionId : null,
       remoteModel: body.remoteModel ?? null,
@@ -2131,9 +2131,9 @@ async function openai(req, res, path, method) {
   if (!serving.authorized(req)) return error(res, 401, 'Invalid API key');
   if(native.state().instances.length){
     if(path==='/v1/models'&&method==='GET')return json(res,200,{object:'list',data:native.state().instances.filter(i=>i.status==='ready').map(i=>({id:i.apiModelId,object:'model',owned_by:'strata',meta:{instanceId:i.id,gpus:i.gpus,label:i.label,aliases:i.aliases}}))});
-    if(method==='POST'&&['/v1/chat/completions','/v1/messages','/v1/responses'].includes(path)){if(store.get().serving?.pauseServing)return error(res,503,'New API requests are paused.');if(path==='/v1/responses'&&!native.state().capabilities.responses)return error(res,501,'Update the native Strata installation to use the Responses API.');return nativeGateway({req,res,path,body:await readBody(req,12*1024*1024),control:native,serving});}
+    if(method==='POST'&&['/v1/chat/completions','/v1/messages','/v1/responses'].includes(path)){if(store.get().serving?.pauseServing)return error(res,503,'New API requests are paused.');if(path==='/v1/responses'&&!native.state().capabilities.responses)return error(res,501,'Update the native Nostroma installation to use the Responses API.');return nativeGateway({req,res,path,body:await readBody(req,12*1024*1024),control:native,serving});}
   }
-  if(path==='/v1/responses'&&method==='POST')return error(res,503,'Load a native Strata model to use the Responses API.');
+  if(path==='/v1/responses'&&method==='POST')return error(res,503,'Load a native Nostroma model to use the Responses API.');
 
   if (path === '/v1/models' && method === 'GET') {
     const runtime=runtimeState();
@@ -2293,9 +2293,9 @@ async function staticFile(req, res, path) {
   if (!existsSync(DIST)) {
     res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
     res.end(
-      `<!doctype html><meta charset="utf-8"><title>Strata</title>
+      `<!doctype html><meta charset="utf-8"><title>Nostroma</title>
        <body style="font:16px/1.6 -apple-system,system-ui;background:#0e1113;color:#eef1f3;padding:48px">
-       <h1 style="margin:0 0 8px">Strata host is running</h1>
+       <h1 style="margin:0 0 8px">Nostroma host is running</h1>
        <p style="color:#8e979f">No built web app found at <code>${DIST}</code>.</p>
        <p>For development run <code>npm run dev</code> (Vite on :5199 proxies /api here).<br>
        For a single port run <code>npm run build:web &amp;&amp; npm run serve</code>.</p>

@@ -152,7 +152,7 @@ test('the revision step reads the host\'s stream: a long silent turn is fine, a 
     mode.current = 'cut'; const cut = await run(); assert.equal(cut.code, 1); assert.match(cut.err, /stopped before it finished/);
     mode.current = 'refuse'; assert.match((await run()).err, /Load a model first/);
     assert.match((await run({ STRATA_INTERNAL_SECRET: 'wrong' })).err, /Not allowed/);
-    assert.match((await run({ STRATA_INTERNAL_SECRET: '' })).err, /needs the Strata app/);
+    assert.match((await run({ STRATA_INTERNAL_SECRET: '' })).err, /needs the Nostroma app/);
   } finally { server.close(); }
   const gone = await new Promise(resolve => { const child = spawn(process.execPath, [script], { env: { ...process.env, STRATA_HOST_URL: 'http://127.0.0.1:9', STRATA_INTERNAL_SECRET: 's', STRATA_TIMESKIP_PROMPT: 'x' } }); let err = ''; child.stderr.on('data', d => { err += d; }); child.on('close', code => resolve({ code, err })); });
   assert.equal(gone.code, 1); assert.match(gone.err, /could not be reached/);

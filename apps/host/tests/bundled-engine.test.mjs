@@ -162,7 +162,7 @@ test('an AMD build on an NVIDIA PC is not unpacked and the sentence names the ri
     writeFileSync(join(t.bundle, name, 'engine-component.json'), JSON.stringify(manifest));
     const result = await installBundledEngine({ bundleDir: t.bundle, components: t.components, backend: 'cuda' });
     assert.equal(result.action, 'wrong-make');
-    assert.equal(result.notice, 'This Strata is for AMD RX 9000 cards. Your PC has an NVIDIA card: download the NVIDIA version from https://github.com/Niko1221/Strata/releases');
+    assert.equal(result.notice, 'This Nostroma is for AMD RX 9000 cards. Your PC has an NVIDIA card: download the NVIDIA version from https://github.com/Niko1221/Strata/releases');
     assert.equal(existsSync(t.engine), false, 'nothing was copied');
     // the same build on an AMD PC is unpacked; an unknown card is not a reason to refuse
     assert.equal((await installBundledEngine({ bundleDir: t.bundle, components: t.components, backend: 'hip' })).action, 'installed');
@@ -171,7 +171,7 @@ test('an AMD build on an NVIDIA PC is not unpacked and the sentence names the ri
 });
 
 test('wrongMakeNotice names the make, not a list of reasons', () => {
-  assert.equal(wrongMakeNotice({ backend: 'cuda', archs: ['sm_86'] }, 'hip'), 'This Strata is for NVIDIA cards. Your PC has an AMD card: download the AMD version from https://github.com/Niko1221/Strata/releases');
+  assert.equal(wrongMakeNotice({ backend: 'cuda', archs: ['sm_86'] }, 'hip'), 'This Nostroma is for NVIDIA cards. Your PC has an AMD card: download the AMD version from https://github.com/Niko1221/Strata/releases');
 });
 
 test('Windows: the display adapters decide the make, and a leftover nvidia-smi does not outvote them (#3688)', async () => {
@@ -262,14 +262,14 @@ test('macOS: the engine bundle inside a signed .app stays (deleting it breaks th
   const platform = Object.getOwnPropertyDescriptor(process, 'platform');
   const as = value => Object.defineProperty(process, 'platform', { value, configurable: true });
   try {
-    const app = join(t.base, 'Strata.app', 'Contents', 'Resources', 'engine-bundle');
+    const app = join(t.base, 'Nostroma.app', 'Contents', 'Resources', 'engine-bundle');
     mkdirSync(app, { recursive: true });
     const inApp = makePackage(app, '0.1.48');
     const outside = makePackage(t.bundle, '0.1.48');
     // the engine is in the store (the app's own first start copies it), so the bundle would be removable
     assert.equal((await installBundledEngine({ bundleDir: t.bundle, components: t.components })).action, 'installed');
     const lines = [];
-    // 1. macOS, bundle inside Strata.app: kept, with one line that says why
+    // 1. macOS, bundle inside Nostroma.app: kept, with one line that says why
     as('darwin');
     let r = await removeVerifiedBundle({ bundleDir: app, components: t.components, log: l => lines.push(l) });
     assert.equal(r.removed, false);

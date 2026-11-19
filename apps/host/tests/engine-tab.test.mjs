@@ -177,6 +177,9 @@ test('the engine catalogs: same keys and placeholders in nine languages, none st
     'A newer engine is already on this computer. Update switches to it; nothing is downloaded.',
   ]) {
     assert.ok(known.has(sentence), `not in the engine catalog: ${sentence}`);
-    assert.ok([src('server/engine-library.mjs'), src('server/update-messages.mjs'), src('server/updates.mjs')].some(file => file.includes(sentence)), `no longer said by the host: ${sentence}`);
+    /* The catalogues hold upstream's wording (the English string is the key the interface looks up);
+       the host speaks the product's own name, so the two are compared with the brand normalised. */
+    const said = [src('server/engine-library.mjs'), src('server/update-messages.mjs'), src('server/updates.mjs')].join('\n').replace(/Strata/g, 'Nostroma');
+    assert.ok(said.includes(sentence.replace(/Strata/g, 'Nostroma')), `no longer said by the host: ${sentence}`);
   }
 });

@@ -24,7 +24,7 @@ import { externalEnvironment } from './external-env.mjs';
 import { createAppUpdater } from './app-updater.mjs';
 
 export const APP_UPDATE_UNAVAILABLE = 'app-update-unavailable';
-export const BROWSER_UPDATE_MESSAGE = "The Strata app itself can't be updated in browser mode. Start Strata from its icon, without --browser, to update it.";
+export const BROWSER_UPDATE_MESSAGE = "The Nostroma app itself can't be updated in browser mode. Start Nostroma from its icon, without --browser, to update it.";
 const BRIDGE_URL = /^http:\/\/127\.0\.0\.1:\d+$/;
 const MODES = new Set(['window', 'browser']);
 
@@ -55,7 +55,7 @@ export async function openInBrowser(url, { openers = OPENERS, start = startOpene
 /** One desktop notification (notify-send), best effort: no notification daemon or no notify-send is not an error. */
 export function sendNotification(message, { run = execFile, env = externalEnvironment() } = {}) {
   return new Promise(resolve => {
-    try { run('notify-send', ['--app-name=Strata', '--icon=dialog-information', 'Strata', message], { env, timeout: 5000 }, error => resolve(!error)); }
+    try { run('notify-send', ['--app-name=Nostroma', '--icon=dialog-information', 'Nostroma', message], { env, timeout: 5000 }, error => resolve(!error)); }
     catch { resolve(false); }
   });
 }
@@ -100,7 +100,7 @@ export function createAppUi({ env = process.env, shutdown = () => {}, open = ope
     },
     /** The "Quit Strata" menu entry: only in browser mode, where closing the tab leaves the engine running. */
     quit() {
-      if (mode !== 'browser') return { ok: false, status: 409, error: 'Close the Strata window to quit.' };
+      if (mode !== 'browser') return { ok: false, status: 409, error: 'Close the Nostroma window to quit.' };
       setImmediate(() => void shutdown());
       return { ok: true, status: 202 };
     },

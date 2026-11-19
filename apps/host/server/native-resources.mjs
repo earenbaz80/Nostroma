@@ -152,7 +152,7 @@ export function saferStart(config,hardware,model,failure){
    if(next<ctx){args[cx+1]=String(next);notes.push(`a shorter conversation context (${next} tokens, was ${ctx})`);}
   }
   if(!notes.length)return null;
-  return {config:{...config,args},words:`This graphics card had no room left for the model's expert cache, so Strata started again with ${notes.join(' and ')}. Nothing is saved; change it in the model's settings if you want it permanently.`,detail:notes.join('; ')};
+  return {config:{...config,args},words:`This graphics card had no room left for the model's expert cache, so Nostroma started again with ${notes.join(' and ')}. Nothing is saved; change it in the model's settings if you want it permanently.`,detail:notes.join('; ')};
  }
  const args=[...(config.args??[])],env={...(config.env??{})};
  const ram=Number(hardware?.ram_gb)||0,arena=Number(model?.arenaGb)||0;
@@ -162,17 +162,17 @@ export function saferStart(config,hardware,model,failure){
   const hint=Number((text.match(/STRATA_ARENA_PIN_GIB=(\d+)/)??[])[1]);
   const gib=hint>0?hint:ram>0?Math.max(4,Math.floor(ram/2)-8):16;
   env.STRATA_ARENA_PIN_GIB=String(gib);
-  return {config:{...config,env},words:`Windows would not lock as much memory as the model asked for, so Strata started again and locks ${gib} GB of the model instead of all of it. Replies may start a little slower.`,detail:`STRATA_ARENA_PIN_GIB=${gib}`};
+  return {config:{...config,env},words:`Windows would not lock as much memory as the model asked for, so Nostroma started again and locks ${gib} GB of the model instead of all of it. Replies may start a little slower.`,detail:`STRATA_ARENA_PIN_GIB=${gib}`};
  }
  if(['--resident-experts','--mmap-experts'].some(f=>args.includes(f)))return null;
  const at=args.indexOf('--resident-budget-gib');
  if(at>=0){
   const next=Math.floor((Number(args[at+1])||0)*.7);if(next<8)return null;
   args[at+1]=String(next);
-  return {config:{...config,args},words:`${first}, so Strata started again and keeps less of the model in RAM (${next} GB); more of it is read from the SSD, which is slower.`,detail:`--resident-budget-gib ${next}`};
+  return {config:{...config,args},words:`${first}, so Nostroma started again and keeps less of the model in RAM (${next} GB); more of it is read from the SSD, which is slower.`,detail:`--resident-budget-gib ${next}`};
  }
  if(!(ram>0&&arena>0))return null;
  const budget=Math.max(8,Math.floor(ram*.5)-4);if(budget>=arena)return null;
  args.push('--resident-budget-gib',String(budget));
- return {config:{...config,args},words:`${first}, so Strata started again in low-memory mode: ${budget} GB of the model stays in RAM and the rest is read from the SSD. It is slower, but it should load.`,detail:`--resident-budget-gib ${budget}`};
+ return {config:{...config,args},words:`${first}, so Nostroma started again in low-memory mode: ${budget} GB of the model stays in RAM and the rest is read from the SSD. It is slower, but it should load.`,detail:`--resident-budget-gib ${budget}`};
 }

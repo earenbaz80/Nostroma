@@ -49,7 +49,7 @@ export class AgentUnavailable extends Error {
 /** The plain sentence for a raw agent failure text, whatever produced it. */
 export function plainAgentFailure(raw) {
   const text = String(raw ?? '');
-  if (/did not print its address|exited during start|could not start|ECONNREFUSED.*127\.0\.0\.1|refused the launch token|socket/i.test(text)) return 'The coding assistant could not start. Try again. If it keeps happening, close and reopen Strata.';
+  if (/did not print its address|exited during start|could not start|ECONNREFUSED.*127\.0\.0\.1|refused the launch token|socket/i.test(text)) return 'The coding assistant could not start. Try again. If it keeps happening, close and reopen Nostroma.';
   if (/process stopped|lost the session stream|stream did not open|session stream/i.test(text)) return 'The coding assistant stopped unexpectedly, so this answer is incomplete. Send your message again.';
   if (/did not accept the message/i.test(text)) return 'The coding assistant did not take this message. Send it again in a moment.';
   return text;
@@ -65,10 +65,10 @@ export function plainTurnFailure(err) {
   const details = typeof err?.details === 'string' && err.details ? err.details : raw;
   if (err instanceof AgentUnavailable) return { message: err.message, details, code: err.code ?? 'AGENT_ERROR' };
   if (err?.code === 'agent-preset/invalid' || /waiting for (shell|subprocess|ptcRuntime|workflowEngine|sandbox)|failed to import|did not activate/i.test(raw)) {
-    return { message: 'The coding assistant is missing a part it needs, so it cannot work on files yet. Close and reopen Strata. If it keeps happening, reinstall Strata. Chatting without tools still works.', details, code: 'AGENT_INCOMPLETE' };
+    return { message: 'The coding assistant is missing a part it needs, so it cannot work on files yet. Close and reopen Nostroma. If it keeps happening, reinstall Nostroma. Chatting without tools still works.', details, code: 'AGENT_INCOMPLETE' };
   }
   if (/^[a-z][a-z-]*\/[a-z][a-z-]*: /i.test(raw) || /^(gateway|rpc)/i.test(raw)) {
-    return { message: 'The coding assistant could not start this message. Try again. If it keeps happening, close and reopen Strata.', details, code: err?.code ?? 'AGENT_ERROR' };
+    return { message: 'The coding assistant could not start this message. Try again. If it keeps happening, close and reopen Nostroma.', details, code: err?.code ?? 'AGENT_ERROR' };
   }
   return { message: plainAgentFailure(raw), details, code: err?.code ?? 'AGENT_ERROR' };
 }
@@ -270,7 +270,7 @@ export function createAgentBridge({ dataDir, componentsDir = null, bundledDir = 
         }
         try { return await startRuntime(profile); } catch (e) {
           lastError = redact(String(e.message ?? e), Object.values(profile.env));
-          throw e instanceof AgentUnavailable ? e : new AgentUnavailable(plainAgentFailure(lastError) === lastError ? 'The coding assistant could not start. Try again. If it keeps happening, close and reopen Strata.' : plainAgentFailure(lastError), 'agent-start-failed', lastError);
+          throw e instanceof AgentUnavailable ? e : new AgentUnavailable(plainAgentFailure(lastError) === lastError ? 'The coding assistant could not start. Try again. If it keeps happening, close and reopen Nostroma.' : plainAgentFailure(lastError), 'agent-start-failed', lastError);
         }
       })();
       try { await starting; } finally { starting = null; }
@@ -337,7 +337,7 @@ export function createAgentBridge({ dataDir, componentsDir = null, bundledDir = 
         if (now !== want) throw new Error(`the session reports "${now}" instead of "${want}"`);
       }
     } catch (e) {
-      throw new AgentUnavailable(`Strata could not set this chat to ${MODE_PRESETS[mode].name} mode, so nothing ran. Try again.`, 'mode-unavailable', e.message);
+      throw new AgentUnavailable(`Nostroma could not set this chat to ${MODE_PRESETS[mode].name} mode, so nothing ran. Try again.`, 'mode-unavailable', e.message);
     }
     // Manual leaves the sandbox open and relies on the Strata gate to ask first. Without the gate it must not start.
     if (mode === 'manual' && !runtime.gateChecked) {
@@ -346,7 +346,7 @@ export function createAgentBridge({ dataDir, componentsDir = null, bundledDir = 
         if (probe?.result?.kind !== 'success' || !String(probe.result.text ?? '').includes('strata-gate active')) throw new Error('the approval gate is not loaded');
         runtime.gateChecked = true;
       } catch (e) {
-        throw new AgentUnavailable('Strata could not make sure the coding assistant asks before changing anything, so nothing ran. Close and reopen Strata, then try again.', 'mode-unavailable', e.message);
+        throw new AgentUnavailable('Nostroma could not make sure the coding assistant asks before changing anything, so nothing ran. Close and reopen Nostroma, then try again.', 'mode-unavailable', e.message);
       }
     }
   }
