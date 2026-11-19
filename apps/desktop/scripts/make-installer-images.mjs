@@ -62,6 +62,11 @@ for (const [name, page] of Object.entries(pages)) {
 await browser.close();
 // 24-bit BMP, the format NSIS wants: render at 3x, shrink with a good filter
 const py = `import sys\nfrom PIL import Image\nfor name in ('sidebar','header'):\n    im = Image.open(sys.argv[1] + '/' + name + '@3.png').convert('RGB')\n    w, h = im.width // 3, im.height // 3\n    im.resize((w, h), Image.LANCZOS).save(sys.argv[2] + '/' + name + '.bmp', 'BMP')\n`;
-const done = spawnSync('python', ['-c', py, work, out], { encoding: 'utf8' });
+// `python` is the name on Windows and on macOS with python.org builds; a Linux distribution usually ships
+// only `python3`, so fall back to it when the first name does not exist at all.
+const bmp = (bin) => spawnSync(bin, ['-c', py, work, out], { encoding: 'utf8' });
+let done = bmp('python');
+if (done.error?.code === 'ENOENT') done = bmp('python3');
+if (done.error) { console.error(`cannot run python: ${done.error.message}`); process.exit(1); }
 if (done.status !== 0) { console.error(done.stderr); process.exit(1); }
 console.log('wrote', join(out, 'sidebar.bmp'), join(out, 'header.bmp'));
