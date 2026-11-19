@@ -1,12 +1,12 @@
-# Strata media and video guide
+# Nostroma media and video guide
 
-For people and AI tools creating an article, overview or video. Last reviewed: 7 November 2026, for Strata 0.2.15.
+For people and AI tools creating an article, overview or video. Last reviewed: 7 November 2026, for Nostroma 0.2.15.
 Use [AI_REFERENCE.md](AI_REFERENCE.md) for product facts and [README.md](../README.md) for the public introduction.
 
 ## Short description
 
-Strata runs supported AI models on your own computer. Use its desktop app to chat and work with code and images,
-use its terminal app, or connect a coding tool. One installer per system (Windows, Linux, Mac). Strata's code is free and open source under the MIT license.
+Nostroma runs supported AI models on your own computer. Use its desktop app to chat and work with code and images,
+use its terminal app, or connect a coding tool. One installer per system (Windows, Linux, Mac). Nostroma's code is free and open source under the MIT license.
 
 Suggested opening: **“Run powerful AI on your own computer. Chat, code and work with images, locally.”**
 
@@ -20,7 +20,7 @@ Suggested opening: **“Run powerful AI on your own computer. Chat, code and wor
    Gyro is a memory-saving option, currently slower. State the model, quantization and hardware used in any live demo.
 5. **Connect a familiar tool.** Examples include Claude Code, Codex CLI, OpenCode, oh-my-pi, pi.dev and Hermes Agent.
    Show a real successful connection if demonstrating one.
-6. **Close with the two useful links.** [Download Strata](https://github.com/Niko1221/Strata/releases/latest)
+6. **Close with the two useful links.** [Download Nostroma](https://github.com/Niko1221/Strata/releases/latest)
    and [support development](https://buymeacoffee.com/strataengine).
 
 This is an outline, not evidence that any particular model, workflow or benchmark was tested for the video.
@@ -32,8 +32,8 @@ establish a current default model or universal performance.
 
 | Asset | File | Suggested caption / context |
 | --- | --- | --- |
-| Logo, light background | [strata-lockup-light.svg](../apps/host/public/brand/strata-lockup-light.svg) | Strata |
-| Logo, dark background | [strata-lockup-dark.svg](../apps/host/public/brand/strata-lockup-dark.svg) | Strata |
+| Logo, light background | [strata-lockup-light.svg](../apps/host/public/brand/strata-lockup-light.svg) | Nostroma |
+| Logo, dark background | [strata-lockup-dark.svg](../apps/host/public/brand/strata-lockup-dark.svg) | Nostroma |
 | Desktop app | [app-chat.png](media/app-chat.png) | Chat, files and a live preview in one window. The capture shows a Gyro model; do not relabel it as an ISTA run. |
 | Terminal app | [terminal-monitor.png](media/terminal-monitor.png) | Model activity and hardware use. The capture shows a Gyro-S session; its live counters are not a standardized benchmark. |
 | Coding demo thumbnail | [pagoda-preview.webp](media/pagoda-preview.webp) | A voxel garden generated locally. |
@@ -49,7 +49,7 @@ establish a current default model or universal performance.
 - For speed comparisons, use a source report with hardware, model, quantization, engine version and workload.
   Keep reasoning tokens, decode speed, prompt speed and time to first answer distinct.
 - Local inference, internet downloads and connected tools are separate. Refer to [SAFETY.md](SAFETY.md) for privacy claims.
-- Strata's MIT license does not replace the licenses of model weights, dependencies or other creators' work.
+- Nostroma's MIT license does not replace the licenses of model weights, dependencies or other creators' work.
   Use the [credits and licensing guide](HOW_IT_WORKS.md#credits).
 
 ## Links and contact
