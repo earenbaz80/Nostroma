@@ -40,6 +40,8 @@ establish a current default model or universal performance.
 | Coding demo video | [Pagoda.mp4](https://github.com/Niko1221/Strata/releases/download/v0.1.10/Pagoda.mp4) | Existing 49-second demo, documented with an RTX 5070, IQ3_S and 128K context. Keep it separate from the GUI and TUI screenshots. |
 | Engine explanation | [how-it-works.svg](media/how-it-works.svg), [guess-and-check.svg](media/guess-and-check.svg) | Illustrations of the documented Flash-Next engine path, not proof that every model uses the same path. |
 
+**Lockup regeneration**: Los SVG `strata-lockup-light.svg` y `strata-lockup-dark.svg` se pueden regenear con `apps/host/scripts/prepare-brand-lockups.py`. Ejecutá `--check` para comparar los bytes contra los hashes registrados en `source-manifest.json`; si difieren, el script informa la versión de fontTools con la que fueron dibujados (por defecto `4.68.0`) frente a la instalada, para que un cambio de formato de `SVGPathPen` no se confunda con una edición. Los archivos del repo fueron dibujados con fontTools `4.68.0`.
+
 ## Accuracy rules
 
 - Use actual footage or label illustrations. Do not invent a successful install, generated answer or speed reading.

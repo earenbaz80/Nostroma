@@ -31,7 +31,28 @@ import sys
 import tempfile
 from pathlib import Path
 
-import fontTools
+# Validate dependencies early with clear messages (instead of a traceback)
+try:
+    import fontTools
+    _HAS_FONTOOLS = True
+except ImportError:
+    sys.stderr.write(
+        "Error: fontTools is required to run this script.\n"
+        "Install it with: pip install fontTools\n"
+    )
+    sys.exit(1)
+
+try:
+    import brotli
+    _HAS_BROTLI = True
+except ImportError:
+    sys.stderr.write(
+        "Error: the Brotli Python extension is required to decode the WOFF2 face.\n"
+        "Install it with: pip install brotli\n"
+        "Or set PYTHONPATH to a directory containing the brotli wheel.\n"
+    )
+    sys.exit(1)
+
 from fontTools.pens.boundsPen import BoundsPen
 from fontTools.pens.svgPathPen import SVGPathPen
 from fontTools.ttLib import TTFont
