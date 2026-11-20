@@ -32,7 +32,10 @@ weight 700. Options:
     --out DIR              where the SVGs go (default public/brand)
 
 PNG bytes depend on the Pillow build, so --check compares SVGs only; images are
-convenience exports, not hashed assets.
+convenience exports, not hashed assets. To confirm a PNG still matches its SVG,
+run `npm run brand:png-vs-svg` in apps/host: it renders the committed SVG in the
+local Chromium and diffs the two, and skips with a notice when no browser is
+installed.
 
 Every SVG carries a <title> for screen readers and a comment naming the face,
 the weight and the fontTools release that drew it.

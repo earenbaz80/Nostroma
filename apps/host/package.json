@@ -23,6 +23,7 @@
     "flows": "node scripts/flows.mjs",
     "motion:budget": "node scripts/motionbudget.mjs",
     "preview:ui": "node scripts/preview-ui.mjs",
+    "brand:png-vs-svg": "node scripts/brand-png-check.mjs",
     "test": "node scripts/test.mjs"
   },
   "dependencies": {

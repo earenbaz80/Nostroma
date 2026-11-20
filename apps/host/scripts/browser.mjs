@@ -37,6 +37,9 @@ const INSTALLED = [
   '/usr/bin/google-chrome-stable',
   '/usr/bin/chromium',
   '/usr/bin/chromium-browser',
+  // Brave ships as a snap on Debian and Ubuntu
+  '/snap/bin/brave',
+  '/usr/bin/brave-browser',
 ];
 
 export function findChromium() {
