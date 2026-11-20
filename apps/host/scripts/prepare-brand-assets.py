@@ -22,7 +22,7 @@ APP = Path(__file__).resolve().parent.parent
 MASTERS = APP.parent / "Strata-Logo-DesignFiles"
 PUBLIC = APP / "public"
 BRAND = PUBLIC / "brand"
-FONT = PUBLIC / "fonts" / "GTWalsheimPro-Bold.woff2"
+FONT = APP / "scripts" / "fonts" / "GTWalsheimPro-Bold.woff2"   # the masters' face; the app serves Exo 2
 SVG_NS = "http://www.w3.org/2000/svg"
 INK = {"light": "#221e1f", "dark": "#eef1f3"}
 GREEN = {"light": "#10b981", "dark": "#34d399"}
@@ -187,8 +187,8 @@ def main() -> None:
     (BRAND / "source-manifest.json").write_text(json.dumps({
         "source_root": str(MASTERS),
         "preparation": "scripts/prepare-brand-assets.py",
-        "font": str(FONT.relative_to(APP)),
-        "font_sha256": digest(FONT),
+        "master_font": str(FONT.relative_to(APP)),
+        "master_font_sha256": digest(FONT),
         "note": "Derived SVGs omit source C2PA metadata; original masters remain untouched and each source hash is recorded here.",
         "files": entries,
     }, indent=2) + "\n")

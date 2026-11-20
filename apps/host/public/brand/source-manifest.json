@@ -2,8 +2,10 @@
   "source_root": "/Users/nikoveit/Documents/Strata-Design/design-iteration/Strata-Logo-DesignFiles",
   "preparation": "scripts/prepare-brand-assets.py",
   "lockups": "scripts/prepare-brand-lockups.py",
-  "font": "public/fonts/GTWalsheimPro-Bold.woff2",
-  "font_sha256": "041cee9382bcbbc2e42bbbf5ef33c1efafd0bb4074554c5e861c9b1c7991b95d",
+  "master_font": "scripts/fonts/GTWalsheimPro-Bold.woff2",
+  "master_font_sha256": "041cee9382bcbbc2e42bbbf5ef33c1efafd0bb4074554c5e861c9b1c7991b95d",
+  "lockup_font": "public/fonts/Exo2-Variable.woff2",
+  "lockup_font_sha256": "761cf2ca516de83bba1b6cbb108cc5252b41b4ce74a0e70c0c34cc67a1d3f8d1",
   "note": "Derived SVGs omit source C2PA metadata; original masters remain untouched and each source hash is recorded here.",
   "rebrand": "The mark, both lockups, the favicon and the raster icons were redrawn with the N monogram after the rename to Nostroma, so these files no longer come from the masters in source_root. Each source row stays as the record of the supplied design file, and each output_sha256 is the hash of the file in this checkout. scripts/prepare-brand-assets.py still draws the supplied design from those masters, so running it here would restore the old lockup and favicon; it also needs the masters, which this checkout does not have.",
   "files": [

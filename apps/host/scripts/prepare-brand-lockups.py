@@ -522,6 +522,9 @@ def update_manifest(drawn: list[tuple[Path, str, int]]) -> None:
             continue
         dropped += 1
     data["files"] = kept
+    # the face the outlines come from, refreshed here so it cannot drift from the SVGs it drew
+    data["lockup_font"] = str(FONT.relative_to(APP))
+    data["lockup_font_sha256"] = hashlib.sha256(FONT.read_bytes()).hexdigest()
 
     MANIFEST.write_text(json.dumps(data, indent=2) + "\n")
     print(
