@@ -253,13 +253,22 @@ def geometry(weight: int) -> tuple[float, float, float, tuple]:
     return width, origin, scale, tuple(letters)
 
 
-def svg(theme: str, weight: int, ink_left: float) -> str:
-    palette = THEMES[theme]
-    ink, accent = palette["ink"], palette["accent"]
+def frame(weight: int, ink_left: float) -> tuple[float, float, float, tuple]:
+    """Width, origin, scale and letters for one weight, offset applied.
+
+    The SVG and the raster both read the layout from here, so the two cannot
+    disagree about where a letter starts or how wide the result is."""
     width, origin, scale, letters = geometry(weight)
     if ink_left != INK_LEFT:
         origin += ink_left - INK_LEFT
         width = round(width + ink_left - INK_LEFT, 2)
+    return width, origin, scale, letters
+
+
+def svg(theme: str, weight: int, ink_left: float) -> str:
+    palette = THEMES[theme]
+    ink, accent = palette["ink"], palette["accent"]
+    width, origin, scale, letters = frame(weight, ink_left)
 
     mark = "\n".join(element.format(ink=ink, accent=accent) for element in MARK)
     word = "".join(
@@ -329,7 +338,9 @@ def svg_path(out_dir: Path, theme: str, weight: int) -> Path:
     return out_dir / f"strata-lockup-{theme}{weight_suffix(weight)}.svg"
 
 
+@lru_cache(maxsize=None)
 def _pillow():
+    """Pillow's modules, imported once and shared by every image the run writes."""
     try:
         from PIL import Image, ImageChops, ImageDraw
     except ImportError:
@@ -345,10 +356,7 @@ def raster(theme: str, weight: int, ink_left: float, scale_factor: int):
     """The lockup as an RGBA image at scale_factor times its size."""
     Image, ImageChops, ImageDraw = _pillow()
     palette = THEMES[theme]
-    width, origin, scale, letters = geometry(weight)
-    if ink_left != INK_LEFT:
-        origin += ink_left - INK_LEFT
-        width = round(width + ink_left - INK_LEFT, 2)
+    width, origin, scale, letters = frame(weight, ink_left)
 
     size = (round(width * scale_factor), round(HEIGHT * scale_factor))
     mask = Image.new("1", size, 0)
@@ -387,7 +395,7 @@ def raster(theme: str, weight: int, ink_left: float, scale_factor: int):
 
 def preview(theme: str, weight: int, ink_left: float):
     """The lockup on its theme's background, the way a header shows it."""
-    Image, _, _ = _pillow()
+    Image, _, ImageDraw = _pillow()
     palette = THEMES[theme]
     logo = raster(theme, weight, ink_left, 2)
     pad = 24
@@ -396,7 +404,6 @@ def preview(theme: str, weight: int, ink_left: float):
     )
     canvas.paste(logo, (pad, pad), logo)
     line = tuple(int(palette["line"][index : index + 2], 16) for index in (1, 3, 5)) + (255,)
-    ImageDraw = _pillow()[2]
     ImageDraw.Draw(canvas).line([(0, canvas.height - 1), (canvas.width, canvas.height - 1)], fill=line)
     return canvas.convert("RGB")
 
