@@ -59,7 +59,7 @@ FLOAT = {"BF16", "F32", "F16"}
 ROUTERS = ("ffn_gate_inp.weight", "ffn_gate_inp_shexp.weight")
 NOT_IN_PACK = {"per_layer_token_embd.weight"}      # the 28.8 GB PLE table: read from its GGUF by the engine
 
-# The float form the engine reads each pack tensor in (name without `blk.N.`; from eddoursul/Strata's FORM table).
+# The float form the engine reads each pack tensor in (name without `blk.N.`; from eddoursul/Nostroma's FORM table).
 # The residual, router, GDN, QSA and PLE kernels read these small projections as BF16, the norms as F32 and the PLE
 # conv as F16.  GSQ-RCO files already store them that way; other files do not (Unsloth's UD-Q4_K_XL: the routers,
 # SSM gates and injections F32, the hyper-connection projections and the PLE value Q8_0, the PLE conv F32), so a

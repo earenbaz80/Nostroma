@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""tools/strata_mcp.py - an MCP server that lets an AI assistant install, start, check and stop Strata.
+"""tools/strata_mcp.py - an MCP server that lets an AI assistant install, start, check and stop Nostroma.
 
     claude mcp add strata -- python /path/to/Strata/tools/strata_mcp.py
 
@@ -1946,7 +1946,7 @@ def tool_defs(models: dict, families: dict, contexts: list) -> list:
              "data_dir": {"type": "string", "maxLength": 260,
                           "description": "where the model files go (default: the Strata-data folder next to the "
                                          "Nostroma folder). Only the current data folder, a folder inside the Nostroma "
-                                         "folder, or a new absolute path whose last folder is named Strata... "
+                                         "folder, or a new absolute path whose last folder is named Nostroma... "
                                          "(e.g. D:\\Strata-data) outside system folders"},
              "drafter": {"type": "string", "enum": ["mtp", "dflash2"],
                          "description": "which drafter this model will use: dflash2 downloads only DFlash2's drafter (a separate step), not the MTP draft layer's ~5 GB; "
@@ -2154,7 +2154,7 @@ class Tools:
             pass
         else:
             if not p.name.lower().startswith("strata"):
-                raise ToolError(f"data_dir {raw!r}: a new data folder must be named Strata... (e.g. "
+                raise ToolError(f"data_dir {raw!r}: a new data folder must be named Nostroma... (e.g. "
                                 f"{Path(p.anchor or '/') / 'Strata-data'}), so that no other folder is filled with "
                                 "model files")
             if not p.parent.is_dir():

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-audit_pending.py — comprobaciones pendientes de la auditoría de Strata.
+audit_pending.py — comprobaciones pendientes de la auditoría de Nostroma.
 
 CUATRO COMPROBACIONES
   1. tauri-plugin-updater en Cargo.lock frente a CVE-2026-95625

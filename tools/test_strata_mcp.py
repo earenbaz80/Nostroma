@@ -366,7 +366,7 @@ class Validation(FakeRoot):
 
     def test_the_persons_own_data_folder_is_accepted_whatever_it_is_called(self):
         """The app writes the folder the person chose into the settings file (apps/host model-folder.mjs); an AI tool naming a new
-        folder still needs a Strata... name."""
+        folder still needs a Nostroma... name."""
         chosen = self.root.parent / "my-big-disk"
         chosen.mkdir()
         self.assertRejected("strata_install", {"data_dir": str(chosen)}, "named Nostroma")

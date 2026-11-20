@@ -3522,7 +3522,7 @@ def verify_sha256(s: Path, size: int, sha: str, own: bool = False, repair=None, 
         m.unlink(missing_ok=True)
         if server_same:
             hint = ("the server sends exactly the bytes you have (every block was compared), so the file there is not the version this Nostroma pins: "
-                    "update Strata. Run setup again to check the kept file once more")
+                    "update Nostroma. Run setup again to check the kept file once more")
         else:
             hint = "run setup again: the kept file is checked once more, and if it still differs it is downloaded again and the kept one is removed"
         fail(f"{s.name} does not match the pinned SHA-256 (it is {digest}, Nostroma expects {sha}); the file was kept as {s.name}.bad", hint)
@@ -9851,7 +9851,7 @@ def main() -> int:
             say(f"\nThis PC cannot run Nostroma yet: no model size fits {ram:.0f} GB of RAM (the smallest needs about "
                 f"{need} GB). --model NAME --yes installs one anyway, slowly.")
             return 1
-        say("\nThis PC can run Strata. Run it again without --check to install.")
+        say("\nThis PC can run Nostroma. Run it again without --check to install.")
         return 0
 
     # ---- 2. the questions

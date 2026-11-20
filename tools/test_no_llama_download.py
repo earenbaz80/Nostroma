@@ -1,4 +1,4 @@
-"""OWN-1B: nothing downloads llama.cpp to build, package or install Strata.
+"""OWN-1B: nothing downloads llama.cpp to build, package or install Nostroma.
 
 ggml (third_party/strata-ggml), strata-vision's sources (third_party/strata-llama) and gguf-py (third_party/strata-gguf-py) are vendored at the llama.cpp
 pin. This test reads the release scripts, Docker files, CI workflows and setup.py and fails when one of them fetches llama.cpp again or requires a checkout.
