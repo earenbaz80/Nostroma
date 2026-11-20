@@ -9,8 +9,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from strata_cli.launch import runner as R
-from strata_control import vram_fit
+from nostroma_cli.launch import runner as R
+from nostroma_control import vram_fit
 
 # the log of the 2 x 8 GB start that failed (HYBRID, srv118, 2 x RTX PRO 6000 held to 8 GB free by hogs, 128K): the engine's reason, then the picture reader's line
 SERVE_STOP = [

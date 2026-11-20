@@ -9,7 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from strata_cli.launch import catalog as C, runner as R, settings as S      # noqa: E402
+from nostroma_cli.launch import catalog as C, runner as R, settings as S      # noqa: E402
 
 
 def fake_drm(root: Path, ids: list[str]) -> None:

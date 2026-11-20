@@ -20,8 +20,8 @@ from pathlib import Path
 from unittest import mock
 
 import setup
-from strata_cli.cli import main
-from strata_control import models, profiles
+from nostroma_cli.cli import main
+from nostroma_control import models, profiles
 
 from tests.terminal.test_models import gguf_fixture
 
@@ -154,7 +154,7 @@ class ExistingInstallIsFoundInPlace(unittest.TestCase):
 
     def test_nothing_remembered_means_this_folder_and_no_error(self):
         # nothing found anywhere: the folder a new model would be installed into (the desktop app's, which the Terminal shares), no error
-        from strata_control import discovery
+        from nostroma_control import discovery
         default = (discovery.app_install_dir(), "default")
         setup.settings_path().unlink()
         self.assertEqual(models.resolve_install(), default)

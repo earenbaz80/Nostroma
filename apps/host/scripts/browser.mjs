@@ -19,6 +19,7 @@
 import { existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
+import { envVar } from '../server/env-compat.mjs';
 
 const CACHE_ROOTS = [
   process.env.PLAYWRIGHT_BROWSERS_PATH,
@@ -82,7 +83,7 @@ const INSTALLED = [
 ];
 
 export function findChromium() {
-  const candidates = [process.env.STRATA_CHROME, ...cachedBrowsers(), ...INSTALLED].filter(Boolean);
+  const candidates = [envVar('CHROME'), ...cachedBrowsers(), ...INSTALLED].filter(Boolean);
   return candidates.find((path) => existsSync(path)) ?? null;
 }
 

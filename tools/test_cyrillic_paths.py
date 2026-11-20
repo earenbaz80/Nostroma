@@ -23,7 +23,7 @@ class CyrillicFolder(unittest.TestCase):
         self.tmp.cleanup()
 
     def test_run_config_in_a_cyrillic_folder_is_found_and_read(self):
-        from strata_control import discovery
+        from nostroma_control import discovery
         cfg = self.dir / "strata-q2_0.json"
         cfg.write_text(json.dumps({"exe": "x", "args": ["--native", str(self.dir / "m.gguf")]}, ensure_ascii=False), encoding="utf-8")
         place = discovery.places(explicit=self.dir)[0]

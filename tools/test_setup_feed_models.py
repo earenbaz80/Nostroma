@@ -1,4 +1,4 @@
-"""setup.py and the model tables with models from the signed feed (strata_control/feed_models.py).
+"""setup.py and the model tables with models from the signed feed (nostroma_control/feed_models.py).
 
     python -m pytest tools/test_setup_feed_models.py
 
@@ -28,8 +28,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tools"))
 
-from strata_control import feed as feedmod  # noqa: E402
-from strata_control import feed_models, signing  # noqa: E402
+from nostroma_control import feed as feedmod  # noqa: E402
+from nostroma_control import feed_models, signing  # noqa: E402
 
 REV = "0123456789abcdef0123456789abcdef01234567"
 SHIPPED_POLICY = feed_models.UNAVAILABLE_POLICY
@@ -104,7 +104,7 @@ class Base(unittest.TestCase):
         policy = mock.patch.object(feed_models, "UNAVAILABLE_POLICY", "not_offered")     # the tests below were written for "not_offered"; OwnerRule sets its own
         policy.start()
         self.addCleanup(policy.stop)
-        from strata_control import mac_fit             # the Mac tables are module globals: each test gets them back as they were
+        from nostroma_control import mac_fit             # the Mac tables are module globals: each test gets them back as they were
         saved = (dict(mac_fit.MAC_MODELS), dict(mac_fit.MAC_ABOUT), list(mac_fit.FEED_FAMILIES))
 
         def restore_mac():
@@ -487,11 +487,11 @@ class OwnerRule(Base):
 
 
 class MacTables(Base):
-    """The Mac (Metal) tables take the feed's models too: strata_control/mac_fit.py, metal/setup_mac.py and the app's Mac table."""
+    """The Mac (Metal) tables take the feed's models too: nostroma_control/mac_fit.py, metal/setup_mac.py and the app's Mac table."""
 
     def setUp(self):
         super().setUp()
-        from strata_control import mac_fit
+        from nostroma_control import mac_fit
         self.mf = mac_fit
         saved = (dict(mac_fit.MAC_MODELS), dict(mac_fit.MAC_ABOUT), list(mac_fit.FEED_FAMILIES))
 
@@ -557,7 +557,7 @@ class MacTables(Base):
 
 class TerminalRow(Base):
     def test_the_terminal_names_what_this_engine_does_not_run(self):
-        from strata_cli.launch.catalog import Catalog
+        from nostroma_cli.launch.catalog import Catalog
         feed_models.load(self.signed_feed("f", 7, [flash_next(id="later-one", family="qwen5new")]), trusted={self.key["key_id"]: base64.b64decode(self.key["public"])})
         hw = {"ram_gb": 64.0, "gpus": [], "disk_free_gb": 500.0}
         cat = Catalog(src=ROOT, root=self.root / "inst", hardware=hw)

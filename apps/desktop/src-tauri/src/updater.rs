@@ -21,7 +21,8 @@ use tauri::AppHandle;
 use tauri_plugin_updater::UpdaterExt;
 
 /// Where an endpoint may come from: a local test feed. Only loopback or https.
-const ENDPOINT_ENV: &str = "STRATA_UPDATE_APP_ENDPOINT";
+const ENDPOINT_ENV: &str = "NOSTROMA_UPDATE_APP_ENDPOINT";
+const ENDPOINT_ENV_OLD: &str = "STRATA_UPDATE_APP_ENDPOINT";
 
 /// App updates are off in this build. This checkout is a personal build of the product and publishes no release feed of its
 /// own: the only feed it could name is another product's, and installing from it would replace this app with that one. A
@@ -58,7 +59,7 @@ pub struct Bridge {
 }
 
 fn endpoint_override() -> Option<String> {
-    let url = std::env::var(ENDPOINT_ENV).ok()?;
+    let url = std::env::var(ENDPOINT_ENV).or_else(|_| std::env::var(ENDPOINT_ENV_OLD)).ok()?;
     if url.starts_with("https://") || url.starts_with("http://127.0.0.1:") || url.starts_with("http://localhost:") {
         Some(url)
     } else {
@@ -261,9 +262,11 @@ pub fn start(app: &AppHandle, token: String) -> Option<Bridge> {
 /// Environment for the App Host: where the bridge is, which app version this is.
 #[allow(dead_code)]
 pub fn apply_env(cmd: &mut std::process::Command, app: &AppHandle, bridge: Option<&Bridge>) {
-    cmd.env("STRATA_APP_VERSION", app.package_info().version.to_string());
+    let version = app.package_info().version.to_string();
+    cmd.env("NOSTROMA_APP_VERSION", &version).env("STRATA_APP_VERSION", version);
     if let Some(bridge) = bridge {
-        cmd.env("STRATA_SHELL_BRIDGE", &bridge.url).env("STRATA_SHELL_TOKEN", &bridge.token);
+        cmd.env("NOSTROMA_SHELL_BRIDGE", &bridge.url).env("STRATA_SHELL_BRIDGE", &bridge.url);
+        cmd.env("NOSTROMA_SHELL_TOKEN", &bridge.token).env("STRATA_SHELL_TOKEN", &bridge.token);
     }
 }
 

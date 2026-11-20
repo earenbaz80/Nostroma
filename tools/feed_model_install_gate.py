@@ -182,7 +182,7 @@ def make_synthetic(out: Path, shape: dict, tokenizer_from: str | None) -> None:
 def build_feed(feed: Path, entry: dict, work: Path) -> Path:
     """A models-only feed signed with a throw-away key; returns the file of trusted keys for STRATA_UPDATE_TRUSTED_KEYS."""
     import feed_tool
-    from strata_control import signing
+    from nostroma_control import signing
     key = signing.generate_key()
     models = work / "models"
     models.mkdir()

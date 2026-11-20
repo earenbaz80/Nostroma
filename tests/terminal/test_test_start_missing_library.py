@@ -13,7 +13,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
-from strata_control import updater
+from nostroma_control import updater
 
 LOADER = "./strata: error while loading shared libraries: libatomic.so.1: cannot open shared object file: No such file or directory"
 

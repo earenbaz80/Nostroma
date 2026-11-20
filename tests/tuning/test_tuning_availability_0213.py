@@ -11,8 +11,8 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from unittest import mock
 
-from strata_control import autotune, tune_session
-from strata_control.tune_session import StartFailed, WorkerEngine, WorkerSession, native_failure
+from nostroma_control import autotune, tune_session
+from nostroma_control.tune_session import StartFailed, WorkerEngine, WorkerSession, native_failure
 from tests.tuning.stub_session import FakeClock, StubSession, flag
 from tests.tuning.test_autotune import BASE, make_ctx, speed_with
 
@@ -190,13 +190,13 @@ class RamGuard(unittest.TestCase):
         self.assertEqual(r.message, "1 setting could not be tried: not enough free memory")
         self.assertNotIn("fastest", r.message)
         self.assertEqual(r.values["not_tried"], 1)
-        from strata_cli.launch.runner import tune_words
+        from nostroma_cli.launch.runner import tune_words
         word, sentence = tune_words(r.to_dict())
         self.assertEqual(sentence, "1 setting could not be tried: not enough free memory")
         self.assertNotEqual(word, "already fastest")
 
     def test_the_plural(self):
-        from strata_cli.launch.runner import tune_words
+        from nostroma_cli.launch.runner import tune_words
         self.assertEqual(tune_words({"outcome": "default_confirmed", "not_tried": 2})[1], "2 settings could not be tried: not enough free memory")
 
     def test_nothing_skipped_keeps_the_old_sentences(self):
@@ -204,7 +204,7 @@ class RamGuard(unittest.TestCase):
         r = t.run()
         self.assertEqual(r.not_tried, 0)
         self.assertEqual(r.message, "Your current settings are already the fastest we found. Nothing was changed.")
-        from strata_cli.launch.runner import tune_words
+        from nostroma_cli.launch.runner import tune_words
         self.assertEqual(tune_words(r.to_dict())[0], "already fastest")
 
     def test_the_old_rule_still_holds_when_the_base_had_plenty(self):

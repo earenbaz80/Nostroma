@@ -706,7 +706,7 @@ def _arch_of(md: dict) -> str | None:
 
 def projector_report(f: FileInfo) -> dict:
     try:
-        from strata_control.models import OUR_PROJECTOR_TYPES as ours
+        from nostroma_control.models import OUR_PROJECTOR_TYPES as ours
     except Exception:  # noqa: BLE001 - the report must run from a bare tools/ copy
         ours = {"qwen3vl_merger"}
     md = f.md

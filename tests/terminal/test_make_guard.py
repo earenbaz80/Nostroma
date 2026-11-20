@@ -13,7 +13,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
-from strata_control import engine_component as ec, feed as feedmod, updater
+from nostroma_control import engine_component as ec, feed as feedmod, updater
 
 WIN = "windows-x86_64"
 

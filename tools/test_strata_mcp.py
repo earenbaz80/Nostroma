@@ -650,8 +650,8 @@ class Helpers(unittest.TestCase):
         self.assertEqual(by["UD-Q4_K_XL"]["download_gb"], 22.9)
         self.assertTrue(all(x["images"] and x["engine_min"] == "0.1.45" and x["gpu_options"] is None for x in by.values()))
         self.assertEqual({x["on_this_pc"] for x in by.values()}, {"fits"})
-        # #5715: the app's context estimate reads Qwen3.6's own figures from the row (strata_control/own_path_fit.py); other models have none
-        from strata_control import own_path_fit
+        # #5715: the app's context estimate reads Qwen3.6's own figures from the row (nostroma_control/own_path_fit.py); other models have none
+        from nostroma_control import own_path_fit
         self.assertEqual({m: x["context_fit"] for m, x in by.items()}, {m: own_path_fit.inputs("qwen3.6-35b-a3b", m) for m in by})
         self.assertEqual(by["UD-Q4_K_XL"]["context_fit"]["bytes_per_token"], 47104)
         others = [x for f in s.model_table({"ram_gb": 63.7, "gpus": []}) if f["family"] != "qwen36" for x in f["sizes"]]
@@ -746,12 +746,12 @@ class PhysicalCores(unittest.TestCase):
     """#3417: the hardware report's cpu.cores is the physical cores; the Work profile takes 80% of it for --pool-workers."""
 
     def test_physical_not_logical(self):
-        from strata_control import tune_machine
+        from nostroma_control import tune_machine
         with mock.patch.object(tune_machine, "cpu", return_value={"model": "x", "logical": 16, "physical": 8, "hybrid": False}),                 mock.patch.object(M.os, "cpu_count", return_value=16):
             self.assertEqual(M.physical_cores(), 8)
 
     def test_unknown_falls_back_to_threads(self):
-        from strata_control import tune_machine
+        from nostroma_control import tune_machine
         with mock.patch.object(tune_machine, "cpu", return_value={"physical": None}), mock.patch.object(M.os, "cpu_count", return_value=16):
             self.assertEqual(M.physical_cores(), 16)
         with mock.patch.object(tune_machine, "cpu", side_effect=OSError("no")), mock.patch.object(M.os, "cpu_count", return_value=4):
@@ -759,10 +759,10 @@ class PhysicalCores(unittest.TestCase):
 
 
 class MacCatalog(unittest.TestCase):
-    """A Mac (Apple Silicon): one pool of unified memory, judged by strata_control/mac_fit.py (the rules metal/setup_mac.py uses)."""
+    """A Mac (Apple Silicon): one pool of unified memory, judged by nostroma_control/mac_fit.py (the rules metal/setup_mac.py uses)."""
 
     def hw(self, ram, macos="27.2", chip="Apple M4"):
-        from strata_control import mac_fit
+        from nostroma_control import mac_fit
         s = M.Strata(HERE.parent)
         info = {"chip": chip, "ram_gb": float(ram), "macos": macos, "arm64": True, "clt": "", "perf_cores": 4}
         with mock.patch.object(M.sys, "platform", "darwin"), mock.patch.object(mac_fit, "mac_info", return_value=info):
@@ -822,7 +822,7 @@ class MacCatalog(unittest.TestCase):
         self.assertTrue(all(x["images"] for x in by.values()), "the Mac engine carries the Metal picture reader: pictures are on")
         s, hw = self.hw(128)
         fits = {x["model"]: x["on_this_pc"] for f in s.model_table(hw) for x in f["sizes"]}
-        from strata_control import mac_fit
+        from nostroma_control import mac_fit
         for m, v in fits.items():                       # the 128 GB Mac keeps ~96 GB resident: UD-Q5_K_XL and UD-Q6_K_XL (104 / 115 GB to map) stream, said not refused
             self.assertEqual(v == "fits", not mac_fit.streams(m, 128.0), m)
             self.assertIn(v, ("fits", "may run slower"), m)
@@ -947,7 +947,7 @@ class MixedGraphics(unittest.TestCase):
                        {"vendor": "amd", "index": 1, "name": "AMD Radeon RX 6800 XT", "arch": "gfx1030", "usable": True, "problem": None},
                        {"vendor": "amd", "index": 2, "name": "AMD Radeon RX 9070 XT", "arch": "gfx1201", "usable": True, "problem": None},
                        {"vendor": "nvidia", "index": 0, "name": "NVIDIA GeForce RTX 3060", "arch": "86", "usable": True, "problem": None}]}
-        with mock.patch("strata_control.engine_component.status", lambda: status):
+        with mock.patch("nostroma_control.engine_component.status", lambda: status):
             M.Strata._engine_code(hw)
         by = {g["name"]: g for g in hw["gpus"]}
         self.assertFalse(by["AMD Radeon RX 6800 XT"]["usable"])
@@ -958,11 +958,11 @@ class MixedGraphics(unittest.TestCase):
         # no engine package that lists archs (a source build, no engine yet): nothing is judged
         for other in ({"usable": False}, {"usable": True, "engine": {"backend": "cuda", "archs": ["sm_86"]}}):
             again = {"gpus": [{"vendor": "amd", "index": 1, "name": "x", "arch": "gfx1030", "usable": True, "problem": None}]}
-            with mock.patch("strata_control.engine_component.status", lambda other=other: other):
+            with mock.patch("nostroma_control.engine_component.status", lambda other=other: other):
                 M.Strata._engine_code(again)
             self.assertTrue(again["gpus"][0]["usable"])
 
-    @mock.patch("strata_control.engine_component.status", lambda: {"usable": False})   # not this PC's installed (CUDA) engine
+    @mock.patch("nostroma_control.engine_component.status", lambda: {"usable": False})   # not this PC's installed (CUDA) engine
     def test_windows_lists_an_amd_card_and_not_the_integrated_radeon(self):
         s = M.Strata(HERE.parent)
         S = s.setup_module()
@@ -976,11 +976,11 @@ class MixedGraphics(unittest.TestCase):
             rec = s.recommend({**hw, "ram_gb": 64.0})
             self.assertEqual((rec["backend"], rec["gpu"]["name"]), ("hip", "AMD Radeon RX 9070 XT"))
 
-    @mock.patch("strata_control.engine_component.status", lambda: {"usable": False})
+    @mock.patch("nostroma_control.engine_component.status", lambda: {"usable": False})
     def test_a_windows_strix_halo_reports_the_reserve_setup_writes_for_it(self):
         """QAGUI-STRIX 11-09 (APP-WIN item 3): the app's Load on a unified-memory chip uses the reserve setup would write (setup_config.UMA_WIN_RESERVE_MIB, G16)
         when the run config has none; the report carries it on a Windows gfx1151 only, from the same constant."""
-        from strata_control import setup_config
+        from nostroma_control import setup_config
         s = M.Strata(HERE.parent)
         S = s.setup_module()
         strix = [{"index": 0, "name": "AMD Radeon(TM) 8060S Graphics", "vram_gb": 95.8, "arch": "gfx1151", "driver": "32.0.1", "uma": True,

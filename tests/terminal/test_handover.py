@@ -9,7 +9,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from strata_cli import handover
+from nostroma_cli import handover
 
 ROOT = Path(__file__).resolve().parents[2]
 WINDOWS = os.name == "nt"
@@ -18,7 +18,7 @@ WINDOWS = os.name == "nt"
 def make_control(components: Path, version: str, folder: str | None = None, whole: bool = True, point: bool = True) -> Path:
     folder = folder or version
     d = components / "control" / folder
-    (d / "strata_control").mkdir(parents=True, exist_ok=True)
+    (d / "nostroma_control").mkdir(parents=True, exist_ok=True)
     (d / "VERSION").write_text(version + "\n", encoding="utf-8")
     (d / "strata.py").write_text("print('control', %r)\n" % version, encoding="utf-8")
     if whole:
@@ -112,7 +112,7 @@ class Handover(unittest.TestCase):
 
     def test_a_pointer_cannot_leave_the_control_folder(self):
         outside = Path(self.temp.name) / "etc"
-        (outside / "strata_control").mkdir(parents=True)
+        (outside / "nostroma_control").mkdir(parents=True)
         (outside / "VERSION").write_text("9.0.0", encoding="utf-8")
         (outside / "strata.py").write_text("print('evil')", encoding="utf-8")
         py = handover.bundled_python(outside)
@@ -157,14 +157,14 @@ class Handover(unittest.TestCase):
         done = subprocess.run([sys.executable, str(ROOT / "strata.py"), "--version"], capture_output=True, text=True,
                               env={**os.environ, "STRATA_COMPONENTS_DIR": str(self.comp), "STRATA_HANDOVER": "1"})
         self.assertEqual(done.returncode, 0, done.stderr)
-        self.assertTrue(done.stdout.startswith("strata "), done.stdout)
+        self.assertTrue(done.stdout.startswith("nostroma "), done.stdout)
 
     def test_the_entry_point_falls_back_when_the_target_is_broken(self):
         make_control(self.comp, "99.0.0", whole=False)
         done = subprocess.run([sys.executable, str(ROOT / "strata.py"), "--version"], capture_output=True, text=True,
                               env={**os.environ, "STRATA_COMPONENTS_DIR": str(self.comp), handover.ENV_CHECKOUT: "1"})
         self.assertEqual(done.returncode, 0, done.stderr)
-        self.assertTrue(done.stdout.startswith("strata "), done.stdout)
+        self.assertTrue(done.stdout.startswith("nostroma "), done.stdout)
         self.assertEqual(len(done.stderr.strip().splitlines()), 1, done.stderr)
         self.assertIn("99.0.0", done.stderr)
 

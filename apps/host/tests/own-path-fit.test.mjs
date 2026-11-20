@@ -1,6 +1,6 @@
 /**
  * Qwen3.6-35B-A3B's context against the card (GitHub #5715). The app's estimate and its warning under the context chooser use the catalog's figures from
- * strata_control/own_path_fit.py, the rule setup's context menu uses; the Flash-Next int8 formula said 1.9 GB at 128K where the engine allocates 5.8, so a
+ * nostroma_control/own_path_fit.py, the rule setup's context menu uses; the Flash-Next int8 formula said 1.9 GB at 128K where the engine allocates 5.8, so a
  * 12 GB card got no warning and the engine stopped with a bare out-of-memory line. This test runs the Python rule and the app's on the same cards and needs
  * them to agree.
  */
@@ -42,7 +42,7 @@ test('the design catalog has Qwen3.6\'s conversation memory per token', () => {
 });
 
 test('the app\'s Qwen3.6 context rule is own_path_fit.py\'s on 8 to 32 GB cards', { skip: !python() && 'no python here' }, () => {
-  const script = 'import json,sys; sys.path.insert(0, sys.argv[1]); from strata_control import own_path_fit as F; '
+  const script = 'import json,sys; sys.path.insert(0, sys.argv[1]); from nostroma_control import own_path_fit as F; '
     + 'sizes=json.loads(sys.argv[2]); cards=json.loads(sys.argv[3]); ctxs=json.loads(sys.argv[4]); '
     + 'out={m: {"in": F.inputs("qwen3.6-35b-a3b", m), "fits": [[F.fits(F.inputs("qwen3.6-35b-a3b", m), v, c) for c in ctxs] for v in cards], '
     + '"cache": [round(F.cache_gib(c), 6) for c in ctxs]} for m in sizes}; print(json.dumps(out))';

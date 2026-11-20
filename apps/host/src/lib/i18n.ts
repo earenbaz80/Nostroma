@@ -15,13 +15,13 @@ import df2_en from '../locales/df2-en.json';
 /* The strings of the engine update beside a loaded model (upd-<lang>.json, scripts/make-update-locales.py). */
 import upd_en from '../locales/upd-en.json';
 import r3_en from '../locales/r3-en.json';
-/* The picture files Load fetches by itself (pic-<lang>.json; the host words these, strata_control/pictures.py's sentences are the same). */
+/* The picture files Load fetches by itself (pic-<lang>.json; the host words these, nostroma_control/pictures.py's sentences are the same). */
 import pic_en from '../locales/pic-en.json';
 /* The GUI feedback round 2 strings (gui-<lang>.json, scripts/make-gui-locales.py). */
 import gui_en from '../locales/gui-en.json';
 /* The notice for chats the host could not write (sav-<lang>.json, scripts/make-chatsave-locales.py). */
 import sav_en from '../locales/sav-en.json';
-/* The line shown while a download server has not answered yet (net-<lang>.json, scripts/make-net-locales.py; strata_control/netpolicy.py). */
+/* The line shown while a download server has not answered yet (net-<lang>.json, scripts/make-net-locales.py; nostroma_control/netpolicy.py). */
 import net_en from '../locales/net-en.json';
 
 export const LANGUAGES=[{value:'en',label:'English'},{value:'zh',label:'中文（简体）'},{value:'ja',label:'日本語'},{value:'de',label:'Deutsch'},{value:'fr',label:'Français'},{value:'es',label:'Español'},{value:'ru',label:'Русский'},{value:'pt',label:'Português'},{value:'ko',label:'한국어'}] as const;

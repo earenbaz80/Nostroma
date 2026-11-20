@@ -6,8 +6,8 @@ import unittest
 
 try:
     from rich.console import Console
-    from strata_cli.dashboard import MonitorHistory
-    from strata_cli.detail_dashboard import render_detail_dashboard
+    from nostroma_cli.dashboard import MonitorHistory
+    from nostroma_cli.detail_dashboard import render_detail_dashboard
 except ImportError:
     Console = None
 

@@ -18,10 +18,10 @@ from contextlib import redirect_stdout
 from pathlib import Path
 from unittest import mock
 
-from strata_cli.cli import main
-from strata_cli import bench
-from strata_cli.client import Endpoint
-from strata_control import calibration, journal, management, owner_transport, procs, profiles, recipes, runtime
+from nostroma_cli.cli import main
+from nostroma_cli import bench
+from nostroma_cli.client import Endpoint
+from nostroma_control import calibration, journal, management, owner_transport, procs, profiles, recipes, runtime
 
 
 WINDOWS = os.name == "nt"
@@ -106,7 +106,7 @@ class RuntimeTests(unittest.TestCase):
         return code, json.loads(output.getvalue())
 
     def test_component_inspection_bridge_is_read_only_and_reports_missing_files(self):
-        command = [sys.executable, "-m", "strata_control.management"]
+        command = [sys.executable, "-m", "nostroma_control.management"]
         root = Path(__file__).resolve().parents[2]
 
         def send(live):
@@ -138,7 +138,7 @@ class RuntimeTests(unittest.TestCase):
         self.assertEqual(journal.list_runs("local"), [])
 
     def test_profile_change_bridge_reviews_revision_source_and_typed_overrides(self):
-        command = [sys.executable, "-m", "strata_control.management"]
+        command = [sys.executable, "-m", "nostroma_control.management"]
         root = Path(__file__).resolve().parents[2]
 
         def send(action, params):
@@ -231,7 +231,7 @@ class RuntimeTests(unittest.TestCase):
         self.assertNotEqual(restart_plan["candidate_profile_revision"], running_revision)
 
     def test_local_management_bridge_and_cli_share_owner_and_journal(self):
-        command = [sys.executable, "-m", "strata_control.management"]
+        command = [sys.executable, "-m", "nostroma_control.management"]
         root = Path(__file__).resolve().parents[2]
 
         def send(action, params):
@@ -388,7 +388,7 @@ class RuntimeTests(unittest.TestCase):
         self.assertEqual(runtime.status("local")["state"], "stopped")
 
     def test_local_management_bridge_rejects_ambiguous_requests(self):
-        command = [sys.executable, "-m", "strata_control.management"]
+        command = [sys.executable, "-m", "nostroma_control.management"]
         root = Path(__file__).resolve().parents[2]
         invalid = (
             '{"schema_version":1,"action":"runtime.status","action":"runtime.start",'
@@ -411,7 +411,7 @@ class RuntimeTests(unittest.TestCase):
     def test_owner_host_refuses_source_changed_after_start_review(self):
         preview = management.runtime_action("start", "local", plan=True)["plan"]
         self.config.write_bytes(self.config.read_bytes() + b" ")
-        host = subprocess.Popen([sys.executable, "-m", "strata_control.runtime", "--host", "local",
+        host = subprocess.Popen([sys.executable, "-m", "nostroma_control.runtime", "--host", "local",
                                  "--shutdown-timeout", "2", "--startup-wait", "10",
                                  "--expected-profile-revision", preview["launch"]["profile_revision"],
                                  "--expected-source-sha256", preview["source_sha256"]],
@@ -699,7 +699,7 @@ class RuntimeTests(unittest.TestCase):
         snapshot = Path(result["rollback_source_config"])
         self.assertEqual(snapshot.parent, self.root / "runtime")
         if WINDOWS:
-            from strata_control import private_files
+            from nostroma_control import private_files
             self.assertTrue(private_files.is_unshared(snapshot))      # NTFS has no mode bits: the ACL is the promise
         else:
             self.assertEqual(snapshot.stat().st_mode & 0o077, 0)
@@ -853,14 +853,14 @@ class RuntimeTests(unittest.TestCase):
         cfg = json.loads(self.config.read_text())
         cfg.update(host="0.0.0.0", api_key=["first", "second"])
         self.config.write_text(json.dumps(cfg))
-        from strata_cli.cli import _launch_plan
+        from nostroma_cli.cli import _launch_plan
         plan, _ = _launch_plan("local")
         self.assertEqual(plan["effective"]["host"], "0.0.0.0")
         self.assertNotIn("first", json.dumps(plan))
 
     def test_remote_bind_without_a_key_is_planned_not_refused(self):
         # owner decision 2026-10-20: a key is recommended on a network, never required
-        from strata_cli.cli import _launch_plan
+        from nostroma_cli.cli import _launch_plan
         for key in (None, "none"):
             cfg = json.loads(self.config.read_text())
             cfg["host"] = "0.0.0.0"
@@ -1075,7 +1075,7 @@ class RuntimeTests(unittest.TestCase):
     def _slow_plan_owner(self, delay):
         """An owner host in another process whose plan takes `delay` seconds (the slow imports, hardware questions and virus scans of #5177)."""
         code = ("import time\n"
-                "from strata_control import runtime\n"
+                "from nostroma_control import runtime\n"
                 "original = runtime.Host._plan\n"
                 "def slow(self):\n"
                 f"    time.sleep({delay})\n"
@@ -1410,7 +1410,7 @@ class RuntimeTests(unittest.TestCase):
 
     @unittest.skipUnless(WINDOWS, "ACLs stand in for mode 0700 on Windows")
     def test_runtime_directory_is_owner_only_and_a_shared_one_is_refused(self):
-        from strata_control import private_files
+        from nostroma_control import private_files
         directory = runtime.runtime_dir()
         self.assertTrue(private_files.is_private(directory))
         shared = Path(self.temp.name) / "shared-runtime"
@@ -1512,7 +1512,7 @@ class StartWaitLimit(unittest.TestCase):
         self.addCleanup(env.stop)
 
     def test_a_start_may_wait_up_to_thirty_minutes_for_a_big_model(self):                    # #3949
-        from strata_control import runtime as rt, profiles as pr
+        from nostroma_control import runtime as rt, profiles as pr
         self.assertEqual(rt.MAX_START_WAIT, 1800)
         with self.assertRaisesRegex(pr.ProfileError, "start wait must be 0..1800"):
             rt.start("x", wait=1801)
@@ -1526,7 +1526,7 @@ class StartWaitLimit(unittest.TestCase):
         # ceiling was raised (#3949), a long start died at each of the first two with
         # "start wait must be finite seconds in 0..600" / "direct runtime intent has an invalid timeout". So this walks the
         # whole way with only the engine itself faked: any layer that still carries the old 600 s shows up here.
-        from strata_control import journal as jn, management as mg, profiles as pr, runtime as rt
+        from nostroma_control import journal as jn, management as mg, profiles as pr, runtime as rt
         revision = "0123456789abcdef"
         for wait in (300, 600, 601, rt.MAX_START_WAIT):
             reached = {}
@@ -1540,7 +1540,7 @@ class StartWaitLimit(unittest.TestCase):
                                  f"a start asked for {wait} s did not reach runtime.start with it")
 
     def test_a_start_wait_above_the_runtime_ceiling_is_named_by_the_runtime(self):             # #3459 #4191
-        from strata_control import management as mg, profiles as pr, runtime as rt
+        from nostroma_control import management as mg, profiles as pr, runtime as rt
         revision = "0123456789abcdef"
         with mock.patch.object(rt, "_name", lambda name: name), \
                 mock.patch.object(mg.profiles, "load", lambda name: ("src", revision)):
@@ -1553,7 +1553,7 @@ class StartWaitLimit(unittest.TestCase):
     def test_the_operation_record_takes_the_runtimes_own_start_ceiling(self):
         # The record is written before the start runs, so a ceiling kept here would stop a long wait no matter what the
         # two validators above allow. Waits that are not a start or a restart keep their own 600 s.
-        from strata_control import journal as jn, profiles as pr, runtime as rt
+        from nostroma_control import journal as jn, profiles as pr, runtime as rt
         for kind, intent, allowed in (
                 ("runtime.start", {"wait_s": rt.MAX_START_WAIT, "shutdown_timeout_s": 15}, True),
                 ("runtime.start", {"wait_s": rt.MAX_START_WAIT + 1, "shutdown_timeout_s": 15}, False),

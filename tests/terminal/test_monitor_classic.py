@@ -10,7 +10,7 @@ from unittest import mock
 
 from rich.console import Console
 
-from strata_cli import consoleinfo, monitor, overview
+from nostroma_cli import consoleinfo, monitor, overview
 from tests.terminal.test_overview import GIB, metrics
 
 TIP = "For the full look, use Windows Terminal (built into Windows 11)"
@@ -221,7 +221,7 @@ class FooterAndViews(unittest.TestCase):
             self.assertIn("2 CPUs", shown, classic)
 
     def test_view_5_shows_the_whole_card_name(self):
-        from strata_cli.render import _device
+        from nostroma_cli.render import _device
         row = {"index": 1, "name": "NVIDIA GeForce RTX 3090", "mem_used": 21.4 * GIB, "mem_total": 24 * GIB, "util": 71, "temp": 58, "power": 201}
         line = _device(row, 100)
         self.assertIn("RTX 3090", line)

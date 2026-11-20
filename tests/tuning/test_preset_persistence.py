@@ -46,7 +46,7 @@ class PersistenceTest(unittest.TestCase):
         sys.path.insert(0, str(ROOT))
         os.environ["STRATA_PRESET_DIR"] = str(t / "presets")
         self.addCleanup(lambda: os.environ.pop("STRATA_PRESET_DIR", None))
-        from strata_control import presets
+        from nostroma_control import presets
         self.presets = presets
         ident = presets.current_identity(self.cfg, exe=self.cfg["exe"])
         result = {"outcome": "improved", "seconds": 900, "settings": {"args": {"--kv-resident": 65536}, "env": {}, "per_request": {}},
@@ -110,7 +110,7 @@ class PersistenceTest(unittest.TestCase):
 
 class OutcomeCodesTest(unittest.TestCase):
     def test_codes_and_values(self):
-        from strata_control import autotune
+        from nostroma_control import autotune
         mk = autotune.TuneResult
         r = mk(outcome="improved", gain_pct=7.2, seconds=1200, waited_s=120, pairs=5, faster_pairs=4)
         r.base, r.chosen = {"decode_tok_s": 50.0}, {"decode_tok_s": 53.6}

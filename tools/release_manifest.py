@@ -5,7 +5,7 @@
     python tools/release_manifest.py --write     write the manifest's versions into the current pages
 
 What it covers (standard library only, no network):
-  * the manifest against the code: app/Terminal version (strata_cli/__init__.py, apps/host and apps/desktop package
+  * the manifest against the code: app/Terminal version (nostroma_cli/__init__.py, apps/host and apps/desktop package
     files, Cargo.toml) and Control/engine version (the CMake project version);
   * the three installer file names in the manifest's asset list;
   * every installer file name (Strata-<version>-windows-x64-setup.exe, ...-linux-x86_64.AppImage, ...-macos-arm64.dmg)
@@ -76,7 +76,7 @@ def code_versions():
     cmake = first("CMakeLists.txt", r"^project\(strata VERSION ([0-9.]+) ")
     return {
         # the Terminal says the product version, or (a Control-only hotfix such as 0.2.13.1) the manifest's optional terminal_version
-        "strata_cli/__init__.py": (first("strata_cli/__init__.py", r'^PRODUCT_VERSION = "([^"]+)"'), "terminal_version"),
+        "nostroma_cli/__init__.py": (first("nostroma_cli/__init__.py", r'^PRODUCT_VERSION = "([^"]+)"'), "terminal_version"),
         "apps/host/package.json": (json.loads(read("apps/host/package.json")).get("version"), "product_version"),
         "apps/desktop/package.json": (json.loads(read("apps/desktop/package.json")).get("version"), "product_version"),
         "apps/desktop/src-tauri/Cargo.toml": (first("apps/desktop/src-tauri/Cargo.toml", r'^version = "([^"]+)"'), "product_version"),

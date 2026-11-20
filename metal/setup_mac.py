@@ -32,8 +32,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 import setup as S  # noqa: E402
-from strata_control import mac_fit as _fit  # noqa: E402
-from strata_control.mac_fit import (  # noqa: E402,F401  (re-exported: the tests and callers use these names here)
+from nostroma_control import mac_fit as _fit  # noqa: E402
+from nostroma_control.mac_fit import (  # noqa: E402,F401  (re-exported: the tests and callers use these names here)
     BIG_MAC_GB, CONTEXTS, GIB_GB, GPU_SHARE, MAC_ABOUT, MAC_MODELS, MIN_MACOS, OVERHEAD_GB, RECOMMENDED,
     RESIDENT_LEAVE_SHARE, STREAM_COPY_GAIN, STREAM_MEASURED, STREAM_MTP_FROM_GB, STREAM_SPEC, TESTED_CONTEXT,
     _sysctl, gpu_budget_gb, mac_info, mac_problems, macos_tuple, model_need_gb, model_note, recommend_context,
@@ -155,7 +155,7 @@ def build_engine(llama: Path, jobs: int | None = None) -> Path:
 # ------------------------------------------------------------------------------------------------ the config
 def engine_args(pack: Path, shards: list, rt: Path, ctx: int, stream: bool = False, ram_gb: float = 0.0,
                 model: str = "") -> list[str]:
-    """The Metal defaults (strata_control/mac_fit.py), with this checkout's expert profile."""
+    """The Metal defaults (nostroma_control/mac_fit.py), with this checkout's expert profile."""
     return _fit.engine_args(pack, shards, rt, ctx, stream, ram_gb, ROOT / "data" / "expert-profile.bin", model)
 
 
@@ -333,10 +333,10 @@ def start(cfg_path: Path, port: int | None, open_browser: bool = True) -> int:
 
 # ------------------------------------------------------------------------------------------------ the DFlash2 drafter
 def fetch_drafter(model_name: str, data: Path) -> Path | None:
-    """The DFlash2 drafter of a set whose Mac default is DFlash2 (strata_control/drafting.py SET_DEFAULTS: UD-Q4_K_XL and UD-IQ4_XS-v31): the tuned one (0.34 GB), else the stock one
+    """The DFlash2 drafter of a set whose Mac default is DFlash2 (nostroma_control/drafting.py SET_DEFAULTS: UD-Q4_K_XL and UD-IQ4_XS-v31): the tuned one (0.34 GB), else the stock one
     (1.2 GB), through the normal download path (resumable, the pinned size and SHA-256). Offline, or an address that does not answer: nothing is said and the model keeps the MTP
     (owner, strata-offline-users). A fault that is the person's to know (a file that failed its safety check) is one plain line. Never stops the setup. None when it is not here."""
-    from strata_control import acquisition, drafting, drafting_fetch
+    from nostroma_control import acquisition, drafting, drafting_fetch
     if drafting.choice_of("auto", model_name=model_name, backend="metal") != "dflash2":
         return None
     said = []
@@ -448,9 +448,9 @@ def main(argv=None) -> int:
     for n in model_note(model, info["ram_gb"]):
         S.warn(n)
     vision = a.vision or ("yes" if S.ask("Should the model also read images? (the image encoder, ~1 GB more)",
-                                          ["y", "n"], "y", a.yes) == "y" else "no")   # on by default (strata_control/vision_reader.py)
+                                          ["y", "n"], "y", a.yes) == "y" else "no")   # on by default (nostroma_control/vision_reader.py)
     if vision == "cpu":
-        from strata_control import vision_reader as VR
+        from nostroma_control import vision_reader as VR
         S.warn(VR.MAC_CPU_NOTE)
     vision_gpu = vision != "cpu"
     vision = "no" if vision == "no" else "yes"

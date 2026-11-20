@@ -6,8 +6,8 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_cli.cli import main
-from strata_control import paths, runtime
+from nostroma_cli.cli import main
+from nostroma_control import paths, runtime
 
 
 class StatePaths(unittest.TestCase):

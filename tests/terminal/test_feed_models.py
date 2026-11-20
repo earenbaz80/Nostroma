@@ -1,4 +1,4 @@
-"""The signed feed's optional ``models`` member (strata_control/feed.py FeedModel, strata_control/feed_models.py, packaging/feed_tool.py --models).
+"""The signed feed's optional ``models`` member (nostroma_control/feed.py FeedModel, nostroma_control/feed_models.py, packaging/feed_tool.py --models).
 
 What these tests pin:
   * a feed without the member parses to exactly what it did before (no models, no dropped lines, the other members equal), and writes nothing;
@@ -7,7 +7,7 @@ What these tests pin:
   * the list survives offline: the last verified feed's list comes back from the cache, its signature checked again;
   * feed_tool build-feed --models / verify-feed.
 
-Only a throwaway key made here is used (strata_control.signing.generate_key); no release key, no network (a folder is the feed).
+Only a throwaway key made here is used (nostroma_control.signing.generate_key); no release key, no network (a folder is the feed).
 """
 
 from __future__ import annotations
@@ -29,8 +29,8 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "packaging"))
 
 import feed_tool  # noqa: E402
-from strata_control import feed as feedmod  # noqa: E402
-from strata_control import feed_models, signing  # noqa: E402
+from nostroma_control import feed as feedmod  # noqa: E402
+from nostroma_control import feed_models, signing  # noqa: E402
 
 import base64  # noqa: E402
 
@@ -168,7 +168,7 @@ class OlderControls(unittest.TestCase):
     def test_control_0211_ignores_the_member(self):
         """The feed.py of the released Control 0.2.11 (git tag v0.2.11) reads the document by member name: a feed with models parses to what the same feed
         without them does. Skipped where the tag is not in the clone."""
-        shown = subprocess.run(["git", "-C", str(ROOT), "show", "v0.2.11:strata_control/feed.py"], capture_output=True)
+        shown = subprocess.run(["git", "-C", str(ROOT), "show", "v0.2.11:nostroma_control/feed.py"], capture_output=True)
         if shown.returncode != 0:
             self.skipTest("the v0.2.11 tag is not in this clone")
         with tempfile.TemporaryDirectory() as tmp:
@@ -279,7 +279,7 @@ class UpdaterKeepsTheList(Signed):
     """`strata update` / the app's check reads the feed through updater.open_feed; the model list is kept there for the offline PC."""
 
     def ctx(self, source: str):
-        from strata_control import updater
+        from nostroma_control import updater
         hardware = {"platform": "linux-x86_64", "backend": "cpu", "cuda_archs": [], "gfx": []}
         return updater, updater.Context(components=self.components, source=source, trusted=self.trusted, hardware=hardware, environ={})
 
@@ -303,7 +303,7 @@ class UpdaterKeepsTheList(Signed):
 
 def mock_acquire():
     from unittest import mock
-    return mock.patch("strata_control.updater.require_acquisition", lambda what: None)
+    return mock.patch("nostroma_control.updater.require_acquisition", lambda what: None)
 
 
 class FeedTool(unittest.TestCase):

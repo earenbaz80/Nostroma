@@ -201,7 +201,7 @@ def shared_arena_plan(cfg: dict, n_replicas: int, *, shm: str = "/dev/shm", plat
             _MEMFDS[path] = fd
             warn = ""
             try:                 # the arena once plus about 7 GB of private RAM per engine (measured); a warning, never a refusal
-                from strata_control import replica_profile as _rp
+                from nostroma_control import replica_profile as _rp
                 q = _rp.quant_of(cfg)
                 if q:
                     need = _rp.ARENA_GB[q] + n_replicas * _rp.PER_REPLICA_GB

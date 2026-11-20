@@ -24,8 +24,8 @@ from pathlib import Path
 from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from strata_cli import update_cmd  # noqa: E402
-from strata_control import engine_component as ec, engine_update, profiles, runtime, updater  # noqa: E402
+from nostroma_cli import update_cmd  # noqa: E402
+from nostroma_control import engine_component as ec, engine_update, profiles, runtime, updater  # noqa: E402
 from tests.terminal import update_fixture as fx  # noqa: E402
 from tests.terminal.test_updater import PLATFORM, UpdaterCase  # noqa: E402
 
@@ -372,9 +372,9 @@ class WithoutAGate(ModelCase):
 
     def bundle(self):
         folder = self.root / "control-bundle"
-        (folder / "strata_control").mkdir(parents=True)
+        (folder / "nostroma_control").mkdir(parents=True)
         (folder / "strata.py").write_text("print('strata 0.1.46 (python stub)')\n")
-        (folder / "strata_control" / "__init__.py").write_text("")
+        (folder / "nostroma_control" / "__init__.py").write_text("")
         from feed_tool import build_feed, pack_control
         (self.release / "control").mkdir()
         pack_control(folder, self.release / "control", version="0.1.46", platform=PLATFORM)

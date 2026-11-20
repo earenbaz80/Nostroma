@@ -396,7 +396,7 @@ bool Dflash2Drafter::bind(const WeightTable& wt, const NativeHead* head, const s
     if (!bind_raw(embed, hw, head->type(), head_rows, vocab, err)) return false;
     std::fprintf(stderr, "strata dflash2: %lld-token draft head (%.1f MiB%s), drafter %.0f MiB of VRAM (%s weights)\n", (long long) n_dvocab_,
                  (double) (n_dvocab_ * row_bytes) / 1048576.0, dhead_shared_ ? ", the MTP drafter's copy, no second one" : "", (double) vram_ / 1048576.0, q4_ ? "Q4_0" : "Q8_0");
-    // the pack's selector codebooks as Q4_0 rows (tools/dflash2_pack.py --q4_0-selector; strata_control/drafting.py reads this text from the program to know it can use that pack)
+    // the pack's selector codebooks as Q4_0 rows (tools/dflash2_pack.py --q4_0-selector; nostroma_control/drafting.py reads this text from the program to know it can use that pack)
     if (find("candidate_selector.predecessor_codebook").dtype == "q4_0")
         std::fprintf(stderr, "strata dflash2: selector codebooks: Q4_0 rows (about 174 MiB less than bf16)\n");
     return true;

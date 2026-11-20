@@ -9,8 +9,8 @@ import unittest
 
 from rich.console import Console
 
-from strata_cli import overview
-from strata_cli.monitor import MonitorApp
+from nostroma_cli import overview
+from nostroma_cli.monitor import MonitorApp
 
 GIB = 2 ** 30
 
@@ -214,7 +214,7 @@ class InTheMonitor(unittest.TestCase):
     def test_an_older_server_without_metrics_keeps_the_earlier_overview(self):
         class Old(Source):
             def get(self, path):
-                from strata_cli.client import ClientError
+                from nostroma_cli.client import ClientError
                 raise ClientError("not found", http_status=404)
 
         async def go():

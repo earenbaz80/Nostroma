@@ -16,8 +16,8 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_control import acquisition, engine_component as ec, feed as feedmod, preset_marks, signing, updater
-from strata_control.targets import host_platform
+from nostroma_control import acquisition, engine_component as ec, feed as feedmod, preset_marks, signing, updater
+from nostroma_control.targets import host_platform
 from tests.terminal import update_fixture as fx
 
 PLATFORM = host_platform()
@@ -82,7 +82,7 @@ class UpdaterCase(unittest.TestCase):
         self.addCleanup(self._stop_runtime)
 
     def _stop_runtime(self):
-        from strata_control import runtime
+        from nostroma_control import runtime
         try:
             if runtime._read_state("updtest") is not None:
                 runtime.stop("updtest", timeout=10)
@@ -421,9 +421,9 @@ class EngineUpdate(UpdaterCase):
     def test_a_started_engine_check_does_not_import_the_updater(self):
         """The start path (engine_component, runtime) must not reach the update machinery or the network code."""
         import subprocess
-        code = ("import sys; import strata_control.engine_component, strata_control.runtime, strata_control.acquisition; "
-                "import strata_cli.cli as c; c.parser(); "
-                "print(sorted(m for m in sys.modules if m in ('strata_control.updater','strata_control.transfer','strata_control.feed')))")
+        code = ("import sys; import nostroma_control.engine_component, nostroma_control.runtime, nostroma_control.acquisition; "
+                "import nostroma_cli.cli as c; c.parser(); "
+                "print(sorted(m for m in sys.modules if m in ('nostroma_control.updater','nostroma_control.transfer','nostroma_control.feed')))")
         done = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, cwd=str(fx.ROOT))
         self.assertEqual(done.returncode, 0, done.stderr)
         self.assertEqual(done.stdout.strip(), "[]")
@@ -479,7 +479,7 @@ class LazyModel(UpdaterCase):
     """A server that is "ready" with its model unloaded has not generated anything yet; the test start forces the load and the probe."""
 
     def run_default(self, started, verified, tail=None):
-        from strata_control import runtime
+        from nostroma_control import runtime
         self.install_current()
         folder = fx.build_package(self.root / "lazy", "0.1.46", key=self.key)
         stage = self.root / "stage"
@@ -538,7 +538,7 @@ class LazyModel(UpdaterCase):
                 kw["on_status"](status)
             return {"ok": True, "state": "ready", "generation_ready": True}
 
-        from strata_control import runtime
+        from nostroma_control import runtime
         with mock.patch.object(runtime, "start", side_effect=fake_start), mock.patch.object(runtime, "stop", return_value={}):
             updater.default_test_start(stage, component, ctx)
         lines = [e["message"] for e in events if e.get("phase") == "test"]
@@ -596,9 +596,9 @@ class OtherComponents(UpdaterCase):
 
     def test_control_is_staged_run_once_and_pointed_at(self):
         bundle = self.root / "control-bundle"
-        (bundle / "strata_control").mkdir(parents=True)
+        (bundle / "nostroma_control").mkdir(parents=True)
         (bundle / "strata.py").write_text("print('strata 0.1.46 (python stub)')\n")
-        (bundle / "strata_control" / "__init__.py").write_text("")
+        (bundle / "nostroma_control" / "__init__.py").write_text("")
         from feed_tool import build_feed, pack_control
         (self.release / "control").mkdir()
         pack_control(bundle, self.release / "control", version="0.1.46", platform=PLATFORM)
@@ -689,7 +689,7 @@ class Cli(UpdaterCase):
     def cli(self, *args):
         import io
         from contextlib import redirect_stderr, redirect_stdout
-        from strata_cli.cli import main
+        from nostroma_cli.cli import main
         out, err = io.StringIO(), io.StringIO()
         with redirect_stdout(out), redirect_stderr(err):
             code = main(list(args))
@@ -838,7 +838,7 @@ class FailedStartRecords(LazyModel):
         return start
 
     def test_the_runtime_records_of_a_failed_start_are_kept_without_tokens_or_keys(self):
-        from strata_control import runtime
+        from nostroma_control import runtime
         self.install_current()
         folder = fx.build_package(self.root / "lazy", "0.1.46", key=self.key)
         stage = self.root / "stage"
@@ -885,7 +885,7 @@ class GoneVersionPathsInTheTestStart(UpdaterCase):
     is resolved to the current Control before the test start runs with the stage as its components folder (which has no control folder)."""
 
     def test_the_test_start_gets_the_current_control_paths(self):
-        from strata_control import profiles, runtime
+        from nostroma_control import profiles, runtime
         self.install_current()
         current = self.components / "control" / "0.1.60"
         (current / "data").mkdir(parents=True)

@@ -9,11 +9,11 @@ import pytest as _pytest
 
 @_pytest.fixture(autouse=True)
 def _fresh_host_memory():
-    """The network rule remembers, per process, a host that did not answer (strata_control/netpolicy.py HOSTS). A test run is one process: each
+    """The network rule remembers, per process, a host that did not answer (nostroma_control/netpolicy.py HOSTS). A test run is one process: each
     test starts with an empty memory, so one test's dead fake server does not make the next test's request "fail a moment ago"."""
     def forget():
         try:
-            from strata_control import netpolicy
+            from nostroma_control import netpolicy
             netpolicy.HOSTS.forget()
         except ImportError:
             pass
@@ -23,11 +23,11 @@ def _fresh_host_memory():
 
 @_pytest.fixture(autouse=True)
 def _no_language_of_the_box():
-    """The draft vocabulary follows the computer's languages (strata_control/drafting.py auto_vocab): a test that starts the drafter must not depend on the language, regional format or keyboards of the
+    """The draft vocabulary follows the computer's languages (nostroma_control/drafting.py auto_vocab): a test that starts the drafter must not depend on the language, regional format or keyboards of the
     box it runs on (a Windows PC with a Slovenian keyboard layout, a Russian runner). Every test starts on a computer that says no language; the tests about the rule give their own signals."""
     try:
         from unittest import mock
-        from strata_control import drafting
+        from nostroma_control import drafting
     except ImportError:
         yield
         return

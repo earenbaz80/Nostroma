@@ -23,6 +23,7 @@ import { standardPreset } from './preset.mjs';
 import { validMcpName } from '../mcp-names.mjs';
 import { BUDGETS, isPrivateHost } from './llm-shape.mjs';
 import { DDG_PROVIDER_ID } from '../web-search-ddg.mjs';
+import { envVar } from '../env-compat.mjs';
 
 const PROTOCOL = { 'openai-chat': 'openai-completions', 'openai-responses': 'openai-responses', anthropic: 'anthropic-messages' };
 
@@ -299,7 +300,7 @@ export function buildProfile({ local = [], connections = [], gate = true, tools 
   const own = (kind, on) => on && tools.toolFile ? [{ id: `mcp-strata-${kind}`, name: '@deepseek-ai/dsh-mcp-client', config: { serverName: `strata-${kind}`, transport: 'stdio', command: process.execPath, args: [CUSTOM_TOOLS_SCRIPT, kind, tools.toolFile] } }] : [];
   // The browser: Playwright's tool server on the person's own Chrome or Edge, in a separate empty profile (what the Harness's own browser provider does). Every action asks in Manual.
   const browserRows = tools.browserEnabled && tools.browserPath && tools.browserCli
-    ? [{ id: 'mcp-browser', name: '@deepseek-ai/dsh-mcp-client', config: { serverName: 'browser', transport: 'stdio', command: process.execPath, args: [tools.browserCli, '--browser', 'chromium', '--isolated', ...(process.env.STRATA_BROWSER_HEADLESS === '1' ? ['--headless'] : []), '--executable-path', tools.browserPath] } }] : [];
+    ? [{ id: 'mcp-browser', name: '@deepseek-ai/dsh-mcp-client', config: { serverName: 'browser', transport: 'stdio', command: process.execPath, args: [tools.browserCli, '--browser', 'chromium', '--isolated', ...(envVar('BROWSER_HEADLESS') === '1' ? ['--headless'] : []), '--executable-path', tools.browserPath] } }] : [];
   const ownRows = [...own('instructions', tools.hasInstructionTools), ...own('commands', tools.hasCommandTools), ...browserRows];
   // Web search: DuckDuckGo with no key unless the person chose a keyed service AND saved its key (then that one; never a half-set-up one).
   const searchOn = !tools.off.has('search');
@@ -344,7 +345,7 @@ export function buildProfile({ local = [], connections = [], gate = true, tools 
   const signature = createHash('sha256').update(patch).update(JSON.stringify(Object.entries(env).sort())).digest('hex').slice(0, 16);
   // What the agent is offered (tool groups, web search, tool servers, the person's own tools) decides whether a running agent must be
   // restarted for the next message; the routes are compared separately (a changed context size alone does not restart it).
-  const toolsSignature = createHash('sha256').update(JSON.stringify([mcp, ownRows, webRows, entries.find(e => e.id === 'preset-standard'), env.STRATA_SEARCH_KEY ?? '', mcpEnv])).digest('hex').slice(0, 16);
+  const toolsSignature = createHash('sha256').update(JSON.stringify([mcp, ownRows, webRows, entries.find(e => e.id === 'preset-standard'), (env.NOSTROMA_SEARCH_KEY ?? env.STRATA_SEARCH_KEY) ?? '', mcpEnv])).digest('hex').slice(0, 16);
   return { patch, env, routes, defaultRoute, signature, toolsSignature, shapeTargets, mcpSkipped };
 }
 

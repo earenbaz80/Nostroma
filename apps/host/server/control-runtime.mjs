@@ -2,7 +2,7 @@
  * The App Host's bridge to Strata Control, the Python part of the product.
  *
  * In the installed app Control ships as a component next to the host (<install>/control): a pinned CPython with
- * hash-locked wheels, strata_control, strata_cli and the API server. The host never uses the user's Python, never runs
+ * hash-locked wheels, nostroma_control, nostroma_cli and the API server. The host never uses the user's Python, never runs
  * pip, git or a compiler, and never downloads anything to start a model: it asks Control, and Control starts the engine
  * under its owner runtime (loopback TCP + 256-bit token on Windows, a private socket elsewhere; a Job Object that ends
  * the server with its host; leases that stop a second owner).
@@ -16,6 +16,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
+import { childEnv } from './env-compat.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -23,9 +24,9 @@ export function bundledPython(dir, platform = process.platform) {
   return platform === 'win32' ? join(dir, 'python', 'python.exe') : join(dir, 'python', 'bin', 'python3');
 }
 
-/** The per-user component folder, the same rule as strata_control/engine_component.py components_dir(). */
+/** The per-user component folder, the same rule as nostroma_control/engine_component.py components_dir(). */
 export function componentsDirectory({ env = process.env, platform = process.platform, home = homedir() } = {}) {
-  if (env.STRATA_COMPONENTS_DIR) return env.STRATA_COMPONENTS_DIR;
+  if ((env.NOSTROMA_COMPONENTS_DIR ?? env.STRATA_COMPONENTS_DIR)) return (env.NOSTROMA_COMPONENTS_DIR ?? env.STRATA_COMPONENTS_DIR);
   if (platform === 'win32') return join(env.LOCALAPPDATA || join(home, 'AppData', 'Local'), 'Strata', 'components');
   return join(env.XDG_DATA_HOME || join(home, '.local', 'share'), 'strata', 'components');
 }
@@ -58,12 +59,12 @@ function newer(a, b) {
  */
 export function findControl({ env = process.env, platform = process.platform, exists = existsSync, hostDir = resolve(HERE, '..'), components = null } = {}) {
   const updated = updatedControlDirectory({ env, platform, components });
-  const candidates = [{ dir: env.STRATA_CONTROL_DIR }, { dir: join(hostDir, '..', 'control') }, ...(updated ? [updated] : [])]
+  const candidates = [{ dir: (env.NOSTROMA_CONTROL_DIR ?? env.STRATA_CONTROL_DIR) }, { dir: join(hostDir, '..', 'control') }, ...(updated ? [updated] : [])]
     .filter(c => c.dir).map(c => ({ ...c, dir: resolve(c.dir) }));
   let best = null;
   for (const candidate of candidates) {
     const python = bundledPython(candidate.dir, platform);
-    if (!(exists(python) && exists(join(candidate.dir, 'strata.py')) && exists(join(candidate.dir, 'strata_control')))) continue;
+    if (!(exists(python) && exists(join(candidate.dir, 'strata.py')) && exists(join(candidate.dir, 'nostroma_control')))) continue;
     let bundle = null;
     try { bundle = JSON.parse(readFileSync(join(candidate.dir, 'BUNDLE.json'), 'utf8').replace(/^﻿/, '')); } catch { /* optional */ }
     const found = { dir: candidate.dir, python, cli: join(candidate.dir, 'strata.py'), bundle, key: versionKey(bundle?.version ?? candidate.version) };
@@ -88,19 +89,19 @@ export function sourceServerEnvironment(env = process.env) {
 /** The environment Control runs in: nothing from the user's Python, and acquiring forbidden. */
 export function controlEnvironment(control, { env = process.env, components = componentsDirectory({ env }), acquire = false } = {}) {
   const next = { ...env };
-  for (const key of ['PYTHONHOME', 'PYTHONPATH', 'PYTHONSTARTUP', 'VIRTUAL_ENV', 'STRATA_PYTHON', 'STRATA_NATIVE_PYTHON', 'STRATA_API_KEY']) delete next[key];
+  for (const key of ['PYTHONHOME', 'PYTHONPATH', 'PYTHONSTARTUP', 'VIRTUAL_ENV', 'STRATA_PYTHON', 'NOSTROMA_PYTHON', 'STRATA_NATIVE_PYTHON', 'NOSTROMA_NATIVE_PYTHON', 'STRATA_API_KEY', 'NOSTROMA_API_KEY']) delete next[key];
   const result = {
     ...next,
     PYTHONNOUSERSITE: '1', PYTHONUTF8: '1', PYTHONUNBUFFERED: '1', PYTHONIOENCODING: 'utf-8',
     STRATA_NO_ACQUIRE: '1', STRATA_COMPONENTS_DIR: components,
     // The app's own settings file, beside its components: Control and the installer never read or write the file an older
     // command-line Strata keeps in %APPDATA% / ~/.config (its list of Strata folders), so an old install is never adopted.
-    ...(components ? { STRATA_SETTINGS_FILE: env.STRATA_SETTINGS_FILE || join(dirname(components), 'app-settings.json') } : {}),
+    ...(components ? { STRATA_SETTINGS_FILE: (env.NOSTROMA_SETTINGS_FILE ?? env.STRATA_SETTINGS_FILE) || join(dirname(components), 'app-settings.json') } : {}),
     ...(control?.dir ? { STRATA_CONTROL_DIR: control.dir } : {}),
   };
   // Only the explicit update step (`strata update`) may acquire; every other Control process keeps the switch on.
   if (acquire) delete result.STRATA_NO_ACQUIRE;
-  return result;
+  return childEnv(result);   // Control reads the older STRATA_* names; both names go to it
 }
 
 /**
@@ -108,7 +109,7 @@ export function controlEnvironment(control, { env = process.env, components = co
  * itself. Only the install job it starts when the user asks to download a model lifts that for its own children.
  */
 export function installerEnvironment(control, { env = process.env, installDir, components = componentsDirectory({ env }) } = {}) {
-  return { ...controlEnvironment(control, { env, components }), STRATA_CONTROL_INSTALL: '1', ...(installDir ? { STRATA_INSTALL_DIR: installDir } : {}) };
+  return childEnv({ ...controlEnvironment(control, { env, components }), STRATA_CONTROL_INSTALL: '1', ...(installDir ? { STRATA_INSTALL_DIR: installDir } : {}) });
 }
 
 export class ControlError extends Error {
@@ -122,11 +123,11 @@ export class ControlError extends Error {
 }
 
 /**
- * Small Control programs that are a module of strata_control and not a `strata` command. They run on Control's interpreter with Control's folder first on the
+ * Small Control programs that are a module of nostroma_control and not a `strata` command. They run on Control's interpreter with Control's folder first on the
  * path (the folder is the working directory), so they work whatever the interpreter does with the script folder.
  */
 const BOOT = {
-  pictures: 'import os,sys;sys.path.insert(0,os.getcwd());from strata_control import pictures;sys.exit(pictures.main(sys.argv[1:]))',
+  pictures: 'import os,sys;sys.path.insert(0,os.getcwd());from nostroma_control import pictures;sys.exit(pictures.main(sys.argv[1:]))',
 };
 
 /** Run one CLI command of Control (or, with `boot`, one of its modules). Resolves { code, json, text, stderr }; rejects only if it cannot start or times out. */
@@ -172,7 +173,7 @@ export function runCli(control, args, { env = process.env, timeoutMs = 60_000, s
   });
 }
 
-/** Control's exit 7 means two things: an engine is serving, or another update holds the update lock (strata_control/updater.py update_lock). The lock is told by its text. */
+/** Control's exit 7 means two things: an engine is serving, or another update holds the update lock (nostroma_control/updater.py update_lock). The lock is told by its text. */
 export const UPDATE_LOCK_HELD = /another update is already running/i;
 const failure = (result, fallback) => {
   const message = result.json?.error?.message ?? result.json?.error ?? result.json?.notice ?? (result.stderr.split(/\r?\n/).filter(Boolean).pop() || fallback);
@@ -203,12 +204,12 @@ export function createControl({ control = findControl(), env = process.env, run 
      * The explicit update step. These are the only calls that let Control reach the network: `acquire` removes
      * STRATA_NO_ACQUIRE for that one process. Starting, serving, listing and rolling back never do.
      */
-    async updateCheck({ feed = env.STRATA_UPDATE_FEED ?? null, appVersion = env.STRATA_APP_VERSION ?? null } = {}) {
+    async updateCheck({ feed = (env.NOSTROMA_UPDATE_FEED ?? env.STRATA_UPDATE_FEED) ?? null, appVersion = (env.NOSTROMA_APP_VERSION ?? env.STRATA_APP_VERSION) ?? null } = {}) {
       const result = await call(['update', '--check', '--output', 'json', ...feedArgs(feed), ...(appVersion ? ['--app-version', appVersion] : [])], { timeoutMs: 90_000, acquire: true });
       if (result.json?.ok) return result.json;
       throw failure(result, 'The update check failed.');
     },
-    async update({ feed = env.STRATA_UPDATE_FEED ?? null, engine = true, control: withControl = true, appVersion = env.STRATA_APP_VERSION ?? null, force = false, stopModel = false, onEvent = null, signal = null } = {}) {
+    async update({ feed = (env.NOSTROMA_UPDATE_FEED ?? env.STRATA_UPDATE_FEED) ?? null, engine = true, control: withControl = true, appVersion = (env.NOSTROMA_APP_VERSION ?? env.STRATA_APP_VERSION) ?? null, force = false, stopModel = false, onEvent = null, signal = null } = {}) {
       const args = ['update', '--output', 'jsonl', ...feedArgs(feed), ...(engine ? [] : ['--no-engine']), ...(withControl ? [] : ['--no-control']),
         ...(appVersion ? ['--app-version', appVersion] : []), ...(force ? ['--force'] : []), ...(stopModel ? ['--stop-model'] : [])];
       const result = await call(args, { timeoutMs: 3 * 3600_000, acquire: true, onLine: onEvent ?? (() => {}), signal });
@@ -304,7 +305,7 @@ export function createControl({ control = findControl(), env = process.env, run 
     },
     /**
      * The drafter for a model's run config and the drafting choice (`strata drafting plan`): { needed, tuned_needed, gb, drafter_gb, tuned, file, line, note, drafter, split, mtp_needed, mtp_gb }. `model` (with `family`) names a model that has no run config yet. Control decides
-     * (the table of strata_control/drafting.py and the all-cards split engine's rule, strata_control/split_engine.py: the same answer as the Terminal's); the app never reads
+     * (the table of nostroma_control/drafting.py and the all-cards split engine's rule, nostroma_control/split_engine.py: the same answer as the Terminal's); the app never reads
      * it. Nothing is downloaded. `noSplit` asks as if the split engine will not take the start (only after the draft layer for the split could not be downloaded).
      */
     async draftingPlan({ configPath = null, mode = null, family = null, model = null, dataDir = null, noSplit = false, unloading = false } = {}) {
@@ -330,7 +331,7 @@ export function createControl({ control = findControl(), env = process.env, run 
       throw failure(result, 'The all-cards split engine could not be checked.');
     },
     /**
-     * The picture files of an installed model that has none (strata_control/pictures.py): found or downloaded once (about 0.9 GB, shared), and the run
+     * The picture files of an installed model that has none (nostroma_control/pictures.py): found or downloaded once (about 0.9 GB, shared), and the run
      * config's `vision` section worked out for this engine. Nothing else of the model is touched and nothing is written to its run config: the caller does.
      * Resolves { mmproj, vision, fetched, note, data_dir }; a failure is a ControlError whose `code` is offline | disk | failed | checksum | unsupported | no_reader.
      * `onEvent` gets {step, done, total}. This is an explicit step that may reach the network (`acquire`), only for the Load the person pressed.

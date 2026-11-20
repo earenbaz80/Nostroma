@@ -11,7 +11,7 @@ import unittest
 import zipfile
 from pathlib import Path
 
-from strata_control import feed as feedmod, updater
+from nostroma_control import feed as feedmod, updater
 from tests.terminal import test_updater
 
 ROOT = Path(__file__).resolve().parents[2]

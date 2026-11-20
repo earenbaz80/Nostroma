@@ -28,7 +28,7 @@ REMOTE_STATE = r'''
 import json, os, socket, sys
 sys.path.insert(0, "%(src)s")
 os.environ.update(json.loads(%(env)r))
-from strata_control import procs, runtime
+from nostroma_control import procs, runtime
 port = %(port)d
 left = [r for r in procs.records() if procs.start_token(r["pid"]) == r["token"]]
 import psutil

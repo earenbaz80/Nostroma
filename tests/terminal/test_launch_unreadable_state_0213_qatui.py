@@ -25,15 +25,15 @@ POSIX_NOT_ROOT = os.name != "nt" and hasattr(os, "geteuid") and os.geteuid() != 
 
 
 def _runner():
-    from strata_cli.launch import settings as S
-    from strata_cli.launch.runner import Runner
+    from nostroma_cli.launch import settings as S
+    from nostroma_cli.launch.runner import Runner
     r = Runner(S.LaunchSettings(model="iq3_s", context=32768))
     assert r.name == "iq3_s-32k" and r.profile == "launch-iq3_s-32k"
     return r
 
 
 def _write_state(name: str = "iq3_s-32k", key: str = "sk-strata-OLD"):
-    from strata_cli.launch.runner import launch_dir
+    from nostroma_cli.launch.runner import launch_dir
     cfg = launch_dir() / f"{name}.json"
     cfg.write_text(json.dumps({"exe": "x", "args": [], "api_key": key}), encoding="utf-8")
     pdir = Path(os.environ["STRATA_PROFILE_DIR"])
@@ -54,7 +54,7 @@ class CheckSavedState(unittest.TestCase):
             _runner().check_saved_state_readable()
 
     def test_a_damaged_profile_of_this_launch_stops_it_before_any_write(self):
-        from strata_control import profiles
+        from nostroma_control import profiles
         with Home():
             cfg, prof = _write_state()
             prof.write_text("{not json", encoding="utf-8")
@@ -69,7 +69,7 @@ class CheckSavedState(unittest.TestCase):
 
     @unittest.skipUnless(POSIX_NOT_ROOT, "needs permissions that deny the owner")
     def test_an_unreadable_profile_stops_the_launch_and_the_key_stays(self):
-        from strata_control import profiles
+        from nostroma_control import profiles
         with Home():
             cfg, prof = _write_state()
             os.chmod(prof, 0)
@@ -83,7 +83,7 @@ class CheckSavedState(unittest.TestCase):
 
     @unittest.skipUnless(POSIX_NOT_ROOT, "needs permissions that deny the owner")
     def test_an_unreadable_run_config_stops_the_launch_instead_of_minting_a_key(self):
-        from strata_cli.launch.runner import LaunchError
+        from nostroma_cli.launch.runner import LaunchError
         with Home():
             cfg, prof = _write_state()
             os.chmod(cfg, 0)
@@ -99,7 +99,7 @@ class CheckSavedState(unittest.TestCase):
 
     def test_an_unreadable_run_config_is_refused_on_every_platform(self):
         """The same, with the read failing the way a locked or permission-denied file fails (also testable on Windows)."""
-        from strata_cli.launch.runner import LaunchError
+        from nostroma_cli.launch.runner import LaunchError
         with Home():
             cfg, prof = _write_state()
             real = Path.read_bytes
@@ -121,8 +121,8 @@ class NewKeySentenceIsTrue(unittest.TestCase):
     """The sentence "A new API key was made" is said only after the run config that holds the key has been written: not in the plan, not before a refusal."""
 
     def _run(self, *, refuse=None, fail_after_write=None):
-        from strata_cli.launch import settings as S
-        from strata_cli.launch.runner import Runner
+        from nostroma_cli.launch import settings as S
+        from nostroma_cli.launch.runner import Runner
         events, order = [], []
         r = Runner(S.LaunchSettings(model="iq3_s", context=32768), emit=lambda e: events.append(e))
         r.key_written_notice = NEW_KEY
@@ -147,7 +147,7 @@ class NewKeySentenceIsTrue(unittest.TestCase):
         return r, events, order, None
 
     def test_a_refusal_before_the_write_says_nothing_about_a_new_key(self):
-        from strata_cli.launch.runner import LaunchError
+        from nostroma_cli.launch.runner import LaunchError
         with Home():
             r, events, order, exc = self._run(refuse=LaunchError("cannot be read", "fix it"))
         self.assertIsInstance(exc, LaunchError)
@@ -167,7 +167,7 @@ class NewKeySentenceIsTrue(unittest.TestCase):
         self.assertLess(texts.index(NEW_KEY), texts.index("Settings are saved.") if "Settings are saved." in texts else len(texts))
 
     def test_it_stays_true_when_something_fails_after_the_write(self):
-        from strata_control import profiles
+        from nostroma_control import profiles
         with Home():
             r, events, order, exc = self._run(fail_after_write=profiles.ProfileError("later problem"))
         self.assertIsInstance(exc, profiles.ProfileError)

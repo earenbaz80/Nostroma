@@ -45,7 +45,7 @@ def without(argv: list[str], name: str) -> list[str]:
 
 
 def setup_reserve(model: str) -> str:
-    """The reserve setup itself writes on this class (strata_control/setup_config.py, driven by the snapshot's setup entry)."""
+    """The reserve setup itself writes on this class (nostroma_control/setup_config.py, driven by the snapshot's setup entry)."""
     args = drive("strix_halo_win", model, "setup")["config_file"]["args"]
     return flag(args, "--vram-reserve-mib")
 

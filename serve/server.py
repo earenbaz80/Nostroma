@@ -67,20 +67,20 @@ from serve.frontend import (THINK_END, ChatTemplate, Event, OutputParser, parser
 from serve.mcp import McpCancelled, hub_from_config  # noqa: E402
 from serve import runconfig  # noqa: E402
 from serve.webfiles import subtree_file as web_subtree_file  # noqa: E402
-from strata_control import engine_component  # noqa: E402
-from strata_control import tls  # noqa: E402
-from strata_control.childenv import quiet_crash_env  # noqa: E402
-from strata_control import reader_room  # noqa: E402
+from nostroma_control import engine_component  # noqa: E402
+from nostroma_control import tls  # noqa: E402
+from nostroma_control.childenv import quiet_crash_env  # noqa: E402
+from nostroma_control import reader_room  # noqa: E402
 
 tls.install()       # #3722: image URLs and tool servers over HTTPS are checked against the operating system's certificates
-from strata_control import hipblaslt_tuning  # noqa: E402
-from strata_control import vision_reader  # noqa: E402
+from nostroma_control import hipblaslt_tuning  # noqa: E402
+from nostroma_control import vision_reader  # noqa: E402
 PICTURE_FORMATS = ("JPEG", "PNG", "GIF", "BMP", "WEBP", "TIFF", "AVIF")   # the picture formats a request may send (Pillow decodes them)
-from strata_control import draft_layer  # noqa: E402
-from strata_control import drafting  # noqa: E402
-from strata_control import vram_fit  # noqa: E402
-from strata_control import user_args  # noqa: E402
-from strata_control import gpu_roles  # noqa: E402
+from nostroma_control import draft_layer  # noqa: E402
+from nostroma_control import drafting  # noqa: E402
+from nostroma_control import vram_fit  # noqa: E402
+from nostroma_control import user_args  # noqa: E402
+from nostroma_control import gpu_roles  # noqa: E402
 from serve import ready as ready_file  # noqa: E402
 from serve import owner_guard  # noqa: E402
 from serve import launch_identity  # noqa: E402
@@ -136,7 +136,7 @@ LEFTOVER_SETTLE_S = 120.0       # #4051: how long an engine ended at a start is 
 
 
 def end_leftover_engines(exe: str) -> None:
-    """Before an engine starts: end the ones a lost server left running (strata_control/procs.py). Only a process
+    """Before an engine starts: end the ones a lost server left running (nostroma_control/procs.py). Only a process
     this install recorded whose starter is gone, or an orphan of exactly this executable running --serve, and only
     after its PID, start time and command line are checked again at the moment of the signal. Never raises.
     #4051: the new engine is not started while the old one still holds its memory (tens of GB take longer than the
@@ -146,7 +146,7 @@ def end_leftover_engines(exe: str) -> None:
     if os.environ.get("STRATA_KEEP_LEFTOVERS") == "1":
         return
     try:
-        from strata_control import procs
+        from nostroma_control import procs
         say = lambda text: print(text, flush=True)        # noqa: E731
         stuck = [r["pid"] for r in procs.end_leftovers(say=say, settle=LEFTOVER_SETTLE_S)["stuck"]]
         stuck += [r["pid"] for r in procs.end_orphans(exe, say=say, settle=LEFTOVER_SETTLE_S) if r["outcome"] == "stuck"]
@@ -3160,7 +3160,7 @@ def card_free_mib(index: int | None, amd: bool = False) -> int | None:
 
 
 class VisionNoRoom(RuntimeError):
-    """The picture reader could not start because its card has no room for it (`room`: strata_control.reader_room.NoRoom)."""
+    """The picture reader could not start because its card has no room for it (`room`: nostroma_control.reader_room.NoRoom)."""
 
     def __init__(self, message: str, room):
         super().__init__(message)
@@ -3204,7 +3204,7 @@ class Vision:
         self.fallback = (self.reader_args(cpu), log, env) if cpu else None
         self.gpu_spawn, self.cpu_spawn = self.spawn, self.fallback   # an on-demand reader tries the GPU one again at every start
         self.on_cpu = False                             # the CPU reader is what runs (the GPU one did not start, or there was no room)
-        self.cpu_note = None                            # why, in words for the person (strata_control/reader_room.py), when the card had no room
+        self.cpu_note = None                            # why, in words for the person (nostroma_control/reader_room.py), when the card had no room
         self.reader = None                              # "own" (Strata's) or "mtmd" (llama.cpp's) from the READY line; None for an older reader
         self.proc = None
         self.stopped = True
@@ -3228,7 +3228,7 @@ class Vision:
     @staticmethod
     def elastic_ask_mib(cfg: dict, max_tokens: int) -> int:
         """The VRAM the expert cache keeps free for an elastic reader: the config's elastic_mib when the person set one, else the reader's
-        need at its image limit (strata_control/reader_room.py; 0 = no limit counts as 16,384), never below 2,048.  At the default limit of
+        need at its image limit (nostroma_control/reader_room.py; 0 = no limit counts as 16,384), never below 2,048.  At the default limit of
         1,024 tokens that is 2,048; at 16,384 it is 3,674 (a 2,048 ask left the encoder out of memory for one large picture on an RTX A6000)."""
         if cfg.get("elastic_mib"):
             return int(cfg["elastic_mib"])
@@ -3807,11 +3807,11 @@ _CARD_CLASS: list = []
 
 
 def drafting_card_class() -> str:
-    """The class of this computer's graphics card for the drafter table (strata_control/drafting.py), looked up once."""
+    """The class of this computer's graphics card for the drafter table (nostroma_control/drafting.py), looked up once."""
     if not _CARD_CLASS:
         archs: list[str] = []
         try:
-            from strata_control import engine_component
+            from nostroma_control import engine_component
             archs = list(engine_component.cuda_archs_present()) + list(engine_component.hip_archs_present())
         except Exception:                                    # noqa: BLE001 - an unknown card is the "other" class, never an error
             pass
@@ -3834,10 +3834,10 @@ def drafting_vram_mib(cfg: dict, backend: str | None, archs) -> float | None:
 
 
 def own_path_context_warning(cfg: dict, args: list, vram_mib: float | None) -> str | None:
-    """The sentence for a Qwen3.6 start whose --max-context does not fit its one card (strata_control/own_path_fit.py, the rule setup's menu
+    """The sentence for a Qwen3.6 start whose --max-context does not fit its one card (nostroma_control/own_path_fit.py, the rule setup's menu
     uses); None for any other model, a context that fits, or a card that is not known.  Nothing about the start changes."""
     try:
-        from strata_control import own_path_fit
+        from nostroma_control import own_path_fit
         fit = own_path_fit.from_model_name(cfg.get("model_name"))
         if not fit or not vram_mib or "--max-context" not in args:
             return None
@@ -3883,14 +3883,14 @@ def engine_args(cfg: dict, exe: str | None = None, *, announce: bool = True) -> 
     """The engine's arguments: the config's, and with several GPUs the layer split across them ("layer_split" in the
     config: "auto" by default, or the first layer of each later GPU's share, e.g. "18" or "16,32"; see
     layer_split_value). `exe` is the engine program that will start: the drafter's flags follow what that program takes
-    (strata_control/drafting.py engine_form). `announce=False` builds the arguments without the "[strata] drafting" lines
+    (nostroma_control/drafting.py engine_form). `announce=False` builds the arguments without the "[strata] drafting" lines
     and without leaving a note for the next engine start (the retry arguments of mtp_retry_args)."""
     args = list(cfg["args"])
-    # "user_args" (strata_control/user_args.py): the options the person set by hand, over the generated ones at every start,
+    # "user_args" (nostroma_control/user_args.py): the options the person set by hand, over the generated ones at every start,
     # so a setup run or the app rewriting "args" cannot undo them (#3216 #3215 #3270)
     if cfg.get("user_args"):
         args = user_args.merge(args, cfg["user_args"])
-    # "drafting": auto | mtp | dflash2 | off (strata_control/drafting.py; the Models screen and `strata launch --drafting` write it): which drafter
+    # "drafting": auto | mtp | dflash2 | off (nostroma_control/drafting.py; the Models screen and `strata launch --drafting` write it): which drafter
     # guesses ahead. ONE drafter per run: DFlash2 alone (no --mtp, --draft-fallback none) or the MTP alone (no DFlash2 option). Auto is DFlash2 where the engine
     # has it, on one card and on a layer split over several cards. A choice that cannot be applied (no drafter file yet, several requests at once) starts the other one if it is on this computer,
     # else none, and says why in the engine's /metrics ("drafting_note"). The start never downloads.
@@ -3917,7 +3917,7 @@ def engine_args(cfg: dict, exe: str | None = None, *, announce: bool = True) -> 
             print(f"[strata] drafting: {decision.vocab}", flush=True)
     # A card that is short of VRAM for this start (a single request on a small card, or "parallel" 2 or more, every request slot a session of its own) gets work moved off
     # the GPU, never a smaller context and never fewer requests (owner, 2026-11-02): a smaller KV window on CUDA, a smaller prompt chunk and reserve on Arc, and the
-    # engine sizes the rest; one plain note says it is slower (strata_control/vram_fit.py fit_start).  The person's own values are kept.  Nothing changes without one
+    # engine sizes the rest; one plain note says it is slower (nostroma_control/vram_fit.py fit_start).  The person's own values are kept.  Nothing changes without one
     # card's memory, or on a layer split.
     try:
         args, fit_parallel, fit_note = vram_fit.fit_start(cfg, args, drafting_vram_mib(cfg, backend, archs), backend)
@@ -3970,7 +3970,7 @@ def engine_args(cfg: dict, exe: str | None = None, *, announce: bool = True) -> 
 PARALLEL_MAX = 8      # without a layer split the engine's batch window holds at most 8 rows (kVerifyNarrowT); --batch-mtp waves more through it
 
 
-SPLIT_MAX_LANES = 8   # the all-cards split engine runs 1..8 lanes (strata_control/split_engine.py MAX_LANES)
+SPLIT_MAX_LANES = 8   # the all-cards split engine runs 1..8 lanes (nostroma_control/split_engine.py MAX_LANES)
 
 
 def parallel_flag_conflicts(cfg: dict) -> bool:
@@ -4106,13 +4106,13 @@ def engine_has_text(exe: str, needle: bytes) -> bool | None:
 
 
 def draft_costs_dir() -> Path:
-    """Where the learned draft cost tables live: beside the saved tunings (strata_control/presets.py), in the user's Strata settings folder
+    """Where the learned draft cost tables live: beside the saved tunings (nostroma_control/presets.py), in the user's Strata settings folder
     (%APPDATA%\\Strata\\draft-costs, ~/.config/strata/draft-costs), which the Windows uninstaller's "remove my data" deletes with them.
     STRATA_DRAFT_COSTS_DIR: another folder (tests and test jobs, which never write into a real settings folder)."""
     explicit = os.environ.get("STRATA_DRAFT_COSTS_DIR")
     if explicit:
         return Path(explicit).expanduser()
-    from strata_control import profiles
+    from nostroma_control import profiles
     return profiles.profile_dir().parent / "draft-costs"
 
 
@@ -4308,7 +4308,7 @@ def ordered_gpus(cfg: dict, scores=None, vrams=None, archs=None) -> list[int]:
     sc = scores if scores is not None else (hip_speed_scores(gl) if hip else gpu_speed_scores(gl))
     if not sc or any(i not in sc for i in gl):
         return gl
-    # the decision itself (5% rule #1760, faster card last #1352, VRAM guard #1576) is strata_control/gpu_roles.speed_stage_order, which `strata launch --plan`
+    # the decision itself (5% rule #1760, faster card last #1352, VRAM guard #1576) is nostroma_control/gpu_roles.speed_stage_order, which `strata launch --plan`
     # calls too (gpu_roles.from_legacy), so the plan names the same Main card as this start
     out, why, seen = gpu_roles.speed_stage_order(
         gl, sc, vrams if vrams is not None else (None if scores is not None else (lambda: gpu_vram_mib(gl, hip))))
@@ -4428,7 +4428,7 @@ def parallel_slots(cfg: dict) -> int:
 def child_env(cfg: dict, *, offline: bool = False) -> dict:
     """The engine's environment: the CUDA libraries setup installed (pip's nvidia packages, or the toolkit that
     compiled it) first on the library search path."""
-    env = quiet_crash_env(dict(os.environ))          # no debugger on a user's machine: ggml's abort path forks gdb (strata_control/childenv.py)
+    env = quiet_crash_env(dict(os.environ))          # no debugger on a user's machine: ggml's abort path forks gdb (nostroma_control/childenv.py)
     if gpu_all_off(cfg):                             # every card Off: the engine sees none (a CPU engine runs; the others say so at start)
         env["CUDA_VISIBLE_DEVICES"] = ""
         env["HIP_VISIBLE_DEVICES"] = ""
@@ -4444,7 +4444,7 @@ def child_env(cfg: dict, *, offline: bool = False) -> dict:
     # the policy by naming the same variable.
     if offline:
         try:
-            from strata_control import offline as offline_policy
+            from nostroma_control import offline as offline_policy
             env.update(offline_policy.OFFLINE_ENV)
         except ImportError:
             # The policy module is part of the application; without it, refuse rather than silently
@@ -7928,7 +7928,7 @@ def make_handler(svc: Service):
                 return
             if path == "/v1/telemetry":
                 if self._authorized_telemetry():
-                    from strata_cli.client import normalize_legacy
+                    from nostroma_cli.client import normalize_legacy
                     snapshot = normalize_legacy(svc.metrics(), svc.v1_status())
                     snapshot["source"] = "server-v1"
                     snapshot["work"]["slots_requested"] = getattr(svc, "requested_slots", None)
@@ -9409,7 +9409,7 @@ SAMPLING_ALIASES = {"repeat_penalty": "repetition_penalty", "repeat_last_n": "pe
 
 
 def apply_saved_tuning(cfg: dict, *, say=None) -> dict:
-    """The run config with the active saved tuning for its choices put on top (strata_control/presets.py), with no measurement.
+    """The run config with the active saved tuning for its choices put on top (nostroma_control/presets.py), with no measurement.
     Every start path runs this (the Terminal, `runtime start`, the app's load, a restart of the app, an unload and a load), so the
     tuning is applied every time and never re-measured. A tune's own worker sets STRATA_NO_PRESET so that it measures the
     configuration it was given. Never fails a start: a store that cannot be read means the configuration as it is."""
@@ -9417,7 +9417,7 @@ def apply_saved_tuning(cfg: dict, *, say=None) -> dict:
         return cfg
     say = say or (lambda line: print(line, flush=True))
     try:
-        from strata_control import presets as _presets
+        from nostroma_control import presets as _presets
         out, applied = _presets.overlay(cfg)
         if applied.get("applied"):
             changes = {**(applied.get("args") or {}), **(applied.get("env") or {})}
@@ -9494,7 +9494,7 @@ def sampling_defaults_from_config(cfg: dict) -> dict:
             if not number or value != int(value) or value <= 0:
                 raise SystemExit(f"[strata] config sampling.seed={value!r}: expected a positive integer")
             out[key] = int(value)
-        elif key == "strata_tune":           # a saved tuning's per-request settings (strata_control/presets.py)
+        elif key == "strata_tune":           # a saved tuning's per-request settings (nostroma_control/presets.py)
             if not isinstance(value, dict):
                 raise SystemExit(f"[strata] config sampling.strata_tune={value!r}: expected an object")
             out[key] = {k: v for k, v in value.items() if k in ("pcie_frac", "spec_min_p", "aux_cpus")}
@@ -9513,7 +9513,7 @@ SPLIT_KEYS = ("split_fallback", "split_engine_note")
 
 def start_engine_or_fallback(cfg: dict, exe: str, effort_end: list[str] | None, env: dict, lazy: bool, tok, *, offline: bool = False,
                              batch_telemetry=None):
-    """Start the run config's engine. A config written for the all-cards split engine (strata_control/split_engine.py) carries the
+    """Start the run config's engine. A config written for the all-cards split engine (nostroma_control/split_engine.py) carries the
     normal layer-split config under "split_fallback": if that engine refuses or fails to come up, say so in one plain line and start the
     normal one instead, so a start never fails because of the option. Any other config starts exactly as before."""
     fb = cfg.get("split_fallback")
@@ -9874,7 +9874,7 @@ def with_history_tools(tools, req) -> list:
 
 def _component_exe(reference: str, cfg: dict) -> str:
     """The engine a run config names as "component:strata-engine". No engine for this PC is a clear notice and exit 5;
-    the server never goes looking on the internet for one (strata_control/engine_component.py)."""
+    the server never goes looking on the internet for one (nostroma_control/engine_component.py)."""
     try:
         return engine_component.expand(reference, cfg)
     except engine_component.EngineMissing as e:
@@ -9911,10 +9911,10 @@ def main(argv=None, *, lifecycle_event=None, interrupt_exit_code: int = 0) -> in
 
     Its console output goes through a bounded queue (serve/nonblocking_out.py, #4479 / #2481): a console that stops taking output must not hold a
     request's turn, a cancel or an admission.  STRATA_BLOCKING_CONSOLE=1 turns it off (testers)."""
-    quiet_crash_env()                                  # every child inherits it: no gdb on a user's machine (strata_control/childenv.py)
+    quiet_crash_env()                                  # every child inherits it: no gdb on a user's machine (nostroma_control/childenv.py)
     lease = None
     try:
-        from strata_control import runtime as _runtime
+        from nostroma_control import runtime as _runtime
         lease = _runtime.acquire_activity_lease(shared=True)
     except Exception:                                  # noqa: BLE001 - serving never depends on the lease
         lease = None
@@ -9934,7 +9934,7 @@ def main(argv=None, *, lifecycle_event=None, interrupt_exit_code: int = 0) -> in
 
 def _main(argv=None, *, lifecycle_event=None, interrupt_exit_code: int = 0) -> int:
     try:                                               # files made by a run as administrator still belong to the user
-        from strata_control import private_files as _pf
+        from nostroma_control import private_files as _pf
         _pf.adopt_user_defaults()
     except Exception:
         pass
@@ -10059,7 +10059,7 @@ def _main(argv=None, *, lifecycle_event=None, interrupt_exit_code: int = 0) -> i
     config_bytes = Path(a.config).read_bytes() if a.config else b""
     cfg = parse_config_text(config_bytes.decode("utf-8-sig"), a.config) if a.config else {}   # Notepad adds a BOM
     split_joined_args(cfg)
-    from strata_control import retired
+    from nostroma_control import retired
     _ds = retired.config_reason(cfg) if a.config else None
     if _ds:                                             # DeepSeek: this Strata no longer runs it; stop before the engine starts (retired.py)
         print(retired.server_line(_ds), flush=True)
@@ -10165,7 +10165,7 @@ def _main(argv=None, *, lifecycle_event=None, interrupt_exit_code: int = 0) -> i
         # The same decision, reported through the policy module so the two cannot drift: a profile
         # that permits a network source is refused here rather than on its first request.
         try:
-            from strata_control import offline as offline_policy
+            from nostroma_control import offline as offline_policy
             blocked = offline_policy.ensure_strictly_offline(cfg)
         except ImportError:
             blocked = []

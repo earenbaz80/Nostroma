@@ -8,8 +8,8 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_control import runtime
-from strata_control.profiles import ProfileError
+from nostroma_control import runtime
+from nostroma_control.profiles import ProfileError
 
 
 @unittest.skipUnless(os.name in ("posix", "nt"), "no qualified owner transport on this platform")

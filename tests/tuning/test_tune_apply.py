@@ -20,7 +20,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from strata_control import tune_apply as ta  # noqa: E402
+from nostroma_control import tune_apply as ta  # noqa: E402
 
 
 def a_job(*, args: dict | None = None, state: str = "completed",

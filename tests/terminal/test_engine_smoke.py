@@ -8,7 +8,7 @@ import unittest
 from pathlib import Path
 from types import SimpleNamespace
 
-from strata_control import updater
+from nostroma_control import updater
 
 
 def make_engine(folder: Path, body_posix: str, body_nt: str) -> Path:

@@ -325,10 +325,10 @@ def top_logprobs(req: dict):
 
 
 def install_two_card_spec():
-    """engine_args -> the config's --spec 2 on exactly two Arc B-series cards (strata_control/intel_spec.py), at every start: a
+    """engine_args -> the config's --spec 2 on exactly two Arc B-series cards (nostroma_control/intel_spec.py), at every start: a
     config written before (by an older setup, or by the launcher) gets what a new setup run would write.  The person's own
     --spec ("user_args", or a value other than setup's 4) is never touched; one plain line says what changed."""
-    from strata_control import intel_spec
+    from nostroma_control import intel_spec
     original = S.engine_args
 
     def engine_args(cfg, exe=None, *, announce=True):      # the base signature (serve/server.py engine_args): start calls it with exe, the budget check with announce=False

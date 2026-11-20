@@ -6,7 +6,7 @@
 #   SRC=<checkout> B=<build dir> CUDA=/usr/local/cuda-13.1 [GG=<llama.cpp checkout, an override>] [ARCH=86] [CARDS="2"] [JOBS=8]  packaging/build_split_cuda.sh
 #
 # ARCH is one compute capability; 86 is the one that has been run (2 RTX A6000). CARDS lists the counts to build; 3 and 4 build but have
-# not been run with the host exchange, and the launcher keeps them off unless a tester allows them (strata_control/split_engine.py).
+# not been run with the host exchange, and the launcher keeps them off unless a tester allows them (nostroma_control/split_engine.py).
 # After the build the script FAILS if the binary can call any CUDA peer-access function: the engine must not map one card into another.
 # Prints the binary paths, one per line, last.
 set -eu

@@ -18,8 +18,8 @@ from contextlib import redirect_stdout
 from pathlib import Path
 from unittest import mock
 
-from strata_cli.cli import main
-from strata_control import components, engine_component as ec, profiles, runtime
+from nostroma_cli.cli import main
+from nostroma_control import components, engine_component as ec, profiles, runtime
 
 WINDOWS = os.name == "nt"
 FAKE_ENGINE = (
@@ -232,7 +232,7 @@ class ComponentStart(unittest.TestCase):
         self.assertTrue(env[var].startswith(str(folder) + os.pathsep + str(folder / "rocm" / "bin")))
 
     def test_doctor_names_the_missing_engine(self):
-        from strata_control.doctor import inspect
+        from nostroma_control.doctor import inspect
         report = inspect(self.config)
         engine = next(row for row in report["components"] if row["name"] == "engine")
         self.assertEqual(engine["status"], "missing")

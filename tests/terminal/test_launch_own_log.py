@@ -7,8 +7,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from strata_cli.launch import runner, settings as S  # noqa: E402
-from strata_control import tune_knobs  # noqa: E402
+from nostroma_cli.launch import runner, settings as S  # noqa: E402
+from nostroma_control import tune_knobs  # noqa: E402
 
 
 def derive(base):

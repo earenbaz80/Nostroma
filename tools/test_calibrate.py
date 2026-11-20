@@ -344,7 +344,7 @@ class Calibrate(unittest.TestCase):
 
     def test_engine_args_name_the_engine_program_5720(self):
         # #5720: the drafter pack follows the engine program (a selector-Q4 pack only for a program that reads it,
-        # strata_control/drafting.py pack_path); the calibration must pass the program as the server does, or its
+        # nostroma_control/drafting.py pack_path); the calibration must pass the program as the server does, or its
         # sweep engines start with another pack than the server's
         from serve import server
         seen = []

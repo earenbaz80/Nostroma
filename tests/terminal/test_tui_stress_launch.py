@@ -5,9 +5,9 @@ import os
 import unittest
 from unittest import mock
 
-from strata_cli.launch import settings as S
-from strata_cli.launch.catalog import Catalog
-from strata_cli.launch.runner import LaunchError, Runner
+from nostroma_cli.launch import settings as S
+from nostroma_cli.launch.catalog import Catalog
+from nostroma_cli.launch.runner import LaunchError, Runner
 from tests.terminal.launch_support import HW_12, Home, catalog, run_cli
 
 
@@ -36,7 +36,7 @@ class SecondLaunchTests(unittest.TestCase):
         rows = self.row(r)
         with mock.patch.object(Runner, "serving_launches", lambda self: rows), \
              mock.patch.object(Runner, "ensure_engine", side_effect=AssertionError("must not run")), \
-             mock.patch("strata_control.runtime.stop", side_effect=AssertionError("must not stop")):
+             mock.patch("nostroma_control.runtime.stop", side_effect=AssertionError("must not stop")):
             res = r.run()
         self.assertTrue(res.reused)
         self.assertTrue(res.urls)
@@ -66,7 +66,7 @@ class SecondLaunchTests(unittest.TestCase):
         r = self.runner(confirm_restart=lambda q, d: asked.append((q, d)) or False)
         rows = self.row(r, choices={**r.choices(), "context": 65536})
         with mock.patch.object(Runner, "serving_launches", lambda self: rows), \
-             mock.patch("strata_control.runtime.stop") as stop:
+             mock.patch("nostroma_control.runtime.stop") as stop:
             with self.assertRaises(LaunchError) as cm:
                 r.run()
         self.assertEqual(len(asked), 1)
@@ -98,8 +98,8 @@ class SecondLaunchTests(unittest.TestCase):
         with mock.patch.object(Runner, "serving_launches", lambda self: rows):
             self.assertIsNone(r.check_serving())
         self.assertEqual(r._stop_first, ["launch-gyro-s-32k"])
-        with mock.patch("strata_control.runtime.stop", side_effect=lambda n, timeout=0: order.append(n)), \
-             mock.patch("strata_cli.launch.access.stop_tunnel"):
+        with mock.patch("nostroma_control.runtime.stop", side_effect=lambda n, timeout=0: order.append(n)), \
+             mock.patch("nostroma_cli.launch.access.stop_tunnel"):
             r.stop_others()
         self.assertEqual(order, ["launch-gyro-s-32k"])
         self.assertEqual(r._stop_first, [])
@@ -134,7 +134,7 @@ class SecondLaunchTests(unittest.TestCase):
 
             def go(self, *a, **k):
                 seen["restart"] = self.restart
-                from strata_cli.launch.runner import Result
+                from nostroma_cli.launch.runner import Result
                 return Result("launch-x", ["http://127.0.0.1:8080"], None, None, [], "/x")
 
             with mock.patch.object(Runner, "run", go):

@@ -4,7 +4,7 @@ from __future__ import annotations
 import unittest
 from unittest import mock
 
-from strata_cli.launch.catalog import Catalog
+from nostroma_cli.launch.catalog import Catalog
 from tests.terminal.launch_support import HW_12, Home, catalog
 
 PC = {**HW_12, "ram_gb": 64.0, "disk_free_gb": 900.0, "engine_vendor": "nvidia"}
@@ -39,7 +39,7 @@ class AdoptUnsloth(unittest.TestCase):
 
     def _plan(self, tmp, model, hub, n, backend="sycl", family="unsloth"):
         from pathlib import Path
-        from strata_cli.launch import adopt
+        from nostroma_cli.launch import adopt
         d = Path(tmp) / "data"
         m = d / "models" / f"unsloth-{model}"
         m.mkdir(parents=True)
@@ -57,7 +57,7 @@ class AdoptUnsloth(unittest.TestCase):
     def test_every_new_set_is_written_for_an_arc_card(self):
         import tempfile
         from unittest import mock
-        from strata_cli.launch import adopt
+        from nostroma_cli.launch import adopt
         self.assertIn("unsloth", adopt.FAMILIES)
         for model, hub, n in (("UD-IQ1_M", "UD-IQ1_M", 3), ("UD-Q2_0", "UD-Q2_0", 3), ("UD-IQ2_XS", "UD-IQ2_XS", 3), ("UD-Q2_K_XL", "UD-Q2_K_XL", 4),
                               ("UD-IQ3_XXS", "UD-IQ3_XXS", 4), ("UD-Q3_K_XL", "UD-Q3_K_XL", 4), ("UD-IQ4_XS-v31", "UD-IQ4_XS", 4), ("UD-Q4_K_XL", "UD-Q4_K_XL", 4)):
@@ -71,7 +71,7 @@ class AdoptUnsloth(unittest.TestCase):
 
     def test_the_other_families_still_pass_the_table_shard(self):
         import tempfile
-        from strata_cli.launch import adopt
+        from nostroma_cli.launch import adopt
         with tempfile.TemporaryDirectory() as t:
             cfg, problems = self._plan(t, "IQ3_XXS", "GSQ-RCO-IQ3_XXS", 2, family="qwen")
             self.assertEqual(problems, [])

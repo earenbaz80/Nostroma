@@ -10,7 +10,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_control import models_move as mm
+from nostroma_control import models_move as mm
 
 
 def sha(data: bytes) -> str:
@@ -247,7 +247,7 @@ class MoveTests(MoveCase):
         self.assertEqual(mm.interrupted(self.old)["state"], "running")
 
     def test_a_move_that_is_running_now_is_not_interrupted(self):
-        from strata_control import procs
+        from nostroma_control import procs
         mm._write_state(self.old, state="running", pid=os.getpid() + 7, token="t", **{"from": str(self.old), "to": str(self.new)})
         with mock.patch.object(procs, "start_token", return_value="t"):
             self.assertIsNone(mm.interrupted(self.old))
@@ -319,7 +319,7 @@ class MoveTests(MoveCase):
 
 class CommandLineTests(MoveCase):
     def test_json_plan_and_run(self):
-        from strata_cli import cli
+        from nostroma_cli import cli
         import contextlib
         import io
         out = io.StringIO()
@@ -337,8 +337,8 @@ class CommandLineTests(MoveCase):
         self.assertTrue((self.new / "models/coder/c.gguf").exists())
 
     def run_cli(self, *argv):
-        from strata_cli import cli
-        from strata_control import discovery
+        from nostroma_cli import cli
+        from nostroma_control import discovery
         import contextlib
         import io
         out = io.StringIO()
@@ -365,8 +365,8 @@ class CommandLineTests(MoveCase):
         self.assertFalse((self.old / "models/coder/c.gguf").exists())
 
     def test_launch_says_it_in_one_line(self):
-        from strata_cli.launch import cmd
-        from strata_control import discovery
+        from nostroma_cli.launch import cmd
+        from nostroma_control import discovery
         import contextlib
         import io
         self.cut_off(1)
@@ -383,7 +383,7 @@ class CommandLineTests(MoveCase):
             self.assertEqual(out.getvalue(), "")
 
     def test_the_cancel_file_stops_the_run(self):
-        from strata_cli import cli
+        from nostroma_cli import cli
         import contextlib
         import io
         cancel = self.base / "cancel"

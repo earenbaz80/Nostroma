@@ -31,7 +31,7 @@ $feed = $feed.TrimEnd('/')
 $feedHost = try { ([Uri]$feed).Host } catch { '' }
 if (-not $feedHost) { $feedHost = $feed }
 
-# The network rule (strata_control/netpolicy.py): a server that does not answer is given up after 15 s and one more try; once it answers,
+# The network rule (nostroma_control/netpolicy.py): a server that does not answer is given up after 15 s and one more try; once it answers,
 # the download stops only when no byte comes for 60 s (no total cap: a slow line that works is never cut). A refused connection or no DNS
 # answer fails at once. HttpWebRequest works the same in Windows PowerShell 5.1 and PowerShell 7 and never shows a sign-in dialog.
 function Fetch([string]$url, [string]$out) {

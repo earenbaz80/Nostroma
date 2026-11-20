@@ -34,7 +34,7 @@ export function roomAfterContext(vramGb: number, context: number, kv = 'int8'): 
   return vramGb - dense - MTP_VRAM_GB;
 }
 /** A context past 32K that leaves a card under 1 GB for the model (the 32K default would leave more); for Qwen3.6 (`fit`, from the catalog), a context
- *  that does not fit the card by its own rule (#5715, strata_control/own_path_fit.py). Said as a warning; nothing is refused or lowered. */
+ *  that does not fit the card by its own rule (#5715, nostroma_control/own_path_fit.py). Said as a warning; nothing is refused or lowered. */
 export function contextIsTight(vramGb: number | null | undefined, context: number, kv = 'int8', fit?: ContextFit | null): boolean {
   const vram = Number(vramGb);
   if (!Number.isFinite(vram) || vram <= 0) return false;

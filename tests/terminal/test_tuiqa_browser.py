@@ -12,9 +12,9 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_cli.launch import cmd, settings as S
-from strata_cli.launch.runner import Result, Runner, derive_config
-from strata_control import tune_knobs
+from nostroma_cli.launch import cmd, settings as S
+from nostroma_cli.launch.runner import Result, Runner, derive_config
+from nostroma_control import tune_knobs
 from tests.terminal.launch_support import Home, run_cli
 
 
@@ -47,7 +47,7 @@ class NoBrowserByItself(unittest.TestCase):
         opened.assert_called_once_with("http://127.0.0.1:8081")
 
     def test_the_screens_open_a_browser_only_for_open(self):
-        from strata_cli.launch import app as launch_app
+        from nostroma_cli.launch import app as launch_app
         from tests.terminal.launch_support import HW_12, catalog
         for flag, calls in ((False, 0), (True, 1)):
             with mock.patch.object(launch_app.LaunchApp, "run", lambda self, **kw: served()), \

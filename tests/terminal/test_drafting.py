@@ -1,5 +1,5 @@
 """Which drafter a model uses (MTP, DFlash2 or none): the suggestion table, the Terminal flag, the engine arguments, the download and the
-fallback words. strata_control/drafting.py is the one place; the Terminal and the app read it."""
+fallback words. nostroma_control/drafting.py is the one place; the Terminal and the app read it."""
 
 from __future__ import annotations
 
@@ -13,9 +13,9 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_cli.launch import settings as S
-from strata_cli.launch.runner import derive_config
-from strata_control import acquisition, drafting, drafting_fetch
+from nostroma_cli.launch import settings as S
+from nostroma_cli.launch.runner import derive_config
+from nostroma_control import acquisition, drafting, drafting_fetch
 from tests.terminal.launch_support import run_cli
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -457,7 +457,7 @@ class UnslothAndTheOtherFlashNextFiles(unittest.TestCase):
 
     def test_the_names_are_the_ones_setup_writes(self):
         """Read from the code, not from memory: the family names and the way setup.py and metal/setup_mac.py make the run config's model_name."""
-        setup = (ROOT / "setup.py").read_text(encoding="utf-8") + (ROOT / "strata_control" / "setup_config.py").read_text(encoding="utf-8")    # (the run config's construction moved to the setup seam)
+        setup = (ROOT / "setup.py").read_text(encoding="utf-8") + (ROOT / "nostroma_control" / "setup_config.py").read_text(encoding="utf-8")    # (the run config's construction moved to the setup seam)
         mac = (ROOT / "metal" / "setup_mac.py").read_text(encoding="utf-8")
         self.assertIn('"name": "qwen3.8-flash-next-unsloth"', setup)
         self.assertIn('"name": "qwen3.8-flash-next-coder"', setup)
@@ -518,7 +518,7 @@ class UnslothAndTheOtherFlashNextFiles(unittest.TestCase):
         # the app's own copies of the rule (the host and the page) name the same families and the same names
         host = (ROOT / "apps" / "host" / "server" / "native-settings.mjs").read_text(encoding="utf-8")
         page = (ROOT / "apps" / "host" / "src" / "lib" / "drafting.ts").read_text(encoding="utf-8")
-        generated = (ROOT / "apps" / "host" / "server" / "policy-generated.mjs").read_text(encoding="utf-8")        # the host's copy is generated from drafting.py (strata_control/app_policy.py)
+        generated = (ROOT / "apps" / "host" / "server" / "policy-generated.mjs").read_text(encoding="utf-8")        # the host's copy is generated from drafting.py (nostroma_control/app_policy.py)
         self.assertIn("DRAFTING_FAMILIES=GENERATED_DRAFTING_FAMILIES", host)
         self.assertIn('DRAFTING_FAMILIES = ["qwen", "gyro", "unsloth"]', generated)
         self.assertIn("DRAFTING_FAMILIES = ['qwen', 'gyro', 'unsloth']", page)
@@ -1025,7 +1025,7 @@ class TheDownloadPlanListsIt(unittest.TestCase):
 
     def test_the_plan_line_and_the_part(self):
         from tests.terminal.launch_support import HW_12, Home, catalog
-        from strata_cli.launch.runner import Runner
+        from nostroma_cli.launch.runner import Runner
         with Home() as home:
             runner = Runner(S.LaunchSettings(family="qwen", model="Q2_0", context=32768, vision="off", drafting="dflash2"), catalog=catalog(HW_12))
             with mock.patch.object(drafting, "ENGINE_SERVES_DFLASH2", False):

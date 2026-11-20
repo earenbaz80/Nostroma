@@ -14,7 +14,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_control import drafting, drafting_fetch
+from nostroma_control import drafting, drafting_fetch
 from tests.terminal.launch_support import run_cli
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -60,14 +60,14 @@ class IntelCardsAreToldByName(unittest.TestCase):
         self.assertNotIn("has not been tested", h("sycl", ["arc_a"]).line)
 
     def test_the_probe_gives_the_card_class_on_a_sycl_computer(self):
-        from strata_control import engine_component
+        from nostroma_control import engine_component
         with mock.patch.object(drafting, "_HARDWARE", []), mock.patch.object(engine_component, "detect_backend", return_value=("sycl", "test")),                 mock.patch.object(engine_component, "cuda_archs_present", return_value=[]), mock.patch.object(engine_component, "hip_archs_present", return_value=[]),                 mock.patch.object(drafting, "sycl_archs_present", return_value=["arc_a"]):
             self.assertEqual(drafting.detect_hardware(), ("sycl", ["arc_a"]))
         with mock.patch.object(drafting, "_HARDWARE", []), mock.patch.object(engine_component, "detect_backend", return_value=("sycl", "test")),                 mock.patch.object(engine_component, "cuda_archs_present", return_value=[]), mock.patch.object(engine_component, "hip_archs_present", return_value=[]),                 mock.patch.object(drafting, "sycl_archs_present", return_value=["arc_b"]):
             self.assertEqual(drafting.hardware_support(*drafting.detect_hardware()).level, "untested")
 
     def test_the_adapters_of_a_windows_pc_and_the_sysfs_cards_of_a_linux_one(self):
-        from strata_control import engine_component, intel_spec
+        from nostroma_control import engine_component, intel_spec
         adapters = [{"vendor": "8086", "device": 0x56A1, "name": "Intel(R) Arc(TM) A750 Graphics"}, {"vendor": "10de", "device": 1, "name": "NVIDIA GeForce"},
                     {"vendor": "8086", "device": 0x4680, "name": "Intel(R) UHD Graphics 770"}]
         with mock.patch.object(drafting.os, "name", "nt"), mock.patch.object(engine_component, "windows_display_adapters", return_value=adapters):
@@ -354,7 +354,7 @@ class TheTerminalStep(unittest.TestCase):
 
     def flow(self, family, hardware):
         from types import SimpleNamespace
-        from strata_cli.launch.screens import flow_for
+        from nostroma_cli.launch.screens import flow_for
         ctx = SimpleNamespace(computer=SimpleNamespace(usable_gpus=[0]), settings=SimpleNamespace(family=family))
         with mock.patch.object(drafting, "detect_hardware", return_value=hardware), serving_dflash2():
             return flow_for(ctx)
@@ -373,8 +373,8 @@ class TheTerminalStep(unittest.TestCase):
 
     def test_the_choice_is_saved_as_the_flag_would_and_auto_writes_nothing(self):
         from types import SimpleNamespace
-        from strata_cli.launch import settings as S
-        from strata_cli.launch.screens import DraftingScreen
+        from nostroma_cli.launch import settings as S
+        from nostroma_cli.launch.screens import DraftingScreen
         self.assertEqual([k for k, _ in DraftingScreen.CHOICES], list(S.DRAFTING_MODES))
         for key, saved in (("dflash2", "dflash2"), ("auto", None), ("off", "off")):
             fake = SimpleNamespace(ctx=SimpleNamespace(settings=S.LaunchSettings(), base_config=lambda: None), menu=lambda key=key: SimpleNamespace(current=SimpleNamespace(key=key)))

@@ -18,7 +18,7 @@ if os.name == "nt" and not any(os.environ.get(k) for k in ("STRATA_GLYPHS", "WT_
 
 @pytest.fixture(autouse=True)
 def _no_card_unless_a_test_names_one(request):
-    from strata_control import drafting
+    from nostroma_control import drafting
     if request.module.__name__.rsplit(".", 1)[-1].startswith("test_drafting"):
         yield                                    # these name their card themselves (setUpModule / per test)
         return

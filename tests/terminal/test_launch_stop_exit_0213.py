@@ -5,7 +5,7 @@ from __future__ import annotations
 import unittest
 from unittest import mock
 
-from strata_cli.launch import access
+from nostroma_cli.launch import access
 from tests.terminal.launch_support import run_cli
 
 NOTHING = "Nothing from `strata launch` is running."
@@ -37,9 +37,9 @@ class Runtime:
 class LaunchStopExit(unittest.TestCase):
     def _run(self, profiles, *args):
         rt = Runtime(profiles)
-        with mock.patch("strata_control.profiles.list_profiles", rt.list_profiles), \
-             mock.patch("strata_control.runtime.status", rt.status), \
-             mock.patch("strata_control.runtime.stop", rt.stop), \
+        with mock.patch("nostroma_control.profiles.list_profiles", rt.list_profiles), \
+             mock.patch("nostroma_control.runtime.status", rt.status), \
+             mock.patch("nostroma_control.runtime.stop", rt.stop), \
              mock.patch.object(access, "stop_tunnel"):
             code, out, err = run_cli(["launch", "--stop", *args])
         return rt, code, out, err

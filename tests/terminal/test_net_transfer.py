@@ -1,4 +1,4 @@
-"""Lane NET item 2: the update path's downloads (strata_control/transfer.py: the engine, the shape engine, Control, the app, DFlash2, the picture
+"""Lane NET item 2: the update path's downloads (nostroma_control/transfer.py: the engine, the shape engine, Control, the app, DFlash2, the picture
 reader) and the feed read under the network rule, against local servers: a black hole fails fast with the plain sentence; a connection that breaks
 after bytes came is resumed; a link that trickles is never cut; 5 minutes (scaled) without a new byte ends it with W6. The real-time proof (bytes every
 20-50 s for 365 s, the rule's own 60 s stall) runs with STRATA_SLOW_NET_TESTS=1."""
@@ -16,7 +16,7 @@ import urllib.request
 from pathlib import Path
 from unittest import mock
 
-from strata_control import feed, netpolicy, transfer
+from nostroma_control import feed, netpolicy, transfer
 from tests.terminal.test_netpolicy import AT_ONCE_S, REFUSED_WINDOW, BlackHole, Server, refused_port
 
 BODY = bytes(range(256)) * 40          # 10,240 bytes

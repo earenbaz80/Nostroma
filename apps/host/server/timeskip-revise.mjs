@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { envVar } from './env-compat.mjs';
 /**
  * One revision attempt for Time-skip, performed by the app's own assistant.
  *
@@ -11,10 +12,10 @@
  * A turn on a slow computer can take many minutes with nothing to say; an answer that sends no byte for five minutes is abandoned by
  * Node's fetch, which is how a Time-skip used to end with "The assistant could not be reached".
  */
-const base = process.env.STRATA_HOST_URL;
-const secret = process.env.STRATA_INTERNAL_SECRET;
-const prompt = process.env.STRATA_TIMESKIP_PROMPT ?? '';
-const attempt = Number(process.env.STRATA_TIMESKIP_ATTEMPT ?? 1);
+const base = envVar('HOST_URL');
+const secret = envVar('INTERNAL_SECRET');
+const prompt = envVar('TIMESKIP_PROMPT') ?? '';
+const attempt = Number(envVar('TIMESKIP_ATTEMPT') ?? 1);
 
 if (!base || !secret || !prompt) {
   console.error('The revision step needs the Nostroma app to be running.');

@@ -15,10 +15,10 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_cli.launch import modelstate
-from strata_cli.launch import settings as S
-from strata_cli.launch.catalog import Catalog
-from strata_cli.launch.runner import Runner
+from nostroma_cli.launch import modelstate
+from nostroma_cli.launch import settings as S
+from nostroma_cli.launch.catalog import Catalog
+from nostroma_cli.launch.runner import Runner
 from tests.terminal.launch_support import HW_12, Home, catalog, not_intel
 from tests.terminal.test_own_files import IQ3XXS, gguf_bytes
 

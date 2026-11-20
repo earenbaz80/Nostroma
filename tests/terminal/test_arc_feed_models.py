@@ -1,4 +1,4 @@
-"""Qwen4 day on an Intel Arc card: a model of the signed feed (strata_control/feed_models.py) gets an Arc run config, in the Terminal (strata_cli/launch/adopt.py,
+"""Qwen4 day on an Intel Arc card: a model of the signed feed (nostroma_control/feed_models.py) gets an Arc run config, in the Terminal (nostroma_cli/launch/adopt.py,
 runner.adopt_prepared_files) and in the app (setup.py --backend sycl in CONTROL mode, tools/strata_mcp.py's install plan).
 
 Found by the Q4-READY rehearsal on the A750 (11-09): `strata launch` of a feed model stopped with "Strata can write the settings itself only for the Qwen3.8-Flash-Next,
@@ -24,14 +24,14 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tools"))
 import setup  # noqa: E402
 import strata_mcp as M  # noqa: E402
-from strata_cli.launch import adopt  # noqa: E402
-from strata_control import intel_app, setup_config  # noqa: E402
+from nostroma_cli.launch import adopt  # noqa: E402
+from nostroma_control import intel_app, setup_config  # noqa: E402
 
 A750 = {"vendor": "intel", "name": "Intel Arc A750", "vram_gb": 8.0, "usable": True, "index": 0}
 
 
 def feed_family(model_id: str, *, shape: str | None = None, drafter: str = "none") -> dict:
-    """A family as strata_control/feed_models.py._flash_next makes it (the keys the Arc path reads)."""
+    """A family as nostroma_control/feed_models.py._flash_next makes it (the keys the Arc path reads)."""
     fam = {"title": "Qwen4 Rehearsal", "by": "Qwen", "about": "x", "tag": model_id + "-", "name": model_id, "shards": 2, "vision": False, "feed": True,
            "drafter": drafter, "pack_args": ["--compat-bf16"], "file": {}, "hf": {}, "sha256": {}, "license": "Apache 2.0"}
     if shape:
@@ -71,7 +71,7 @@ class AdoptFeedModels(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
-        p = mock.patch("strata_cli.launch.adopt.intel_driver", lambda: "i915")
+        p = mock.patch("nostroma_cli.launch.adopt.intel_driver", lambda: "i915")
         p.start()
         self.addCleanup(p.stop)
         self.profiles = []
@@ -189,7 +189,7 @@ class AppArcPath(unittest.TestCase):
                 mock.patch.object(setup, "shape_engine_fetch", lambda a: fetched.append(dict(setup.SHAPE_ENGINE))), \
                 mock.patch.object(setup_config, "neutral_profile_if_other_shape", lambda shipped, first, pack, G, say=print: Path(pack) / "expert-profile-4x256.bin"), \
                 mock.patch.object(intel_app, "arc_cards", lambda root="": [dict(A750)]), \
-                mock.patch("strata_cli.launch.adopt.intel_driver", lambda: "i915"), \
+                mock.patch("nostroma_cli.launch.adopt.intel_driver", lambda: "i915"), \
                 mock.patch.object(intel_app, "supported_here", lambda platform=None: True):
             self.assertEqual(setup.intel_control_setup(a), 0)
         self.assertEqual(fetched, [{"shape": "q4_lite", "title": "Qwen4 Rehearsal"}])

@@ -2,7 +2,7 @@
 
 Found by QAGUI-LIN on an Arc A750: the app's install job ran setup.py with no `--backend`, so setup's NVIDIA / AMD path stopped with "no NVIDIA GPU found
 (nvidia-smi did not answer)". tools/strata_mcp.py now picks `sycl` for an Intel PC and passes `--backend sycl`; setup.py's CONTROL mode answers that with the
-Terminal's own two steps (the pack, then the run config of strata_cli/launch/adopt.py). NVIDIA and AMD are what they were. Offline: nothing runs but Python."""
+Terminal's own two steps (the pack, then the run config of nostroma_cli/launch/adopt.py). NVIDIA and AMD are what they were. Offline: nothing runs but Python."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tools"))
 import setup  # noqa: E402
 import strata_mcp as M  # noqa: E402
-from strata_control import intel_app  # noqa: E402
+from nostroma_control import intel_app  # noqa: E402
 
 A750 = {"vendor": "intel", "name": "Intel Arc A750", "vram_gb": 8.0, "usable": True, "index": 0}
 NVIDIA = {"vendor": "nvidia", "name": "NVIDIA GeForce RTX 5070", "vram_gb": 11.9, "usable": True, "index": 0, "arch": "120"}
@@ -67,7 +67,7 @@ class CardList(unittest.TestCase):
                 mock.patch.object(S, "gpus", lambda: []), mock.patch.object(S, "amd_gpus", lambda: []), \
                 mock.patch.object(M, "rocm_smi_gpus", lambda: []), mock.patch.object(M, "kfd_gpus", lambda: []), \
                 mock.patch.object(intel_app, "arc_cards", lambda root="": [dict(A750)]), mock.patch.object(intel_app, "engine_is_intel", lambda: True), \
-                mock.patch("strata_control.engine_component.status", lambda: {"usable": False}):
+                mock.patch("nostroma_control.engine_component.status", lambda: {"usable": False}):
             hw = s._hardware()
         self.assertEqual([(g["vendor"], g["name"], g["vram_gb"], g["id"]) for g in hw["gpus"]], [("intel", "Intel Arc A750", 8.0, "intel:0")])
         self.assertEqual(hw["engine_vendor"], "intel")
@@ -194,7 +194,7 @@ class SetupControlMode(unittest.TestCase):
                 mock.patch.object(setup, "data_folder_for", lambda a: (data, [])), \
                 mock.patch.object(setup, "prepare_pack_only", fake_pack), \
                 mock.patch.object(intel_app, "arc_cards", lambda root="": [dict(A750)]), \
-                mock.patch("strata_cli.launch.adopt.intel_driver", lambda: driver), \
+                mock.patch("nostroma_cli.launch.adopt.intel_driver", lambda: driver), \
                 mock.patch.object(intel_app, "supported_here", lambda platform=None: True):
             return setup.intel_control_setup(a)
 

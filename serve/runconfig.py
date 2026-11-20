@@ -13,8 +13,8 @@ import json
 import shutil
 from pathlib import Path
 
-from strata_control import user_args
-from strata_control import atomic as _atomic_mod
+from nostroma_control import user_args
+from nostroma_control import atomic as _atomic_mod
 
 # (key, kind, help).  kind: "bool", "int>=0", "num>=0", ("enum", values), "names", or ("sampling", check) for a key
 # of the "sampling" block, ("arg", flag) for an engine option kept in "args".

@@ -1,6 +1,6 @@
 // The Drafting choice in the app (MTP / DFlash2 / Off / Auto): the Models screen row, the setting the host saves, what the host asks Control before
 // a load, the download plan line, and the words in all nine languages. The table of which card gets which drafter lives in Python
-// (strata_control/drafting.py, tests/terminal/test_drafting.py); the app never reads it.
+// (nostroma_control/drafting.py, tests/terminal/test_drafting.py); the app never reads it.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -205,8 +205,8 @@ test('a failed MTP download says one short line, not the installer text, and the
   assert.doesNotMatch(fn, /error\.message/);
 });
 
-test('the drafter memory figures in the app are the ones strata_control/drafting.py holds (DRAFTER_MIB), and the page uses the true one', async () => {
-  const py = read('../../../strata_control/drafting.py');
+test('the drafter memory figures in the app are the ones nostroma_control/drafting.py holds (DRAFTER_MIB), and the page uses the true one', async () => {
+  const py = read('../../../nostroma_control/drafting.py');
   const table = JSON.parse(py.match(/^DRAFTER_MIB = (\{[^}]*\})/m)[1]);
   const gb = mib => Math.floor(mib / 10 + 0.5) / 100;          // the same rounding as DRAFTER_GB (half up to 10 MiB)
   assert.deepEqual(Object.keys(table).sort(), ['dflash2', 'dflash2_selq4', 'mtp', 'off']);

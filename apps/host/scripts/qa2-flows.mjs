@@ -8,11 +8,12 @@ import { mkdtempSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { chromium } from 'playwright-core';
+import { envVar } from '../server/env-compat.mjs';
 
 const HOST = resolve(import.meta.dirname, '..');
 const SHOTS = resolve(process.argv[2] ?? join(tmpdir(), 'strata-qa2-shots'));
 mkdirSync(SHOTS, { recursive: true });
-const CHROME = process.env.STRATA_CHROME ?? (process.platform === 'win32' ? 'C:/Program Files/Google/Chrome/Application/chrome.exe' : process.platform === 'darwin' ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' : '/usr/bin/google-chrome');
+const CHROME = envVar('CHROME') ?? (process.platform === 'win32' ? 'C:/Program Files/Google/Chrome/Application/chrome.exe' : process.platform === 'darwin' ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' : '/usr/bin/google-chrome');
 const checks = [];
 const check = (ok, what) => { checks.push(!!ok); console.log(ok ? 'PASS' : 'FAIL', what); };
 async function startHost(port) {

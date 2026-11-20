@@ -1,7 +1,7 @@
 # Engine component manifest (schema 2)
 
 This page is for developers who build or check engine packages. It defines the manifest that every engine package carries:
-Windows CUDA 13 and 12, Windows HIP, Linux CUDA, Linux HIP, Linux SYCL and macOS Metal. Control (`strata_control/engine_component.py`) reads it, checks it, and only then starts the engine.
+Windows CUDA 13 and 12, Windows HIP, Linux CUDA, Linux HIP, Linux SYCL and macOS Metal. Control (`nostroma_control/engine_component.py`) reads it, checks it, and only then starts the engine.
 `packaging/package_engine.py` writes it. A package you make locally is unsigned and loads. A package in the release feed is signed with the
 feed key (an Ed25519 key the owner keeps offline), and `strata update` / "Update engine" install it only when that signature verifies
 ([UPDATES.md](UPDATES.md)). The installers carry an engine of their own, so a new install needs no download to start a model.
@@ -68,7 +68,7 @@ to nothing: a good older package is used and the tampered one is listed under `p
 ## Signature
 
 `signature` is `null` in a package made locally. The release feed's packages carry one; the updater registers the verifier
-(`strata_control/signing.py`) and requires it for every package it installs:
+(`nostroma_control/signing.py`) and requires it for every package it installs:
 
     engine_component.register_signature_verifier(fn)       # fn(payload: bytes, signature: dict, component) -> None, raises if bad
     engine_component.signing_payload(manifest_dict)         # canonical bytes the signature covers
@@ -92,7 +92,7 @@ Without `--include`/`--tree` it takes the entrypoint, the libraries beside it, `
 `strata-vision` when the build has one.
 `--shape q4_lite` makes the package of a Qwen4 model shape (the engine compiled with `-DSTRATA_GEOMETRY=q4_lite`): the
 manifest's `id` and `name` are `strata-q4-lite` and it has `"shape": "q4_lite"`, so it is never read as the Strata engine (and an older Control refuses it); it installs in
-`<components>/shapes/q4_lite/engine/`, beside `<components>/engine/` (`strata_control/shape_engine.py`, packaging/UPDATES.md). `--verify` reads either kind. The build id
+`<components>/shapes/q4_lite/engine/`, beside `<components>/engine/` (`nostroma_control/shape_engine.py`, packaging/UPDATES.md). `--verify` reads either kind. The build id
 defaults to the checkout's commit (`-dirty` when the tree has changes). It prints the size, file count and the SHA-256 of
 the manifest file (which holds every file's hash), used as the package's digest in notes.
 
@@ -125,7 +125,7 @@ An AMD package records the hipBLASLt it bundles (`hipblaslt_version` in BUILD.js
 for exactly that version and its `archs` as `tuning/<arch>-hipblaslt-<version>.txt`. They are ordinary files of the manifest (hashed and signed
 with the package). `packaging/stage_tuning.py` does it for the Linux build script, `tools/hip/package_windows.py` for the Windows zip, and
 `package_engine.py` refuses an AMD stage without `hipblaslt_version` or with a table for another version or architecture. The server's start
-(`serve/server.py with_component_engine`, rule in `strata_control/hipblaslt_tuning.py`) picks the table of the card and sets
+(`serve/server.py with_component_engine`, rule in `nostroma_control/hipblaslt_tuning.py`) picks the table of the card and sets
 `STRATA_HIPBLASLT_TUNING` for the engine; a version mismatch, an unreadable card or a missing version are one log line and plain hipBLAS.
 `STRATA_HIPBLASLT_TABLE=on|off` (or `"hipblaslt_table"` in the run config) overrides; unset it follows `AUTO_USES_TABLE`, which is off by default, because a table changes the rounding of the prompt's GEMMs (docs/AMD_HIP.md, Tuning table). Tests: `tests/terminal/test_hipblaslt_tuning.py`.
 
@@ -147,10 +147,10 @@ At run time a reader that still cannot start tells why (stderr tail, exit status
 A HIP package carries two programs for pictures next to `strata` (`vision` in its BUILD.json): `strata-vision` is the CPU reader, which
 needs nothing of the GPU runtime and starts on every PC, and `strata-vision-hip` is the same reader on the card (llama.cpp's HIP
 backend, built for the package's `archs`; BUILD.json `vision_archs`). Pictures are on by default. The reader runs on the CPU for a card under 24 GB and on the card from 24 GB, on every make of card (the rule is
-`strata_control/vision_reader.py`; `--vision gpu` or `--vision cpu` picks the other one for a model). When the run config names the GPU reader first
+`nostroma_control/vision_reader.py`; `--vision gpu` or `--vision cpu` picks the other one for a model). When the run config names the GPU reader first
 and the CPU reader as `vision.cpu_exe`, and the GPU reader does not start (the card is not in its build, the HIP runtime does not load, the card is
 busy) the server starts the CPU reader by itself and prints one line. Both programs have RUNPATH `$ORIGIN` on Linux; on Windows the
-ROCm DLLs they import sit beside the programs or in `rocm/bin` (the engine's PATH entry, `lib_dirs`). `strata_control/vision_reader.py`
+ROCm DLLs they import sit beside the programs or in `rocm/bin` (the engine's PATH entry, `lib_dirs`). `nostroma_control/vision_reader.py`
 holds the choice; `tools/test_vision_reader.py` the tests.
 
 ## History / older measurements

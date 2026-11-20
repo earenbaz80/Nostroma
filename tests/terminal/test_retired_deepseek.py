@@ -1,4 +1,4 @@
-"""strata_control/retired.py: DeepSeek configs, names, folders and files are recognised locally and at once; the words name the folder
+"""nostroma_control/retired.py: DeepSeek configs, names, folders and files are recognised locally and at once; the words name the folder
 and its size; a Qwen config never matches; nothing raises on unreadable input."""
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from strata_control import retired  # noqa: E402
+from nostroma_control import retired  # noqa: E402
 
 
 def gguf(path: Path, arch: str, extra_kv_first: bool = False) -> Path:

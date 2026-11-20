@@ -30,9 +30,9 @@ HERE = Path(__file__).resolve().parent
 
 
 def run_cli(argv: list[str]) -> tuple[int, str, str]:
-    from strata_cli.cli import main
+    from nostroma_cli.cli import main
     out, err = io.StringIO(), io.StringIO()
-    saved = dict(os.environ)            # main() sets variables on its own process for the programs it starts (GGML_NO_BACKTRACE, strata_control/childenv.py): that is
+    saved = dict(os.environ)            # main() sets variables on its own process for the programs it starts (GGML_NO_BACKTRACE, nostroma_control/childenv.py): that is
     try:                                # the command's doing, not the machine's, so it must not become the baseline the engine's environment is compared with
         with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
             try:
@@ -74,12 +74,12 @@ def drive_launch(world: World, extra: tuple[str, ...] = (), setup_runs: bool | s
     """`strata launch --model <set> --yes --no-tui` through the real command, with the engine start, the model download and the tuning replaced.
     `extra`: more words for the command (`--drafting off`), for the tests that launch several times in one world.  `setup_runs`: setup runs at this launch
     (as it does at every launch whose --model-path or data folder the installed copy does not match, runner.installed_serves_request) and leaves the
-    draft-layer word in the installed config as strata_control/setup_config.py writes it: the stand-in config afresh, "--mtp off" -> "mtp": false (and no --mtp
+    draft-layer word in the installed config as nostroma_control/setup_config.py writes it: the stand-in config afresh, "--mtp off" -> "mtp": false (and no --mtp
     in the args), "--mtp on" -> true, no word -> the earlier value kept (setup.carry_over).
     "when_needed": only when ensure_model would not reuse the installed copy (the record then says "setup_ran").
     `fresh`: a computer without the draft layer (World.fresh): setup's step 6 is simulated too (setup_fetches_layer), and the record has the plan's parts
     (`plan_parts`, Runner.model_state() before setup) and its drafting line (`plan_drafting`)."""
-    from strata_cli.launch import catalog as C, runner as R
+    from nostroma_cli.launch import catalog as C, runner as R
     seen: dict = {}
     cat = C.Catalog(root=world.install, hardware=world.hardware_report())
 
@@ -95,7 +95,7 @@ def drive_launch(world: World, extra: tuple[str, ...] = (), setup_runs: bool | s
                         and not self.layer_back(path) and self.installed_serves_request(path))
         seen["setup_ran"] = bool(runs)
         if runs:                                             # setup writes the config afresh and carries an earlier "mtp" over unless --mtp is given
-            from strata_control import draft_layer
+            from nostroma_control import draft_layer
             if fresh:
                 setup_fetches_layer(world, args)
                 self.note_setup_lines(getattr(world, "setup_said", []))     # what setup printed (a test sets it: mtp_fetch's offline line)
@@ -138,7 +138,7 @@ def drive_launch(world: World, extra: tuple[str, ...] = (), setup_runs: bool | s
 
 def drive_app(world: World, which: str) -> dict:
     """The app's Load, in a Node process: the host's own createNativeControl with a fake Control for everything but the Drafting calls, which go through the
-    real strata_control (python -m tests.snapshot.control_shim) on the same simulated machine.  Returns the run config the host wrote and the Python side's
+    real nostroma_control (python -m tests.snapshot.control_shim) on the same simulated machine.  Returns the run config the host wrote and the Python side's
     engine start for it."""
     node = os.environ.get("STRATA_SNAPSHOT_NODE") or "node"
     world_file = world.root / "world.json"

@@ -2313,7 +2313,7 @@
   },
   "extensions": {
     "suite": "standard-v1",
-    "runner": "strata_cli.bench_standard",
+    "runner": "nostroma_cli.bench_standard",
     "status_reasons": [],
     "started_engine": true,
     "server_requests_before_run": 0,

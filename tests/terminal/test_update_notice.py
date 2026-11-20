@@ -26,9 +26,9 @@ from pathlib import Path
 from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from strata_cli.launch import app as launch_app  # noqa: E402
-from strata_cli.launch.monitor_ext import LaunchMonitor  # noqa: E402
-from strata_control import engine_component as ec, engine_update, updater  # noqa: E402
+from nostroma_cli.launch import app as launch_app  # noqa: E402
+from nostroma_cli.launch.monitor_ext import LaunchMonitor  # noqa: E402
+from nostroma_control import engine_component as ec, engine_update, updater  # noqa: E402
 from tests.terminal import update_fixture as fx  # noqa: E402
 from tests.terminal.launch_support import text_of  # noqa: E402
 from tests.terminal.test_launch_monitor import INFO, flat  # noqa: E402
@@ -281,7 +281,7 @@ class Monitor(unittest.TestCase):
 
             def run(self):
                 return None
-        with mock.patch("strata_cli.launch.monitor_ext.LaunchMonitor", Stub):
+        with mock.patch("nostroma_cli.launch.monitor_ext.LaunchMonitor", Stub):
             launch_app.run_monitor({"url": "http://127.0.0.1:8080", "urls": ["http://127.0.0.1:8080"], "key": "", "profile": "launch-x"})
         self.assertTrue(seen.get("daily_check"))
 

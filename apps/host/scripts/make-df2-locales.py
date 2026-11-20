@@ -4,7 +4,7 @@ This computer panel.
 Run from apps/host:  python scripts/make-df2-locales.py
 Every entry names all nine languages; the keys are df01.. in the order of S. df2-en.json is the English source. Placeholders ({0}) must be kept in every
 language. A separate file keeps this work from colliding with the other catalogs (the same reason pick-, tune-, tools-, fix-, gh-, ui- and engine- exist).
-The English lines of df03-df07 and df09 are also written in strata_control/drafting.py and strata_control/drafting_fetch.py; tests/drafting.test.mjs keeps the two the same."""
+The English lines of df03-df07 and df09 are also written in nostroma_control/drafting.py and nostroma_control/drafting_fetch.py; tests/drafting.test.mjs keeps the two the same."""
 import json
 import re
 from pathlib import Path
@@ -220,7 +220,7 @@ add("DFlash2 is off by default on this graphics card for now; choose it in Draft
     "O DFlash2 está desligado por predefinição nesta placa de vídeo por agora; escolha-o em Previsão para o usar.",
     "현재 이 그래픽 카드에서는 DFlash2가 기본적으로 꺼져 있습니다. 사용하려면 ‘초안 예측’에서 선택하세요.",
     "DFlash2 est désactivé par défaut sur cette carte graphique pour le moment ; choisissez-le dans Anticipation pour l'utiliser.")
-# strata_control/drafting.py NONE_IN_SLOTS after "Drafting: ": request slots with no --batch-mtp draft nothing (the line is printed whole, not inside "MTP (...)")
+# nostroma_control/drafting.py NONE_IN_SLOTS after "Drafting: ": request slots with no --batch-mtp draft nothing (the line is printed whole, not inside "MTP (...)")
 add("Drafting: none in parallel slots (one token per request and step); a single request still drafts",
     "预测草稿：并行槽位中没有（每个请求每一步一个词元）；单个请求仍会预测草稿",
     "先読み：並列の枠ではなし（リクエストごと、ステップごとに 1 トークン）；リクエストが 1 件だけのときは先読みします",

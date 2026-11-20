@@ -79,7 +79,7 @@ class PerFileSwitches(unittest.TestCase):
         self.assertIn("g_gdn_tc_default{true}", k)
 
     def test_the_rule_in_python_terms(self):
-        """The same rule as a function, over the type names a GGUF's routed experts carry (what strata_control/split_engine.py reads)."""
+        """The same rule as a function, over the type names a GGUF's routed experts carry (what nostroma_control/split_engine.py reads)."""
         iq = {"IQ2_S", "IQ3_XXS", "IQ3_S", "Q2_0"}
 
         def gdn_tc(expert_types, env=None):

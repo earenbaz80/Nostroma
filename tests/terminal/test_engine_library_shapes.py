@@ -1,6 +1,6 @@
 """Settings > Engine and `strata components engines | use | remove` for the engine of a Qwen4 model shape (APP-WIN item 6, owner 11-08 "later, after 0.2.13").
 
-A shape's engine lives in <components>/shapes/<shape>/engine/ (strata_control/shape_engine.py). The list shows one family per installed shape ("shape:<shape>",
+A shape's engine lives in <components>/shapes/<shape>/engine/ (nostroma_control/shape_engine.py). The list shows one family per installed shape ("shape:<shape>",
 an id the app never shows; the title is None and the app names the group with the model's catalog title), after the Qwen and DeepSeek families. Switching
 pins within the shape's own folder (the same ``.updates/state.json`` engine.pinned the Qwen engine uses, which engine_component.resolve reads at every start of
 a model of that shape); the newest goes back to no pin. Deleting refuses the one in use and one a running program uses with the existing lines. The Strata
@@ -14,7 +14,7 @@ import contextlib
 from pathlib import Path
 from unittest import mock
 
-from strata_control import engine_component as ec, engine_library as lib, shape_engine, signing, updater
+from nostroma_control import engine_component as ec, engine_library as lib, shape_engine, signing, updater
 from tests.terminal.test_shape_engine import SHAPE, Base, tree
 
 FAMILY = "shape:" + SHAPE
@@ -115,12 +115,12 @@ class ShapeEngines(Base):
         self.assertIsNone(lib.shape_of_family("qwen"))
 
     def test_the_terminal_lists_the_shape_by_name_and_takes_the_family_the_app_passes(self):
-        from strata_cli import update_cmd
+        from nostroma_cli import update_cmd
         self.assertIn(FAMILY, update_cmd._ENGINE_FAMILIES)
         self.assertIn("qwen", update_cmd._ENGINE_FAMILIES)
         self.assertNotIn("shape:Nope", update_cmd._ENGINE_FAMILIES)
         self.assertEqual(list(update_cmd._ENGINE_FAMILIES), ["qwen"], "help and errors list the Qwen family")
-        self.assertIn("deepseek", update_cmd._ENGINE_FAMILIES)   # accepted, so engine_library answers it in plain words (strata_control/retired.py)
+        self.assertIn("deepseek", update_cmd._ENGINE_FAMILIES)   # accepted, so engine_library answers it in plain words (nostroma_control/retired.py)
         self.install("0.1.59")
         a = mock.Mock(components_command="engines")
         out = io.StringIO()

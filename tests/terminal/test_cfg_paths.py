@@ -15,7 +15,7 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from strata_control import cfg_paths, doctor, engine_component as ec, profiles, runtime, updater  # noqa: E402
+from nostroma_control import cfg_paths, doctor, engine_component as ec, profiles, runtime, updater  # noqa: E402
 from tests.terminal.test_updater import PLATFORM, UpdaterCase  # noqa: E402
 
 WINDOWS = os.name == "nt"
@@ -72,11 +72,11 @@ class StaleConfigPaths(UpdaterCase):
 
     def publish_control(self, version):
         bundle = self.root / f"bundle-{version}"
-        (bundle / "strata_control").mkdir(parents=True)
+        (bundle / "nostroma_control").mkdir(parents=True)
         (bundle / "data").mkdir()
         (bundle / "data" / "expert-profile.bin").write_bytes(b"profile-" + version.encode())
         (bundle / "strata.py").write_text(f"print('strata {version} (python stub)')\n")
-        (bundle / "strata_control" / "__init__.py").write_text("")
+        (bundle / "nostroma_control" / "__init__.py").write_text("")
         from feed_tool import build_feed, pack_control
         shutil.rmtree(self.release, ignore_errors=True)
         (self.release / "control").mkdir(parents=True)
@@ -242,7 +242,7 @@ class StaleConfigPaths(UpdaterCase):
         self.assertNotIn("0.1.44", self.without_output_path(b), "the Models page reads the other profiles' configs too")
 
     def test_a_deepseek_config_is_left_exactly_as_it_was(self):
-        """This Strata runs no DeepSeek model (strata_control/retired.py): neither the repair nor a start writes its config, which may still
+        """This Strata runs no DeepSeek model (nostroma_control/retired.py): neither the repair nor a start writes its config, which may still
         serve the Strata it came from; the start says why it stops."""
         path = self.deepseek_config("ds")
         self.two_updates()

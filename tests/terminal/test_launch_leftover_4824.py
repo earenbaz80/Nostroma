@@ -5,10 +5,10 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_cli.launch import store
-from strata_cli.launch import settings as S
-from strata_cli.launch.runner import LEFTOVER_STATES, LaunchError, Runner, _log_hint
-from strata_cli.launch.catalog import Catalog
+from nostroma_cli.launch import store
+from nostroma_cli.launch import settings as S
+from nostroma_cli.launch.runner import LEFTOVER_STATES, LaunchError, Runner, _log_hint
+from nostroma_cli.launch.catalog import Catalog
 from tests.terminal.launch_support import HW_12, Home, run_cli
 
 
@@ -31,14 +31,14 @@ class Leftover(unittest.TestCase):
     def test_a_failed_host_is_cleared_before_the_tuning_and_the_line_says_so(self):
         for state in ("failed", "stale"):
             r = bare_runner()
-            with mock.patch("strata_control.runtime.status", return_value={"state": state}), mock.patch("strata_control.runtime.stop") as stop:
+            with mock.patch("nostroma_control.runtime.status", return_value={"state": state}), mock.patch("nostroma_control.runtime.stop") as stop:
                 r.stop_own_server_for_tuning()
             stop.assert_called_once()
             self.assertEqual(r.said, ["Clearing a stopped server of this preset before measuring."])
 
     def test_a_running_server_keeps_its_own_line(self):
         r = bare_runner()
-        with mock.patch("strata_control.runtime.status", return_value={"state": "ready"}), mock.patch("strata_control.runtime.stop"):
+        with mock.patch("nostroma_control.runtime.status", return_value={"state": "ready"}), mock.patch("nostroma_control.runtime.stop"):
             r.stop_own_server_for_tuning()
         self.assertEqual(r.said, ["Stopping the model to measure; it starts again afterwards."])
 
@@ -52,9 +52,9 @@ class Leftover(unittest.TestCase):
         r.start_wait = lambda: 5
         r.report_drafting = lambda: None
         calls = []
-        with mock.patch("strata_control.runtime.status", return_value={"state": "failed", "error": "server_exited"}), \
-                mock.patch("strata_control.runtime.stop", side_effect=lambda *a, **k: calls.append("stop")), \
-                mock.patch("strata_control.runtime.start", side_effect=lambda *a, **k: calls.append("start") or {"ok": True}):
+        with mock.patch("nostroma_control.runtime.status", return_value={"state": "failed", "error": "server_exited"}), \
+                mock.patch("nostroma_control.runtime.stop", side_effect=lambda *a, **k: calls.append("stop")), \
+                mock.patch("nostroma_control.runtime.start", side_effect=lambda *a, **k: calls.append("start") or {"ok": True}):
             r.start()
         self.assertEqual(calls, ["stop", "start"])
         self.assertTrue(any("stopped earlier and was never cleared" in line for line in r.said), r.said)

@@ -1,4 +1,4 @@
-"""The picture reader choice for an AMD engine folder (strata_control/vision_reader.py) and the server's fallback from the GPU
+"""The picture reader choice for an AMD engine folder (nostroma_control/vision_reader.py) and the server's fallback from the GPU
 reader to the CPU reader (serve/server.py, Vision._start): hip present, hip missing, hip start failure, then cpu.
 
     python -m unittest tools.test_vision_reader
@@ -12,7 +12,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
-from strata_control import vision_reader as VR
+from nostroma_control import vision_reader as VR
 import serve.server as server
 
 
@@ -289,7 +289,7 @@ class Fallback(unittest.TestCase):
         self.assertEqual(log.count("[strata] Strata's picture reader did not start; pictures are read with llama.cpp's reader."), 1)
 
     def test_the_reader_choice_reaches_the_reader_through_the_run_configs_env(self):
-        """The settings write STRATA_VISION_TOWER=mtmd into the model's run config "env" (strata_control/speed_switches.py picture_reader); the server
+        """The settings write STRATA_VISION_TOWER=mtmd into the model's run config "env" (nostroma_control/speed_switches.py picture_reader); the server
         hands that env to the picture reader as to the engine, so no reader argument changes (an older reader ignores the variable)."""
         cfg = {"env": {"STRATA_VISION_TOWER": "mtmd"}, "vision": {"exe": "/e/strata-vision", "mmproj": "/m/mm.gguf", "model": "/m/t.gguf"}}
         env = server.vision_env(cfg, server.child_env(cfg))

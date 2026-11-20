@@ -10,9 +10,9 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_cli.launch import settings as S
-from strata_cli.launch.app import Ctx, LaunchApp
-from strata_cli.launch import params as P
+from nostroma_cli.launch import settings as S
+from nostroma_cli.launch.app import Ctx, LaunchApp
+from nostroma_cli.launch import params as P
 from tests.terminal.launch_support import HW_12, Home, text_of
 from tests.terminal.test_launch_tui import FakeRunner, make_ctx, press, flat, typed
 
@@ -38,7 +38,7 @@ class Base(unittest.TestCase):
         FakeRunner.instances.clear()
         FakeRunner.behaviour = "ok"
         FakeRunner.download = 0.0
-        p = mock.patch("strata_cli.launch.app.Runner", FakeRunner)
+        p = mock.patch("nostroma_cli.launch.app.Runner", FakeRunner)
         p.start()
         self.addCleanup(p.stop)
 
@@ -141,7 +141,7 @@ class StoragePath(Base):
             self.run_app(case, ctx=ctx, size=(80, 24))
 
     def test_middle_shorten(self):
-        from strata_cli.launch.screens import middle_shorten
+        from nostroma_cli.launch.screens import middle_shorten
         self.assertEqual(middle_shorten("C:/a/b", 10), "C:/a/b")
         p = "C:\\Users\\Ana\\Documents\\Strata\\a-very-long-folder-name-for-models\\Strata-data"
         s = middle_shorten(p, 40)
@@ -165,7 +165,7 @@ class AdvancedLayout(Base):
                          "--pack", "/very/long/path/to/the/data/packs/iq3_xxs", "--max-context", "131072", "--kv", "int8", "--prefill", "auto",
                          "--vision"]}
         for p in (mock.patch.object(Ctx, "base_config", lambda self: base), mock.patch.object(Ctx, "engine_exe", lambda self: "/engine/strata"),
-                  mock.patch("strata_cli.launch.params.engine_help_text", return_value=self.HELP)):
+                  mock.patch("nostroma_cli.launch.params.engine_help_text", return_value=self.HELP)):
             p.start()
             self.addCleanup(p.stop)
         return ctx

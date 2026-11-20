@@ -34,7 +34,7 @@ die() { printf 'strata installer: %s\n' "$*" >&2; exit 1; }
 # Everything below is one function, called on the last line: a download that stops half-way is a syntax error (nothing runs), not a half installer.
 main() {
   # ---- tools
-  # The network rule (strata_control/netpolicy.py): a server that does not answer is given up after 15 s and one more try, and a download stops
+  # The network rule (nostroma_control/netpolicy.py): a server that does not answer is given up after 15 s and one more try, and a download stops
   # only when no data comes for 60 s (a slow line that works is never cut). A refused connection or no DNS answer fails at once.
   if command -v curl >/dev/null 2>&1; then
     fetch() { curl -fsSL --connect-timeout 15 --speed-limit 1 --speed-time 60 --retry 1 --retry-delay 2 -o "$2" "$1"; }

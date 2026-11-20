@@ -13,10 +13,10 @@ from contextlib import redirect_stdout
 from pathlib import Path
 from unittest import mock
 
-from strata_cli.cli import main
-from strata_cli.client import (ClientError, Endpoint, normalize_legacy, normalize_status_only,
+from nostroma_cli.cli import main
+from nostroma_cli.client import (ClientError, Endpoint, normalize_legacy, normalize_status_only,
                                sanitize_telemetry, server_url)
-from strata_cli.render import display_width, field, render_view, safe
+from nostroma_cli.render import display_width, field, render_view, safe
 from serve.server import (configure_batch_telemetry_env, parse_batch_window_sample,
                           parse_stage_in_flight_sample, parse_engine_stage_line,
                           read_engine_stage_log, visible_device_order)
@@ -61,7 +61,7 @@ class ContractTests(unittest.TestCase):
         self.assertEqual(clean["work"]["requests"][0]["replica"], 1)
         self.assertEqual(clean["topology"]["replica_devices"][1]["devices"], [2, 3])
         from rich.console import Console
-        from strata_cli.dashboard import MonitorHistory, render_dashboard
+        from nostroma_cli.dashboard import MonitorHistory, render_dashboard
         output = io.StringIO()
         Console(file=output, width=110, color_system=None).print(render_dashboard(
             clean, width=108, height=28, history=MonitorHistory(), color=False))
@@ -241,7 +241,7 @@ class ContractTests(unittest.TestCase):
         self.assertIn("80/70/60/50%", render_view(clean, "engine", 40, 12))
         self.assertIn("GPU kernel occupancy unavailable", render_view(clean, "engine", 80, 24))
         from rich.console import Console
-        from strata_cli.dashboard import MonitorHistory, render_dashboard
+        from nostroma_cli.dashboard import MonitorHistory, render_dashboard
         old_stage = copy.deepcopy(clean)
         old_stage["work"]["stage_sample_age_s"] = 5.1
         output = io.StringIO()
@@ -410,7 +410,7 @@ class ContractTests(unittest.TestCase):
             self.assertIn("read 250 new", shown)
             self.assertLessEqual(len(shown.splitlines()), height)
             self.assertTrue(all(len(line) <= width for line in shown.splitlines()))
-        with mock.patch("strata_cli.render.time.time", return_value=1_800_000_000.0):
+        with mock.patch("nostroma_cli.render.time.time", return_value=1_800_000_000.0):
             shown = render_view(s, "serving", 80, 24, serving_pane="requests")
         self.assertIn("wait 5.0 s", shown)
         self.assertIn("wait 1.0 s", shown)
@@ -615,7 +615,7 @@ class ContractTests(unittest.TestCase):
 
 
 try:
-    from strata_cli.monitor import MonitorApp, with_aggregate_rate
+    from nostroma_cli.monitor import MonitorApp, with_aggregate_rate
 except ImportError:
     MonitorApp = None
 
@@ -709,7 +709,7 @@ class HeadlessMonitorTests(unittest.TestCase):
 
     def test_overview_uses_selected_cards_and_marks_missing_sensors(self):
         from rich.console import Console
-        from strata_cli.dashboard import MonitorHistory, render_dashboard
+        from nostroma_cli.dashboard import MonitorHistory, render_dashboard
 
         sample = four_gpu_snapshot()
         sample["sampled_at"] = time.time()
@@ -756,7 +756,7 @@ class HeadlessMonitorTests(unittest.TestCase):
         self.assertRegex(output.getvalue(), r"GPU 0[^\n]*--/--G[^\n]*--\s+--")
 
     def test_monitor_history_bounds_device_indices_across_snapshots(self):
-        from strata_cli.dashboard import MonitorHistory, _output_trend
+        from nostroma_cli.dashboard import MonitorHistory, _output_trend
 
         history = MonitorHistory()
         for start in (0, 16, 32):
@@ -774,7 +774,7 @@ class HeadlessMonitorTests(unittest.TestCase):
 
     def test_vram_history_is_per_card_and_missing_values_are_not_zero(self):
         from rich.console import Console
-        from strata_cli.dashboard import MonitorHistory, render_dashboard
+        from nostroma_cli.dashboard import MonitorHistory, render_dashboard
 
         sample = four_gpu_snapshot()
         sample["sampled_at"] = time.time()
@@ -812,7 +812,7 @@ class HeadlessMonitorTests(unittest.TestCase):
 
     def test_overview_output_trend_is_bounded_and_resets_with_instance(self):
         from rich.console import Console
-        from strata_cli.dashboard import MonitorHistory, _output_trend, render_dashboard
+        from nostroma_cli.dashboard import MonitorHistory, _output_trend, render_dashboard
 
         sample = four_gpu_snapshot()
         sample["sampled_at"] = time.time()
@@ -848,7 +848,7 @@ class HeadlessMonitorTests(unittest.TestCase):
 
     def test_batch_and_queue_histories_keep_replica_windows_separate(self):
         from rich.console import Console
-        from strata_cli.dashboard import MonitorHistory, render_dashboard
+        from nostroma_cli.dashboard import MonitorHistory, render_dashboard
 
         sample = four_gpu_snapshot()
         sample["sampled_at"] = time.time()
@@ -931,7 +931,7 @@ class HeadlessMonitorTests(unittest.TestCase):
 
     def test_overview_slot_phases_require_complete_slot_report(self):
         from rich.console import Console
-        from strata_cli.dashboard import MonitorHistory, render_dashboard
+        from nostroma_cli.dashboard import MonitorHistory, render_dashboard
 
         sample = four_gpu_snapshot()
         sample["sampled_at"] = time.time()
@@ -989,7 +989,7 @@ class HeadlessMonitorTests(unittest.TestCase):
 
     def test_connection_panel_hides_cached_work_until_recovery(self):
         from rich.console import Console
-        from strata_cli.dashboard import MonitorHistory, render_dashboard
+        from nostroma_cli.dashboard import MonitorHistory, render_dashboard
 
         sample = four_gpu_snapshot()
         sample["sampled_at"] = time.time() - 4
@@ -1033,8 +1033,8 @@ class HeadlessMonitorTests(unittest.TestCase):
 
     def test_overview_dashboard_keeps_parallel_work_and_four_devices_on_one_screen(self):
         from rich.console import Console
-        from strata_cli.dashboard import MonitorHistory, _spark, render_dashboard
-        from strata_cli.monitor import choose_glyphs
+        from nostroma_cli.dashboard import MonitorHistory, _spark, render_dashboard
+        from nostroma_cli.monitor import choose_glyphs
 
         self.assertEqual(choose_glyphs("auto", "utf-8", "xterm-256color"), "unicode")
         self.assertEqual(choose_glyphs("auto", "ascii", "xterm-256color"), "ascii")
@@ -1114,7 +1114,7 @@ class HeadlessMonitorTests(unittest.TestCase):
 
     def test_wide_visual_overview_uses_real_rates_slots_and_request_rows(self):
         from rich.console import Console
-        from strata_cli.dashboard import MonitorHistory, render_dashboard
+        from nostroma_cli.dashboard import MonitorHistory, render_dashboard
 
         sample = four_gpu_snapshot()
         sample["sampled_at"] = time.time()

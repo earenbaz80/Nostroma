@@ -2,8 +2,8 @@
 from pathlib import Path
 from types import SimpleNamespace
 
-from strata_cli.launch import runner as R
-from strata_control import drafting
+from nostroma_cli.launch import runner as R
+from nostroma_control import drafting
 
 
 def _cfg(**kw):

@@ -44,8 +44,8 @@ export function connectorCandidates({ directory, componentDirectory = null, plat
   // STRATA_CLOUDFLARED=<file> uses exactly that connector; STRATA_CLOUDFLARED_SEARCH=own keeps the search to Strata's own folders.
   const windows = platform === 'win32', p = windows ? win32 : posix;
   const name = windows ? 'cloudflared.exe' : 'cloudflared';
-  if (env.STRATA_CLOUDFLARED) return [{ path: env.STRATA_CLOUDFLARED, source: 'setting' }];
-  if (env.STRATA_CLOUDFLARED_SEARCH === 'own') search = false;
+  if ((env.NOSTROMA_CLOUDFLARED ?? env.STRATA_CLOUDFLARED)) return [{ path: (env.NOSTROMA_CLOUDFLARED ?? env.STRATA_CLOUDFLARED), source: 'setting' }];
+  if ((env.NOSTROMA_CLOUDFLARED_SEARCH ?? env.STRATA_CLOUDFLARED_SEARCH) === 'own') search = false;
   const out = [], seen = new Set();
   const add = (dir, source) => {
     if (!dir) return;

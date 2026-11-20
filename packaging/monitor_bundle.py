@@ -21,28 +21,28 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCES_V2 = (
-    "strata_cli/__init__.py",
-    "strata_cli/client.py",
-    "strata_cli/connections.py",
-    "strata_cli/render.py",
-    "strata_cli/monitor.py",
-    "strata_cli/monitor_commands.py",
-    "strata_cli/logs.py",
+    "nostroma_cli/__init__.py",
+    "nostroma_cli/client.py",
+    "nostroma_cli/connections.py",
+    "nostroma_cli/render.py",
+    "nostroma_cli/monitor.py",
+    "nostroma_cli/monitor_commands.py",
+    "nostroma_cli/logs.py",
 )
-SOURCES_V3 = (*SOURCES_V2, "strata_cli/dashboard.py")
-SOURCES_V4 = (*SOURCES_V3, "strata_cli/detail_dashboard.py")
-SOURCES_V5 = (*SOURCES_V4, "strata_cli/nav.py")      # schema 5: the view tabs every screen shares (strata_cli/nav.py)
-# schema 6: the two modules the interactive Monitor imports at run time (strata_cli/monitor.py, render.py) that earlier lists missed.
+SOURCES_V3 = (*SOURCES_V2, "nostroma_cli/dashboard.py")
+SOURCES_V4 = (*SOURCES_V3, "nostroma_cli/detail_dashboard.py")
+SOURCES_V5 = (*SOURCES_V4, "nostroma_cli/nav.py")      # schema 5: the view tabs every screen shares (nostroma_cli/nav.py)
+# schema 6: the two modules the interactive Monitor imports at run time (nostroma_cli/monitor.py, render.py) that earlier lists missed.
 # tests/terminal/test_monitor_bundle.py derives the import closure of the bundle's entry point and fails if this list falls behind.
-SOURCES = (*SOURCES_V5, "strata_cli/consoleinfo.py", "strata_cli/overview.py")
-BOOTSTRAP = b"from strata_cli.monitor_commands import main\nraise SystemExit(main())\n"
+SOURCES = (*SOURCES_V5, "nostroma_cli/consoleinfo.py", "nostroma_cli/overview.py")
+BOOTSTRAP = b"from nostroma_cli.monitor_commands import main\nraise SystemExit(main())\n"
 MEMBERS_V1 = ("__main__.py", *SOURCES_V2)
 LICENSE_NOTICE = "LICENSE"
 MEMBERS_V2 = (*MEMBERS_V1, LICENSE_NOTICE)
-MEMBERS_V3 = (*MEMBERS_V2, "strata_cli/dashboard.py")
-MEMBERS_V4 = (*MEMBERS_V3, "strata_cli/detail_dashboard.py")
-MEMBERS_V5 = (*MEMBERS_V4, "strata_cli/nav.py")
-MEMBERS = (*MEMBERS_V5, "strata_cli/consoleinfo.py", "strata_cli/overview.py")
+MEMBERS_V3 = (*MEMBERS_V2, "nostroma_cli/dashboard.py")
+MEMBERS_V4 = (*MEMBERS_V3, "nostroma_cli/detail_dashboard.py")
+MEMBERS_V5 = (*MEMBERS_V4, "nostroma_cli/nav.py")
+MEMBERS = (*MEMBERS_V5, "nostroma_cli/consoleinfo.py", "nostroma_cli/overview.py")
 COMPATIBILITY = {"python_min": "3.10", "telemetry_schema": [1]}
 MAX_BUNDLE_BYTES = 1024 * 1024
 MAX_MANIFEST_BYTES = 64 * 1024
@@ -75,7 +75,7 @@ def build(bundle: Path) -> dict:
                               compressed=True)
         with zipfile.ZipFile(temp_bundle) as archive:
             names = archive.namelist()
-            if set(names) != set((*MEMBERS, "strata_cli/")) or len(names) != len(MEMBERS) + 1:
+            if set(names) != set((*MEMBERS, "nostroma_cli/")) or len(names) != len(MEMBERS) + 1:
                 raise ValueError("bundle member list changed during build")
             files = {name: digest(archive.read(name)) for name in MEMBERS}
         report = {"schema_version": 6, "kind": "strata-monitor-bundle",
@@ -113,7 +113,7 @@ def verify(bundle: Path) -> dict:
             raise ValueError("bundle compatibility or license notice mismatch")
     with zipfile.ZipFile(bundle) as archive:
         names = archive.namelist()
-        if len(names) != len(members) + 1 or set(names) != set((*members, "strata_cli/")):
+        if len(names) != len(members) + 1 or set(names) != set((*members, "nostroma_cli/")):
             raise ValueError("bundle contains missing, duplicate or unexpected files")
         if any(info.flag_bits & 1 for info in archive.infolist()):
             raise ValueError("encrypted bundle members are unsupported")

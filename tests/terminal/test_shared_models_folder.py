@@ -7,7 +7,7 @@ import time
 from pathlib import Path
 
 import setup
-from strata_control import discovery
+from nostroma_control import discovery
 from tests.terminal.test_discovery import GuiLayout
 
 

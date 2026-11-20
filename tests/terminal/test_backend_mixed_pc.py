@@ -16,8 +16,8 @@ import unittest
 from contextlib import redirect_stdout
 from unittest import mock
 
-from strata_cli import update_cmd
-from strata_control import engine_component as ec, engine_library as lib, feed as feedmod, updater
+from nostroma_cli import update_cmd
+from nostroma_control import engine_component as ec, engine_library as lib, feed as feedmod, updater
 from tests.terminal.test_updater import PLATFORM, UpdaterCase
 
 
@@ -108,7 +108,7 @@ class MixedPcEngines(UpdaterCase):
             patch.start()
             self.addCleanup(patch.stop)
         self.settings = self.root / "settings"
-        patch = mock.patch("strata_control.discovery.own_settings_file", return_value=self.settings / "settings.json")
+        patch = mock.patch("nostroma_control.discovery.own_settings_file", return_value=self.settings / "settings.json")
         patch.start()
         self.addCleanup(patch.stop)
 

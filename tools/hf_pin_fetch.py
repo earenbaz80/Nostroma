@@ -15,7 +15,7 @@ import urllib.request
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from strata_control import tls  # noqa: E402
+from nostroma_control import tls  # noqa: E402
 
 tls.install()       # #3722: the operating system's certificates
 

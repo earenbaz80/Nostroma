@@ -7,8 +7,8 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_cli.launch import runner as R, settings as LS
-from strata_control.profiles import ProfileError
+from nostroma_cli.launch import runner as R, settings as LS
+from nostroma_control.profiles import ProfileError
 from tests.terminal.launch_support import HW_12, Home, catalog
 
 
@@ -63,8 +63,8 @@ class LogHint(unittest.TestCase):
             with mock.patch.object(R.Runner, "stop_others"), mock.patch.object(R.Runner, "check_port_free"), \
                     mock.patch.object(R.Runner, "log_marks", return_value={}), mock.patch.object(R.Runner, "end_failed_start"), \
                     mock.patch.object(R.Runner, "start_wait", return_value=5), mock.patch.object(R.Runner, "emit"), \
-                    mock.patch("strata_control.runtime.status", return_value={"state": "stopped"}), \
-                    mock.patch("strata_control.runtime.start", side_effect=busy):
+                    mock.patch("nostroma_control.runtime.status", return_value={"state": "stopped"}), \
+                    mock.patch("nostroma_control.runtime.start", side_effect=busy):
                 with self.assertRaises(R.LaunchError) as raised:
                     runner.start()
         self.assertIn("already has a live managed runtime", raised.exception.text)

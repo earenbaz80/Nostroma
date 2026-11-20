@@ -17,7 +17,7 @@ import tracemalloc
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from strata_cli.client import Endpoint
+from nostroma_cli.client import Endpoint
 
 
 class SyntheticTelemetry:
@@ -118,7 +118,7 @@ def handler_for(service: SyntheticTelemetry):
 
 async def soak(seconds: float, interval: float, *, exercise_ui: bool = False) -> dict:
     try:
-        from strata_cli.monitor import MonitorApp
+        from nostroma_cli.monitor import MonitorApp
     except ImportError as exc:
         raise RuntimeError("the optional Textual monitor dependency is required") from exc
     service = SyntheticTelemetry(exercise_ui=exercise_ui)

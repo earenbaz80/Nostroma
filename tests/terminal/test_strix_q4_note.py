@@ -7,7 +7,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_control import gpu_fit
+from nostroma_control import gpu_fit
 
 NV = {"vendor": "nvidia", "name": "NVIDIA GeForce RTX 5060", "vram_gb": 8.0, "usable": True, "index": 0}
 
@@ -24,7 +24,7 @@ class StrixQ4(unittest.TestCase):
         self.assertIsNone(gpu_fit.strix_q4_stall_note(None, None))
 
     def test_the_launch_notice(self):
-        from strata_cli.launch import cmd, settings as S
+        from nostroma_cli.launch import cmd, settings as S
         from tests.terminal.launch_support import HW_12, Home, catalog
         with Home():
             cat = catalog({**HW_12, "gpus": [self.STRIX]})

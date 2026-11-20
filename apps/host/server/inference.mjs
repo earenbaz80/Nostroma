@@ -15,6 +15,7 @@
 import * as supervisor from './supervisor.mjs';
 import { get as getStore } from './store.mjs';
 import { which } from './util.mjs';
+import { envVar } from './env-compat.mjs';
 
 /** Where Strata's own API worker listens by default (`serve/server.py`, `--port 8095`). */
 const STRATA_DEFAULT_URL = 'http://127.0.0.1:8095/v1';
@@ -36,14 +37,14 @@ let checkedAt = 0;
  * checklist row U12 asks for ("no success path using demo responses/metrics").
  */
 export function requiresRealEngine() {
-  if (process.env.STRATA_FORCE_DEMO === '1' && process.env.STRATA_PACKAGED !== '1') return false;
-  if (process.env.STRATA_REAL_ENGINE === '1') return true;
-  return process.env.STRATA_PACKAGED === '1';
+  if (envVar('FORCE_DEMO') === '1' && envVar('PACKAGED') !== '1') return false;
+  if (envVar('REAL_ENGINE') === '1') return true;
+  return envVar('PACKAGED') === '1';
 }
 
 /** Where the Strata API worker is, if it was named explicitly. */
 function strataUrl() {
-  const raw = process.env.STRATA_SERVER_URL?.trim();
+  const raw = envVar('SERVER_URL')?.trim();
   if (!raw) return STRATA_DEFAULT_URL;
   return raw.replace(/\/+$/, '').endsWith('/v1') ? raw.replace(/\/+$/, '') : `${raw.replace(/\/+$/, '')}/v1`;
 }

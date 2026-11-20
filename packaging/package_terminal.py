@@ -16,7 +16,7 @@ What goes in
   `pip install --require-hashes --no-deps --only-binary=:all:` at BUILD time only: every package, direct or
   transitive, is named with an exact version and the SHA-256 of the wheel(s) accepted, so nothing else can land in
   the bundle. pip itself is the one the interpreter shipped with (not upgraded);
-* the application: `strata.py`, `strata_control`, `strata_cli`, `serve`, a `VERSION` file and the docs the CLI
+* the application: `strata.py`, `nostroma_control`, `nostroma_cli`, `serve`, a `VERSION` file and the docs the CLI
   references;
 * the read-only tooling under `tools/` that the terminal paths import. Everything else under `tools/` is engine
   installation and preparation work and is deliberately excluded: the serving import graph must not pull it in
@@ -96,8 +96,8 @@ PYTHON_PIN = {**PYTHON_PINS["darwin-arm64"], "target": "darwin-arm64"}
 #: The application, as paths relative to ROOT (copied to the same place in the archive).
 PAYLOAD = (
     "strata.py",
-    "strata_control",
-    "strata_cli",
+    "nostroma_control",
+    "nostroma_cli",
     "serve",
     "requirements.txt",
     "requirements-monitor.txt",
@@ -112,7 +112,7 @@ PAYLOAD = (
 TOOLS_SUBSET = (
     "strata_tokenizer.py",
     "gguf_reader.py",
-    "dflash2_pack.py",     # the DFlash2 drafter: strata_control/drafting_fetch.py packs the download with it (numpy only)
+    "dflash2_pack.py",     # the DFlash2 drafter: nostroma_control/drafting_fetch.py packs the download with it (numpy only)
 )
 
 #: What `strata launch` and the desktop app's installer need on top of the read-only terminal: the model catalog and GPU probe
@@ -126,7 +126,7 @@ INSTALLER_FILES = ("setup.py", "ref/load.py")   # ref/load.py: strata_pack.py (t
 #: module it starts to import is never forgotten again; tests/terminal/test_bundle_imports.py checks the staged bundle.
 INSTALLER_TOOLS = ("strata_mcp", "iq_pack", "strata_pack", "pack_index", "mtp_fetch", "mtp_pack", "mtp_rt", "draft_vocab",
                    "strata_tokenizer", "gguf_reader", "calibrate")
-#: tools run BY PATH (`python tools/.../x.py`) by setup.py, strata_cli or strata_control: no import names them, so setup_tool_imports() cannot find
+#: tools run BY PATH (`python tools/.../x.py`) by setup.py, nostroma_cli or nostroma_control: no import names them, so setup_tool_imports() cannot find
 #: them.  setup.py's by-path tools (nvfp4_local_pack, strata_bench, strata_inspect) were missing from the bundle once.
 #: tests/terminal/test_bundle_tools_paths.py reads the by-path references out of the source and fails when one is missing from the bundle.
 INSTALLER_SCRIPTS = ("nvfp4_local_pack", "strata_bench", "strata_inspect")

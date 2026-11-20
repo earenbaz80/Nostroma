@@ -1,4 +1,4 @@
-/** GPU roles (Main / Helper / Off): src/lib/gpu-roles.ts and server/gpu-roles.mjs run the vectors strata_control/gpu_roles.py runs (tests/data/gpu_roles_vectors.json). */
+/** GPU roles (Main / Helper / Off): src/lib/gpu-roles.ts and server/gpu-roles.mjs run the vectors nostroma_control/gpu_roles.py runs (tests/data/gpu_roles_vectors.json). */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';

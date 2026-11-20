@@ -11,7 +11,7 @@ engines have to be rebuilt for its shape; case C is refused) and prints the plan
     case A  the feed (a `models` entry, the feed re-signed at the next sequence). No app rebuild: the app lists feed models
             from the feed (the Settings update check is enough). `--with-app` adds the app steps when a release has app text anyway.
             Engines and Controls stay as they are: same files, same names.
-    case B  the engine of the model's shape, as its own component (`--shape`, package_engine.py --shape, feed member shape_engines: strata_control/shape_engine.py),
+    case B  the engine of the model's shape, as its own component (`--shape`, package_engine.py --shape, feed member shape_engines: nostroma_control/shape_engine.py),
             plus the feed. The Strata engine, the Controls and the app are not rebuilt: a Control of 0.2.13 or later already installs and runs
             a shape engine, and the model's family `qwen4exp_<shape>` makes it fetch it.
 
@@ -36,7 +36,7 @@ ROOT = Path(__file__).resolve().parents[1]
 #: tool's data: the Terminal, Control and app packages do not carry packaging/. --templates names another folder (one that also holds CHECKLIST.md, say).
 TEMPLATES = ROOT / "packaging" / "templates" / "model-release"
 TEMPLATE_NAMES = ("RELEASE-NOTES.md", "MODEL-CARD.md", "CHECKLIST.md")
-sys.path.insert(0, str(ROOT))                         # strata_control.shape_engine (the shape names)
+sys.path.insert(0, str(ROOT))                         # nostroma_control.shape_engine (the shape names)
 
 # artifact names in a release upload folder (phaseA-tests/rel0211/PUBLISH-PLAN.md, scripts/relfinal/expect_rc1.py)
 ENGINE_RE = re.compile(r"^strata-engine-(?P<v>\d[\d.]*)-(?P<plat>.+?)\.(?:tar\.gz|zip)$")
@@ -166,7 +166,7 @@ def plan(report: dict, set_index: int, a, prev: dict) -> dict:
 
     step("%d" % n, "The model's feed entry (a `models` member entry, DRAFT)", "owner PC, python only", 2,
          ["python packaging/make_model_release.py --intake <report> --id %s ... --write <OUTDIR>   # writes models/%s.entry.json (the feed's schema; build-feed refuses every [FILL: ...] left in it) and models/%s.model.json (the older draft)" % (a.id, a.id, a.id)],
-         ["models/%s.entry.json" % a.id], note="the entry follows strata_control/feed.py (packaging/UPDATES.md): fill the [FILL: ...] values (about, licence_url, ram_gb) by hand or with --about/--licence-url/--ram-gb, then `feed_tool.py build-feed --models <OUTDIR>/models`")
+         ["models/%s.entry.json" % a.id], note="the entry follows nostroma_control/feed.py (packaging/UPDATES.md): fill the [FILL: ...] values (about, licence_url, ram_gb) by hand or with --about/--licence-url/--ram-gb, then `feed_tool.py build-feed --models <OUTDIR>/models`")
     n += 1
     if with_app:
         for e in prev["app"]:
@@ -217,11 +217,11 @@ def plan(report: dict, set_index: int, a, prev: dict) -> dict:
 
 def entry_family(s: dict, a) -> str:
     """The family the feed entry carries: the GGUF architecture, and for a model of its own shape (case B) `qwen4exp_<shape>`, which makes a Control fetch that shape's engine
-    (strata_control/shape_engine.py) and makes an older Control, which does not know the family, leave the model out."""
+    (nostroma_control/shape_engine.py) and makes an older Control, which does not know the family, leave the model out."""
     arch = s.get("architecture")
     shape = getattr(a, "shape", None)
     if shape and arch == "qwen4exp":
-        from strata_control import shape_engine
+        from nostroma_control import shape_engine
         return shape_engine.family_of(shape)
     return arch
 
@@ -232,7 +232,7 @@ def model_entry(s: dict, a) -> dict:
     geo = s.get("geometry") or {}
     ctx = (geo.get("keys") or {}).get("context_length")
     return {
-        "_status": "DRAFT: made from the intake report by packaging/make_model_release.py; field names follow the Q4-PREP-B brief and are to be checked against strata_control/feed.py",
+        "_status": "DRAFT: made from the intake report by packaging/make_model_release.py; field names follow the Q4-PREP-B brief and are to be checked against nostroma_control/feed.py",
         "id": a.id, "title": a.title or g.get("name") or d.get("title"), "by": d.get("by"),
         "licence": {"name": g.get("license"), "url": g.get("license.link") or "[FILL: licence URL]"},
         "family": entry_family(s, a), "hf": {"repo": a.hf_repo or "[FILL: repository]", "revision": a.revision or "[FILL: pinned commit]"},
@@ -247,7 +247,7 @@ def model_entry(s: dict, a) -> dict:
 
 
 def feed_entry(s: dict, a) -> dict:
-    """The model's entry in the feed's `models` member, in the schema strata_control/feed.py reads (packaging/UPDATES.md). Every value the report cannot know
+    """The model's entry in the feed's `models` member, in the schema nostroma_control/feed.py reads (packaging/UPDATES.md). Every value the report cannot know
     (about, licence, licence_url, ram_gb, quant name) is a "[FILL: ...]" text, which `feed_tool.py build-feed --models` refuses: it is filled by hand, then built."""
     g = s.get("general", {})
     d = s.get("draft_catalog_entry", {})
@@ -294,7 +294,7 @@ def builtin_sizes() -> set | None:
 
 def launch_lines(entry: dict, sizes: set | None) -> list[str]:
     """The `strata launch` lines for each size of the feed entry, with the size name a person types: the quant's name, or <quant>-<id> when that
-    name is a built-in size (strata_control/feed_models.py _flash_next takes the same decision)."""
+    name is a built-in size (nostroma_control/feed_models.py _flash_next takes the same decision)."""
     out = []
     mid = entry.get("id")
     for q in entry.get("quants") or []:
@@ -409,7 +409,7 @@ def main(argv=None) -> int:
     if case == "B" and not a.engine_version:
         raise SystemExit("case B builds the engine of the new shape: give --engine-version")
     if case == "B":
-        from strata_control import shape_engine
+        from nostroma_control import shape_engine
         if not a.shape or not shape_engine.valid(a.shape):
             raise SystemExit("case B: give --shape, the name of the geometry the engines are compiled for (like q4_lite: lower case, digits and _); that engine ships as its own component")
     elif a.shape:

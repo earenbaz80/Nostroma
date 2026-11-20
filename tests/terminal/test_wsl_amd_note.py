@@ -8,9 +8,9 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_cli.launch import settings as S
-from strata_cli.launch.runner import Runner
-from strata_control import engine_component as ec
+from nostroma_cli.launch import settings as S
+from nostroma_cli.launch.runner import Runner
+from nostroma_control import engine_component as ec
 
 
 def dev(root: str, dxg: bool = True, kfd: bool = False) -> str:

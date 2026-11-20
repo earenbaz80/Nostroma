@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * The Graphics cards choice of the app, end to end on a box with two cards, through the installed app layout (packaged host + bundled Control + a real
- * engine component): the model list carries the options (one rule, strata_control/gpu_fit.py), a model that fits one card recommends that card, then
+ * engine component): the model list carries the options (one rule, nostroma_control/gpu_fit.py), a model that fits one card recommends that card, then
  *   load with ONE card -> answers, only that card holds the model;  load with BOTH cards (the layer split) -> answers, both cards hold the model.
  *
  *   node cards-e2e.mjs --install <folder with node/ host/ control/> --components <folder holding engine/<package>> --work <scratch> \

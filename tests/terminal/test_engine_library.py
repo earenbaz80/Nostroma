@@ -4,14 +4,14 @@ The same stub packages the updater tests use (real schema-2 packages, a real tes
 size, the engine in use and the newest; a switch to an older engine and back to the newest holds across a fresh read (a restart); the newest is
 selected without a pin; the engine in use and an engine a program uses cannot be deleted; a running model stops a switch with one plain answer;
 a package this computer cannot run is shown with its reason and cannot be switched to; a DeepSeek engine folder of Strata 0.2.13 is neither listed nor
-touched, and the deepseek family is answered in plain words (strata_control/retired.py)."""
+touched, and the deepseek family is answered in plain words (nostroma_control/retired.py)."""
 import json
 import os
 import shutil
 import unittest
 from unittest import mock
 
-from strata_control import engine_component as ec, engine_library as lib, preset_marks, retired, updater
+from nostroma_control import engine_component as ec, engine_library as lib, preset_marks, retired, updater
 from tests.terminal import update_fixture as fx
 from tests.terminal.test_updater import PLATFORM, UpdaterCase
 
@@ -193,7 +193,7 @@ class Cli(UpdaterCase):
     def cli(self, *args):
         import io
         from contextlib import redirect_stderr, redirect_stdout
-        from strata_cli.cli import main
+        from nostroma_cli.cli import main
         out, err = io.StringIO(), io.StringIO()
         with redirect_stdout(out), redirect_stderr(err):
             code = main(list(args))

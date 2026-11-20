@@ -18,7 +18,7 @@ sys.path.insert(0, str(ROOT / "packaging"))
 
 import feed_tool  # noqa: E402
 import package_engine  # noqa: E402
-from strata_control import components, signing  # noqa: E402
+from nostroma_control import components, signing  # noqa: E402
 
 WINDOWS = os.name == "nt"
 

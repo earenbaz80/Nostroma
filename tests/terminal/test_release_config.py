@@ -37,10 +37,11 @@ class ReleaseConfig(unittest.TestCase):
     def test_the_mac_app_needs_the_macos_the_metal_engine_needs(self):
         self.assertEqual(load("tauri.conf.json")["bundle"]["macOS"]["minimumSystemVersion"], "15.0")
 
-    def test_the_updater_points_at_github_releases(self):
-        up = load("tauri.conf.json")["plugins"]["updater"]
-        self.assertEqual(up["endpoints"], ["https://github.com/Niko1221/Strata/releases/latest/download/latest.json"])
-        self.assertNotIn("REPLACE", up["pubkey"])
+    def test_the_app_updater_is_off_so_no_other_product_is_installed(self):
+        """This build publishes no app feed of its own, so there is no endpoint and no key: a check cannot install another product."""
+        conf = load("tauri.conf.json")
+        self.assertNotIn("updater", conf.get("plugins", {}))
+        self.assertNotIn("latest.json", json.dumps(conf))
 
     def test_the_update_overlay_drops_only_the_engine(self):
         """The app update (latest.json) is built with tauri.update.conf.json: the same app without engine-bundle, so one update
@@ -50,7 +51,7 @@ class ReleaseConfig(unittest.TestCase):
         self.assertNotIn("resources/engine-bundle", update["bundle"]["resources"])
         self.assertEqual({k: v for k, v in full["bundle"]["resources"].items() if k != "resources/engine-bundle"}, update["bundle"]["resources"])
         self.assertEqual({k: v for k, v in full["bundle"].items() if k != "resources"}, {k: v for k, v in update["bundle"].items() if k != "resources"})
-        self.assertEqual(full["plugins"], update["plugins"])        # same key, same endpoint: it is the same app
+        self.assertEqual(full.get("plugins", {}), update.get("plugins", {}))        # same config: it is the same app
         self.assertNotIn("endpoints", load("tauri.update.conf.json").get("plugins", {}))
 
     def test_one_endpoint_and_no_variant_specific_updater_config(self):

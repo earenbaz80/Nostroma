@@ -14,10 +14,10 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from unittest import mock
 
-from strata_cli.cli import main
-from strata_cli import connections
-from strata_cli.client import ClientError, Endpoint, server_url
-from strata_cli.render import render_view
+from nostroma_cli.cli import main
+from nostroma_cli import connections
+from nostroma_cli.client import ClientError, Endpoint, server_url
+from nostroma_cli.render import render_view
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -102,7 +102,7 @@ class ConnectionTests(unittest.TestCase):
     def test_interactive_monitor_rejects_json_output_before_connecting(self):
         for output_flag in (("--output", "json"), ("--json",)):
             with self.subTest(output_flag=output_flag), mock.patch(
-                    "strata_cli.monitor_commands.Endpoint") as endpoint:
+                    "nostroma_cli.monitor_commands.Endpoint") as endpoint:
                 code, response = self._cli("monitor", "--url", "http://127.0.0.1:1",
                                            *output_flag)
                 self.assertEqual((code, response["error"]["code"]), (2, 2))
@@ -126,7 +126,7 @@ class ConnectionTests(unittest.TestCase):
         code, listed = self._cli("connection", "list", "--quiet", "--json")
         self.assertEqual(code, 0)
         self.assertEqual(listed["connections"], [])
-        with mock.patch("strata_cli.monitor_commands.Endpoint") as endpoint:
+        with mock.patch("nostroma_cli.monitor_commands.Endpoint") as endpoint:
             endpoint.return_value.snapshot.return_value = {"schema_version": 1}
             output = io.StringIO()
             with redirect_stdout(output):

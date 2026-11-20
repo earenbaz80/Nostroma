@@ -86,7 +86,7 @@ class Qwen36Entries(unittest.TestCase):
         self.assertEqual(setup.own_path_context({**fam, "name": "another-model"}, 12.0, "UD-Q4_K_XL"), 131072)   # a feed model: as before
 
     def test_the_menu_is_the_rules_menu(self):
-        from strata_control import own_path_fit
+        from nostroma_control import own_path_fit
         self.assertEqual(setup.own_path_contexts(), own_path_fit.MENU)
 
     def test_context_warning(self):

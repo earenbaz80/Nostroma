@@ -572,7 +572,7 @@ class TablesMatchTheSources(unittest.TestCase):
         self.assertTrue(Q.expert_pair_ok("cuda", 12, 7, 2560, 640))
 
     def test_projector_types_come_from_the_control(self):
-        from strata_control.models import OUR_PROJECTOR_TYPES
+        from nostroma_control.models import OUR_PROJECTOR_TYPES
         self.assertEqual(set(OUR_PROJECTOR_TYPES), {"qwen3vl_merger"})
 
     def test_reference_tokenizer_is_flash_nexts(self):

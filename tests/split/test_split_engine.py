@@ -1,4 +1,4 @@
-"""strata_control/split_engine.py (when the all-cards split engine may run) and src/split (no peer access in any path)."""
+"""nostroma_control/split_engine.py (when the all-cards split engine may run) and src/split (no peer access in any path)."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import re
 import unittest
 from pathlib import Path
 
-from strata_control import split_engine as S
+from nostroma_control import split_engine as S
 
 ROOT = Path(__file__).resolve().parents[2]
 GIB = 1 << 30
@@ -301,7 +301,7 @@ class Apply(unittest.TestCase):
 
     def df2_files(self, tmp, *, taking=True, pack=True):
         """A split engine program that carries (or lacks) the text of `--draft dflash2`, and a data folder with (or without) the DFlash2 pack."""
-        from strata_control import drafting
+        from nostroma_control import drafting
 
         exe = Path(tmp) / "strata-split-2"
         exe.write_bytes(b"\0--draft dflash2 needs --native, --draft-model PACK and --draft-vocab FILE\0" if taking else b"\0--native and --mtp are required\0")

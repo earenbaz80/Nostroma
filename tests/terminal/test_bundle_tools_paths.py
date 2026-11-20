@@ -1,4 +1,4 @@
-"""Every tools/*.py that setup.py, strata_cli or strata_control runs BY PATH is in the packaged Terminal (and so in the Control bundle).
+"""Every tools/*.py that setup.py, nostroma_cli or nostroma_control runs BY PATH is in the packaged Terminal (and so in the Control bundle).
 
 0.2.4 shipped without tools/dsv41/pack_gguf.py: the tests ran from the checkout, where the file exists, and the packaged Terminal failed at
 "Preparing your model" with "can't open file .../tools/dsv41/pack_gguf.py".  This test reads the by-path references out of the source (an
@@ -33,8 +33,8 @@ def _flatten(node):
 
 
 def referenced_tools(root: Path = ROOT) -> dict[str, set[str]]:
-    """{'tools/dsv41/pack_gguf.py': {files that name it}} for setup.py, strata_cli/**, strata_control/**."""
-    files = [root / "setup.py"] + sorted((root / "strata_cli").rglob("*.py")) + sorted((root / "strata_control").rglob("*.py"))
+    """{'tools/dsv41/pack_gguf.py': {files that name it}} for setup.py, nostroma_cli/**, nostroma_control/**."""
+    files = [root / "setup.py"] + sorted((root / "nostroma_cli").rglob("*.py")) + sorted((root / "nostroma_control").rglob("*.py"))
     found: dict[str, set[str]] = {}
     for f in files:
         tree = ast.parse(f.read_text(encoding="utf-8-sig"))

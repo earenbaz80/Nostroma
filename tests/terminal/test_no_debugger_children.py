@@ -1,4 +1,4 @@
-"""The product never starts a debugger on a user's machine (strata_control/childenv.py).
+"""The product never starts a debugger on a user's machine (nostroma_control/childenv.py).
 
 ggml's abort path forks `gdb --batch -ex attach <pid>` (Linux; lldb and backtrace_symbols after it).  Every child Strata starts therefore gets
 GGML_NO_BACKTRACE=1, unless a developer sets STRATA_BACKTRACE=1.  These tests check the helper, the environment of every spawn site that builds one, and
@@ -14,8 +14,8 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_control import childenv
-from strata_control.childenv import DEVELOPER_SWITCH, NO_BACKTRACE, quiet_crash_env
+from nostroma_control import childenv
+from nostroma_control.childenv import DEVELOPER_SWITCH, NO_BACKTRACE, quiet_crash_env
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -83,7 +83,7 @@ class SpawnEnvironments(unittest.TestCase):
         self.assertEqual(images.image_env({}, base={"PATH": "x"})[NO_BACKTRACE], "1")
 
     def test_the_launcher_children(self):
-        from strata_cli.launch import runner as R
+        from nostroma_cli.launch import runner as R
         r = R.Runner.__new__(R.Runner)               # _env() reads only components_dir
         r.components_dir = None
         self.assertEqual(r._env()[NO_BACKTRACE], "1")
@@ -91,7 +91,7 @@ class SpawnEnvironments(unittest.TestCase):
         self.assertEqual(r._env()[NO_BACKTRACE], "1")
 
     def test_the_tuning_engine_environment(self):
-        from strata_control import engine_component, tuning
+        from nostroma_control import engine_component, tuning
         with tempfile.TemporaryDirectory() as d:
             (Path(d) / "engine-component.json").write_text("{}", encoding="utf-8")
             with mock.patch.object(engine_component, "package_lib_dirs", return_value=[]):
@@ -99,7 +99,7 @@ class SpawnEnvironments(unittest.TestCase):
 
     def test_the_tuning_workers(self):
         from serve import lifeline
-        from strata_control import tune_api, tune_engine
+        from nostroma_control import tune_api, tune_engine
         seen = []
 
         def fake_popen(*args, **kw):
@@ -126,15 +126,15 @@ class EntryPointsSetItForEveryChild(unittest.TestCase):
     """Programs started without an environment of their own inherit this process's: the entry points set it there."""
 
     def test_each_entry_point_calls_the_helper(self):
-        for rel, anchor in (("strata_cli/cli.py", "def main("), ("serve/server.py", "def main("), ("strata_control/runtime.py", "def main("),
+        for rel, anchor in (("nostroma_cli/cli.py", "def main("), ("serve/server.py", "def main("), ("nostroma_control/runtime.py", "def main("),
                             ("setup.py", "def main(")):
             text = (ROOT / rel).read_text(encoding="utf-8")
             body = text[text.index("\n" + anchor):]
             self.assertIn("quiet_crash_env()", body[:6000], rel)
 
     def test_the_server_and_the_tuning_session_environments_use_it(self):
-        for rel, needle in (("strata_control/runtime.py", "quiet_crash_env(os.environ.copy())"),
-                            ("strata_control/tune_session.py", "quiet_crash_env(dict(os.environ))")):
+        for rel, needle in (("nostroma_control/runtime.py", "quiet_crash_env(os.environ.copy())"),
+                            ("nostroma_control/tune_session.py", "quiet_crash_env(dict(os.environ))")):
             self.assertIn(needle, (ROOT / rel).read_text(encoding="utf-8"), rel)
 
 
@@ -146,33 +146,33 @@ STRATA_PROGRAMS = {
     "serve/images.py": 1,              # sd-cli (image_env)
     "serve/lifeline.py": 4,            # the wrapper every child goes through (ps, a watcher); no program of ours of its own
     "serve/winjob.py": 2,              # lifeline.popen's Windows start inside the job (suspended, then resumed) + the plain Popen off Windows: the caller's env as given
-    "strata_control/runtime.py": 4,    # the runtime host (inherits) and the server (quiet_crash_env on its environment); taskkill
-    "strata_control/tune_api.py": 1,   # tuning worker (wrapped)
-    "strata_control/tune_engine.py": 2,  # tuning engine (wrapped) + ps
-    "strata_control/tune_session.py": 1,  # tuning worker (quiet_crash_env)
-    "strata_control/tuning.py": 1,     # engine --help (engine_env)
-    "strata_control/shape_engine.py": 2,  # engine --version / --geometry (inherit)
-    "strata_control/updater.py": 3,       # --version probes (inherit)
-    "strata_cli/bench_standard.py": 2,    # `strata.py serve` (inherits: cli.main sets it) + taskkill
-    "strata_cli/launch/runner.py": 2,     # setup.py and the other children (_env)
-    "strata_cli/launch/params.py": 2,     # engine --help (inherits)
-    "strata_cli/cli.py": 2,               # setup.py, the revise command
+    "nostroma_control/runtime.py": 4,    # the runtime host (inherits) and the server (quiet_crash_env on its environment); taskkill
+    "nostroma_control/tune_api.py": 1,   # tuning worker (wrapped)
+    "nostroma_control/tune_engine.py": 2,  # tuning engine (wrapped) + ps
+    "nostroma_control/tune_session.py": 1,  # tuning worker (quiet_crash_env)
+    "nostroma_control/tuning.py": 1,     # engine --help (engine_env)
+    "nostroma_control/shape_engine.py": 2,  # engine --version / --geometry (inherit)
+    "nostroma_control/updater.py": 3,       # --version probes (inherit)
+    "nostroma_cli/bench_standard.py": 2,    # `strata.py serve` (inherits: cli.main sets it) + taskkill
+    "nostroma_cli/launch/runner.py": 2,     # setup.py and the other children (_env)
+    "nostroma_cli/launch/params.py": 2,     # engine --help (inherits)
+    "nostroma_cli/cli.py": 2,               # setup.py, the revise command
     "setup.py": 17,                       # builds, engine probes, the helpers it runs (main sets it)
 }
 OTHER_PROGRAMS = {
     "serve/mcp.py": 2,                 # the person's MCP servers and taskkill
     "serve/telemetry.py": 2,           # sysctl, a Metal tool
-    "strata_control/doctor.py": 1,
-    "strata_control/engine_component.py": 4,   # nvidia-smi, powershell, lspci-style probes
-    "strata_control/gpu_roles.py": 1,          # python -c
-    "strata_control/procs.py": 3,              # ps, taskkill
-    "strata_control/profiles.py": 1,           # the person's editor
-    "strata_control/recipes.py": 1,            # the person's editor
-    "strata_control/split_engine.py": 1,       # nvidia-smi
-    "strata_control/time_skip.py": 3,          # the person's check commands
-    "strata_control/tune_machine.py": 3,       # sysctl, vm_stat, a probe
-    "strata_cli/bench_facts.py": 1,            # a tool for the facts
-    "strata_cli/launch/access.py": 5,          # tunnel programs, powershell, ps
+    "nostroma_control/doctor.py": 1,
+    "nostroma_control/engine_component.py": 4,   # nvidia-smi, powershell, lspci-style probes
+    "nostroma_control/gpu_roles.py": 1,          # python -c
+    "nostroma_control/procs.py": 3,              # ps, taskkill
+    "nostroma_control/profiles.py": 1,           # the person's editor
+    "nostroma_control/recipes.py": 1,            # the person's editor
+    "nostroma_control/split_engine.py": 1,       # nvidia-smi
+    "nostroma_control/time_skip.py": 3,          # the person's check commands
+    "nostroma_control/tune_machine.py": 3,       # sysctl, vm_stat, a probe
+    "nostroma_cli/bench_facts.py": 1,            # a tool for the facts
+    "nostroma_cli/launch/access.py": 5,          # tunnel programs, powershell, ps
 }
 
 _SUBPROCESS = {"Popen", "run", "call", "check_output", "check_call"}
@@ -189,7 +189,7 @@ def _is_spawn(node) -> bool:
 
 def spawn_sites() -> dict:
     files = []
-    for d in ("serve", "strata_control", "strata_cli"):
+    for d in ("serve", "nostroma_control", "nostroma_cli"):
         files += sorted((ROOT / d).rglob("*.py"))
     files += [ROOT / "strata.py", ROOT / "setup.py"]
     out = {}
@@ -209,7 +209,7 @@ class EverySpawnSiteIsListed(unittest.TestCase):
         known = {**STRATA_PROGRAMS, **OTHER_PROGRAMS}
         new = {rel: n for rel, n in spawn_sites().items() if n > known.get(rel, 0)}
         self.assertEqual(new, {}, "a new place that starts a process: if it starts a Strata program (engine, picture reader, sd-cli, setup, a worker) "
-                                  "its environment must carry GGML_NO_BACKTRACE (strata_control.childenv.quiet_crash_env); then list it in "
+                                  "its environment must carry GGML_NO_BACKTRACE (nostroma_control.childenv.quiet_crash_env); then list it in "
                                   "STRATA_PROGRAMS (or OTHER_PROGRAMS when it starts nothing of ours) in tests/terminal/test_no_debugger_children.py")
 
     def test_the_two_lists_do_not_overlap(self):

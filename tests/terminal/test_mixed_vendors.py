@@ -10,10 +10,10 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_cli.launch import cmd, settings as S
-from strata_cli.launch.runner import cards_for_launch
-from strata_cli.launch.screens import flow_for
-from strata_control import gpu_fit as G
+from nostroma_cli.launch import cmd, settings as S
+from nostroma_cli.launch.runner import cards_for_launch
+from nostroma_cli.launch.screens import flow_for
+from nostroma_control import gpu_fit as G
 from tests.terminal.launch_support import HW_12, Home, catalog
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -88,7 +88,7 @@ class LaunchMix(unittest.TestCase):
         self.home = Home().__enter__()
         self.addCleanup(self.home.__exit__, None, None, None)
         self.hw = {**HW_12, "gpus": [NV_5060TI, AMD_R9700]}
-        p = mock.patch("strata_cli.launch.catalog.Catalog.installed_backend", return_value=None)
+        p = mock.patch("nostroma_cli.launch.catalog.Catalog.installed_backend", return_value=None)
         p.start()
         self.addCleanup(p.stop)
 
@@ -101,7 +101,7 @@ class LaunchMix(unittest.TestCase):
         self.assertEqual(len(flow_for(type("C", (), {"computer": comp}))), 9)       # no Cards step: one card the engine can drive
 
     def test_with_the_amd_engine_installed_the_r9700_counts_and_the_note_goes(self):
-        with mock.patch("strata_cli.launch.catalog.Catalog.installed_backend", return_value="hip"):
+        with mock.patch("nostroma_cli.launch.catalog.Catalog.installed_backend", return_value="hip"):
             comp = catalog(self.hw).computer()
         self.assertEqual(comp.engine_vendor, "amd")
         self.assertEqual(comp.main_vram_gb, 32.0)

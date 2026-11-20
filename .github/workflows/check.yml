@@ -23,8 +23,8 @@ on:
       - serve/**
       - strata.py
       - setup.py
-      - strata_cli/**
-      - strata_control/**
+      - nostroma_cli/**
+      - nostroma_control/**
       - tools/**
       - packaging/**
       - docker/**
@@ -48,8 +48,8 @@ on:
       - serve/**
       - strata.py
       - setup.py
-      - strata_cli/**
-      - strata_control/**
+      - nostroma_cli/**
+      - nostroma_control/**
       - tools/**
       - packaging/**
       - docker/**

@@ -10,9 +10,9 @@ import random
 import unittest
 from unittest import mock
 
-from strata_cli.launch import access, store
-from strata_cli.launch import settings as S
-from strata_cli.launch.app import LaunchApp
+from nostroma_cli.launch import access, store
+from nostroma_cli.launch import settings as S
+from nostroma_cli.launch.app import LaunchApp
 from tests.terminal.launch_support import HW_12, HW_24, HW_2X16, Home, text_of
 from tests.terminal.test_launch_tui import FakeRunner, make_ctx
 
@@ -53,7 +53,7 @@ class Walk(unittest.TestCase):
         FakeRunner.instances.clear()
         FakeRunner.behaviour = "ok"
         FakeRunner.download = 0.0
-        for p in (mock.patch("strata_cli.launch.app.Runner", FakeRunner),
+        for p in (mock.patch("nostroma_cli.launch.app.Runner", FakeRunner),
                   mock.patch.object(access, "lan_ips", return_value=["192.168.1.5"])):
             p.start()
             self.addCleanup(p.stop)
@@ -297,7 +297,7 @@ class ErrorPaths(unittest.TestCase):
                 await pilot.pause(settle_s)
                 return text_of(app), app._exception, app.is_running
 
-        with mock.patch("strata_cli.launch.app.Runner", runner):
+        with mock.patch("nostroma_cli.launch.app.Runner", runner):
             return asyncio.run(go())
 
     def test_runner_raising_anything_is_shown_in_words(self):

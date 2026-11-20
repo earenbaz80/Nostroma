@@ -225,14 +225,14 @@ class V31Sets(unittest.TestCase):
             self.assertIn(m, M.MAC_ABOUT)
 
     def test_all_seven_are_listed_now_the_metal_kernel_exists(self):
-        from strata_control import mac_fit
+        from nostroma_control import mac_fit
         self.assertTrue(mac_fit.METAL_Q5_0_DOWN)            # f-0214-metal: the Q5_0 down kernels
         for m in self.NEW:
             self.assertFalse(mac_fit.MAC_MODELS[m].get("missing"), m)
         self.assertNotIn("does not run on this Metal engine yet", "".join(mac_fit.model_note("UD-Q3_K_XL", 128)))
 
     def test_the_switch_lists_them_all(self):
-        from strata_control import mac_fit
+        from nostroma_control import mac_fit
         ns = {"__name__": "mac_fit_on", "__file__": mac_fit.__file__}
         src = Path(mac_fit.__file__).read_text(encoding="utf-8").replace("METAL_Q5_0_DOWN = True", "METAL_Q5_0_DOWN = False")
         exec(compile(src, mac_fit.__file__, "exec"), ns)                 # the switch off: the four Q5_0-down sets are held back again
@@ -338,7 +338,7 @@ M4 = {"machdep.cpu.brand_string": "Apple M4", "hw.memsize": str(32 * 2 ** 30), "
 
 class ControlMode(unittest.TestCase):
     """The app on a Mac (STRATA_CONTROL_INSTALL=1): model files and a run config naming the engine component. No source build, no
-    metal/setup_mac.py, no Command Line Tools; the Mac rules are strata_control/mac_fit.py's, the module setup_mac.py uses too."""
+    metal/setup_mac.py, no Command Line Tools; the Mac rules are nostroma_control/mac_fit.py's, the module setup_mac.py uses too."""
 
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -357,7 +357,7 @@ class ControlMode(unittest.TestCase):
             self.files.append(f)
 
     def run_setup(self, hw=M4, argv=("--yes", "--no-start", "--family", "qwen", "--model", "Q2_0", "--context", "8192"), clt_rc=0, tool=None, free=500.0):
-        from strata_control import engine_component, mac_fit
+        from nostroma_control import engine_component, mac_fit
         ran = []
 
         def fake_tool(cmd, **kw):
@@ -418,7 +418,7 @@ class ControlMode(unittest.TestCase):
     def test_a_model_without_a_draft_layer_is_said_on_a_streaming_mac_too(self):
         # a feed model whose entry says "drafter: none" (mac_fit's no_mtp) on a Mac that streams (no draft layer there anyway): the model
         # list's line is said as on Windows and Linux (tools/feed_model_install_gate.py; GitHub's macOS runner did not get it)
-        from strata_control import mac_fit
+        from nostroma_control import mac_fit
         with mock.patch.dict(mac_fit.MAC_MODELS["Q2_0"], {"no_mtp": True}):
             rc, _ = self.run_setup()
         self.assertEqual(rc, 0)
@@ -591,7 +591,7 @@ class MacAppUnsloth(unittest.TestCase):
         self.assertIn("about 45 GB", said[0])          # nothing to download (the files are here), the 39.2 GB repacked file and 6 GB to work in
 
     def test_a_set_the_engine_cannot_run_is_not_offered(self):
-        from strata_control import mac_fit
+        from nostroma_control import mac_fit
         self.shards("UD-Q3_K_XL")
         with mock.patch.dict(mac_fit.MAC_MODELS, {"UD-Q3_K_XL": {**mac_fit.MAC_MODELS["UD-Q3_K_XL"], "missing": "the Q5_0 expert kernels"}}):
             with self.assertRaises(SystemExit):

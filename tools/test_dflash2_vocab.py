@@ -4,7 +4,7 @@
     python -m unittest tools.test_dflash2_vocab -v
 
 What is checked, per choice (cjk = the default file, en, cyrillic, fr):
-  - setup's vocab step (provide_dflash2_vocab / refresh_draft_vocab / refresh_shared_draft_vocab) and then strata_control.drafting.apply: the file `--mtp-draft-vocab` points at is the chosen subset
+  - setup's vocab step (provide_dflash2_vocab / refresh_draft_vocab / refresh_shared_draft_vocab) and then nostroma_control.drafting.apply: the file `--mtp-draft-vocab` points at is the chosen subset
     byte for byte, for an explicit `dflash2` and for `auto`;
   - a later choice replaces a shipped subset, a subset made by hand stays;
   - an update (refresh_shared_draft_vocab) and the drafter's own fetch (provide_vocab without a choice) keep the person's choice.
@@ -22,7 +22,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 import setup  # noqa: E402
-from strata_control import drafting  # noqa: E402
+from nostroma_control import drafting  # noqa: E402
 
 CHOICES = ("cjk", "en", "cyrillic", "fr")
 

@@ -12,10 +12,10 @@ from unittest import mock
 
 from textual.app import App
 
-from strata_cli.launch import app as launch_app
-from strata_cli.launch import settings as S
-from strata_cli.launch.app import Ctx, LaunchApp
-from strata_cli.launch.widgets import Glyphs
+from nostroma_cli.launch import app as launch_app
+from nostroma_cli.launch import settings as S
+from nostroma_cli.launch.app import Ctx, LaunchApp
+from nostroma_cli.launch.widgets import Glyphs
 from tests.terminal.launch_support import HW_12, Home, catalog, text_of
 from tests.terminal.test_launch_tui import FakeRunner, SIZE, make_ctx
 
@@ -33,7 +33,7 @@ class FlagsOpenTheRun(unittest.TestCase):
         FakeRunner.instances.clear()
         FakeRunner.behaviour = "ok"
         FakeRunner.download = 0.0
-        p = mock.patch("strata_cli.launch.app.Runner", FakeRunner)
+        p = mock.patch("nostroma_cli.launch.app.Runner", FakeRunner)
         p.start()
         self.addCleanup(p.stop)
 
@@ -97,7 +97,7 @@ class FlagsOpenTheRun(unittest.TestCase):
         self.assertIn("--no-tui", err.getvalue())
 
     def test_the_command_turns_a_crash_into_exit_one(self):
-        from strata_cli.launch import cmd
+        from nostroma_cli.launch import cmd
         err = io.StringIO()
         with contextlib.redirect_stderr(err):
             code = cmd._tui(lambda *a, **k: (_ for _ in ()).throw(IndexError("pop from empty list")))
@@ -118,13 +118,13 @@ class NoEngineFlow(unittest.TestCase):
         self.addCleanup(self.home.__exit__, None, None, None)
 
     def served_nothing(self):
-        from strata_cli.launch.runner import Result, no_engine_final
+        from nostroma_cli.launch.runner import Result, no_engine_final
         text = no_engine_final("The feed has no engine package for this PC.")
         return Result("launch-x", [], None, None, [text], "/x", serving=False, engine_problem="The feed has no engine package for this PC.",
                       final_text=text)
 
     def test_the_command_ends_with_exit_zero_and_the_engine_message(self):
-        from strata_cli.launch.runner import Runner
+        from nostroma_cli.launch.runner import Runner
         from tests.terminal.launch_support import run_cli
         with mock.patch.object(Runner, "run", return_value=self.served_nothing()):
             code, out, err = run_cli(["launch", "--no-tui", "--model", "q2_0", "--yes"])
@@ -135,7 +135,7 @@ class NoEngineFlow(unittest.TestCase):
         self.assertNotIn("Strata is serving", out)
 
     def test_json_says_not_serving(self):
-        from strata_cli.launch.runner import Runner
+        from nostroma_cli.launch.runner import Runner
         from tests.terminal.launch_support import run_cli
         with mock.patch.object(Runner, "run", return_value=self.served_nothing()):
             code, out, err = run_cli(["launch", "--no-tui", "--model", "q2_0", "--output", "json"])
@@ -146,7 +146,7 @@ class NoEngineFlow(unittest.TestCase):
         self.assertIn("engine", data["engine_problem"])
 
     def test_yes_is_passed_to_the_runner_and_json_never_asks(self):
-        from strata_cli.launch.runner import Runner
+        from nostroma_cli.launch.runner import Runner
         from tests.terminal.launch_support import run_cli
         seen = []
         real = Runner.__init__
@@ -162,7 +162,7 @@ class NoEngineFlow(unittest.TestCase):
         self.assertEqual(seen, [True, True, False])
 
     def test_the_question_default_is_yes(self):
-        from strata_cli.launch import cmd
+        from nostroma_cli.launch import cmd
         with mock.patch("builtins.input", return_value=""), mock.patch.object(cmd.sys, "stdin") as sin, \
                 mock.patch.object(cmd.sys, "stdout") as sout:
             sin.isatty.return_value = True
@@ -193,7 +193,7 @@ class NoEngineFlow(unittest.TestCase):
         app = LaunchApp(make_ctx(settings=flags_settings()), auto_run=True)
 
         async def go():
-            with mock.patch("strata_cli.launch.app.Runner", Asking):
+            with mock.patch("nostroma_cli.launch.app.Runner", Asking):
                 async with app.run_test(size=SIZE) as pilot:
                     await pilot.pause(0.4)
                     self.assertIn("Strata couldn't find an engine for this computer", text_of(app))
@@ -208,7 +208,7 @@ class NoEngineFlow(unittest.TestCase):
         self.assertEqual(answers, [True])
 
     def test_the_screens_show_the_end_message_and_exit_zero(self):
-        from strata_cli.launch.app import LaunchApp as LA
+        from nostroma_cli.launch.app import LaunchApp as LA
         res = self.served_nothing()
         with mock.patch.object(LA, "run", lambda self, **kw: res), mock.patch.object(launch_app, "run_monitor", side_effect=AssertionError("no monitor")):
             out = io.StringIO()

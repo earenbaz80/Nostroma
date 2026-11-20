@@ -50,7 +50,7 @@ test('the monitor uses the pace, the Monitor screen asks while it is open, and /
 
 test('the drive-temperature reader starts only while the Monitor is watched and ends after it is gone (#4661)', async () => {
   const monitor = await readFile(new URL('../server/monitor.mjs', import.meta.url), 'utf8');
-  assert.match(monitor, /STRATA_REAL_ENGINE==='1'&&Date\.now\(\)<drivesUntil&&Date\.now\(\)-hostStartedAt>DRIVES_AFTER_MS\?readTemperatures\(\)/);
+  assert.match(monitor, /envVar\('REAL_ENGINE'\)==='1'&&Date\.now\(\)<drivesUntil&&Date\.now\(\)-hostStartedAt>DRIVES_AFTER_MS\?readTemperatures\(\)/);
   assert.match(monitor, /stopTemperatures\(\)/);
   const { readTemperatures, stopTemperatures } = await import('../server/temperature-telemetry.mjs');
   assert.equal(typeof stopTemperatures, 'function');

@@ -10,7 +10,7 @@ from pathlib import Path
 from unittest import mock
 
 import setup as S
-from strata_cli import cli
+from nostroma_cli import cli
 
 
 class PackagedSetupWithoutCMake(unittest.TestCase):

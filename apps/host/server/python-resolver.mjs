@@ -31,10 +31,10 @@ export function pythonStarts(command, args = []) {
 const cache = new Map();
 
 export function resolvePython({ repo = null, control = null, env = process.env, platform = process.platform, exists = existsSync, starts = pythonStarts, useCache = true } = {}) {
-  const key = JSON.stringify([repo, control?.python ?? null, env.STRATA_PYTHON, env.STRATA_NATIVE_PYTHON, platform]);
+  const key = JSON.stringify([repo, control?.python ?? null, (env.NOSTROMA_PYTHON ?? env.STRATA_PYTHON), (env.NOSTROMA_NATIVE_PYTHON ?? env.STRATA_NATIVE_PYTHON), platform]);
   if (useCache && cache.has(key)) return cache.get(key);
   const found = (() => {
-    const explicit = env.STRATA_PYTHON || env.STRATA_NATIVE_PYTHON;
+    const explicit = (env.NOSTROMA_PYTHON ?? env.STRATA_PYTHON) || (env.NOSTROMA_NATIVE_PYTHON ?? env.STRATA_NATIVE_PYTHON);
     if (explicit) return { command: explicit, args: [], source: 'environment' };
     if (control?.python) return { command: control.python, args: [], source: 'bundled' };
     if (repo) {

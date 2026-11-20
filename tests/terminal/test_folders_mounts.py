@@ -11,7 +11,7 @@ from pathlib import Path
 from unittest import mock
 
 import setup
-from strata_control import folders
+from nostroma_control import folders
 
 SAID = "Nothing was downloaded or changed"
 

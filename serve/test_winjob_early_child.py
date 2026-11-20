@@ -71,7 +71,7 @@ class isolated:
     """The per-user state folders in a temp folder and no launch record: nothing of the real install is touched."""
 
     def __enter__(self):
-        from strata_control import procs
+        from nostroma_control import procs
         self.tmp = tempfile.TemporaryDirectory()
         self.patches = [mock.patch.dict(os.environ, {"LOCALAPPDATA": self.tmp.name, "APPDATA": self.tmp.name,
                                                     "XDG_STATE_HOME": self.tmp.name}),
@@ -225,7 +225,7 @@ info = winjob._ExtendedLimits()
 info.BasicLimitInformation.LimitFlags = 0x2000                 # kill on close; no BREAKAWAY_OK, no SILENT_BREAKAWAY_OK
 assert k.SetInformationJobObject(job, 9, ctypes.byref(info), ctypes.sizeof(info))
 assert k.AssignProcessToJobObject(job, k.GetCurrentProcess()), ctypes.get_last_error()
-from strata_control import procs
+from nostroma_control import procs
 procs.write_record = lambda *a, **kw: None
 from serve import lifeline
 child = lifeline.popen([sys.executable, "-c", ECHO], "mcp", stdin=subprocess.PIPE, stdout=subprocess.PIPE,

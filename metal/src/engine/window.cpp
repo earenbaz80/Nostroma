@@ -155,7 +155,7 @@ bool metal_ctab() {
 // STRATA_METAL_F16=1 (opt-in): the decode windows' (resident model, with the head) dense GEMVs of Q2_0, the K-quants and IQ4_XS on the fp16 path -
 // the weights decoded into half, the window's x as half planes the writers of x add (function constant 25), the
 // products of a half unit summed in half, the scales and the units' sum in float (gemv.metal gemv16)
-// Unset (owner yes 2026-11-07; was strata_control/mac_fit.py engine_env): on for a resident IQ3_S or Q2_0 pack, found from the file name the launcher's
+// Unset (owner yes 2026-11-07; was nostroma_control/mac_fit.py engine_env): on for a resident IQ3_S or Q2_0 pack, found from the file name the launcher's
 // models carry ("...-IQ3_S-0000N-of-0000M.gguf", "...-Q2_0-..."), decided once the model is open (f16_auto_for).  M5 Max: decode +9 to +15%
 // (Q2_0) and +9 to +12% (IQ3_S), top-1 agreement 97.1% / 96.2%, mean KL 0.009 / 0.016, 61-task suite the same.  STRATA_METAL_F16=0 turns it off,
 // =1 turns it on for any pack.

@@ -116,10 +116,10 @@ export function NativeModels({ onOtherModels, onReady, onImport, onConnectEngine
     const noReaderNow = !!selectedSize?.imagesCapable && !selectedSize.images, noReaderSeen = useRef({ id: '', value: false });
     noReaderSeen.current = steadyNoReader(noReaderNow, !!active, noReaderSeen.current, selectedSize?.id ?? '');
     const noReader = noReaderSeen.current.value;
-    // Graphics cards (strata_control/gpu_fit.py: the one rule of the app, the Terminal and setup): the recommended option is pre-selected, the person may pick another
+    // Graphics cards (nostroma_control/gpu_fit.py: the one rule of the app, the Terminal and setup): the recommended option is pre-selected, the person may pick another
     // A card a loaded model already uses (a second model on it usually does not fit): said on its row, and not the pre-selected one while another is free.
     const usedBy = (cards: number[]) => (native?.instances ?? []).filter(i => i.status !== 'error' && i.model !== selectedSize?.id && i.gpus.some(g => cards.includes(g))).map(i => i.label);
-    // Main / Helper / Off per card (src/lib/gpu-roles.ts, strata_control/gpu_roles.py): the recommendation until the person changes a role; a loaded model shows what it was started with.
+    // Main / Helper / Off per card (src/lib/gpu-roles.ts, nostroma_control/gpu_roles.py): the recommendation until the person changes a role; a loaded model shows what it was started with.
     // With Run multiple models, a card another loaded model already uses starts Off for this one (while a free card exists).
     const busy = (i: number) => expert && multiple && usedBy([i]).length > 0, freeCards = roleCards.filter(c => !busy(c.index));
     const recommended = freeCards.length && freeCards.length < roleCards.length ? { ...recommendRoles(freeCards, engineVendor), roles: { ...Object.fromEntries(roleCards.map(c => [c.index, 'off'])), ...recommendRoles(freeCards, engineVendor).roles } as Roles } : recommendRoles(roleCards, engineVendor);
@@ -130,7 +130,7 @@ export function NativeModels({ onOtherModels, onReady, onImport, onConnectEngine
     const cardsGpus: number[] = roleCards.length > 1 ? roleOrder(effectiveRoles, roleCards) : [];
     const chosenCards = cardsGpus;
     const fitHardware = { ram_gb: pcRam ? Math.max(0, pcRam - keptRam) : pcRam, vram_gb: Math.max(0, (roleCards.length > 1 ? vramOn(effectiveRoles, roleCards) : pcVram) - keptVramOn(chosenCards)) };
-    // The fit label's own figures (strata_control/fit_label.py): a unified-memory chip counts only its carve-out beside the RAM (lib/native-fit.ts cardRoomGb).
+    // The fit label's own figures (nostroma_control/fit_label.py): a unified-memory chip counts only its carve-out beside the RAM (lib/native-fit.ts cardRoomGb).
     const labelHardware = { ram_gb: fitHardware.ram_gb, vram_gb: roleCards.length > 1 ? fitHardware.vram_gb : Math.max(0, cardRoomGb(pcGpu ? [pcGpu] : []) - keptVramOn(chosenCards)) };
     // How the chosen version sits on this computer (the same rule as the version list): the page says a word only for "may run slower".
     const fitState = selectedSize ? versionFit(selectedSize, labelHardware, { context, kv }) : 'unknown';
@@ -142,7 +142,7 @@ export function NativeModels({ onOtherModels, onReady, onImport, onConnectEngine
     const splitCards = native?.capabilities?.dflash2Split === true && cardsGpus.length !== 1;
     // The drafter this run loads (one per run): the fit and the plan use its graphics memory (DFlash2 0.89 GB, MTP 1.08 GB).
     const nowDrafter = draftingChoices ? resolveDrafter(drafting, selectedSize?.sourceFamily ?? selectedFamily?.family, native?.capabilities?.dflash2, splitCards) : 'mtp';
-    // DFlash2 with the converted pack (the selector as Q4_0 rows) takes 175 MiB less graphics memory: the fit says the true number (Control's `selq4`, strata_control/drafting.py vram_gb).
+    // DFlash2 with the converted pack (the selector as Q4_0 rows) takes 175 MiB less graphics memory: the fit says the true number (Control's `selq4`, nostroma_control/drafting.py vram_gb).
     const fitDrafter = nowDrafter === 'dflash2' && native?.capabilities?.dflash2Selq4 === true ? 'dflash2_selq4' : nowDrafter;
     const draftingWords: Record<string, string> = { auto: 'Auto (recommended)', mtp: 'MTP', dflash2: 'DFlash2', off: 'Off' };
     const values = useMemo(() => ({ family: selectedSize?.sourceFamily, model: selectedSize?.model, context, vision: selectedSize?.images ? vision : 'no', kv, low_ram: lowRam, resourceProfile, ...(cardsGpus.length > 1 ? { gpus: cardsGpus.join(',') } : cardsGpus.length === 1 ? { gpu: cardsGpus[0] } : {}), loadAfter: true, multiple: expert && multiple }), [selectedSize?.sourceFamily, selectedSize?.model, context, vision, kv, lowRam, resourceProfile, cardsGpus.join(','), expert, multiple]);

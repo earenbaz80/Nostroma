@@ -10,7 +10,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from test_overview import Source, metrics  # noqa: E402
-from strata_cli.monitor import MonitorApp  # noqa: E402
+from nostroma_cli.monitor import MonitorApp  # noqa: E402
 
 KEYS = "Space freeze  r refresh  t theme  q detach"
 

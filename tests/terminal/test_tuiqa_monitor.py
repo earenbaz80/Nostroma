@@ -8,11 +8,11 @@ import re
 import unittest
 from unittest import mock
 
-from strata_cli import nav
-from strata_cli.launch import check, harness
-from strata_cli.launch.monitor_ext import LaunchMonitor
-from strata_cli.launch.widgets import DARK, LIGHT
-from strata_cli.monitor import MonitorApp
+from nostroma_cli import nav
+from nostroma_cli.launch import check, harness
+from nostroma_cli.launch.monitor_ext import LaunchMonitor
+from nostroma_cli.launch.widgets import DARK, LIGHT
+from nostroma_cli.monitor import MonitorApp
 from tests.terminal.launch_support import Home, text_of
 from tests.terminal.test_launch_monitor import INFO
 from tests.terminal.test_overview import Source, metrics
@@ -134,7 +134,7 @@ class MonitorViews(unittest.TestCase):
 
     def test_strata_monitor_is_the_same_seven_view_monitor_as_launchs(self):
         """`strata monitor --url ...` builds the launch monitor without the quit question: seven views, key 7, Connect points at that server."""
-        from strata_cli import monitor_commands
+        from nostroma_cli import monitor_commands
         seen = {}
 
         class Fake:
@@ -145,7 +145,7 @@ class MonitorViews(unittest.TestCase):
                 seen["ran"] = True
 
         args = monitor_commands.parser().parse_args(["monitor", "--url", "http://127.0.0.1:18765"])
-        with mock.patch("strata_cli.launch.monitor_ext.LaunchMonitor", Fake), mock.patch("sys.stdout.isatty", return_value=True), Home():
+        with mock.patch("nostroma_cli.launch.monitor_ext.LaunchMonitor", Fake), mock.patch("sys.stdout.isatty", return_value=True), Home():
             self.assertEqual(monitor_commands.run(args), 0)
         self.assertTrue(seen.get("ran"))
         self.assertFalse(seen["ask_quit"])                                   # q detaches: this command started nothing

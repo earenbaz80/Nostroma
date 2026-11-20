@@ -10,7 +10,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_control import engine_component as ec, gpu_fit
+from nostroma_control import engine_component as ec, gpu_fit
 
 NV = {"vendor": "nvidia", "name": "NVIDIA GeForce RTX 5060", "vram_gb": 8.0, "usable": True, "index": 0}
 ARC = [{"vendor": "intel", "name": "Intel Arc Pro B65", "vram_gb": 32.0, "usable": True, "index": i} for i in (0, 1)]
@@ -44,7 +44,7 @@ class SavedChoice(unittest.TestCase):
                 self.assertIsNone(ec.saved_backend(env))
 
     def test_the_update_make_guard_lets_a_saved_choice_through(self):
-        from strata_control import updater
+        from nostroma_control import updater
         ctx = mock.Mock()
         ctx.hardware = {"backend": "sycl", "backend_source": "saved choice"}
         self.assertIsNone(updater.make_guard(ctx))
@@ -68,7 +68,7 @@ class Notes(unittest.TestCase):
 
 class BrokenNvidia(unittest.TestCase):
     def test_says_what_is_wrong_and_the_next_step_only_when_it_is(self):
-        from strata_cli.launch import cmd
+        from nostroma_cli.launch import cmd
         comp = mock.Mock(gpus=list(ARC))
         with mock.patch.object(ec, "detect_backend", lambda *a, **k: ("cuda", "sysfs pci vendor")),                 mock.patch.object(ec, "gpu_makes_present", lambda: {"cuda", "sycl"}):
             note = cmd._broken_nvidia_note(comp)
@@ -81,7 +81,7 @@ class BrokenNvidia(unittest.TestCase):
 
 class SavedChoiceLine(unittest.TestCase):
     def test_a_launch_after_a_saved_choice_says_so(self):
-        from strata_cli.launch import cmd, settings as S
+        from nostroma_cli.launch import cmd, settings as S
         from tests.terminal.launch_support import HW_12, Home, catalog
         with Home(), mock.patch.object(ec, "detect_backend", lambda *a, **k: ("sycl", "saved choice")):
             _s, notes = cmd.apply_defaults(S.LaunchSettings(family="qwen", model="IQ3_XXS"), catalog(HW_12))

@@ -6,8 +6,8 @@ on:
       - .github/workflows/terminal-minimal-server.yml
       - requirements.txt
       - strata.py
-      - strata_cli/**
-      - strata_control/**
+      - nostroma_cli/**
+      - nostroma_control/**
       - serve/**
       - tests/terminal/test_runtime.py
       - tools/minimal_server_smoke.py
@@ -17,8 +17,8 @@ on:
       - .github/workflows/terminal-minimal-server.yml
       - requirements.txt
       - strata.py
-      - strata_cli/**
-      - strata_control/**
+      - nostroma_cli/**
+      - nostroma_control/**
       - serve/**
       - tests/terminal/test_runtime.py
       - tools/minimal_server_smoke.py

@@ -1,4 +1,4 @@
-"""strata_control/vram_fit.py: the fit math with mock card sizes, and its use in setup (sycl/setup_intel.py) and strata launch."""
+"""nostroma_control/vram_fit.py: the fit math with mock card sizes, and its use in setup (sycl/setup_intel.py) and strata launch."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from strata_control import vram_fit as V  # noqa: E402
+from nostroma_control import vram_fit as V  # noqa: E402
 
 
 class Measured(unittest.TestCase):

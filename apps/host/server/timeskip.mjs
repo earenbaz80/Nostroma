@@ -2,7 +2,7 @@
  * Time-skip, from the App Host.
  *
  * Strata Control owns the job: checkpointing, isolated candidates, the checks and the decision all
- * live in `strata_control/time_skip.py` and are driven through the `strata timeskip` CLI. This
+ * live in `nostroma_control/time_skip.py` and are driven through the `strata timeskip` CLI. This
  * module is only the bridge — it starts that command, streams its output, and reads back the durable
  * `run.json` the job writes.
  *
@@ -22,6 +22,7 @@ import { endTreeThenKill, ownGroup } from './process-tree.mjs';
 import { existsSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs';
 import { isAbsolute, join, relative, resolve } from 'node:path';
 import { timeSkipDir } from './platform-paths.mjs';
+import { childEnv } from './env-compat.mjs';
 
 /** Where runs are recorded. Mirrors the CLI's own default resolution. */
 function stateDir(env = process.env) {
@@ -303,7 +304,7 @@ export function createTimeSkip({ repoRoot, python, pythonArgs = [], timeoutMs = 
       const child = spawn(python, [...pythonArgs, cli, ...args, '--output', 'json'], {
         cwd: repoRoot,
         windowsHide: true,
-        env: { ...env, PYTHONUTF8: '1', PYTHONIOENCODING: 'utf-8', STRATA_TIMESKIP_DIR: root },
+        env: childEnv({ ...env, PYTHONUTF8: '1', PYTHONIOENCODING: 'utf-8', STRATA_TIMESKIP_DIR: root }),
         stdio: ['ignore', 'pipe', 'pipe'],
       });
       let stdout = '';
@@ -450,7 +451,7 @@ export function createTimeSkip({ repoRoot, python, pythonArgs = [], timeoutMs = 
         '--attempts', String(Math.max(0, Math.min(10, Number(attempts) || 0))), '--output', 'json'];
       if (reviseCommand) args.push('--revise-command', reviseCommand);
       const child = spawn(python, [...pythonArgs, cli, ...args], {
-        cwd: repoRoot, windowsHide: true, detached: ownGroup(), env: { ...env, PYTHONUTF8: '1', PYTHONIOENCODING: 'utf-8', ...extraEnv, STRATA_TIMESKIP_DIR: root }, stdio: ['ignore', 'pipe', 'pipe'],
+        cwd: repoRoot, windowsHide: true, detached: ownGroup(), env: childEnv({ ...env, PYTHONUTF8: '1', PYTHONIOENCODING: 'utf-8', ...extraEnv, STRATA_TIMESKIP_DIR: root }), stdio: ['ignore', 'pipe', 'pipe'],
       });
       let out = '', err = '', closed = null;
       child.stdout.on('data', b => { out += b.toString(); });

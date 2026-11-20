@@ -7,8 +7,8 @@
   "sycl/src"
  ],
  "launch": [
-  "strata_control",
-  "strata_cli",
+  "nostroma_control",
+  "nostroma_cli",
   "setup.py",
   "apps/host/server",
   "serve"
@@ -2150,22 +2150,22 @@
    "engine_sets": [],
    "engine_defaults": [],
    "launch_files": [
-    "strata_control/drafting.py"
+    "nostroma_control/drafting.py"
    ],
    "launch_sets": [
     {
-     "file": "strata_control/drafting.py",
+     "file": "nostroma_control/drafting.py",
      "line": 877,
      "value": "0"
     }
    ],
    "launch_reads": [
     {
-     "file": "strata_control/drafting.py",
+     "file": "nostroma_control/drafting.py",
      "line": 882
     },
     {
-     "file": "strata_control/drafting.py",
+     "file": "nostroma_control/drafting.py",
      "line": 1038
     }
    ],
@@ -2452,16 +2452,16 @@
    "engine_defaults": [],
    "launch_files": [
     "serve/server.py",
-    "strata_control/drafting.py"
+    "nostroma_control/drafting.py"
    ],
    "launch_sets": [],
    "launch_reads": [
     {
-     "file": "strata_control/drafting.py",
+     "file": "nostroma_control/drafting.py",
      "line": 873
     },
     {
-     "file": "strata_control/drafting.py",
+     "file": "nostroma_control/drafting.py",
      "line": 1038
     },
     {
@@ -2551,17 +2551,17 @@
     }
    ],
    "launch_files": [
-    "strata_control/amd_four_card.py",
-    "strata_control/replica_profile.py"
+    "nostroma_control/amd_four_card.py",
+    "nostroma_control/replica_profile.py"
    ],
    "launch_sets": [
     {
-     "file": "strata_control/amd_four_card.py",
+     "file": "nostroma_control/amd_four_card.py",
      "line": 27,
      "value": "\"1\""
     },
     {
-     "file": "strata_control/replica_profile.py",
+     "file": "nostroma_control/replica_profile.py",
      "line": 37,
      "value": "\"1\""
     }
@@ -2603,7 +2603,7 @@
    "engine_defaults": [],
    "launch_files": [
     "serve/server.py",
-    "strata_cli/cli.py"
+    "nostroma_cli/cli.py"
    ],
    "launch_sets": [
     {
@@ -2619,7 +2619,7 @@
    ],
    "launch_reads": [
     {
-     "file": "strata_cli/cli.py",
+     "file": "nostroma_cli/cli.py",
      "line": 763
     }
    ],
@@ -3018,11 +3018,11 @@
     }
    ],
    "launch_files": [
-    "strata_control/replica_profile.py"
+    "nostroma_control/replica_profile.py"
    ],
    "launch_sets": [
     {
-     "file": "strata_control/replica_profile.py",
+     "file": "nostroma_control/replica_profile.py",
      "line": 38,
      "value": "\"1\""
     }
@@ -3070,11 +3070,11 @@
     }
    ],
    "launch_files": [
-    "strata_control/replica_profile.py"
+    "nostroma_control/replica_profile.py"
    ],
    "launch_sets": [
     {
-     "file": "strata_control/replica_profile.py",
+     "file": "nostroma_control/replica_profile.py",
      "line": 38,
      "value": "\"4\""
     }
@@ -4249,11 +4249,11 @@
    "engine_defaults": [],
    "launch_files": [
     "setup.py",
-    "strata_control/speed_switches.py"
+    "nostroma_control/speed_switches.py"
    ],
    "launch_sets": [
     {
-     "file": "strata_control/speed_switches.py",
+     "file": "nostroma_control/speed_switches.py",
      "line": 63,
      "value": "\"026\""
     }
@@ -11597,7 +11597,7 @@
    "engine_defaults": [],
    "launch_files": [
     "setup.py",
-    "strata_control/mac_fit.py"
+    "nostroma_control/mac_fit.py"
    ],
    "launch_sets": [],
    "launch_reads": [],
@@ -12123,7 +12123,7 @@
    "engine_defaults": [],
    "launch_files": [
     "setup.py",
-    "strata_control/hipblaslt_tuning.py"
+    "nostroma_control/hipblaslt_tuning.py"
    ],
    "launch_sets": [],
    "launch_reads": [],
@@ -12170,12 +12170,12 @@
    "engine_defaults": [],
    "launch_files": [
     "setup.py",
-    "strata_control/hipblaslt_tuning.py",
-    "strata_control/setup_config.py"
+    "nostroma_control/hipblaslt_tuning.py",
+    "nostroma_control/setup_config.py"
    ],
    "launch_sets": [
     {
-     "file": "strata_control/setup_config.py",
+     "file": "nostroma_control/setup_config.py",
      "line": 442,
      "value": "str(table)"
     }
@@ -12617,7 +12617,7 @@
     }
    ],
    "launch_files": [
-    "strata_control/tune_knobs.py"
+    "nostroma_control/tune_knobs.py"
    ],
    "launch_sets": [],
    "launch_reads": [],
@@ -14926,11 +14926,11 @@
    "launch_files": [
     "apps/host/server/native-settings.mjs",
     "apps/host/server/policy-generated.mjs",
-    "strata_control/speed_switches.py"
+    "nostroma_control/speed_switches.py"
    ],
    "launch_sets": [
     {
-     "file": "strata_control/speed_switches.py",
+     "file": "nostroma_control/speed_switches.py",
      "line": 43,
      "value": "\"1\""
     },
@@ -14963,7 +14963,7 @@
    "last_date": "2026-10-26",
    "status": "opt-in",
    "owner": "prefill",
-   "note": "[auto] offered as a user switch (strata_control/speed_switches.py:40)",
+   "note": "[auto] offered as a user switch (nostroma_control/speed_switches.py:40)",
    "retire_after": "",
    "retired_in": ""
   },
@@ -16882,11 +16882,11 @@
    "engine_sets": [],
    "engine_defaults": [],
    "launch_files": [
-    "strata_control/split_engine.py"
+    "nostroma_control/split_engine.py"
    ],
    "launch_sets": [
     {
-     "file": "strata_control/split_engine.py",
+     "file": "nostroma_control/split_engine.py",
      "line": 500,
      "value": "<file>"
     }
@@ -16900,7 +16900,7 @@
    "last_date": "2026-11-06",
    "status": "research",
    "owner": "core",
-   "note": "[checked] Run manifest file for measurement (include/strata/core/run_manifest.hpp:5, 'OFF by default'); strata_control/split_engine.py:506 sets it for the split engine's own runs.",
+   "note": "[checked] Run manifest file for measurement (include/strata/core/run_manifest.hpp:5, 'OFF by default'); nostroma_control/split_engine.py:506 sets it for the split engine's own runs.",
    "retire_after": "",
    "retired_in": ""
   },
@@ -17362,7 +17362,7 @@
    "engine_sets": [],
    "engine_defaults": [],
    "launch_files": [
-    "strata_control/mac_fit.py"
+    "nostroma_control/mac_fit.py"
    ],
    "launch_sets": [],
    "launch_reads": [],
@@ -19107,11 +19107,11 @@
    "engine_defaults": [],
    "launch_files": [
     "setup.py",
-    "strata_cli/launch/adopt.py"
+    "nostroma_cli/launch/adopt.py"
    ],
    "launch_sets": [
     {
-     "file": "strata_cli/launch/adopt.py",
+     "file": "nostroma_cli/launch/adopt.py",
      "line": 140,
      "value": "\"1\""
     },
@@ -21637,11 +21637,11 @@
    "engine_defaults": [],
    "launch_files": [
     "setup.py",
-    "strata_control/setup_config.py"
+    "nostroma_control/setup_config.py"
    ],
    "launch_sets": [
     {
-     "file": "strata_control/setup_config.py",
+     "file": "nostroma_control/setup_config.py",
      "line": 445,
      "value": "\"1\""
     }
@@ -23951,11 +23951,11 @@
    "engine_defaults": [],
    "launch_files": [
     "apps/host/server/policy-generated.mjs",
-    "strata_control/speed_switches.py"
+    "nostroma_control/speed_switches.py"
    ],
    "launch_sets": [
     {
-     "file": "strata_control/speed_switches.py",
+     "file": "nostroma_control/speed_switches.py",
      "line": 50,
      "value": "\"old\""
     },
@@ -23977,7 +23977,7 @@
    "last_date": "2026-10-26",
    "status": "opt-in",
    "owner": "program",
-   "note": "[auto] offered as a user switch (strata_control/speed_switches.py:47)",
+   "note": "[auto] offered as a user switch (nostroma_control/speed_switches.py:47)",
    "retire_after": "",
    "retired_in": ""
   },
@@ -27181,29 +27181,29 @@
    "engine_sets": [],
    "engine_defaults": [],
    "launch_files": [
-    "strata_cli/launch/cmd.py",
-    "strata_cli/launch/screens.py",
-    "strata_cli/launch/settings.py",
-    "strata_control/tune_knobs.py"
+    "nostroma_cli/launch/cmd.py",
+    "nostroma_cli/launch/screens.py",
+    "nostroma_cli/launch/settings.py",
+    "nostroma_control/tune_knobs.py"
    ],
    "launch_sets": [
     {
-     "file": "strata_control/tune_knobs.py",
+     "file": "nostroma_control/tune_knobs.py",
      "line": 115,
      "value": "\"1\""
     },
     {
-     "file": "strata_cli/launch/screens.py",
+     "file": "nostroma_cli/launch/screens.py",
      "line": 1279,
      "value": "1"
     },
     {
-     "file": "strata_cli/launch/settings.py",
+     "file": "nostroma_cli/launch/settings.py",
      "line": 233,
      "value": "1"
     },
     {
-     "file": "strata_cli/launch/settings.py",
+     "file": "nostroma_cli/launch/settings.py",
      "line": 243,
      "value": "1."
     }
@@ -27222,7 +27222,7 @@
    "last_date": "2026-11-06",
    "status": "opt-in",
    "owner": "program",
-   "note": "[auto] offered as a user switch (strata_control/tune_knobs.py:118)",
+   "note": "[auto] offered as a user switch (nostroma_control/tune_knobs.py:118)",
    "retire_after": "",
    "retired_in": ""
   },
@@ -33836,17 +33836,17 @@
     }
    ],
    "launch_files": [
-    "strata_control/amd_four_card.py",
-    "strata_control/replica_profile.py"
+    "nostroma_control/amd_four_card.py",
+    "nostroma_control/replica_profile.py"
    ],
    "launch_sets": [
     {
-     "file": "strata_control/amd_four_card.py",
+     "file": "nostroma_control/amd_four_card.py",
      "line": 27,
      "value": "\"1\""
     },
     {
-     "file": "strata_control/replica_profile.py",
+     "file": "nostroma_control/replica_profile.py",
      "line": 37,
      "value": "\"1\""
     }
@@ -34331,7 +34331,7 @@
    "engine_sets": [],
    "engine_defaults": [],
    "launch_files": [
-    "strata_control/tune_knobs.py"
+    "nostroma_control/tune_knobs.py"
    ],
    "launch_sets": [],
    "launch_reads": [],
@@ -34712,11 +34712,11 @@
    "engine_defaults": [],
    "launch_files": [
     "setup.py",
-    "strata_control/setup_config.py"
+    "nostroma_control/setup_config.py"
    ],
    "launch_sets": [
     {
-     "file": "strata_control/setup_config.py",
+     "file": "nostroma_control/setup_config.py",
      "line": 464,
      "value": "\"0\""
     }
@@ -34836,11 +34836,11 @@
    "engine_defaults": [],
    "launch_files": [
     "setup.py",
-    "strata_control/setup_config.py"
+    "nostroma_control/setup_config.py"
    ],
    "launch_sets": [
     {
-     "file": "strata_control/setup_config.py",
+     "file": "nostroma_control/setup_config.py",
      "line": 461,
      "value": "str(ROOT / \"tools\" / \"hip\")"
     }
@@ -35086,11 +35086,11 @@
    "launch_files": [
     "apps/host/server/native-settings.mjs",
     "apps/host/server/policy-generated.mjs",
-    "strata_control/speed_switches.py"
+    "nostroma_control/speed_switches.py"
    ],
    "launch_sets": [
     {
-     "file": "strata_control/speed_switches.py",
+     "file": "nostroma_control/speed_switches.py",
      "line": 46,
      "value": "\"1.5\""
     },
@@ -35115,7 +35115,7 @@
    "last_date": "2026-10-29",
    "status": "opt-in",
    "owner": "core",
-   "note": "[auto] offered as a user switch (strata_control/speed_switches.py:43)",
+   "note": "[auto] offered as a user switch (nostroma_control/speed_switches.py:43)",
    "retire_after": "",
    "retired_in": ""
   },
@@ -36021,7 +36021,7 @@
    "engine_sets": [],
    "engine_defaults": [],
    "launch_files": [
-    "strata_control/tune_knobs.py"
+    "nostroma_control/tune_knobs.py"
    ],
    "launch_sets": [],
    "launch_reads": [],
@@ -36596,7 +36596,7 @@
    "launch_files": [
     "serve/server.py",
     "setup.py",
-    "strata_control/tune_knobs.py"
+    "nostroma_control/tune_knobs.py"
    ],
    "launch_sets": [
     {
@@ -36764,11 +36764,11 @@
     }
    ],
    "launch_files": [
-    "strata_control/replica_profile.py"
+    "nostroma_control/replica_profile.py"
    ],
    "launch_sets": [
     {
-     "file": "strata_control/replica_profile.py",
+     "file": "nostroma_control/replica_profile.py",
      "line": 38,
      "value": "\"1\""
     }
@@ -36814,11 +36814,11 @@
     }
    ],
    "launch_files": [
-    "strata_control/replica_profile.py"
+    "nostroma_control/replica_profile.py"
    ],
    "launch_sets": [
     {
-     "file": "strata_control/replica_profile.py",
+     "file": "nostroma_control/replica_profile.py",
      "line": 39,
      "value": "\"1\""
     }
@@ -36864,17 +36864,17 @@
     }
    ],
    "launch_files": [
-    "strata_control/amd_four_card.py",
-    "strata_control/replica_profile.py"
+    "nostroma_control/amd_four_card.py",
+    "nostroma_control/replica_profile.py"
    ],
    "launch_sets": [
     {
-     "file": "strata_control/amd_four_card.py",
+     "file": "nostroma_control/amd_four_card.py",
      "line": 27,
      "value": "\"1\""
     },
     {
-     "file": "strata_control/replica_profile.py",
+     "file": "nostroma_control/replica_profile.py",
      "line": 37,
      "value": "\"1\""
     }

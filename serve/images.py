@@ -44,7 +44,7 @@ import threading
 import time
 from pathlib import Path
 
-from strata_control.childenv import quiet_crash_env
+from nostroma_control.childenv import quiet_crash_env
 
 # Qwen-Image-2.1-Turbo's own schedule (model_index.json "sample_sigmas") plus the terminal 0, as Unsloth's card passes
 # it to sd-cli; it is an 8-step schedule, so another step count leaves the schedule to sd.cpp

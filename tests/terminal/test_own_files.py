@@ -1,6 +1,6 @@
 """0.2.2: "use my own model files" accepts every layout 0.1.45's `setup.py --gguf-dir` accepted (issues #3316 #3292 #3190 #3209 #3331).
 
-The checker in front of setup (strata_control/models.plan_import) used to be stricter than setup itself: a split set whose first shard
+The checker in front of setup (nostroma_control/models.plan_import) used to be stricter than setup itself: a split set whose first shard
 holds only the metadata (Unsloth's), a link to the file (Hugging Face cache, Ollama), a folder holding several sizes, a folder above the
 model folder (a whole repository, a 0.1.45 data folder), more than 128 files in a folder. Tiny GGUF files with the real shard names
 stand for the real ones (the shard names and the expert types are what the table checks)."""
@@ -14,8 +14,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from strata_control import gguf_preflight, models
-from strata_control.profiles import ProfileError
+from nostroma_control import gguf_preflight, models
+from nostroma_control.profiles import ProfileError
 from tools.gguf_reader import BLOCK_GEOMETRY
 
 TYPE_IDS = {"Q8_0": 8, "IQ3_S": 21, "IQ4_NL": 20, "IQ4_XS": 23, "IQ3_XXS": 18, "Q2_0": 42, "IQ2_S": 22, "IQ2_XS": 17,
@@ -265,12 +265,12 @@ class Folders(Base):
 
 
 class Launcher(Base):
-    """`strata launch --model-path` and the TUI's "use my own files" (strata_cli/launch/runner.py, screens.py)."""
+    """`strata launch --model-path` and the TUI's "use my own files" (nostroma_cli/launch/runner.py, screens.py)."""
 
     def runner(self, **kw):
-        from strata_cli.launch import settings as S
-        from strata_cli.launch.catalog import Catalog
-        from strata_cli.launch.runner import Runner
+        from nostroma_cli.launch import settings as S
+        from nostroma_cli.launch.catalog import Catalog
+        from nostroma_cli.launch.runner import Runner
         from tests.terminal.launch_support import HW_12
         return Runner(S.LaunchSettings(**kw), catalog=Catalog(hardware=HW_12))
 
@@ -301,7 +301,7 @@ class Launcher(Base):
         self.assertEqual(Path(r.s.model_path), repo / "IQ3_XXS")
 
     def test_two_models_and_none_named_says_which_in_plain_words(self):
-        from strata_cli.launch.runner import LaunchError
+        from nostroma_cli.launch.runner import LaunchError
         repo = self.base / "repo"
         self.gsq(repo / "Q2_0", Q2, "Q2_0")
         self.gsq(repo / "IQ3_XXS", IQ3XXS, "IQ3_XXS")

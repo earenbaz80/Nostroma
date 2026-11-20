@@ -5,7 +5,7 @@ from __future__ import annotations
 import unittest
 from unittest import mock
 
-from strata_cli.launch import settings as S
+from nostroma_cli.launch import settings as S
 from tests.terminal.launch_support import HW_12, Home, catalog, not_intel
 
 
@@ -14,7 +14,7 @@ class PlanLineOfAFeedModel(unittest.TestCase):
         not_intel(self)
 
     def runner(self, home, family):
-        from strata_cli.launch.runner import Runner
+        from nostroma_cli.launch.runner import Runner
         cat = catalog(HW_12)
         models, families, contexts, source = cat.tables()
         fam = dict(families["qwen"], feed=True, **({"drafter": "none"} if family == "none" else {"drafter": "mtp"}))

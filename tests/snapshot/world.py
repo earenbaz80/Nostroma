@@ -152,7 +152,7 @@ class World:
     @contextlib.contextmanager
     def patched(self):
         """The Python side of the machine class: engine family, cards, card memory, platform, environment.  Nothing else is replaced."""
-        from strata_control import drafting, drafting_fetch, engine_component
+        from nostroma_control import drafting, drafting_fetch, engine_component
         m = self.machine
         archs = list(m.archs)
         vram = self.vram_mib()

@@ -14,7 +14,7 @@ from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from strata_control import private_files as pf  # noqa: E402
+from nostroma_control import private_files as pf  # noqa: E402
 
 
 def resolved(sddl: str) -> str:
@@ -192,7 +192,7 @@ import ctypes
 from ctypes import wintypes
 import subprocess
 import sys
-from strata_control import private_files as pf
+from nostroma_control import private_files as pf
 from serve import winjob
 assert pf.adopt_user_defaults()
 k32 = ctypes.WinDLL("kernel32", use_last_error=True)
@@ -218,7 +218,7 @@ finally:
         self.assertFalse(pf.repair_access(os.environ.get("SystemRoot", "C:\Windows") + "\System32\drivers"))
 
     def test_a_profile_that_was_locked_loads(self):
-        from strata_control import profiles
+        from nostroma_control import profiles
         os.environ["STRATA_PROFILE_DIR"] = str(self.root / "profiles")
         self.addCleanup(os.environ.pop, "STRATA_PROFILE_DIR", None)
         directory = self.root / "profiles"

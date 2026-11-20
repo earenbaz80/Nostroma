@@ -20,7 +20,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_cli.launch import modelstate
+from nostroma_cli.launch import modelstate
 from tests.terminal.launch_support import HW_12, Home, catalog
 
 ALT = "mmproj-F16.gguf"

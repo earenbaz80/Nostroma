@@ -30,7 +30,7 @@ import urllib.error
 import urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from strata_control import netpolicy, tls  # noqa: E402
+from nostroma_control import netpolicy, tls  # noqa: E402
 
 tls.install()       # #3722: the operating system's certificates
 
@@ -145,7 +145,7 @@ def _say_waiting(line):
 
 
 def get(url, start=None, end=None, retries=6):
-    """One range under the network rule (strata_control/netpolicy.py): each try waits at most 12 s, then 30 s, for the server's answer;
+    """One range under the network rule (nostroma_control/netpolicy.py): each try waits at most 12 s, then 30 s, for the server's answer;
     a server that never answered in this run, or a computer that is offline, stops the fetch at once (NetFailure, with the plain sentence);
     after that a failed range is tried `retries` times."""
     for attempt in range(retries):

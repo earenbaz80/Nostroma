@@ -1,6 +1,6 @@
 """0.2.3 RC stress test #9 (C05, #3478): a missing shard is named, with its file name, in the CLI and in the TUI's own-files message."""
 
-from strata_control import models
+from nostroma_control import models
 from tests.terminal.test_own_files import Base, Q2
 
 

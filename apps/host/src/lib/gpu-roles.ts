@@ -1,5 +1,5 @@
 /**
- * Main / Helper / Off for every graphics card. The same rules as strata_control/gpu_roles.py (the Terminal, setup and the server); both run
+ * Main / Helper / Off for every graphics card. The same rules as nostroma_control/gpu_roles.py (the Terminal, setup and the server); both run
  * tests/data/gpu_roles_vectors.json.
  *
  *  - Main:   the card that runs the LAST stage of the layer split (the output head, the draft layer and the check of its guesses). Exactly one.

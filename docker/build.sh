@@ -71,7 +71,7 @@ case "$commit" in *[!0-9a-f]*|"") commit="" ;; esac
 cd "$repo"
 # metal/tools/: the two repack scripts the bundle carries (INSTALLER_METAL_TOOLS in package_terminal.py; without them the terminal stage
 # stops at "No such file or directory: '/src/metal/tools/metal_repack.py'", as the v0.2.11 image build did)
-paths="packaging bin strata.py strata_control strata_cli serve requirements.txt requirements-monitor.txt docs/MANAGEMENT_PROTOCOL.md docs/TERMINAL_LAUNCH.md data bench/prompts/standard-v1 setup.py ref/load.py CMakeLists.txt metal/tools/metal_repack.py metal/tools/stream_experts.py"
+paths="packaging bin strata.py nostroma_control nostroma_cli serve requirements.txt requirements-monitor.txt docs/MANAGEMENT_PROTOCOL.md docs/TERMINAL_LAUNCH.md data bench/prompts/standard-v1 setup.py ref/load.py CMakeLists.txt metal/tools/metal_repack.py metal/tools/stream_experts.py"
 if git rev-parse --git-dir >/dev/null 2>&1; then
   # shellcheck disable=SC2086
   { git ls-files -z -- $paths ':(glob)tools/**/*.py'; } | tar --null -T - -cf - | tar -xf - -C "$ctx/terminal-src"

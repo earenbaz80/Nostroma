@@ -20,7 +20,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from strata_cli import bench_standard  # noqa: E402
+from nostroma_cli import bench_standard  # noqa: E402
 
 POSIX = os.name != "nt"
 
@@ -29,7 +29,7 @@ import os, subprocess, sys, time
 from pathlib import Path
 from unittest import mock
 sys.path.insert(0, sys.argv[1])
-from strata_cli import bench_standard as bs, cli
+from nostroma_cli import bench_standard as bs, cli
 mode, pidfile, ready = sys.argv[2], sys.argv[3], sys.argv[4]
 kid = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(120)"], start_new_session=True)
 Path(pidfile).write_text(str(kid.pid))
@@ -46,8 +46,8 @@ def slow_wait(*a, **k):                        # the model is still loading when
     Path(ready).write_text("x")
     time.sleep(120)
 
-patches = [mock.patch("strata_cli.cli._source", return_value=(Path("p.json"), None, None, {})),
-           mock.patch("strata_cli.cli._launch_plan", return_value=(plan, [])),
+patches = [mock.patch("nostroma_cli.cli._source", return_value=(Path("p.json"), None, None, {})),
+           mock.patch("nostroma_cli.cli._launch_plan", return_value=(plan, [])),
            mock.patch.object(bs.Target, "get", lambda self, path, timeout=10: None)]
 if mode == "loading":                          # the REAL start_engine, with the child it would start and a wait that never ends
     patches += [mock.patch.object(bs.subprocess, "Popen", lambda *a, **k: kid), mock.patch.object(bs, "_start_wait", slow_wait)]

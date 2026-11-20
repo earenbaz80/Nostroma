@@ -5,7 +5,8 @@
 import { chromium } from 'playwright-core';
 import { existsSync, mkdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-const BASE = process.env.STRATA_URL; if (!BASE) { console.error('STRATA_URL required'); process.exit(2); }
+import { envVar } from '../server/env-compat.mjs';
+const BASE = envVar('URL'); if (!BASE) { console.error('STRATA_URL required'); process.exit(2); }
 const SHOTS = resolve(process.env.SHOTS ?? 'mode-shots'); mkdirSync(SHOTS, { recursive: true });
 const MODEL = process.env.MODEL ?? 'Cloud model';
 const PROMPT = process.env.PROMPT ?? 'open my Downloads folder';

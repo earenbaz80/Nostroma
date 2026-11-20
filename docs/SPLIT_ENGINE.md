@@ -67,7 +67,7 @@ checks are removed because the path they protect no longer exists.
 ## AMD (Radeon AI PRO R9700, gfx1201)
 
 The same sources build for HIP (`-DSTRATA_ENABLE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1201`, `packaging/build_split_hip.sh`): gfx12 WMMA tiles, wave32, the HIP runtime through the tree's
-hip_compat shim. `AUTO_SPLIT_AMD_ARCHS`, `AUTO_SPLIT_AMD_CARD_COUNTS` and `AUTO_SPLIT_AMD_EXPERT_TYPES` in `strata_control/split_engine.py` name what Auto starts; removing an entry keeps
+hip_compat shim. `AUTO_SPLIT_AMD_ARCHS`, `AUTO_SPLIT_AMD_CARD_COUNTS` and `AUTO_SPLIT_AMD_EXPERT_TYPES` in `nostroma_control/split_engine.py` name what Auto starts; removing an entry keeps
 the layer split there while `--split-engine on` still runs the split. It looks for `strata-split-<N>-gfx1201` beside the engine.
 
 **Other AMD cards the package has code for (gfx1100, gfx1101, gfx1102, gfx1103 and gfx1200) are opt-in:** only `--split-engine on` starts it there, and before the model loads the engine runs a

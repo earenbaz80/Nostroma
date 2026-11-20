@@ -17,7 +17,7 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from strata_control import engine_component as ec  # noqa: E402
+from nostroma_control import engine_component as ec  # noqa: E402
 
 GOOD = "PCI\\VEN_10DE&DEV_2F04&SUBSYS_1|NVIDIA GeForce RTX 5070|12884901888\nPCI\\VEN_1002&DEV_164E&SUBSYS_2|AMD Radeon(TM) Graphics|536870912\n"
 

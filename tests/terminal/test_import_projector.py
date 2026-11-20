@@ -10,8 +10,8 @@ from pathlib import Path
 
 from unittest import mock
 
-from strata_cli.cli import main
-from strata_control import models
+from nostroma_cli.cli import main
+from nostroma_control import models
 from tests.terminal.test_models import gguf_fixture
 
 

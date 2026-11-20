@@ -322,7 +322,7 @@ lists this as a required Phase B observation.
 
 The supplied Time-skip was a 28-second scripted animation: nine fixed moments, three sample
 documents chosen by regex, and a text table labelled "Simulated comparison checks". It is now a real
-state machine in `strata_control/time_skip.py`, driven from the CLI and shared by Desktop and
+state machine in `nostroma_control/time_skip.py`, driven from the CLI and shared by Desktop and
 Terminal:
 
     queued -> checkpointing -> generating -> checking -> decision -> completed
@@ -403,11 +403,11 @@ backend contract the UI needs is the `timeskip` CLI's JSON output and `run.json`
 
 ### 1.11 Windows owner transport (R03/R04 groundwork)
 
-`strata_control/runtime.py` was POSIX-only: `_supported()` raised on Windows, so `strata runtime`
+`nostroma_control/runtime.py` was POSIX-only: `_supported()` raised on Windows, so `strata runtime`
 refused everything there and the terminal had no managed-owner mode at all. That is now a real
 transport with an explicit, honest difference between the platforms.
 
-`strata_control/owner_transport.py` provides the two operations the runtime needs (listen, connect)
+`nostroma_control/owner_transport.py` provides the two operations the runtime needs (listen, connect)
 plus addressing and state-file validation:
 
 | Platform | Mechanism | What the channel's security rests on |
@@ -439,7 +439,7 @@ oversized inputs. The POSIX stale-socket recovery keeps its existing checks unch
 
 ### 1.12 Engine tuning: the job contract, and the HyperCore-Tune decision (T01–T08 groundwork)
 
-`strata_control/tuning.py` implements the tuning job: a bounded search over runtime configuration
+`nostroma_control/tuning.py` implements the tuning job: a bounded search over runtime configuration
 that produces a **recommendation**, never an automatic change. `strata tune plan|status|list` is the
 interface, shared by Desktop and Terminal. **31 tests pass.**
 
@@ -492,7 +492,7 @@ excluded:  vram_reserve, pcie_frac, expert_cache   (not Apple Silicon concepts)
 
 ### 1.12a The measurement harness (T04 groundwork)
 
-`strata_control/tune_engine.py` is the `measure` callable the job needs: it boots the engine with one
+`nostroma_control/tune_engine.py` is the `measure` callable the job needs: it boots the engine with one
 candidate's flags, sends the declared workload, reads the engine's own protocol output, and returns
 measurements. **26 tests pass against a stub engine that speaks the real protocol.**
 
@@ -678,7 +678,7 @@ implementation gap and is never recorded as `pending-hardware`.** Deferring a de
 machine is how a defect becomes permanent. The nine failures are named in the matrix with what is
 missing.
 
-**T06 closed — tuning history.** `strata_control/tune_history.py` makes identity a content digest
+**T06 closed — tuning history.** `nostroma_control/tune_history.py` makes identity a content digest
 rather than a label: a re-quantised model with the same filename is a different model. The comparison
 key is the engine digest, model digest, digest method, backend, workload, context and machine; a
 completed sweep records itself, and its report states how many earlier sweeps are comparable and, for
@@ -785,7 +785,7 @@ API-mode sweep needs a model that fits a machine, which this one is not.
 ### 1.20 Component packages: manifests, safe unpacking, atomic activation (P06, P07, P11, P12, P13)
 
 Five requirement rows shared one missing root: there was no component package system. There is now —
-`strata_control/components.py`, **47 tests** — and the rows are closed together because they are one
+`nostroma_control/components.py`, **47 tests** — and the rows are closed together because they are one
 mechanism seen from five angles.
 
 **What a component is.** A manifest declares its kind (`application`, `runtime`, `agent-runtime`,
@@ -836,7 +836,7 @@ manifest is *usable* on this Mac and refused for `linux-x86_64` with both reason
 
 ### 1.21 Offline policy: two claims, tested separately (U08)
 
-The checklist asks for two things that are easy to conflate, so `strata_control/offline.py` keeps
+The checklist asks for two things that are easy to conflate, so `nostroma_control/offline.py` keeps
 them apart and they are tested separately — because a passing runtime-only test says **nothing** about
 the strict one. The first is about the server's own code paths; the second is about every process it
 can start.
@@ -1177,7 +1177,7 @@ Python on that PATH is macOS's own 3.9, which the launcher correctly rejects as 
 That last row is also the R02 evidence asked for: pure serving ran with **no agent runtime, no
 Tuning packages, no Textual and no UI present**. The import graph of `serve/` remains stdlib plus
 relative `serve.*` modules, verified both by inspection and by importing
-`strata_control.management` and `strata_cli.cli` on a bare interpreter.
+`nostroma_control.management` and `nostroma_cli.cli` on a bare interpreter.
 
 One defect was found and fixed by this test: the launcher looked for the bundled runtime at
 `/python/bin/python3` while the distribution puts it at `/../python/bin/python3`. That

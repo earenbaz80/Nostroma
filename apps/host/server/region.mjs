@@ -8,6 +8,7 @@
  * Nothing here is a guess: no region means no answer, and the page then falls back to its own language list.
  */
 import { execFileSync } from 'node:child_process';
+import { envVar } from './env-compat.mjs';
 
 const NONE = Object.freeze({ locale: null, region: null, currency: null, source: null });
 
@@ -60,7 +61,7 @@ let cached = null;
 export function systemLocale(options) {
   if (options) return detectRegion(options);
   // A test or a demo can name the regional format (the screenshots of the Monitor); a packaged app never reads it.
-  if (process.env.STRATA_TEST_LOCALE && process.env.STRATA_PACKAGED !== '1') { const named = parseLocaleTag(process.env.STRATA_TEST_LOCALE); return { ...named, currency: null, source: 'test' }; }
+  if (envVar('TEST_LOCALE') && envVar('PACKAGED') !== '1') { const named = parseLocaleTag(envVar('TEST_LOCALE')); return { ...named, currency: null, source: 'test' }; }
   cached ??= detectRegion();
   return cached;
 }

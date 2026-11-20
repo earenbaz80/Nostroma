@@ -10,9 +10,9 @@ from pathlib import Path
 from unittest import mock
 
 import setup
-from strata_control import folders
-from strata_cli.launch import settings as S
-from strata_cli.launch.runner import setup_failure
+from nostroma_control import folders
+from nostroma_cli.launch import settings as S
+from nostroma_cli.launch.runner import setup_failure
 from tests.terminal.launch_support import run_cli
 from tests.terminal.test_launch_tui import Base, FakeRunner, flat, press, text_of, typed
 
@@ -142,7 +142,7 @@ class QuitKeys(Base):
         self.run_app(case)
 
     def test_escape_in_the_stop_dialog_only_closes_it(self):
-        from strata_cli.launch import store
+        from nostroma_cli.launch import store
         async def case(app, pilot, ctx):
             store.save(S.LaunchSettings(name="T", family="qwen", model="IQ3_XXS", context=32768))
             FakeRunner.behaviour = "wait"

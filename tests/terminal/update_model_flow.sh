@@ -168,7 +168,7 @@ import json, shutil, sys
 from pathlib import Path
 sys.path.insert(0, "packaging")
 import feed_tool, package_engine
-from strata_control import components, signing
+from nostroma_control import components, signing
 out, comp = Path(sys.argv[1]), Path(sys.argv[2])
 key = signing.generate_key()
 src = next((comp / "engine").glob("0.1.55-*"))

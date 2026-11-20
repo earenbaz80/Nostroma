@@ -16,7 +16,7 @@ const tmp = () => realpathSync(osTmpdir());
 function controlDir(parent, name, version) {
   const dir = join(parent, name);
   mkdirSync(join(dir, 'python', ...(isWin ? [] : ['bin'])), { recursive: true });
-  mkdirSync(join(dir, 'strata_control'), { recursive: true });
+  mkdirSync(join(dir, 'nostroma_control'), { recursive: true });
   mkdirSync(join(dir, 'tools'), { recursive: true });
   mkdirSync(join(dir, 'serve'), { recursive: true });
   writeFileSync(bundledPython(dir), 'x');

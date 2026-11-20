@@ -10,8 +10,8 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_cli import cli
-from strata_cli.launch import cmd as launch_cmd
+from nostroma_cli import cli
+from nostroma_cli.launch import cmd as launch_cmd
 
 
 class ShowKeyOfSetupConfigs(unittest.TestCase):
@@ -32,7 +32,7 @@ class ShowKeyOfSetupConfigs(unittest.TestCase):
         out, err = io.StringIO(), io.StringIO()
         with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err), \
                 mock.patch.object(launch_cmd, "launch_info", return_value=launch), \
-                mock.patch("strata_control.models.list_installed", return_value={"models": entries}):
+                mock.patch("nostroma_control.models.list_installed", return_value={"models": entries}):
             code = cli.main(["launch", "--show-key", *argv])
         return code, out.getvalue().strip(), err.getvalue()
 

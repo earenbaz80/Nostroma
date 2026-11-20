@@ -1,6 +1,6 @@
 // The 0.2.7 speed features have a switch in Expert settings (the model's "Native engine settings"). "Faster long prompts" (Qwen KVA) is OFF by default (owner
 // decision, 26 October) and STRATA_KVA=1 turns it on; the Radeon RX 9000 one is on by default and turning it off writes its entry.
-// Back in its default a switch removes its entries, so a default launch carries none of them. strata_control/speed_switches.py says the same for the
+// Back in its default a switch removes its entries, so a default launch carries none of them. nostroma_control/speed_switches.py says the same for the
 // Terminal (tests/terminal/test_speed_switches.py).
 import test from 'node:test';
 import assert from 'node:assert/strict';

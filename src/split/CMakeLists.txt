@@ -36,7 +36,7 @@ if(_fnx_hip)
   # one binary per card count with a code object for each listed architecture: gfx1201 (R9700, RX 9070; run), gfx1200 (RX 9060; same ISA, not run), and RDNA3
   # gfx11-generic = gfx1100 gfx1101 gfx1102 gfx1103 in one code object (RX 7000 and the 780M iGPU; the gfx11 WMMA path, hip/mma.h FNX_WMMA_GFX11; the self-test passes on a 780M,
   # no multi-card PC has run it). Only gfx1201 is automatic
-  # (strata_control/split_engine.py AUTO_SPLIT_AMD_ARCHS); on another card the engine runs src/selftest.cu before it loads the model
+  # (nostroma_control/split_engine.py AUTO_SPLIT_AMD_ARCHS); on another card the engine runs src/selftest.cu before it loads the model
   # STRATA_SPLIT_HIP_ARCHS names the split engine's code objects when they are not the tree's CMAKE_HIP_ARCHITECTURES (whose list the HIP backend checks for the main
   # engine and does not know gfx11-generic); empty: the tree's list
   set(STRATA_SPLIT_HIP_ARCHS "" CACHE STRING "code objects of strata-split-N (gfx1201;gfx1200;gfx11-generic), empty: CMAKE_HIP_ARCHITECTURES")

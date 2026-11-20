@@ -29,10 +29,10 @@ The same command works on Windows, Linux and macOS; the golden files hold no pat
 
 | entry | how it is driven | what is real | what is replaced |
 |---|---|---|---|
-| `launch` | `strata launch --model <set> --yes --no-tui` through `strata_cli.cli.main` | the whole command: settings, `Runner.run()`, the drafter step, config derivation and writing | the engine download, the model download (`ensure_model` returns the stand-in below), tuning, the server start, the drafter download |
+| `launch` | `strata launch --model <set> --yes --no-tui` through `nostroma_cli.cli.main` | the whole command: settings, `Runner.run()`, the drafter step, config derivation and writing | the engine download, the model download (`ensure_model` returns the stand-in below), tuning, the server start, the drafter download |
 | `app_plain` | `apps/host/server/native-control.mjs` `operation('load', {model})` in Node (`app_driver.mjs`) | the host's whole Load code, and Control's `drafting plan` / `drafting fetch` (run through `control_shim.py` on the same simulated machine) | the installer process (catalog, hardware), Control's model list / engine / profile save / start, the drafter download |
 | `app_models` | the same with `values: {drafting: 'auto'}` (what the Models screen's Load passes) | same | same |
-| `setup` | `strata_control.setup_config.config_for` (qwen / unsloth), the moved last stretch of `setup.py` main(), called with inputs built by `setup_driver.py` | the whole run-config construction: engine arguments, speed switches, cards, vision section | what `setup.py` decides before it (the cards and RAM come from the class, the context, budget, low-RAM, vision and resident choices from setup's own pure functions), the probes of the machine (`ProbeLib`), the model reader |
+| `setup` | `nostroma_control.setup_config.config_for` (qwen / unsloth), the moved last stretch of `setup.py` main(), called with inputs built by `setup_driver.py` | the whole run-config construction: engine arguments, speed switches, cards, vision section | what `setup.py` decides before it (the cards and RAM come from the class, the context, budget, low-RAM, vision and resident choices from setup's own pure functions), the probes of the machine (`ProbeLib`), the model reader |
 
 For `launch`, `app_plain` and `app_models` the last step is the same code the server runs when it starts the engine: `serve.server.engine_args(cfg, exe)` and
 `serve.server.child_env(cfg)`.  The record has the run config the entry point left (`config_file`), the argument list (`engine.argv`), the variables the start adds to
@@ -41,9 +41,9 @@ the environment (`engine.env_set`), the notes the start prints, the drafter down
 ### The `setup` entry point and the stand-in
 
 `setup.py` main() is one long function that probes the GPU, resolves or builds an engine, downloads and hashes the model and packs it.  Its last stretch (from
-the engine arguments to just before `write_setup_config()`) is now `strata_control/setup_config.py`: `config_for(SetupInputs, lib)` for Qwen and Unsloth.
+the engine arguments to just before `write_setup_config()`) is now `nostroma_control/setup_config.py`: `config_for(SetupInputs, lib)` for Qwen and Unsloth.
 It is the same lines, moved (CLEAN-1A, item 1a.7); `setup.py` builds the inputs and calls it.  `lib` is the module
-that holds the helper functions (`setup.py` today; they move into `strata_control` in step 5.1).  The snapshot passes `ProbeLib`, `setup.py` with the functions that
+that holds the helper functions (`setup.py` today; they move into `nostroma_control` in step 5.1).  The snapshot passes `ProbeLib`, `setup.py` with the functions that
 look at the machine (nvidia-smi, the disk kind, the compute mode, a saved calibration, the image setup) answered by the simulated class.
 
 The record of `setup` has `inputs` (what was assumed, so a reviewer sees it), `config_file` (what `config_for` returns, before `write_setup_config()` merges an

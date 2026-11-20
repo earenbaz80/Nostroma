@@ -54,7 +54,7 @@ class Scripts(unittest.TestCase):
 
     def test_the_built_in_address_is_the_default_feed(self):
         """install.sh / install.ps1 and `strata update` use the same GitHub Releases folder; STRATA_FEED stays an override."""
-        from strata_cli import update_cmd
+        from nostroma_cli import update_cmd
         self.assertEqual(update_cmd.DEFAULT_FEED, mlf.RELEASE_FEED + "/strata-feed.json")
         self.assertIn(":-" + mlf.RELEASE_FEED + "}", (ROOT / "packaging" / "install.sh").read_text(encoding="utf-8"))
         self.assertIn("$env:STRATA_FEED", (ROOT / "packaging" / "install.ps1").read_text(encoding="utf-8"))
@@ -65,7 +65,7 @@ class Feed(unittest.TestCase):
         """A tiny terminal archive that is a working `strata` (the repo's own source with the system Python)."""
         top = work / "bundle" / ("strata-terminal-9.9.9-" + PLAT)
         top.mkdir(parents=True)
-        for name in ("strata.py", "strata_cli", "strata_control", "serve"):
+        for name in ("strata.py", "nostroma_cli", "nostroma_control", "serve"):
             src = ROOT / name
             (shutil.copytree(src, top / name, ignore=shutil.ignore_patterns("__pycache__", "*.pyc")) if src.is_dir() else shutil.copy2(src, top / name))
         (top / "bin").mkdir(parents=True, exist_ok=True)

@@ -554,7 +554,7 @@ class Strata:
             self._setup_tried = True
             try:
                 if str(self.src) not in sys.path:
-                    sys.path.insert(0, str(self.src))   # setup.py imports strata_control
+                    sys.path.insert(0, str(self.src))   # setup.py imports nostroma_control
                 spec = importlib.util.spec_from_file_location("strata_setup_for_mcp", self.src / "setup.py")
                 mod = importlib.util.module_from_spec(spec)
                 real = sys.stdout
@@ -615,9 +615,9 @@ class Strata:
 
     @staticmethod
     def own_context_fit(fam: dict, model) -> dict | None:
-        """Which context fits a card for this own-path size (#5715): strata_control/own_path_fit.py's inputs, the figures the app's estimate uses."""
+        """Which context fits a card for this own-path size (#5715): nostroma_control/own_path_fit.py's inputs, the figures the app's estimate uses."""
         try:
-            from strata_control import own_path_fit
+            from nostroma_control import own_path_fit
             return own_path_fit.inputs(fam.get("name"), model)
         except ImportError:
             return None
@@ -988,7 +988,7 @@ class Strata:
             hw["cpu"] = {"name": name, "cores": physical_cores(), "threads": os.cpu_count(), "avx2": avx2, "avx512": avx512}
         except Exception:                               # noqa: BLE001
             hw["cpu"] = {"name": platform.processor(), "cores": physical_cores(), "threads": os.cpu_count()}
-        if sys.platform == "darwin":                    # a Mac: one pool of unified memory, the Metal engine (strata_control/mac_fit.py)
+        if sys.platform == "darwin":                    # a Mac: one pool of unified memory, the Metal engine (nostroma_control/mac_fit.py)
             return self._mac_hardware(hw)
         nv = []
         try:
@@ -1035,13 +1035,13 @@ class Strata:
             mark_display(nv + amd, nvidia_display_active() if nv else {}, windows_desktop_adapters() if WIN and amd else [])
         except Exception:                               # noqa: BLE001 - unknown stays unknown: the app then keeps its safety default
             pass
-        try:                                            # the reserve setup writes for this chip when a run config names none (strata_control/setup_config.py UMA_WIN_RESERVE_MIB, G16):
+        try:                                            # the reserve setup writes for this chip when a run config names none (nostroma_control/setup_config.py UMA_WIN_RESERVE_MIB, G16):
             # the app's Load uses it on a one-card run whose config has no reserve of setup's, so the app and `strata launch` start the same engine line (QAGUI-STRIX 11-09).
             # The same condition as setup_config.config_for: Windows, the HIP engine (an AMD card), unified memory, gfx1151 exactly (gfx_arch_is: "gfx1151" or "gfx1151:...").
             if WIN and amd:
                 if str(self.src) not in sys.path:
                     sys.path.insert(0, str(self.src))
-                from strata_control import setup_config
+                from nostroma_control import setup_config
                 for g in amd:
                     arch = str(g.get("arch") or "")
                     if g.get("uma") and (arch == "gfx1151" or arch.startswith("gfx1151:")):
@@ -1049,11 +1049,11 @@ class Strata:
         except Exception:                               # noqa: BLE001 - an older Control folder: no field, the app keeps its own floor
             pass
         arc = []
-        if not WIN:                                     # an Intel Arc (Linux, the SYCL engine): only a PC with no usable NVIDIA or AMD card gets one (strata_control/intel_app.py)
+        if not WIN:                                     # an Intel Arc (Linux, the SYCL engine): only a PC with no usable NVIDIA or AMD card gets one (nostroma_control/intel_app.py)
             try:
                 if str(self.src) not in sys.path:
                     sys.path.insert(0, str(self.src))
-                from strata_control import intel_app
+                from nostroma_control import intel_app
                 arc = intel_app.cards_to_add(nv, amd)
             except Exception:                           # noqa: BLE001 - an older Control folder without it: the report is what it was
                 arc = []
@@ -1061,7 +1061,7 @@ class Strata:
         for g in hw["gpus"]:                            # each make numbers its cards from 0 (the engine drives one make): a stable id tells two cards apart
             g.setdefault("id", f"{g.get('vendor') or 'gpu'}:{g.get('index')}")
         try:                                            # how fast each card is (SMs x clock): the app and the Terminal pick the Main card by it
-            from strata_control import gpu_roles
+            from nostroma_control import gpu_roles
             gpu_roles.add_speeds(hw["gpus"])
         except Exception:                               # noqa: BLE001 - unknown speed: the card with the most memory is Main
             pass
@@ -1080,7 +1080,7 @@ class Strata:
         if not amd:
             return
         try:
-            from strata_control import engine_component as ec
+            from nostroma_control import engine_component as ec
             rep = ec.status()
             eng = rep.get("engine") or {}
             built = [a for a in eng.get("archs") or [] if str(a).startswith("gfx")]
@@ -1097,12 +1097,12 @@ class Strata:
     def _engine_vendor(hw: dict) -> None:
         """One engine drives the cards of ONE make (CUDA: NVIDIA, HIP: AMD, ...): note which one for this PC (the installed engine's, else the one
         setup fetches first) and, when the other make has the bigger card, the one plain line that says so. The model list below only counts
-        the cards this engine can drive; a model is never split across makes (strata_control/gpu_fit.py)."""
+        the cards this engine can drive; a model is never split across makes (nostroma_control/gpu_fit.py)."""
         try:
-            from strata_control import gpu_fit
+            from nostroma_control import gpu_fit
             backend = None
             try:
-                from strata_control import engine_component as ec
+                from nostroma_control import engine_component as ec
                 rep = ec.status()
                 backend = (rep.get("engine") or {}).get("backend") if rep.get("usable") else None
             except Exception:                           # noqa: BLE001
@@ -1122,17 +1122,17 @@ class Strata:
         vendor = hw.get("engine_vendor")
         return [g for g in hw.get("gpus", []) if g.get("usable") and (not vendor or not g.get("vendor") or g.get("vendor") == vendor)]
 
-    # ---- a Mac (Apple Silicon): unified memory, the Metal engine.  The rules are strata_control/mac_fit.py's (the same module
+    # ---- a Mac (Apple Silicon): unified memory, the Metal engine.  The rules are nostroma_control/mac_fit.py's (the same module
     # metal/setup_mac.py uses), so the app, the Terminal and a Mac that builds the engine itself judge a model the same way.
     def mac(self):
-        """strata_control/mac_fit.py, or None when this Strata folder does not carry it."""
+        """nostroma_control/mac_fit.py, or None when this Strata folder does not carry it."""
         try:
             if str(self.src) not in sys.path:
                 sys.path.insert(0, str(self.src))
-            from strata_control import mac_fit
+            from nostroma_control import mac_fit
             return mac_fit
         except Exception as e:                          # noqa: BLE001
-            log(f"strata_control/mac_fit.py could not be imported ({e})")
+            log(f"nostroma_control/mac_fit.py could not be imported ({e})")
             return None
 
     def _mac_hardware(self, hw: dict) -> dict:
@@ -1159,10 +1159,10 @@ class Strata:
 
     def _mac_verdict(self, model: str, ram: float) -> str:
         mf = self.mac()
-        from strata_control import fit_label
+        from nostroma_control import fit_label
         if ram < mf.MIN_STREAM_RAM_GB:
             return fit_label.SLOWER                          # too little memory for the Metal engine's streaming: the same two words, said not refused
-        return fit_label.SLOWER if mf.streams(model, ram) else fit_label.FITS          # the Mac's own count of what stays in memory (strata_control/mac_fit.py)
+        return fit_label.SLOWER if mf.streams(model, ram) else fit_label.FITS          # the Mac's own count of what stays in memory (nostroma_control/mac_fit.py)
 
     def _mac_recommend(self, hw: dict, models: dict, families: dict) -> dict:
         mf = self.mac()
@@ -1192,7 +1192,7 @@ class Strata:
 
     def _mac_model_table(self, hw: dict) -> list:
         models, families, _ctx, _src = self.tables()
-        from strata_control import fit_label
+        from nostroma_control import fit_label
         ram = float(hw.get("ram_gb") or 0)
         have = {c.stem[len("strata-"):] for c in self.configs()}
         out = []
@@ -1297,7 +1297,7 @@ class Strata:
         if backend == "hip":
             notes.append("AMD (experimental): pictures are on; the reader runs on the CPU under 24 GB of VRAM and on the GPU from 24 GB")
         if backend == "sycl":
-            from strata_control import intel_app
+            from nostroma_control import intel_app
             notes.append(intel_app.NO_DOWNLOAD)
         cmd = (("START-HERE.bat --setup" if WIN else "./setup.sh --setup") +
                f" --yes --family {fam} --model {model} --context {ctx}" + (f" --backend {backend}" if backend in ("hip", "sycl") else ""))
@@ -1313,7 +1313,7 @@ class Strata:
         ram = (hw or {}).get("ram_gb")
         usable = self.engine_gpus(hw)
         vram = max((g["vram_gb"] for g in usable), default=0.0)
-        from strata_control import fit_label
+        from nostroma_control import fit_label
         card_room = fit_label.card_room_gb(usable)
         have = {c.stem[len("strata-"):] for c in self.configs()}
         out = []
@@ -1324,7 +1324,7 @@ class Strata:
                 d = own or models[m]
                 tag = (fd.get("tag", "") + m).lower()
                 # the model's files without the lookup table's file (download size minus the table) against the card's memory plus the RAM: "fits" or "may run slower"
-                # (strata_control/fit_label.py, the owner's one rule)
+                # (nostroma_control/fit_label.py, the owner's one rule)
                 memory_gb = round(float(d["ram_gb"]) if d.get("mem_total") else float(d.get("arena_gb") or d["ram_gb"]) + 1.0, 1)      # the placement estimate (experts + dense)
                 fit_gb = fit_label.files_gb(f, m, d)          # what the label and the Terminal's "Needs" column use
                 verdict = None
@@ -1333,7 +1333,7 @@ class Strata:
                 sizes.append({"model": m, "about": d["about"], "download_gb": d["download_gb"],
                               "experimental": bool(d.get("experimental")),
                               "images": d.get("vision", fd.get("vision", True)) is not False,
-                              # which picture reader "pictures on" gets on this PC (strata_control/vision_reader.py, the one rule: the CPU reader
+                              # which picture reader "pictures on" gets on this PC (nostroma_control/vision_reader.py, the one rule: the CPU reader
                               # under 24 GB of graphics memory, the GPU reader from 24 GB; the person can switch it per model)
                               "images_reader": self.images_reader(vram),
                               "ram_needed_gb": d["ram_gb"], "experts_gb": d.get("arena_gb"),
@@ -1345,12 +1345,12 @@ class Strata:
                               # with the update step when the installed one is older. None: any engine that setup accepts.
                               "engine_min": ".".join(map(str, d["engine"])) if d.get("engine") else None,
                               "memory_gb": memory_gb, "fit_gb": fit_gb,
-                              # Qwen3.6: the conversation memory per token and what the card holds before it (strata_control/own_path_fit.py,
+                              # Qwen3.6: the conversation memory per token and what the card holds before it (nostroma_control/own_path_fit.py,
                               # #5715): the app's context estimate and its warning use these; absent for every other model
                               **({"context_fit": d["context_fit"]} if d.get("context_fit") else {}),
                               "on_this_pc": verdict, "installed": tag in have, "id": tag,
                               "rdna4_faster": None,
-                              # which graphics cards to use for it (strata_control/gpu_fit.py, the one rule app / Terminal / setup share):
+                              # which graphics cards to use for it (nostroma_control/gpu_fit.py, the one rule app / Terminal / setup share):
                               # only with two or more cards that count; "recommended" names the pre-selected option
                               "gpu_options": None if own else self.gpu_options(d, ram, hw)})   # Qwen3.6 runs on one card so far
             out.append({"family": f, "title": fd["title"], "about": fd.get("about"),
@@ -1377,7 +1377,7 @@ class Strata:
     @staticmethod
     def images_reader(vram) -> str:
         try:
-            from strata_control import vision_reader
+            from nostroma_control import vision_reader
             return vision_reader.default_mode(vram) if vram else "cpu"
         except Exception:                                  # noqa: BLE001
             return "cpu"
@@ -1385,7 +1385,7 @@ class Strata:
     @staticmethod
     def gpu_options(d: dict, ram, hw) -> dict | None:
         try:
-            from strata_control import gpu_fit
+            from nostroma_control import gpu_fit
             mem = float(d["ram_gb"]) if d.get("mem_total") else float(d.get("arena_gb") or d["ram_gb"]) + 1.0
             res = gpu_fit.options(round(mem, 1), ram, (hw or {}).get("gpus", []), (hw or {}).get("engine_vendor"))
             if len(res["options"]) >= 2:
@@ -1700,7 +1700,7 @@ def physical_cores() -> int | None:
     """The CPU's physical cores (os.cpu_count() counts logical threads: 16 on an 8-core SMT chip, and the app's Work profile took
     80% of that for --pool-workers, more than the cores, #3417).  Falls back to the thread count when the machine cannot say."""
     try:
-        from strata_control import tune_machine
+        from nostroma_control import tune_machine
         n = tune_machine.cpu().get("physical")
         if isinstance(n, int) and n > 0:
             return n
@@ -1710,10 +1710,10 @@ def physical_cores() -> int | None:
 
 
 def progress_words_for(step, lines, download):
-    """(the plain sentence, its phase) for what setup is doing now (strata_control/progress_words.py, the words the Terminal uses too);
+    """(the plain sentence, its phase) for what setup is doing now (nostroma_control/progress_words.py, the words the Terminal uses too);
     None when this Strata folder does not carry the module."""
     try:
-        from strata_control import progress_words
+        from nostroma_control import progress_words
     except ImportError:
         return None
     w = progress_words.describe(step, lines, download)
@@ -2251,7 +2251,7 @@ class Tools:
         if context is None:
             usable = s.engine_gpus(hw)
             vram = max((g["vram_gb"] for g in usable), default=12)
-            context = 131072                          # 128K on every card (owner, 2026-11-01; strata_control/default_context.py)
+            context = 131072                          # 128K on every card (owner, 2026-11-01; nostroma_control/default_context.py)
             own = (getattr(s.setup_module(), "OWN_PATH_FAMILIES", None) or {}).get(family)
             if own:                                   # Qwen3.6: the largest size that fits the card when 128K does not (#5715, setup's own rule)
                 context = s.setup_module().own_path_context(own, max((g["vram_gb"] for g in usable), default=0.0), model)
@@ -2259,23 +2259,23 @@ class Tools:
             raise ToolError(f"images are not available with {families[family]['title']} {model} yet: use vision=no")
         if vision is None:
             # owner rule (2026-10-18): pictures are on by default wherever the model can read them and the engine has a reader; setup picks
-            # the reader (strata_control/vision_reader.py: the CPU under 24 GB, the GPU from 24 GB, every make of card; a Mac reads on its GPU).
+            # the reader (nostroma_control/vision_reader.py: the CPU under 24 GB, the GPU from 24 GB, every make of card; a Mac reads on its GPU).
             can_read = md.get("vision", families[family].get("vision")) is not False
             vision = "yes" if can_read else "no"
         target = self.check_data_dir(data_dir) if data_dir else s.data_dir()
         tag = (families[family].get("tag", "") + model)
         have_dir = target / "models" / tag
         # An Intel Arc (Linux, the SYCL engine): setup.py's `--backend sycl` in its CONTROL mode prepares the model's files and writes the run config, as the
-        # Terminal does (strata_control/intel_app.py); it downloads nothing. NVIDIA and AMD never come here.
+        # Terminal does (nostroma_control/intel_app.py); it downloads nothing. NVIDIA and AMD never come here.
         arc = backend == "sycl" or (backend in (None, "auto") and any(g.get("vendor") == "intel" for g in hw.get("gpus", [])))
         if arc:
-            from strata_control import intel_app
+            from nostroma_control import intel_app
             if mac or not intel_app.supported_here() or not any(g.get("vendor") == "intel" for g in hw.get("gpus", [])):
                 raise ToolError("no Intel Arc card Strata can use was found in this computer (the Intel Arc engine runs on Linux)")
             if not intel_app.can_set_up(family, families[family]):
                 raise ToolError(f"{families[family]['title']} {model} can't be set up for an Intel Arc card yet; "
                                 "the Qwen3.8-Flash-Next, Swift, Coder, Gyro and Unsloth sizes can")
-            backend, vision = "sycl", "no"                  # pictures stay off on an Arc (strata_cli/launch/adopt.py)
+            backend, vision = "sycl", "no"                  # pictures stay off on an Arc (nostroma_cli/launch/adopt.py)
             if not gguf_dir and not intel_app.model_files_in(have_dir, family, families[family]):
                 raise ToolError(intel_app.NO_DOWNLOAD)
         partly = (have_dir.is_dir() and any(have_dir.glob("*.gguf*"))) or bool(gguf_dir)   # a local folder: nothing to download
@@ -2310,7 +2310,7 @@ class Tools:
         fit = None
         ram = hw.get("ram_gb")
         if ram is not None:
-            from strata_control import fit_label
+            from nostroma_control import fit_label
             fit = fit_label.label(fit_label.files_gb(family, model, md), ram, fit_label.card_room_gb(s.engine_gpus(hw)))
         installed = (s.root / f"strata-{tag.lower()}.json").exists()
         plan = {"title": f"{families[family]['title']} {model}", "family": family, "model": model,

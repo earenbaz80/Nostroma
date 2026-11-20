@@ -278,7 +278,7 @@ std::unique_ptr<HipLtState> create_hipblaslt_state(void* workspace, size_t works
     const char* path = std::getenv("STRATA_HIPBLASLT_TUNING");
     bool from_package = false, table_forced = false;
     if (!path || !*path) {
-        const char* sw = std::getenv("STRATA_HIPBLASLT_TABLE");     // the launcher's switch (strata_control/hipblaslt_tuning.py): off / on / auto
+        const char* sw = std::getenv("STRATA_HIPBLASLT_TABLE");     // the launcher's switch (nostroma_control/hipblaslt_tuning.py): off / on / auto
         std::string low = sw != nullptr ? sw : "";                   // trimmed and lower case, as the launcher reads it
         while (!low.empty() && std::isspace((unsigned char) low.back())) low.pop_back();
         while (!low.empty() && std::isspace((unsigned char) low.front())) low.erase(low.begin());
@@ -317,7 +317,7 @@ std::unique_ptr<HipLtState> create_hipblaslt_state(void* workspace, size_t works
 
     if (from_package) {
         // Unset or "auto": only Strix Halo (gfx1151) takes the packaged table by itself, the owner's decision of 2026-10-19 (the same
-        // rule as AUTO_ARCHS in strata_control/hipblaslt_tuning.py): on other cards the table changes the answers' last digits for ~1%
+        // rule as AUTO_ARCHS in nostroma_control/hipblaslt_tuning.py): on other cards the table changes the answers' last digits for ~1%
         // (gfx1201), so they take it with STRATA_HIPBLASLT_TABLE=on only.
         if (!table_forced && arch != "gfx1151") return nullptr;
         const std::string dir = own_tuning_dir();

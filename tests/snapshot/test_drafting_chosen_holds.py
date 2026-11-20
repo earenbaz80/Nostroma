@@ -79,7 +79,7 @@ class ChosenHolds(unittest.TestCase):
 def chosen_then_offline(m, s, word, *, other_on_disk: bool):
     """`--drafting <word>` online, then the chosen drafter's file is gone and this computer is offline; a restart with no word.  `other_on_disk`: the other
     drafter is on this computer."""
-    from strata_control import drafting_fetch
+    from nostroma_control import drafting_fetch
     from tests.snapshot import driver
     world = World(m, s).build()
     try:
@@ -135,8 +135,8 @@ class TuiStep(unittest.TestCase):
     """The TUI's Drafting step after a launch with a chosen drafter: it shows the choice that holds, and an Auto picked there is written, so it replaces it."""
 
     def step(self, world, pick):
-        from strata_cli.launch import settings as S
-        from strata_cli.launch.screens import DraftingScreen
+        from nostroma_cli.launch import settings as S
+        from nostroma_cli.launch.screens import DraftingScreen
         base = json.loads(world.config_path.read_text(encoding="utf-8"))
         s = S.LaunchSettings(family=world.mset.family, model=world.mset.model, context=context_for(world.machine, world.mset))
         menu = SimpleNamespace(columns=None, sel=None, current=None)

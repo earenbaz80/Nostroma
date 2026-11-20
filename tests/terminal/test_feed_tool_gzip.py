@@ -77,7 +77,7 @@ class ParallelGzip(unittest.TestCase):
         plain = self.root / "plain.tar"
         feed_tool._write_tar(self.files, plain, "w", "strata")
         self.assertEqual(gzip.decompress(raw), plain.read_bytes())               # Python's gzip reads every member
-        with tarfile.open(fileobj=io.BytesIO(raw), mode="r:gz") as tar:          # tarfile's r:gz (strata_control/components.py, updater.py)
+        with tarfile.open(fileobj=io.BytesIO(raw), mode="r:gz") as tar:          # tarfile's r:gz (nostroma_control/components.py, updater.py)
             self.assertEqual(len(tar.getmembers()), len(members(many)))
         tar_exe = shutil.which("tar")
         if tar_exe and os.name != "nt":

@@ -13,7 +13,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_control import engine_component as ec, feed as feedmod, updater
+from nostroma_control import engine_component as ec, feed as feedmod, updater
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "packaging"))

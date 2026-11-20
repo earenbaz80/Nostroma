@@ -13,16 +13,16 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "packaging"))
 
-from strata_control import engine_component as ec  # noqa: E402
-from strata_control import feed as feedmod  # noqa: E402
-from strata_control import targets  # noqa: E402
+from nostroma_control import engine_component as ec  # noqa: E402
+from nostroma_control import feed as feedmod  # noqa: E402
+from nostroma_control import targets  # noqa: E402
 import feed_tool  # noqa: E402
 import lock_wheels  # noqa: E402
 import package_terminal  # noqa: E402
 
 
 def host(system: str, machine: str) -> str:
-    # the name and the architecture come from strata_control.sysinfo: on Windows from sys.platform and the environment (no WMI, #4975),
+    # the name and the architecture come from nostroma_control.sysinfo: on Windows from sys.platform and the environment (no WMI, #4975),
     # elsewhere from the platform module
     win = system == "Windows"
     env = {"PROCESSOR_ARCHITECTURE": machine, "PROCESSOR_ARCHITEW6432": ""} if win else {}
@@ -120,7 +120,7 @@ class GB10Probes(unittest.TestCase):
     LINE = "0, NVIDIA GB10, GPU-0a1b2c3d-0000-1111-2222-333344445555, [N/A], 580.173.02\n"
 
     def cards(self, machine):
-        from strata_control import doctor
+        from nostroma_control import doctor
         done = mock.Mock(returncode=0, stdout=self.LINE)
         with mock.patch.object(doctor.shutil, "which", return_value="/usr/bin/nvidia-smi"), \
                 mock.patch.object(doctor.subprocess, "run", return_value=done), \

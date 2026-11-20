@@ -34,8 +34,8 @@ def tui_drafting(world, pick):
     """The TUI's Drafting step on this world's installed config, in a fresh launch (no choice in the settings yet): (the row it preselects, what its
     commit leaves in the settings).  `pick` None: the person leaves the preselected row as it is."""
     from types import SimpleNamespace
-    from strata_cli.launch import settings as S
-    from strata_cli.launch.screens import DraftingScreen
+    from nostroma_cli.launch import settings as S
+    from nostroma_cli.launch.screens import DraftingScreen
     base = json.loads(world.config_path.read_text(encoding="utf-8"))
     s = S.LaunchSettings(family=world.mset.family, model=world.mset.model)
     menu = SimpleNamespace(columns=None, sel=None, current=None)
@@ -146,7 +146,7 @@ class AutoAgainIsAuto(unittest.TestCase):
 
     def test_tui_app_draft_layer_off_left_as_it_is_stays_off(self):
         def app_turned_the_layer_off(world):                # the app's "Draft layer (MTP)" switch: "mtp": false in the run config, no "drafting" key
-            from strata_control import draft_layer
+            from nostroma_control import draft_layer
             cfg = json.loads(world.config_path.read_text(encoding="utf-8"))
             cfg["mtp"] = False
             draft_layer.apply(cfg)

@@ -17,7 +17,7 @@ const isWin = process.platform === 'win32';
 function fakeControlDir() {
   const dir = mkdtempSync(join(tmpdir(), 'strata-control-dir-'));
   mkdirSync(join(dir, 'python', ...(isWin ? [] : ['bin'])), { recursive: true });
-  mkdirSync(join(dir, 'strata_control'), { recursive: true });
+  mkdirSync(join(dir, 'nostroma_control'), { recursive: true });
   mkdirSync(join(dir, 'serve'), { recursive: true });
   writeFileSync(bundledPython(dir), 'x');
   writeFileSync(join(dir, 'strata.py'), '# cli');
@@ -41,7 +41,7 @@ test('the Control component is found by STRATA_CONTROL_DIR or beside the host, a
       mkdirSync(join(install, 'host', 'server'), { recursive: true });
       assert.equal(findControl({ env: {}, hostDir: join(install, 'host'), components: none }), null, 'nothing beside the host yet');
       mkdirSync(join(install, 'control', 'python', ...(isWin ? [] : ['bin'])), { recursive: true });
-      mkdirSync(join(install, 'control', 'strata_control'));
+      mkdirSync(join(install, 'control', 'nostroma_control'));
       writeFileSync(bundledPython(join(install, 'control')), 'x');
       writeFileSync(join(install, 'control', 'strata.py'), '#');
       assert.equal(findControl({ env: {}, hostDir: join(install, 'host'), components: none }).dir, join(install, 'control'));
@@ -101,7 +101,7 @@ function packagedFixture({ engineUsable = true, updater = null, repair = false, 
        'split'      the runtime takes 1800, the CLI and the record still stop at 600 (every Control 0.1.50 to 0.1.52)
        'cli-only'   the CLI follows the runtime, the record still stops at 600 (`direct runtime intent has an invalid timeout`)
        'runtime'    all three hand the wait to the runtime's own ceiling */
-  const controlSource = join(root, 'control', 'strata_control');
+  const controlSource = join(root, 'control', 'nostroma_control');
   mkdirSync(controlSource, { recursive: true });
   writeFileSync(join(controlSource, 'runtime.py'), cliStartWait === 'old' ? '' : 'MAX_START_WAIT = 1800\n');
   writeFileSync(join(controlSource, 'management.py'), ['cli-only', 'runtime'].includes(cliStartWait)
@@ -375,7 +375,7 @@ test('packaged: a start that died because Windows ran out of locked memory is tr
     assert.equal(f.calls.filter(c => c[0] === 'start').length, 2, 'one try and exactly one more');
     assert.match(job.result.summary, /ready, after a second try: Windows would not lock as much memory/);
     assert.match(job.details[0], /pinned-memory-exhausted/);
-    assert.match(job.details[1], /STRATA_ARENA_PIN_GIB=26/);
+    assert.match(job.details[1], /NOSTROMA_ARENA_PIN_GIB=26/);
     const instance = f.native.state().instances[0];
     assert.equal(instance.status, 'ready');
     const saved = JSON.parse(readFileSync(join(f.install, 'strata-iq2_xs.json'), 'utf8'));

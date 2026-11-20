@@ -11,9 +11,9 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_cli.launch import access, harness, params, settings as S, store
-from strata_cli.launch.catalog import Catalog, CatalogUnavailable, fit_on, verdict
-from strata_cli.launch.runner import Result, Runner, derive_config, desc_matches, tune_words
+from nostroma_cli.launch import access, harness, params, settings as S, store
+from nostroma_cli.launch.catalog import Catalog, CatalogUnavailable, fit_on, verdict
+from nostroma_cli.launch.runner import Result, Runner, derive_config, desc_matches, tune_words
 from tests.terminal.launch_support import HW_12, HW_24, HW_2X16, Home, catalog, run_cli
 
 
@@ -391,12 +391,12 @@ class SetupArgs(unittest.TestCase):
     def test_an_arc_b_series_card_is_allowed_with_pictures_on_the_cpu_reader_and_one_plain_line(self):
         """Owner decision 2026-10-22: Arc B-series (Battlemage) runs like any Arc. An Arc Pro B70 (32 GB) gets pictures on, with the CPU reader (the GPU
         reader has not run on a 24 GB+ Arc), and a warn-level note that it is new and how to report a problem. An A-series card gets no such note."""
-        from strata_cli.launch import cmd
+        from nostroma_cli.launch import cmd
         for name, vram, note in (("Intel Arc Pro B70", 32.0, True), ("Intel Arc B580", 12.0, True), ("Intel Arc A750", 8.0, False)):
             hw = {"ram_gb": 64.0, "os": "Linux", "cpu": {"avx2": True, "name": "x"},
                   "gpus": [{"index": 0, "name": name, "vendor": "intel", "vram_gb": vram, "usable": True}]}
             with Home():
-                from strata_cli.launch.catalog import Computer
+                from nostroma_cli.launch.catalog import Computer
                 cat = catalog(hw)
                 comp = Computer(ram_gb=64.0, gpus=hw["gpus"], disk_free_gb=500.0, os="Linux", avx2=True, raw=hw, engine_vendor="intel")
                 with mock.patch.object(type(cat), "reader_state", lambda self: "present"), mock.patch.object(type(cat), "computer", lambda self, fresh=False: comp):
@@ -442,7 +442,7 @@ class SetupArgs(unittest.TestCase):
                 self.assertEqual(cat.picture_default(True), "off")
 
     def test_the_command_defaults_pictures_on_and_off_still_turns_them_off(self):
-        from strata_cli.launch.cmd import apply_defaults
+        from nostroma_cli.launch.cmd import apply_defaults
         with Home():
             cat = catalog(HW_12)
             s, _ = apply_defaults(S.LaunchSettings(family="qwen", model="IQ3_XXS"), cat)
@@ -454,7 +454,7 @@ class SetupArgs(unittest.TestCase):
 
     def test_a_disk_warning_is_not_shown_for_files_used_where_they_are_and_reads_once(self):
         import dataclasses
-        from strata_cli.launch.cmd import apply_defaults
+        from nostroma_cli.launch.cmd import apply_defaults
         with Home():
             cat = catalog(HW_12)
             real = cat.rows()
@@ -508,13 +508,13 @@ class AdoptRules(unittest.TestCase):
         return d, m
 
     def test_setup_detection(self):
-        from strata_cli.launch import adopt
+        from nostroma_cli.launch import adopt
         self.assertTrue(adopt.setup_cannot_handle_this_card("no NVIDIA GPU found (nvidia-smi did not answer)"))
         self.assertTrue(adopt.setup_cannot_handle_this_card("no AMD GPU Strata can use"))
         self.assertFalse(adopt.setup_cannot_handle_this_card("not enough free disk space in /x"))
 
     def test_find_shards_needs_the_whole_set(self):
-        from strata_cli.launch import adopt
+        from nostroma_cli.launch import adopt
         with Home() as h:
             d, m = self.files(h.base)
             self.assertEqual(len(adopt.find_shards(m)), 2)
@@ -522,7 +522,7 @@ class AdoptRules(unittest.TestCase):
             self.assertEqual(adopt.find_shards(m), [])
 
     def test_plan_writes_the_settings_setup_would(self):
-        from strata_cli.launch import adopt
+        from nostroma_cli.launch import adopt
         with Home() as h:
             d, m = self.files(h.base)
             src = Path(__file__).resolve().parents[2]
@@ -539,7 +539,7 @@ class AdoptRules(unittest.TestCase):
 
     def test_plan_intel_flags_follow_the_driver(self):
         from unittest import mock
-        from strata_cli.launch import adopt
+        from nostroma_cli.launch import adopt
         for driver, want, other in (("i915", ["--ple-io", "ram"], "--stream-experts"), ("xe", ["--stream-experts"], "--ple-io")):
             with Home() as h, mock.patch.object(adopt, "intel_driver", return_value=driver):
                 d, m = self.files(h.base)
@@ -554,7 +554,7 @@ class AdoptRules(unittest.TestCase):
                     self.assertEqual(a[a.index("--vram-reserve-mib") + 1], reserve)
 
     def test_intel_arc_is_read_from_the_kernel_and_gets_a_small_context(self):
-        from strata_cli.launch import catalog as C
+        from nostroma_cli.launch import catalog as C
         with Home() as h:
             card = h.base / "drm" / "card0" / "device"
             card.mkdir(parents=True)
@@ -572,7 +572,7 @@ class AdoptRules(unittest.TestCase):
             self.assertEqual(cat.max_context("qwen", "IQ3_XXS", hw), 131072)
 
     def test_plan_names_what_is_missing(self):
-        from strata_cli.launch import adopt
+        from nostroma_cli.launch import adopt
         with Home() as h:
             d, m = self.files(h.base, pack=False, tokenizer=False)
             cfg, problems = adopt.plan(family="qwen", model="IQ3_XXS", model_dir=m, data_dir=d, src=Path(__file__).resolve().parents[2], context=8192,
@@ -603,7 +603,7 @@ class AdoptRules(unittest.TestCase):
             engine = h.base / "engine"
             engine.mkdir()
             found = SimpleNamespace(root=engine, version="0.1.45", backend="cuda", platform="linux-x86_64")
-            with mock.patch.object(mod, "get_llama_cpp", return_value=engine), mock.patch("strata_control.engine_component.resolve", return_value=found):
+            with mock.patch.object(mod, "get_llama_cpp", return_value=engine), mock.patch("nostroma_control.engine_component.resolve", return_value=found):
                 self.assertEqual(mod.control_engine_step({}, "cpu")[5], "none")           # no strata-vision beside the engine: off, with a note
                 (engine / mod.VEXE).write_text("x")
                 self.assertEqual(mod.control_engine_step({}, "cpu")[5], "cpu")            # the component carries it: the choice is kept
@@ -621,7 +621,7 @@ class AdoptRules(unittest.TestCase):
                     self.assertAlmostEqual(r.download_gb(), want, msg=(vision, images, ctx))
 
     def test_a_missing_picture_reader_file_is_fetched_again(self):
-        from strata_cli.launch.runner import files_present
+        from nostroma_cli.launch.runner import files_present
         with Home() as h:
             mm = h.base / "mmproj-x.gguf"
             cfg = {"args": [], "vision": {"mmproj": str(mm)}}
@@ -638,8 +638,8 @@ class AdoptRules(unittest.TestCase):
 
     def test_the_cards_of_this_launch_go_into_its_config_without_reinstalling(self):
         from tests.terminal.launch_support import HW_2X16
-        from strata_cli.launch.runner import apply_cards, cards_for_launch
-        from strata_control import tune_knobs
+        from nostroma_cli.launch.runner import apply_cards, cards_for_launch
+        from nostroma_control import tune_knobs
         base = {"exe": "component:strata-engine", "args": ["--max-context", "32768"], "gpu": 0, "port": 8080}
         with Home() as h:
             # an installed single-card config, then the split chosen now
@@ -678,7 +678,7 @@ class AdoptRules(unittest.TestCase):
         must survive a `strata launch` that names no cards - in its order, with "gpu_order": "as_given" too."""
         import json
         from tests.terminal.launch_support import HW_2X16
-        from strata_cli.launch.runner import cards_for_launch, installed_cards
+        from nostroma_cli.launch.runner import cards_for_launch, installed_cards
         with Home() as h:
             two = catalog(HW_2X16)
             plain = S.LaunchSettings(family="qwen", model="IQ3_XXS")
@@ -733,7 +733,7 @@ class AdoptRules(unittest.TestCase):
     def test_runner_adopts_when_setup_cannot_handle_the_card(self):
         # the engine make is read from the machine (adopt_prepared_files asks engine_component.detect_backend); on a box with an Intel Arc the
         # second launch below would be refused as an Intel one. This case is the "no NVIDIA driver" one.
-        with Home() as h, mock.patch("strata_control.engine_component.detect_backend", lambda environ=None: ("cuda", "test")):
+        with Home() as h, mock.patch("nostroma_control.engine_component.detect_backend", lambda environ=None: ("cuda", "test")):
             d, m = self.files(h.base)
             cat = catalog(HW_12)
             s = S.LaunchSettings(family="qwen", model="IQ3_XXS", context=32768, data_dir=str(d))
@@ -742,7 +742,7 @@ class AdoptRules(unittest.TestCase):
             self.assertTrue(path.is_file())
             self.assertTrue(r.notices and "wrote the run settings itself" in r.notices[0])
             self.assertIsNone(r.adopt_prepared_files("not enough free disk space"))
-            from strata_cli.launch.runner import LaunchError
+            from nostroma_cli.launch.runner import LaunchError
             r2 = Runner(S.LaunchSettings(family="qwen", model="IQ3_S", context=32768, data_dir=str(d)), catalog=cat)
             with self.assertRaises(LaunchError) as e:
                 r2.adopt_prepared_files("no NVIDIA GPU found")
@@ -1012,7 +1012,7 @@ class FlagsCommand(unittest.TestCase):
         self.assertEqual(store.list_presets(), [])
 
     def test_the_access_help_names_the_flags_for_showing_and_setting_a_key(self):             # #3713 #3951
-        from strata_cli.launch import screens
+        from nostroma_cli.launch import screens
         self.assertIn("strata launch --show-key", screens.AccessScreen.help_text)
         self.assertIn("--api-key YOUR-KEY", screens.AccessScreen.help_text)
 
@@ -1048,18 +1048,18 @@ class FlagsCommand(unittest.TestCase):
         self.assertTrue(out.strip().startswith("sk-strata-"))
 
     def test_a_setup_line_joined_after_the_model_could_not_be_installed_starts_with_a_capital(self):
-        from strata_cli.launch.runner import setup_failure
+        from nostroma_cli.launch.runner import setup_failure
         e = setup_failure([], "the model does not answer sensibly after the preparation: no answer", "", None, False)
         self.assertTrue(e.text.startswith("The model could not be installed. The model does not answer sensibly"), e.text)
 
     def test_a_reason_joined_after_a_sentence_starts_with_a_capital(self):
-        from strata_cli.launch.runner import capital
+        from nostroma_cli.launch.runner import capital
         self.assertEqual(capital("the update feed could not be read: no route"), "The update feed could not be read: no route")
         self.assertEqual(capital("Already fine."), "Already fine.")
         self.assertEqual(capital(""), "")
 
     def test_launch_error_is_one_plain_sentence(self):
-        from strata_cli.launch.runner import LaunchError
+        from nostroma_cli.launch.runner import LaunchError
         with mock.patch.object(Runner, "run", side_effect=LaunchError("The engine could not be installed.", "Check your internet.", 6)):
             code, out, err = run_cli(["launch", "--no-tui", "--model", "q2_0"])
         self.assertEqual(code, 6)
@@ -1256,7 +1256,7 @@ class ConnectCommand(unittest.TestCase):
         self.assertIn("Strata app", " ".join(out["limits"]))
 
     def test_check_sends_the_apps_own_wire_format_and_reports_pass_or_fail(self):
-        from strata_cli.launch import check
+        from nostroma_cli.launch import check
         seen = []
 
         def good(url, key, body, headers=None, timeout=0):
@@ -1297,7 +1297,7 @@ class ConnectCommand(unittest.TestCase):
         self.assertIn("refused the key", res[0].detail)
 
     def test_connect_check_flag_prints_pass_lines(self):
-        from strata_cli.launch import check
+        from nostroma_cli.launch import check
         ok = [check.Check("prompt", True, "It answered: 'pong'.", 1.0), check.Check("tool call", True, "It called get_weather with {}.", 2.0)]
         with mock.patch.object(check, "run_checks", return_value=ok):
             code, out, err = run_cli(["connect", "opencode", "--url", "http://127.0.0.1:1", "--check"])
@@ -1329,7 +1329,7 @@ class ConnectCommand(unittest.TestCase):
 
 
 class GpuRolesFlag(unittest.TestCase):
-    """--gpu-roles: a role for each card (strata_control/gpu_roles.py); unnamed cards are Off."""
+    """--gpu-roles: a role for each card (nostroma_control/gpu_roles.py); unnamed cards are Off."""
 
     def setUp(self):
         self.home = Home().__enter__()
@@ -1364,7 +1364,7 @@ class GpuRolesFlag(unittest.TestCase):
         self.assertIn("There is no card 7", out + err)
 
     def test_the_launch_config_gets_the_roles_and_the_mirror_with_main_last(self):
-        from strata_cli.launch.runner import cards_for_launch
+        from nostroma_cli.launch.runner import cards_for_launch
         two = catalog(HW_2X16)
         mirror = cards_for_launch(S.LaunchSettings(family="qwen", model="IQ3_XXS", gpu_roles={"1": "main", "0": "helper"}), two)
         self.assertEqual((mirror["gpu"], mirror["gpu_order"]), ([0, 1], "as_given"))
@@ -1380,7 +1380,7 @@ class GpuRolesFlag(unittest.TestCase):
         self.assertEqual((none["gpu"], none["gpu_none"]), ([], True))
 
     def test_a_plain_card_list_replaces_an_earlier_roles_choice_and_the_installed_roles_are_kept(self):
-        from strata_cli.launch.runner import apply_cards, cards_for_launch, installed_cards
+        from nostroma_cli.launch.runner import apply_cards, cards_for_launch, installed_cards
         cfg = {"gpu": 1, "gpu_roles": {"0": "off", "1": "main"}, "gpu_cards": {}, "gpus_asked": True}
         apply_cards(cfg, [0, 1])
         self.assertEqual((cfg["gpu"], "gpu_roles" in cfg), ([0, 1], False))

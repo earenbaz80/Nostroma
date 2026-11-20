@@ -1,6 +1,6 @@
 """One drafter per run, from every way in (owner, 2026-11-02): DFlash2 alone or the MTP alone, never both.
 
-strata_control/drafting.py decides; the app (apps/host, through Control and serve/server.py) and the Terminal (strata launch, its Drafting step, a saved preset)
+nostroma_control/drafting.py decides; the app (apps/host, through Control and serve/server.py) and the Terminal (strata launch, its Drafting step, a saved preset)
 both end at serve/server.py engine_args(). These tests lock in the engine arguments of every choice on the main backends, the old saved values, and the Terminal
 path from the launch settings to the argument list. (tests/terminal/test_drafting.py has the table, the flags and the downloads one by one.)
 """
@@ -12,9 +12,9 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_cli.launch import settings as S
-from strata_cli.launch.runner import derive_config
-from strata_control import drafting
+from nostroma_cli.launch import settings as S
+from nostroma_cli.launch.runner import derive_config
+from nostroma_control import drafting
 
 NAMES = {"qwen": "qwen3.8-flash-next-iq3_s", "gyro": "qwen3.8-flash-next-gyro-gyro-s", "unsloth": "qwen3.8-flash-next-unsloth-ud-q4_k_xl",
          "coder": "qwen3.8-flash-next-coder-iq1_m", "nvfp4": "qwen3.8-flash-next-nvfp4-nvfp4", "swift": "qwen3.8-flash-next-swift-q4_k_m"}
@@ -303,7 +303,7 @@ class TheServerAndTheTerminalEndAtTheSameArguments(Base):
     def test_auto_in_the_terminal_overrides_a_choice_the_app_saved_in_the_model_file(self):
         """The app writes its Drafting choice into the model's own settings file; the Terminal derives its run config from that file. Choosing Auto in the Terminal's
         Drafting step has to mean Auto, not the app's older choice (the step stores what modelstate.drafting_to_save says)."""
-        from strata_cli.launch import modelstate
+        from nostroma_cli.launch import modelstate
         for saved, key, want in (("mtp", "auto", {"dflash2"}), ("off", "auto", {"dflash2"}), ("dflash2", "mtp", {"mtp"}), ("mtp", "dflash2", {"dflash2"}),
                                  ("mtp", "off", set()), (None, "auto", {"dflash2"}), ("auto", "auto", {"dflash2"}), (None, "mtp", {"mtp"})):
             base = {"exe": "component:strata-engine", "model_name": NAMES["qwen"], "port": 8080, "args": list(self.args), **({} if saved is None else {"drafting": saved})}
@@ -312,7 +312,7 @@ class TheServerAndTheTerminalEndAtTheSameArguments(Base):
             self.assertEqual(loaded(self.server_args(cfg)), want, (saved, key))
 
     def test_the_step_writes_nothing_for_auto_unless_the_file_holds_another_choice(self):
-        from strata_cli.launch import modelstate
+        from nostroma_cli.launch import modelstate
         for saved in (None, "auto", "AUTO", "both", "fastest", ""):
             self.assertIsNone(modelstate.drafting_to_save("auto", saved) if drafting.normalize(saved) == "auto" else None, saved)
         for saved in ("mtp", "dflash2", "off", "MTP"):

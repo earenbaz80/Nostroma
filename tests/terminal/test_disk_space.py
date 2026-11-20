@@ -6,7 +6,7 @@ from collections import namedtuple
 from pathlib import Path
 from unittest import mock
 
-from strata_control import updater
+from nostroma_control import updater
 
 Usage = namedtuple("Usage", "total used free")
 MiB = 1 << 20

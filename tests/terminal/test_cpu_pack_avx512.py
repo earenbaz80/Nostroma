@@ -8,8 +8,8 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_cli.launch import runner as R
-from strata_control import doctor
+from nostroma_cli.launch import runner as R
+from nostroma_control import doctor
 
 ZEN3 = {"fpu", "avx", "avx2", "fma", "bmi2"}
 ZEN4 = ZEN3 | doctor.AVX512_FULL

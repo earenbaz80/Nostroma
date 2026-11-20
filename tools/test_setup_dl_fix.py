@@ -57,7 +57,7 @@ class FetchMtp(unittest.TestCase):
 
     def test_the_fetch_says_offline_with_its_own_exit_code(self):
         import mtp_fetch
-        from strata_control import netpolicy
+        from nostroma_control import netpolicy
         for kind, code in (("offline", mtp_fetch.OFFLINE), ("no_answer", mtp_fetch.NO_ANSWER)):
             with self.subTest(kind=kind), mock.patch.object(sys, "argv", ["mtp_fetch.py", "inventory", "--out", "x"]), \
                     mock.patch.object(mtp_fetch, "exit_with_parent", lambda: None), \

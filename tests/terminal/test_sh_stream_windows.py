@@ -14,7 +14,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 sys.path.insert(0, str(ROOT))
 import calibrate as CAL  # noqa: E402
 from serve import server  # noqa: E402
-from strata_control import tune_knobs  # noqa: E402
+from nostroma_control import tune_knobs  # noqa: E402
 from tools.test_calibrate import BASE, FakeEngine  # noqa: E402
 
 

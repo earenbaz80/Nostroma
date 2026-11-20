@@ -21,7 +21,7 @@ class Issue3298MtpDepth(unittest.TestCase):
         self.root = Path(self.tmp.name)
 
     def test_doctor_does_not_look_for_a_folder_named_2(self):
-        from strata_control import doctor
+        from nostroma_control import doctor
         engine = self.root / "engine"
         engine.write_text("x", encoding="utf-8")
         engine.chmod(0o700)
@@ -41,7 +41,7 @@ class Issue3298MtpDepth(unittest.TestCase):
                           and c.get("required") and c["name"] in ("native", "mtp", "pack")], [])
 
     def test_doctor_still_checks_an_mtp_folder(self):
-        from strata_control import doctor
+        from nostroma_control import doctor
         engine = self.root / "engine"
         engine.write_text("x", encoding="utf-8")
         engine.chmod(0o700)
@@ -59,7 +59,7 @@ class Issue3298MtpDepth(unittest.TestCase):
         self.assertEqual(mtp[0]["status"], "missing")
 
     def test_launch_files_present_ignores_a_depth_number(self):
-        from strata_cli.launch.runner import files_present
+        from nostroma_cli.launch.runner import files_present
         model = self.root / "m.gguf"
         model.write_bytes(b"x")
         self.assertEqual(files_present({"args": ["--native", str(model), "--mtp", "2"]}), [])
@@ -105,7 +105,7 @@ class WindowsRuntimeFolderRefused(unittest.TestCase):
 
     def setUp(self):
         from unittest import mock
-        from strata_control import private_files as pf
+        from nostroma_control import private_files as pf
         self.pf, self.mock = pf, mock
         self.me = "S-1-5-21-1-2-3-1001"
         patch = mock.patch.object(pf, "current_user_sid", return_value=self.me)
@@ -141,7 +141,7 @@ class WindowsRuntimeFolderRefused(unittest.TestCase):
         self.assertEqual(self.pf.account_name("S-1-5-32-545"), "Users")
 
     def test_runtime_dir_repairs_a_folder_that_names_other_accounts(self):
-        from strata_control import runtime
+        from nostroma_control import runtime
         pf = self.pf
         with tempfile.TemporaryDirectory() as tmp:
             base = Path(tmp) / "runtime"
@@ -163,7 +163,7 @@ class WindowsRuntimeFolderRefused(unittest.TestCase):
                 self.assertEqual(r.call_count, 1)
 
     def test_runtime_dir_still_refuses_and_says_who_when_the_repair_fails(self):
-        from strata_control import profiles, runtime
+        from nostroma_control import profiles, runtime
         pf = self.pf
         with tempfile.TemporaryDirectory() as tmp:
             base = Path(tmp) / "runtime"
@@ -188,7 +188,7 @@ class WindowsRuntimeFolderMoreCases(unittest.TestCase):
 
     def run_dir(self, *, sddl, restrict=None, repair=None, acls=True):
         from unittest import mock
-        from strata_control import private_files as pf, runtime
+        from nostroma_control import private_files as pf, runtime
         with tempfile.TemporaryDirectory() as tmp:
             base = Path(tmp) / "runtime"
             base.mkdir()
@@ -262,13 +262,13 @@ class WindowsRuntimeFolderMoreCases(unittest.TestCase):
         self.assertEqual(calls["restrict"], 1)
 
     def test_the_real_system_drive_has_permissions(self):
-        from strata_control import private_files as pf
+        from nostroma_control import private_files as pf
         self.assertTrue(pf.volume_has_acls(os.environ.get("SystemRoot", "C:\\Windows")))
 
 
 class Issue3410TrashIsNotAnInstall(unittest.TestCase):
     def test_trash_folders_are_recognised(self):
-        from strata_control.discovery import in_trash
+        from nostroma_control.discovery import in_trash
         for p in ("/home/u/.local/share/Trash/files/strata", "/mnt/d/.Trash-1000/files/Strata", "/Users/u/.Trash/Strata",
                   "C:\\$Recycle.Bin\\S-1-5-21\\$R123\\Strata", "/home/u/.local/share/trash/files/strata/x"):
             self.assertTrue(in_trash(p), p)
@@ -277,7 +277,7 @@ class Issue3410TrashIsNotAnInstall(unittest.TestCase):
             self.assertFalse(in_trash(p), p)
 
     def test_remembered_installs_in_the_trash_are_not_listed(self):
-        from strata_control import discovery
+        from nostroma_control import discovery
         with tempfile.TemporaryDirectory() as tmp:
             good = Path(tmp) / "bin" / "strata"
             trash = Path(tmp) / ".local" / "share" / "Trash" / "files" / "strata"
@@ -352,7 +352,7 @@ class Issue3302AdministratorAlias(unittest.TestCase):
 
     def setUp(self):
         from unittest import mock
-        from strata_control import private_files as pf
+        from nostroma_control import private_files as pf
         self.pf = pf
         self.mock = mock
         # the built-in Administrator's string SID on this machine: resolve the alias the same way the fix does
@@ -394,7 +394,7 @@ class Issue3488IntegrityRetry(unittest.TestCase):
 
     def test_second_read_decides(self):
         from unittest import mock
-        from strata_control import engine_component as ec
+        from nostroma_control import engine_component as ec
         path = Path("x")
         with mock.patch.object(ec, "_sha256", side_effect=["bad", "good"]) as sha, mock.patch.object(ec.time, "sleep"):
             self.assertEqual(ec._hash_settled(path, "good"), "good")
@@ -412,7 +412,7 @@ class Issue3501TrashOnPosix(unittest.TestCase):
     def test_windows_path_on_a_posix_path_class(self):
         from pathlib import PurePosixPath
         from unittest import mock
-        from strata_control import discovery
+        from nostroma_control import discovery
         with mock.patch.object(discovery, "Path", PurePosixPath):
             self.assertTrue(discovery.in_trash(r"C:\$Recycle.Bin\S-1-5-21\$R123\Strata"))
             self.assertTrue(discovery.in_trash("/mnt/d/$RECYCLE.BIN/S-1/Strata"))
@@ -427,7 +427,7 @@ class Issue3504MultiValueArgs(unittest.TestCase):
             "--conversation-cache-mib", "8192"]
 
     def test_two_values_are_two_entries(self):
-        from strata_control import tune_knobs
+        from nostroma_control import tune_knobs
         for typed in ("4,44", "4 44", "4-44"):
             out = tune_knobs.apply_to_argv(self.ARGS, {"--control-vector-layer-range": typed})
             i = out.index("--control-vector-layer-range")
@@ -435,23 +435,23 @@ class Issue3504MultiValueArgs(unittest.TestCase):
             self.assertEqual(out.count("--control-vector-layer-range"), 1)
 
     def test_off_removes_the_option_and_every_value(self):
-        from strata_cli.launch import settings as S
-        from strata_control import tune_knobs
+        from nostroma_cli.launch import settings as S
+        from nostroma_control import tune_knobs
         extra = {"--control-vector-layer-range": "off", "--cvec-dir": "off"}
         a, _ = S.as_argv_changes(extra, tune_knobs.BOOL_FLAGS)
         out = tune_knobs.apply_to_argv(self.ARGS, a)
         self.assertEqual(out, ["--max-context", "131072", "--conversation-cache-mib", "8192"])
 
     def test_an_empty_value_is_no_bare_flag(self):
-        from strata_cli.launch import settings as S
-        from strata_control import tune_knobs
+        from nostroma_cli.launch import settings as S
+        from nostroma_control import tune_knobs
         a, _ = S.as_argv_changes({"--cvec-dir": "", "--kv-grow": ""}, tune_knobs.BOOL_FLAGS)
         self.assertEqual(a, {"--kv-grow": True})
         self.assertEqual(tune_knobs.apply_to_argv(self.ARGS, a)[:-1].count("--cvec-dir"), 1)
 
     def test_set_flag_and_the_table_keep_both_values(self):
-        from strata_cli.launch import params
-        from strata_control import user_args
+        from nostroma_cli.launch import params
+        from nostroma_control import user_args
         self.assertEqual(user_args.set_flag([], "--control-vector-layer-range", "4,44"),
                          ["--control-vector-layer-range", "4", "44"])
         self.assertEqual(params.argv_to_dict(self.ARGS)["--control-vector-layer-range"], "4 44")
@@ -467,7 +467,7 @@ class DoctorAndTheDrafter(unittest.TestCase):
     def report(self, **extra):
         import tempfile
         from pathlib import Path
-        from strata_control import doctor
+        from nostroma_control import doctor
         root = Path(tempfile.mkdtemp())
         engine = root / "engine"
         engine.write_text("x", encoding="utf-8")
@@ -483,7 +483,7 @@ class DoctorAndTheDrafter(unittest.TestCase):
 
     def test_the_layer_is_optional_only_when_the_drafter_is_dflash2(self):
         from unittest import mock
-        from strata_control import drafting
+        from nostroma_control import drafting
         with mock.patch.object(drafting, "detect_hardware", return_value=("cuda", ["sm_120"])):
             self.assertEqual(self.report()["status"], "optional_missing", "Auto is DFlash2 here")
             self.assertEqual(self.report(drafting="dflash2")["status"], "optional_missing")
@@ -497,7 +497,7 @@ class DoctorAndTheDrafter(unittest.TestCase):
     def test_a_model_saved_with_off_needs_no_mtp_folder(self):
         """0.2.15 release test (the app, after a restart): a model saved with Drafting Off and no MTP folder was "missing rt" and could not load."""
         from unittest import mock
-        from strata_control import drafting
+        from nostroma_control import drafting
         for hardware in (("cuda", ["sm_120"]), ("cuda", ["sm_60"]), ("hip", ["gfx1201"]), ("cpu", [])):
             with mock.patch.object(drafting, "detect_hardware", return_value=hardware):
                 self.assertEqual(self.report(drafting="off")["status"], "optional_missing", hardware)

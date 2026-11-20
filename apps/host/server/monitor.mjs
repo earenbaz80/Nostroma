@@ -11,6 +11,7 @@ import { originalDashboard } from './monitor-dashboard.mjs';
 import { get as getStore } from './store.mjs';
 import * as supervisor from './supervisor.mjs';
 import { clamp, round } from './util.mjs';
+import { envVar } from './env-compat.mjs';
 
 const HISTORY = 60;
 
@@ -86,7 +87,7 @@ function aggregate(readings,key,mode='sum') {
 }
 
 function hardwareSnapshot() {
-  const demo=process.env.STRATA_REAL_ENGINE!=='1',hw=state.hardware;
+  const demo=envVar('REAL_ENGINE')!=='1',hw=state.hardware;
   const devices=cachedHardware()?.gpus??hwCache?.gpus??[];
   const memoryPools=Math.max(1,devices.filter(g=>!g.unified).length+Number(devices.some(g=>g.unified)));
   const readings=demo?devices.map((gpu,i)=>({id:gpu.id??`${gpu.vendor}:${gpu.index}`,source:'demo',sampledAt:new Date().toISOString(),utilizationPct:Math.round(clamp(hw.gpuLoad+i*2,0,100)),temperatureC:Math.round(hw.gpuTempC+i),memoryUsedGb:round(Math.min(gpu.vramGb,hw.vramUsedGb/memoryPools),2),powerW:gpu.unified?null:round(35+hw.gpuLoad*2,0),powerLimitW:gpu.unified?null:300,pcieGen:gpu.unified?null:4,pcieGenMax:gpu.unified?null:4,pcieWidth:gpu.unified?null:16,pcieRxMbs:gpu.unified?null:round(hw.gpuLoad*1.2,1),fanPct:gpu.unified?null:Math.round(30+hw.gpuLoad*0.5),clockMhz:gpu.unified?null:Math.round(1400+hw.gpuLoad*14)})):hw.gpus.map(g=>({...g}));
@@ -132,7 +133,7 @@ function tick() {
   if(!sensorsPending&&Date.now()-sensorsAt>=pace.intervalMs){
     sensorsPending=true;sensorsAt=Date.now();
     const hardware=cachedHardware()??hwCache;
-    void Promise.all([readGpuTelemetry(hardware?.gpus??[],{transfer:pace.transfer}),sampleSystem(hardware?.processors??[]),(process.env.STRATA_REAL_ENGINE==='1'&&Date.now()<drivesUntil&&Date.now()-hostStartedAt>DRIVES_AFTER_MS?readTemperatures():Promise.resolve(temperatures)).catch(()=>({cpuTempC:null,ssdTempC:null}))])
+    void Promise.all([readGpuTelemetry(hardware?.gpus??[],{transfer:pace.transfer}),sampleSystem(hardware?.processors??[]),(envVar('REAL_ENGINE')==='1'&&Date.now()<drivesUntil&&Date.now()-hostStartedAt>DRIVES_AFTER_MS?readTemperatures():Promise.resolve(temperatures)).catch(()=>({cpuTempC:null,ssdTempC:null}))])
       .then(([readings,system,temps])=>{state.hardware.gpus=readings;systemReading=system;temperatures=temps;})
       .catch(()=>{state.hardware.gpus=[];systemReading=null;})
       .finally(()=>{sensorsPending=false;});
@@ -169,7 +170,7 @@ function tick() {
     state.queue.running = engineMetrics.requestsProcessing || (busy ? 1 : 0);
     state.queue.waiting = engineMetrics.requestsDeferred || 0;
   } else {
-    state.telemetry.throughput = process.env.STRATA_REAL_ENGINE !== '1' ? 'demo' : 'none';
+    state.telemetry.throughput = envVar('REAL_ENGINE') !== '1' ? 'demo' : 'none';
   }
 
   state.target.gpuLoad = busy ? (state.phase === 'reading' ? 88 : 82) : state.phase === 'loading' ? 64 : 3;
@@ -181,15 +182,15 @@ function tick() {
     : state.phase === 'loading'
       ? hw.vramTotalGb * 0.55
       : 2.4 + modelVram;
-  if (process.env.STRATA_REAL_ENGINE !== '1') hw.vramUsedGb = clamp(approach(hw.vramUsedGb, targetVram, 0.14), 0.4, hw.vramTotalGb);
+  if (envVar('REAL_ENGINE') !== '1') hw.vramUsedGb = clamp(approach(hw.vramUsedGb, targetVram, 0.14), 0.4, hw.vramTotalGb);
 
   const ramTarget = busy ? hw.ramTotalGb * 0.66 : hw.ramTotalGb * 0.44;
-  if (process.env.STRATA_REAL_ENGINE !== '1') hw.ramUsedGb = clamp(approach(hw.ramUsedGb, ramTarget, 0.08), 1, hw.ramTotalGb);
+  if (envVar('REAL_ENGINE') !== '1') hw.ramUsedGb = clamp(approach(hw.ramUsedGb, ramTarget, 0.08), 1, hw.ramTotalGb);
 
   const tempTarget = busy ? hw.tempLimitC - 18 : 44;
   hw.gpuTempC = clamp(approach(hw.gpuTempC, tempTarget, 0.05) + (Math.random() - 0.5), 32, hw.tempLimitC);
 
-  const demo = process.env.STRATA_REAL_ENGINE !== '1';
+  const demo = envVar('REAL_ENGINE') !== '1';
   state.telemetry.thermals = demo ? 'demo' : 'none';
   state.telemetry.memory = demo ? 'demo' : state.variantId ? 'estimated' : 'none';
   const outNow = state.phase === 'generating' ? state.target.outputTps : 0;
@@ -309,7 +310,7 @@ export async function setModel(id) {
   const hw = hwCache ?? (await detect());
   const v = getStore();
   const total = 64;
-  const demo=process.env.STRATA_REAL_ENGINE!=='1';
+  const demo=envVar('REAL_ENGINE')!=='1';
   const used = v.loaded&&demo ? Math.round(total * 0.75) : 0;
   state.expertCache = { used, total, source:demo?'demo':'none' };
   state.hardware.vramTotalGb = Math.round(hw.accelerator.usableVramGb);
@@ -331,7 +332,7 @@ export function beginReading(tokens, id) {
   state.phaseLabel = 'Reading prompt';
   state.prompt = { done: 0, total: tokens, pct: 0 };
   state.generation={done:null,total:Number(getStore().expert?.['sample.maxTokens'])||null};
-  state.target.promptTps = process.env.STRATA_REAL_ENGINE !== '1' ? 1400 + Math.random() * 500 : 0;
+  state.target.promptTps = envVar('REAL_ENGINE') !== '1' ? 1400 + Math.random() * 500 : 0;
   hubRef?.send('monitor', snapshot());
 }
 
@@ -348,7 +349,7 @@ export function progressReading(done) {
 export function beginGenerating() {
   state.phase = 'generating';
   state.phaseLabel = 'Generating response';
-  state.target.outputTps = process.env.STRATA_REAL_ENGINE !== '1' ? 34 + Math.random() * 14 : 0;
+  state.target.outputTps = envVar('REAL_ENGINE') !== '1' ? 34 + Math.random() * 14 : 0;
   hubRef?.send('monitor', snapshot());
 }
 

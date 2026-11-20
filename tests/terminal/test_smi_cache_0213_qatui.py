@@ -14,7 +14,7 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from strata_control import engine_component as ec  # noqa: E402
+from nostroma_control import engine_component as ec  # noqa: E402
 
 
 class SmiCache(unittest.TestCase):

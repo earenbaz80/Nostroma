@@ -8,7 +8,7 @@ from types import SimpleNamespace
 from unittest import mock
 
 import setup as S
-from strata_control import driver_floor as DF
+from nostroma_control import driver_floor as DF
 
 
 def package(version: str, need: str | None, *, variant: str = "cuda12", platform: str = "windows-x86_64", backend: str = "cuda"):
@@ -26,22 +26,22 @@ class DriverFloor(unittest.TestCase):
         self.assertIsNone(DF._floor_of([package("0.1.50", "580.65", backend="hip")], "windows-x86_64", "cuda13"))
 
     def test_an_installed_package_answers_before_the_feed_is_asked(self):
-        with mock.patch("strata_control.engine_component.scan", return_value=([package("0.1.50", "576.02")], [])), \
+        with mock.patch("nostroma_control.engine_component.scan", return_value=([package("0.1.50", "576.02")], [])), \
                 mock.patch.object(DF, "from_feed", side_effect=AssertionError("the feed must not be asked")):
             self.assertEqual(DF.cuda12_floor("windows-x86_64", roots=["/x"], feed_source="https://feed"),
                              ("576.02", "as the installed engine package says"))
 
     def test_the_feed_answers_when_no_package_is_installed(self):
         feed = SimpleNamespace(engine=(package("0.1.50", "576.02"), package("0.1.50", "580.65", variant="cuda13")))
-        with mock.patch("strata_control.engine_component.scan", return_value=([], [])), \
-                mock.patch("strata_control.feed.fetch", return_value=feed), \
-                mock.patch("strata_control.signing.load_trusted_keys", return_value={"k": b"x"}):
+        with mock.patch("nostroma_control.engine_component.scan", return_value=([], [])), \
+                mock.patch("nostroma_control.feed.fetch", return_value=feed), \
+                mock.patch("nostroma_control.signing.load_trusted_keys", return_value={"k": b"x"}):
             self.assertEqual(DF.cuda12_floor("windows-x86_64", roots=["/x"], feed_source="https://feed"),
                              ("576.02", "as the signed update feed says"))
 
     def test_nothing_readable_gives_the_published_figure_and_never_an_error(self):
-        with mock.patch("strata_control.engine_component.scan", side_effect=OSError("no folder")), \
-                mock.patch("strata_control.feed.fetch", side_effect=RuntimeError("offline")):
+        with mock.patch("nostroma_control.engine_component.scan", side_effect=OSError("no folder")), \
+                mock.patch("nostroma_control.feed.fetch", side_effect=RuntimeError("offline")):
             got = DF.cuda12_floor("windows-x86_64", roots=["/x"], feed_source="https://feed")
         self.assertEqual(got[0], DF.FALLBACK)
         self.assertEqual(DF.major(DF.FALLBACK), 575)
@@ -51,7 +51,7 @@ class DriverFloor(unittest.TestCase):
         def hang(*a, **k):
             time.sleep(3)
         t0 = time.monotonic()
-        with mock.patch("strata_control.feed.fetch", side_effect=hang), mock.patch("strata_control.signing.load_trusted_keys", return_value={"k": b"x"}):
+        with mock.patch("nostroma_control.feed.fetch", side_effect=hang), mock.patch("nostroma_control.signing.load_trusted_keys", return_value={"k": b"x"}):
             self.assertIsNone(DF.from_feed("https://feed", "windows-x86_64", seconds=0.2))
         self.assertLess(time.monotonic() - t0, 2.0)
 
@@ -107,12 +107,12 @@ class SetupUsesThePackagesFloor(unittest.TestCase):
 
     def test_cuda12_min_driver_reads_the_installed_package_and_remembers_it(self):
         with mock.patch.dict(S._CUDA12_FLOORS, clear=True), \
-                mock.patch("strata_control.engine_component.scan", return_value=([package("0.1.50", "576.02", platform=_host())], [])):
+                mock.patch("nostroma_control.engine_component.scan", return_value=([package("0.1.50", "576.02", platform=_host())], [])):
             self.assertEqual(S.cuda12_min_driver(), (576, "576.02", "as the installed engine package says"))
             self.assertEqual(S.cuda12_min_driver(), (576, "576.02", "as the installed engine package says"))
 
     def test_a_plain_call_never_asks_the_feed_but_a_setup_run_may(self):
-        with mock.patch.dict(S._CUDA12_FLOORS, clear=True), mock.patch("strata_control.engine_component.scan", return_value=([], [])), \
+        with mock.patch.dict(S._CUDA12_FLOORS, clear=True), mock.patch("nostroma_control.engine_component.scan", return_value=([], [])), \
                 mock.patch.object(DF, "from_feed", return_value="576.02") as feed, mock.patch.object(S.acquisition, "is_forbidden", return_value=False):
             self.assertEqual(S.cuda12_min_driver()[1], DF.FALLBACK)
             feed.assert_not_called()
@@ -122,7 +122,7 @@ class SetupUsesThePackagesFloor(unittest.TestCase):
 
 
 def _host() -> str:
-    from strata_control import targets
+    from nostroma_control import targets
     return targets.host_platform()
 
 

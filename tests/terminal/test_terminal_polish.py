@@ -7,8 +7,8 @@ import unittest
 from contextlib import redirect_stdout
 from unittest import mock
 
-from strata_cli.cli import main
-from strata_cli.launch.runner import download_text
+from nostroma_cli.cli import main
+from nostroma_cli.launch.runner import download_text
 
 
 class AlreadyDownloaded(unittest.TestCase):
@@ -25,8 +25,8 @@ class AlreadyDownloaded(unittest.TestCase):
 class MonitorFindsLaunch(unittest.TestCase):
     def _run(self, argv, info, env=None):
         with mock.patch.dict(os.environ, env or {}, clear=False), \
-                mock.patch("strata_cli.launch.cmd.launch_info", return_value=info), \
-                mock.patch("strata_cli.monitor_commands.Endpoint") as endpoint:
+                mock.patch("nostroma_cli.launch.cmd.launch_info", return_value=info), \
+                mock.patch("nostroma_cli.monitor_commands.Endpoint") as endpoint:
             os.environ.pop("STRATA_URL", None) if not env else None
             endpoint.return_value.snapshot.return_value = {"schema_version": 1}
             out = io.StringIO()

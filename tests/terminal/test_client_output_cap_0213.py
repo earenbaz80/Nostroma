@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from strata_cli.launch import harness
+from nostroma_cli.launch import harness
 
 URL = "http://127.0.0.1:18900"
 

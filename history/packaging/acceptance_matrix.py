@@ -72,11 +72,11 @@ ROWS: dict[str, tuple[str, str, str]] = {
     "P06": ("passed",
             "A component's cache key is the digest of its artifact bytes, not its version label, so a rebuilt artifact with an unchanged version is a different entry and a cached payload is never reused on the strength of a string. The cache is never consumed by activation (the active directory is a copy), so a compatible application update reuses the installed engine instead of downloading it again. `prune_cache` keeps whatever the active and rollback versions refer to."
             ,
-            "strata_control/components.py, tests/tuning/test_components.py"),
+            "nostroma_control/components.py, tests/tuning/test_components.py"),
     "P07": ("passed",
             "Components are acquired by kind: the manifest declares `application`, `runtime`, `agent-runtime`, `tuning`, `engine` or `prepared-data`, each with its own platform and backend gates, and `strata components plan` reports whether a package may be used here without fetching anything. The backend families are held to the packet's own matrix, so a Windows SYCL or Intel-Mac Metal package is refused as unsupported rather than attempted."
             ,
-            "strata_control/components.py, `strata components backends`"),
+            "nostroma_control/components.py, `strata components backends`"),
     "P08": ("passed",
             "Desktop and Terminal read the same owner state and the same model directory; the "
             "terminal's `models list` reads the setup-written configs that Desktop's model surfaces "
@@ -113,7 +113,7 @@ ROWS: dict[str, tuple[str, str, str]] = {
     "R02": ("passed",
             "Pure serving and the read-only CLI run with no agent runtime, no tuning packages, no "
             "Textual and no UI present. Verified by running the server from the standalone bundle "
-            "and by importing strata_control.management and strata_cli.cli on a bare interpreter.",
+            "and by importing nostroma_control.management and nostroma_cli.cli on a bare interpreter.",
             "history/docs/work/evidence/terminal-dist.txt"),
     "R03": ("passed",
             "One owner per installation is enforced by an O_EXCL state file plus an flock held for "
@@ -128,7 +128,7 @@ ROWS: dict[str, tuple[str, str, str]] = {
             "process-tree cleanup for engine children ARE implemented (serve/winjob.py, tested). "
             "The Windows branch of the transport is exercised on macOS but has never run on "
             "Windows.",
-            "strata_control/owner_transport.py, history/docs/work/evidence/owner-transport-suite.txt"),
+            "nostroma_control/owner_transport.py, history/docs/work/evidence/owner-transport-suite.txt"),
     "R05": ("passed",
             "Preflight refuses before load: the engine rejects a model whose metadata geometry "
             "differs from the compiled shape, naming the differing key; the GGUF preflight checks "
@@ -329,7 +329,7 @@ ROWS: dict[str, tuple[str, str, str]] = {
             "cover the API mode, including that a reasoning-only stream, a missing usage block and a "
             "non-matching answer are refused rather than scored. Runs against the mock worker are "
             "labelled as harness tests, never as performance results.",
-            "strata_control/tune_api.py, tests/tuning/test_tune_api.py"),
+            "nostroma_control/tune_api.py, tests/tuning/test_tune_api.py"),
     "T05": ("passed",
             "Benchmark-only levers are measured but stripped from the exported args, and "
             "verify_exported() re-measures the configuration as it would actually be written; a "
@@ -343,7 +343,7 @@ ROWS: dict[str, tuple[str, str, str]] = {
             "not, the reason in plain words. An unknown identity is never treated as a match, and "
             "incomparable history is retained rather than deleted. Twenty-one tests cover each "
             "element of the key separately.",
-            "tests/tuning/test_tune_history.py, strata_control/tune_history.py"),
+            "tests/tuning/test_tune_history.py, nostroma_control/tune_history.py"),
     "T07": ("passed",
             "`strata tune apply` revalidates the report hash, re-checks the sweep's artifact identity "
             "against what is installed, refuses an incomplete sweep, a no-change result, material "

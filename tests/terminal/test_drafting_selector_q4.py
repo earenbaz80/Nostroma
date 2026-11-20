@@ -18,7 +18,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_control import drafting, drafting_fetch
+from nostroma_control import drafting, drafting_fetch
 
 ROOT = Path(__file__).resolve().parents[2]
 VOCAB_REAL, RANK_REAL = 248320, 256
@@ -187,7 +187,7 @@ class SmallPacks(unittest.TestCase):
         convert.assert_not_called()          # an engine that cannot read the Q4_0 selector (the SYCL one) or none installed yet: the 340 MB file would never be used
         source = (ROOT / "serve" / "server.py").read_text(encoding="utf-8")
         self.assertNotIn("convert_selector", source)
-        self.assertNotIn("convert_selector", (ROOT / "strata_cli" / "launch" / "plan.py").read_text(encoding="utf-8") if (ROOT / "strata_cli" / "launch" / "plan.py").exists() else "")
+        self.assertNotIn("convert_selector", (ROOT / "nostroma_cli" / "launch" / "plan.py").read_text(encoding="utf-8") if (ROOT / "nostroma_cli" / "launch" / "plan.py").exists() else "")
 
 
 class TheTrueGraphicsMemory(unittest.TestCase):

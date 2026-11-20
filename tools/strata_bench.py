@@ -524,7 +524,7 @@ def gpu_info_local() -> dict:
         # ROCm 7 and newer ship `amd-smi` and no `rocm-smi`, so a Radeon wrote the server's vendor stub ("AMD
         # Radeon", `...-community-unknown-...`) and `GPU driver: not read`. `static --asic` gives the marketing
         # name, `static --driver` the kernel driver's version, the PCI address only comes from `amd-smi list` and
-        # the VRAM size is the amdgpu driver's sysfs file for that address (same probe as strata_cli/bench_facts.py).
+        # the VRAM size is the amdgpu driver's sysfs file for that address (same probe as nostroma_cli/bench_facts.py).
         def amd_json(args):
             try:
                 return json.loads(run_cmd(["amd-smi", "static"] + args + ["--json"]).strip() or "{}").get("gpu_data") or []
@@ -707,7 +707,7 @@ def collect_machine(base: str, key: str, cfg: dict | None, gpu_arg: str | None =
     # so is its VRAM total - the PC's NVIDIA cards were not used.
     served = [n for n in (static.get("gpu_name") or "").split(" + ") if n and n != "?"]
     # the engine's own stub when the driver names no card is the vendor alone ("AMD Radeon"), not a card name:
-    # taking it as one would throw away the real name amd-smi read (same guard as strata_cli/bench_facts.py)
+    # taking it as one would throw away the real name amd-smi read (same guard as nostroma_cli/bench_facts.py)
     served = [n for n in served if not re.fullmatch(r"(?i)\s*(nvidia|amd|intel|advanced micro devices)"
                                                     r"([ -](geforce|radeon|graphics|arc))?\s*", n)]
     if served and not all(n in {g["name"] for g in local["gpus"]} for n in served):

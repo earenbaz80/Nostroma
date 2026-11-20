@@ -16,7 +16,7 @@ const isWin = process.platform === 'win32';
 function controlDir(parent, name, version) {
   const dir = join(parent, name);
   mkdirSync(join(dir, 'python', ...(isWin ? [] : ['bin'])), { recursive: true });
-  mkdirSync(join(dir, 'strata_control'), { recursive: true });
+  mkdirSync(join(dir, 'nostroma_control'), { recursive: true });
   writeFileSync(bundledPython(dir), 'x');
   writeFileSync(join(dir, 'strata.py'), '# cli');
   if (version) writeFileSync(join(dir, 'BUNDLE.json'), JSON.stringify({ version }));

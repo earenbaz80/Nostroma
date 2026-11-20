@@ -403,7 +403,7 @@ test('every sentence the Load of the picture files can say is in the catalog in 
   const words = host.slice(host.indexOf('const PICTURES_WORDS={'), host.indexOf('const PLAIN_PICTURE_CODES'));
   const hostSentences = [...words.matchAll(/:'([^']+)'/g)].map(m => m[1]);
   assert.equal(hostSentences.length, 7, 'download, check, loading, offline, disk, failed, gone');
-  // the sentences Control's pictures module gives the page's button (strata_control/pictures.py WORDS, with the "Try again" the module adds)
+  // the sentences Control's pictures module gives the page's button (nostroma_control/pictures.py WORDS, with the "Try again" the module adds)
   const python = ["There is no internet connection, so the picture files can't be downloaded now.", 'There is not enough free disk space for the picture files (about 1 GB).',
     'The picture files could not be downloaded. Try again; it continues where it stopped.', 'The downloaded picture files did not pass the safety check, so they were deleted. Try again.',
     'The picture files could not be downloaded. Try again.'];
@@ -411,7 +411,7 @@ test('every sentence the Load of the picture files can say is in the catalog in 
     if (sentence === 'Loading the model…') continue;   // already in the Drafting catalog
     assert.ok(english.includes(sentence), `in the catalog: ${sentence}`);
   }
-  const source = read('../../../strata_control/pictures.py');
+  const source = read('../../../nostroma_control/pictures.py');
   for (const sentence of python.slice(0, 2)) assert.ok(source.includes(sentence.replace(' Try again; it continues where it stopped.', '')), `the module says: ${sentence}`);
   const slots = t => (t.match(/\{\d+\}/g) ?? []).sort().join();
   for (const [id, text] of Object.entries(catalogs.en)) for (const l of langs) {

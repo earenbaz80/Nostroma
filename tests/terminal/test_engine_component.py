@@ -15,8 +15,8 @@ import urllib.request
 from pathlib import Path
 from unittest import mock
 
-from strata_cli import cli
-from strata_control import acquisition, components, engine_component as ec
+from nostroma_cli import cli
+from nostroma_control import acquisition, components, engine_component as ec
 
 WINDOWS = os.name == "nt"
 HERE = components.host_platform()

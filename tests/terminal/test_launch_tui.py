@@ -11,10 +11,10 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_cli.launch import access, settings as S, store
-from strata_cli.launch.app import Ctx, LaunchApp, run_monitor
-from strata_cli.launch.runner import Cancelled, Event, LaunchError, Result
-from strata_cli.launch.widgets import Glyphs
+from nostroma_cli.launch import access, settings as S, store
+from nostroma_cli.launch.app import Ctx, LaunchApp, run_monitor
+from nostroma_cli.launch.runner import Cancelled, Event, LaunchError, Result
+from nostroma_cli.launch.widgets import Glyphs
 from tests.terminal.launch_support import HW_12, HW_24, HW_2X16, Home, catalog, text_of
 
 SIZE = (110, 60)      # (round 0214: the list has seven more rows (Unsloth's v3.1 sets); the tests that read the whole list need the room)
@@ -90,7 +90,7 @@ class Base(unittest.TestCase):
         FakeRunner.instances.clear()
         FakeRunner.behaviour = "ok"
         FakeRunner.download = 0.0
-        p = mock.patch("strata_cli.launch.app.Runner", FakeRunner)
+        p = mock.patch("nostroma_cli.launch.app.Runner", FakeRunner)
         p.start()
         self.addCleanup(p.stop)
         p = mock.patch.object(access, "lan_ips", return_value=["192.168.1.5"])
@@ -280,7 +280,7 @@ class ModelStep(Base):
         async def case(app, pilot, ctx):
             await press(pilot, "enter", "o")
             self.assertIn("Type or paste the folder", text_of(app))
-            with mock.patch("strata_control.models.plan_import", return_value=plan) as pi, mock.patch("strata_control.models.own_path_problem", return_value=None):
+            with mock.patch("nostroma_control.models.plan_import", return_value=plan) as pi, mock.patch("nostroma_control.models.own_path_problem", return_value=None):
                 await typed(pilot, "/data/models/IQ3_XXS")
                 await press(pilot, "enter")
             self.assertEqual(ctx.settings.model_path, os.path.abspath("/data/models/IQ3_XXS"))
@@ -295,7 +295,7 @@ class ModelStep(Base):
 
         async def case(app, pilot, ctx):
             await press(pilot, "enter", "o")
-            with mock.patch("strata_control.models.plan_import", return_value=plan), mock.patch("strata_control.models.own_path_problem", return_value=None):
+            with mock.patch("nostroma_control.models.plan_import", return_value=plan), mock.patch("nostroma_control.models.own_path_problem", return_value=None):
                 await typed(pilot, "/x")
                 await press(pilot, "enter")
             t = flat(app)
@@ -485,7 +485,7 @@ class PicturesParallelTuning(Base):
             self.assertEqual(ctx.settings.vision, "off")
         # every catalog model reads pictures now: a row that does not stands in for a future one
         import dataclasses
-        from strata_cli.launch.catalog import Catalog
+        from nostroma_cli.launch.catalog import Catalog
         real_rows = Catalog.rows
 
         def rows(self, *args, **kwargs):
@@ -556,7 +556,7 @@ class AdvancedStep(Base):
         base = {"exe": "component:strata-engine", "args": ["--max-context", "32768", "--kv", "int8", "--prefill", "auto"]}
         p1 = mock.patch.object(Ctx, "base_config", lambda self: base)
         p2 = mock.patch.object(Ctx, "engine_exe", lambda self: "/engine/strata")
-        p3 = mock.patch("strata_cli.launch.params.engine_help_text", return_value=self.HELP)
+        p3 = mock.patch("nostroma_cli.launch.params.engine_help_text", return_value=self.HELP)
         for p in (p1, p2, p3):
             p.start()
             self.addCleanup(p.stop)

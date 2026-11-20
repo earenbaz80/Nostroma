@@ -11,7 +11,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_control import drafting
+from nostroma_control import drafting
 
 IQ3S = "qwen3.8-flash-next-iq3_s"
 Q4 = "qwen3.8-flash-next-unsloth-ud-q4_k_xl"

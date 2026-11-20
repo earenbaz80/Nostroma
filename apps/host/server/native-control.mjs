@@ -23,9 +23,10 @@ import { openTextFile } from './open-text-file.mjs';
 import { markEngine, engineRefusal } from './engine-version.mjs';
 import { friendlyModelName } from './model-names.mjs';
 import { parseSaved as parseRoles, mirror as mirrorRoles } from './gpu-roles.mjs';
+import { envVar } from './env-compat.mjs';
 
 const ROOT=resolve(dirname(fileURLToPath(import.meta.url)),'..');
-/** The owner-approved words (11-15) when the draft layer cannot be downloaded offline and no other drafter runs: the Terminal's strata_control/drafting.py MTP_OFFLINE_NOTE. */
+/** The owner-approved words (11-15) when the draft layer cannot be downloaded offline and no other drafter runs: the Terminal's nostroma_control/drafting.py MTP_OFFLINE_NOTE. */
 export const MTP_OFFLINE_NOTE="There is no internet connection, so the draft layer can't be downloaded now. The model starts without a drafter.";
 /** `args` without `--vision` and the picture word that follows it (the Qwen engine's --vision stands alone; an older config may carry a value). */
 const PICTURE_WORDS = new Set(['on', 'off', 'yes', 'no', 'gpu', 'cpu', 'none']);
@@ -45,7 +46,7 @@ function readJson(path,fallback={}){try{return JSON.parse(readFileSync(path,'utf
 
 /** The plain words for "no usable engine": the model still downloads, but loading needs the engine (owner decision 2026-10-18). */
 export const ENGINE_NOT_RECOGNISED='Nostroma didn’t recognise an engine for this computer. The model is downloaded, but it can’t run until the right engine is installed. Open Settings → About.';
-export function createNativeControl({directory,requests=()=>[],changed=()=>{},spawnProcess=spawn,fetcher=fetch,modelsDirectory,nativeDataDirectory=value=>value,beforeLoad=async()=>{},hardwareProbe=()=>[],control=null,ready=null,appUpdater=null,lockWaitMs=60000,lockPollMs=2000,defaultRepo=process.env.STRATA_NATIVE_REPO??resolve(ROOT,'../../Strata')}={}){
+export function createNativeControl({directory,requests=()=>[],changed=()=>{},spawnProcess=spawn,fetcher=fetch,modelsDirectory,nativeDataDirectory=value=>value,beforeLoad=async()=>{},hardwareProbe=()=>[],control=null,ready=null,appUpdater=null,lockWaitMs=60000,lockPollMs=2000,defaultRepo=envVar('NATIVE_REPO')??resolve(ROOT,'../../Strata')}={}){
  mkdirSync(directory,{recursive:true});
  const settingsPath=join(directory,'native-host.json');
  let preferences=readJson(settingsPath,{repo:defaultRepo});
@@ -55,7 +56,7 @@ export function createNativeControl({directory,requests=()=>[],changed=()=>{},sp
  let snapshot={available:false,repo:preferences.repo,summary:'Connect a local Nostroma installation.',catalog:null,installed:null,hardware:null,error:null};
  const instances=new Map(),processes=new Map(),jobs=new Map(),logs=[];
  const savedJobs=readJson(join(directory,'native-jobs.json'),[]);/* An app update ends the app on purpose: the installer replaces it and starts it again. The job that asked for it was saved as running together with the app version it started from (appUpdateFrom); a start that finds a different version knows the update finished, instead of calling it an interrupted operation. */
- const thisAppVersion=()=>process.env.STRATA_APP_VERSION||null;
+ const thisAppVersion=()=>envVar('APP_VERSION')||null;
  /* The job that started an app update is still 'running' when the app ends for the installer; an older host's close() saved it as 'cancelled' (the app update ends the host the normal way on Linux): with appUpdateFrom set, that is the same record (APP-LIN 0.2.14). */
  const closedForAppUpdate=j=>j.state==='running'||j.state==='cancelled'&&typeof j.appUpdateFrom==='string';
  /* A record an OLDER host wrote (no appUpdateFrom): the app's own program file was replaced after the job began, so the installer finished. <install>/host/server is ROOT's parent chain: ROOT = <install>/host. */
@@ -72,7 +73,7 @@ export function createNativeControl({directory,requests=()=>[],changed=()=>{},sp
  /* In the packaged app the model catalog, the GPU probe and the install job are Control's bundled tools/strata_mcp.py and
     setup.py, run on Control's own Python in the installer's mode (STRATA_CONTROL_INSTALL: no pip, no engine, no compiler).
     The install only runs when the user clicks Download; starting and serving (control.start) keep STRATA_NO_ACQUIRE. */
- const defaultInstall=()=>process.env.STRATA_INSTALL_DIR?resolve(process.env.STRATA_INSTALL_DIR):join(dirname(componentsDirectory()),'install');
+ const defaultInstall=()=>envVar('INSTALL_DIR')?resolve(envVar('INSTALL_DIR')):join(dirname(componentsDirectory()),'install');
  let packagedInstall=null;
  /* The component updates and the rollback go through Control, not through the native snapshot, so they work in the first seconds after the app starts and on a PC that has no engine yet. */
  const COMPONENT_KINDS=['update-engine','update-strata','rollback','install-engine-file'];
@@ -84,7 +85,7 @@ export function createNativeControl({directory,requests=()=>[],changed=()=>{},sp
  const emit=()=>{const value=state();writeFileSync(join(directory,'native-jobs.json'),JSON.stringify(value.jobs),{mode:0o600});changed(value);};
  const append=(instanceId,line)=>{logs.push({at:new Date().toISOString(),instanceId,line:String(line).slice(0,2000)});if(logs.length>400)logs.shift();};
  function diskSpace(path){try{const s=statfsSync(path);return {free:Number(s.bavail)*Number(s.bsize),total:Number(s.blocks)*Number(s.bsize)};}catch{return null;}}
- /* Does the engine in this release serve DFlash2? Control knows (strata_control/drafting.py); asked once, false until it answers. The Models screen offers the choice only when true. */
+ /* Does the engine in this release serve DFlash2? Control knows (nostroma_control/drafting.py); asked once, false until it answers. The Models screen offers the choice only when true. */
  let dflash2Served=null,dflash2Support=null,dflash2Selq4=false,dflash2Split=false;
  function probeDrafting(){if(!packaged||dflash2Served!==null||typeof control.draftingPlan!=='function')return;dflash2Served=false;control.draftingPlan({mode:'auto'}).then(p=>{dflash2Served=p.serves===true;dflash2Support=p.serves===true&&p.support&&p.support_line?{level:p.support,line:p.support_line}:null;dflash2Selq4=p.serves===true&&p.selq4===true;dflash2Split=p.split===true;emit();}).catch(()=>{});}
  function state(){const checking=!everRead&&failedReads<READ_TRIES;const folder=preferences.downloadDirectory??(modelsDirectory?modelsDirectory():snapshot.installed?.data_folder),space=folder?diskSpace(folder):null;return {...snapshot,checking,downloadDirectory:folder,downloadFreeBytes:space?.free??null,downloadTotalBytes:space?.total??null,fields:nativeFields(),instances:[...instances.values()].map(({key,configPath,fingerprint,mcpServers,...i})=>structuredClone(i)),defaultId,stoppedForUpdate:stoppedForUpdate?{updated:stoppedForUpdate.updated,at:stoppedForUpdate.at,models:stoppedForUpdate.instances.map(i=>({id:i.id,label:i.label}))}:null,jobs:[...jobs.values()].slice(-12).map(({process,abort,engineAbort,rawResult,...j})=>j),capabilities:{responses:sourceText().includes('/v1/responses'),updates:!!snapshot.available,rollback:previousEngine(),componentUpdates:packaged&&typeof control.update==='function',calibration:packaged?false:snapshot.hardware?.gpus?.some(g=>/nvidia/i.test(g.name??''))??false,dflash2:dflash2Served===true,dflash2Support,dflash2Selq4,dflash2Split}};}
@@ -112,7 +113,7 @@ export function createNativeControl({directory,requests=()=>[],changed=()=>{},sp
  function installedInfo(info){if(!info)return info;return {...info,models:(info.models??[]).map(entry=>{const cfg=/^strata-[a-z0-9_.-]+\.json$/i.test(entry.config??'')?readJson(entry.configPath??join(repo(),entry.config)):{};const at=cfg.args?.indexOf('--native')??-1,nativeFile=at>=0?cfg.args[at+1]:null;const dataFolder=typeof nativeFile==='string'&&basename(dirname(dirname(nativeFile)))==='models'?dirname(dirname(dirname(nativeFile))):info.data_folder;/* The folder this model's own run config keeps its prepared data in: the one that holds its packs/<tag> (or mtp/rt). It is the real data folder of the model, wherever the app's models folder is; a model in the person's own GGUF folder has its pack and draft layer here, not in the app's folder. A layout that only looks like <data>/models/<tag> says nothing: no pack, no folder. */const flagValue=flag=>{const i=cfg.args?.indexOf(flag)??-1;return i>=0&&typeof cfg.args[i+1]==='string'?cfg.args[i+1]:undefined;};const holder=(path,child,name)=>{if(!path||basename(dirname(path)).toLowerCase()!==child||(name&&basename(path).toLowerCase()!==name))return undefined;return dirname(dirname(path));};const runDataFolder=holder(flagValue('--pack'),'packs')??holder(flagValue('--mtp'),'mtp','rt');/* A model the person pointed at their own GGUF folder (not <data>/models/<tag>): remembered, so a later load runs setup with that folder again instead of downloading the files (#3199). */const ownGgufDir=typeof nativeFile==='string'&&basename(dirname(dirname(nativeFile)))!=='models'&&existsSync(nativeFile)?dirname(nativeFile):undefined;return {...entry,ownGgufDir,runDataFolder,diskGb:entry.diskGb??entry.disk_gb,diskBytes:entry.diskBytes??entry.disk_bytes,sharedBytes:entry.sharedBytes??entry.shared_bytes,removableGb:entry.removableGb??entry.removable_gb,dataFolder,contextChosen:cfg.ui_context_chosen===true,visionPrepared:!!cfg.vision&&entry.picturesMissing!==true,/* The picture files are prepared when the run config has a vision section: the Models screen then loads straight away instead of running setup again (it used to read 'off' for every model, which sent every load of a picture-capable model through "Apply settings and load", and setup writes the arguments, the draft layer and the reader back each time). */images:(!!cfg.vision&&entry.picturesMissing!==true)?'yes':'off',draftLayer:cfg.mtp!==false,drafting:cfg.drafting??'auto',/* Picture reading is ON unless the person turned it off: no saved choice and not loaded is undefined, not false (owner rule: pictures on by default). */visionChosen:cfg.ui_vision_chosen===true,visionEnabled:cfg.ui_vision_enabled??(()=>{const running=[...instances.values()].find(i=>i.model===entry.model&&i.status==='ready');return running?!!running.vision:undefined;})(),visionDevice:cfg.ui_vision_device,resourceProfile:cfg.ui_resource_profile,lowRamMode:cfg.args?.includes('--resident-experts')?'resident':cfg.args?.includes('--mmap-experts')?'mmap':'auto'};})};}
  function installRoot(){const found=[preferences.installDir].find(d=>d&&existsSync(d));if(found)return realpathSync(found);mkdirSync(defaultInstall(),{recursive:true});return realpathSync(defaultInstall());}
  /* The settings file Strata Control and the installer read (control-runtime.mjs sets STRATA_SETTINGS_FILE to it): the app's data folder is written there. */
- function controlSettingsFile(){return process.env.STRATA_SETTINGS_FILE||join(dirname(componentsDirectory()),'app-settings.json');}
+ function controlSettingsFile(){return envVar('SETTINGS_FILE')||join(dirname(componentsDirectory()),'app-settings.json');}
  /* One models folder for the app and the Terminal: the one changed last wins and the other settings file is updated (nothing is moved). */
  function shareDataFolder(){if(!packaged)return;try{let at=0;if(preferences.downloadDirectory)try{at=statSync(settingsPath).mtimeMs/1000;}catch{/* no file yet */}const found=syncDataFolder({appFile:controlSettingsFile(),terminalFile:terminalSettingsFile(),app:preferences.downloadDirectory?{folder:preferences.downloadDirectory,at}:null});if(found.from==='terminal'&&found.folder&&found.folder!==preferences.downloadDirectory){preferences={...preferences,downloadDirectory:found.folder};writeFileSync(settingsPath,JSON.stringify(preferences,null,2),{mode:0o600});}}catch{/* the shared setting is a convenience: never stop the app */}}
  function repo(){if(packaged)return installRoot();const path=realpathSync(preferences.repo);if(!existsSync(join(path,'setup.py'))||!existsSync(join(path,'tools/strata_mcp.py'))||!existsSync(join(path,'serve/server.py')))throw new Error('Choose the Nostroma repository folder containing setup.py and tools/strata_mcp.py.');return path;}
@@ -183,7 +184,7 @@ export function createNativeControl({directory,requests=()=>[],changed=()=>{},sp
   /* A chosen drafter that is not on this computer yet is part of the download: its size is listed beside the model's (Control decides; nothing is fetched here). */
   const choice=args.drafting??(dflash2Served===true?'auto':undefined);if(packaged&&typeof choice==='string'&&typeof control.draftingPlan==='function'){try{const size=snapshot.catalog?.families?.find(f=>f.family===args.family)?.sizes.find(s=>s.model===args.model),here=snapshot.installed?.models?.find(m=>m.model===size?.id);const d=await control.draftingPlan({mode:choice,family:args.family??null,model:args.model??null,dataDir:here?.runDataFolder??snapshot.installed?.data_folder??null,...(unloadsRunning(args)?{unloading:true}:{})});if(d.needed||d.mtp_needed)return {...result,drafting:{needed:true,drafter:d.needed?'dflash2':'mtp',gb:d.needed?d.gb:d.mtp_gb,line:d.line,...(d.needed&&d.tuned===true?{tuned:true}:{})}};}catch{/* the model plan still stands */}}
   return result;}
- /* Which drafter the install prepares: Control's plan decides, as at the load (strata_control/drafting.py, the per-card Auto). The host's own rule said DFlash2 wherever it is
+ /* Which drafter the install prepares: Control's plan decides, as at the load (nostroma_control/drafting.py, the per-card Auto). The host's own rule said DFlash2 wherever it is
     served, so a card where Auto means the MTP (a 12 GB CUDA card streaming IQ3_S, an RX 9070) was set up without the MTP layer and its first load ran undrafted (QAGUI 0213).
     No plan (an older Control, an error): the old rule (installArgs). A drafter named by the caller (the MTP layer fetch) is kept. */
  async function controlDrafter(args){
@@ -269,7 +270,7 @@ export function createNativeControl({directory,requests=()=>[],changed=()=>{},sp
   if(still.length)throw new Error(`Some files could not be removed: ${still.slice(0,3).map(p=>basename(p)).join('; ')}`);
 return {summary:result.summary??'Deleted',removed:result.plan?.gb??null};}
  /* The configuration a load starts the engine with (before its port and key): the saved model config, the user's choices and the resource profile. The tuner measures exactly this, so a saved tuning belongs to the same choices a load makes. */
- /* A DeepSeek run config (Strata 0.2.13 and earlier; strata_control/retired.py): this Strata does not start it, and no app setting ever writes it. */
+ /* A DeepSeek run config (Strata 0.2.13 and earlier; nostroma_control/retired.py): this Strata does not start it, and no app setting ever writes it. */
  const retiredDeepSeek=config=>/^deepseek/i.test(String(config?.arch??''))||/strata-dsv41/i.test(String(config?.exe??''));
  /* Control's ceiling for one start wait, read from the Control this app actually found rather than guessed from its version. The
     app starts a model with `strata runtime start --wait`, and that wait is checked three times before the engine is reached: by
@@ -288,7 +289,7 @@ return {summary:result.summary??'Deleted',removed:result.plan?.gb??null};}
  }
  function startWaitCeiling(){
   const dir=control?.control?.dir??'';if(!dir)return START_WAIT_CEILING;
-  const files=['management.py','journal.py','runtime.py'].map(name=>join(dir,'strata_control',name));
+  const files=['management.py','journal.py','runtime.py'].map(name=>join(dir,'nostroma_control',name));
   let time=0;
   try{time=Math.max(...files.map(f=>statSync(f).mtimeMs));}catch{return START_WAIT_CEILING;}
   if(ceilingCache.dir===dir&&ceilingCache.time===time)return ceilingCache.value;
@@ -347,7 +348,7 @@ return {summary:result.summary??'Deleted',removed:result.plan?.gb??null};}
   if(parallelChoice){const applied=applyParallel(cfg,parallelChoice);for(const k of Object.keys(cfg))if(!(k in applied.cfg))delete cfg[k];Object.assign(cfg,applied.cfg);parallelNote=applied.note;}
   return {cfg,resources,visionPreferences,parallelChoice,parallelNote};
  }
- /* One drafter per run. Control (strata_control/drafting.py) says which one this load runs and whether its file is on this computer: the plan of the saved model file with the choice the Load carries. */
+ /* One drafter per run. Control (nostroma_control/drafting.py) says which one this load runs and whether its file is on this computer: the plan of the saved model file with the choice the Load carries. */
  /* The engines this Load is about to unload (the load below unloads every instance unless it adds one beside them): their graphics memory is given back before the new engine starts, so Control must not count it as busy memory when it asks whether the all-cards split engine fits (`--engines-unloading`; the Terminal does the same, Runner.card_probe). A model added beside the others (`multiple`) keeps their memory busy. */
  function unloadsRunning(args){return instances.size>0&&args?.multiple!==true;}
  async function draftPlan(args,configFile,{noSplit=false}={}){
@@ -384,7 +385,7 @@ return {summary:result.summary??'Deleted',removed:result.plan?.gb??null};}
   if(!fam||!size)return;
   job.summary='Downloading the MTP drafter…';emit();
   /* the model's own files folder (the run config's --native): without it the installer, asked for this model by name, would fetch the whole model again next to the layer (an app install adopted from the person's own GGUF folder has its files elsewhere) */const native=(()=>{const a=(config.args??[]).map(String),i=a.indexOf('--native');return i>=0?(a[i+1]??''):'';})();try{await install(job,{family:fam.family,model:size.model,drafter:'mtp',vision:args.vision??(config.vision?'yes':'no'),...(native?{gguf_dir:dirname(native)}:{})});
-   /* offline the installer goes on without the layer (tools/mtp_fetch.py OFFLINE): the same words as the Terminal's (strata_control/drafting.py MTP_OFFLINE_NOTE) */const layer=(()=>{const a=(config.args??[]).map(String),i=a.indexOf('--mtp');return i>=0?(a[i+1]??''):'';})();
+   /* offline the installer goes on without the layer (tools/mtp_fetch.py OFFLINE): the same words as the Terminal's (nostroma_control/drafting.py MTP_OFFLINE_NOTE) */const layer=(()=>{const a=(config.args??[]).map(String),i=a.indexOf('--mtp');return i>=0?(a[i+1]??''):'';})();
    if(layer&&!existsSync(join(layer,'experts.bin'))&&!existsSync(join(dirname(layer),'mtp-q2_0.gguf'))){if(job.state==='running'){job.drafterNote=MTP_OFFLINE_NOTE;emit();}return false;}
    return true;}
   catch{if(job.state==='running'){job.drafterNote='The MTP drafter could not be downloaded.';emit();}return false;}/* one short line, not the installer's own text; Drafting below says what runs instead */
@@ -409,7 +410,7 @@ return {summary:result.summary??'Deleted',removed:result.plan?.gb??null};}
  function rememberSetting(configFile,key,value){try{const current=readJson(configFile);if(value===null?!(key in current):current[key]===value)return;const next={...current};if(value===null)delete next[key];else next[key]=value;const temp=configFile+'.ui-tmp';writeFileSync(temp,JSON.stringify(next,null,2)+'\n',{mode:0o600});renameSync(temp,configFile);}catch{/* the load goes on with the choice for this start */}}
  /* Which drafter runs, when it is not the one that was asked for (the engine's own words, "Drafting: MTP (DFlash2 didn't fit)"): under Details of the load. */
  async function noteDrafting(job,instance,key){let note='',fellBack=false;try{const r=await fetcher(`http://127.0.0.1:${instance.port}/metrics`,{headers:{authorization:`Bearer ${key}`},signal:AbortSignal.timeout(2000)});if(r.ok){const engine=(await r.json())?.engine;note=String(engine?.drafting_note??'');fellBack=engine?.split_fallback===true;}}catch{/* a convenience */}/* the all-cards split engine: the line of what runs (the server starts the normal layer split by itself when the split engine would not come up) */const lines=[job.drafterNote,fellBack?SPLIT_FELL_BACK:instance.splitNote,note].filter(Boolean);if(lines.length)job.details=[job.details,...lines].filter(Boolean).join('\n');}
- /* ---- The picture files of an installed model that has none (strata_control/pictures.py, run by Control) ----
+ /* ---- The picture files of an installed model that has none (nostroma_control/pictures.py, run by Control) ----
     Only the Load or the "Download picture-reading files" button the person pressed reaches the network, and only for the picture file (about 0.9 GB, one copy
     shared by the models of a data folder). The model's own files, its pack, its draft layer, the data folder and the settings' data_dir are not touched; the one change
     to the model's run config is the picture section. A restart, a tuning run or any other load that does not ask for pictures never downloads. */
@@ -477,7 +478,7 @@ return {summary:result.summary??'Deleted',removed:result.plan?.gb??null};}
   if(args.multiple&&instances.size>=8)throw new Error('Unload an instance before adding another. Up to eight native instances can run here.');
   /* Read pictures is on and the picture files are not here: the Load fetches those files (about 0.9 GB, once) and nothing else of the model, then goes on. No internet: the model loads without pictures and the page says so. */
   let picturesNote=null;{const got=await ensurePictures(job,args,configFile,config,{missing:entry.picturesMissing===true});if(job.state!=='running')return;config=got.config;args=got.args;picturesNote=got.note;}
-  /* One drafter per run (strata_control/drafting.py): switching to the MTP on a model set up for DFlash2 fetches the layer once, here; DFlash2 is fetched below. */
+  /* One drafter per run (nostroma_control/drafting.py): switching to the MTP on a model set up for DFlash2 fetches the layer once, here; DFlash2 is fetched below. */
   let drafts=await draftPlan(args,configFile),noSplit=false;
   if(drafts?.mtp_needed===true&&(args.values?.drafting!==undefined||(drafts.split===true||args.firstLoad===true)&&(config.drafting==null||String(config.drafting).toLowerCase()==='auto'))){/* firstLoad: the load right after a setup (Prepare and load), whose plan listed the layer: Auto meaning the MTP on this card fetches it, as the Models screen does (QAGUI 0213) *//* the Models screen's own Load carries the choice; a plain Auto load fetches the layer too when Control says the all-cards split engine will take the start (it runs the MTP and nothing else): the same as the Terminal */await installMtpLayer(job,args,config);if(job.state!=='running')return;await refresh(true);config=checkedSettingsConfig(readFileSync(recordFile(args.model).path,'utf8'));drafts=await draftPlan(args,configFile);
    /* the offline words say the model starts without a drafter: not when another drafter on this computer stands in (Control's plan names the one the start runs) */

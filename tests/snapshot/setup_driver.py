@@ -1,4 +1,4 @@
-"""The `setup` entry point: `strata_control.setup_config.config_for` called with what setup would have decided on a simulated machine.
+"""The `setup` entry point: `nostroma_control.setup_config.config_for` called with what setup would have decided on a simulated machine.
 
 `setup.py` main() cannot run without a GPU, an engine and a model.  Its last stretch (the engine arguments, the speed switches, the cards, the vision section) is
 now `config_for(inputs, lib)`.  Here the inputs are built from the machine class and the model set by calling setup's OWN decision functions where they are pure
@@ -89,7 +89,7 @@ def _gpu(setup, world: World) -> dict:
 
 
 def _qwen(setup, world: World, lib: ProbeLib, say) -> tuple[dict, dict]:
-    from strata_control import setup_config
+    from nostroma_control import setup_config
     m, s = world.machine, world.mset
     ram = m.ram_gb
     hip = m.backend == "hip"

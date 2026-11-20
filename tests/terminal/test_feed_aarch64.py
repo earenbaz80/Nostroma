@@ -19,9 +19,9 @@ sys.path.insert(0, str(ROOT / "packaging"))
 sys.path.insert(0, str(ROOT))
 
 import feed_tool  # noqa: E402
-from strata_cli import update_cmd  # noqa: E402
-from strata_control import feed as feedmod  # noqa: E402
-from strata_control import updater  # noqa: E402
+from nostroma_cli import update_cmd  # noqa: E402
+from nostroma_control import feed as feedmod  # noqa: E402
+from nostroma_control import updater  # noqa: E402
 
 COMMON = "strata-feed.json"
 ARM = "strata-feed-linux-aarch64.json"
@@ -29,7 +29,7 @@ RELEASE = "https://github.com/Niko1221/Strata/releases/latest/download"
 
 
 def host(platform):
-    return mock.patch("strata_control.feed.host_platform", return_value=platform)
+    return mock.patch("nostroma_control.feed.host_platform", return_value=platform)
 
 
 class FeedFileName(unittest.TestCase):
@@ -45,7 +45,7 @@ class FeedFileName(unittest.TestCase):
             self.assertEqual(feedmod.feed_name(), COMMON)
 
     def test_an_unknown_os_reads_the_common_feed(self):
-        with mock.patch("strata_control.feed.host_platform", side_effect=RuntimeError("no")):
+        with mock.patch("nostroma_control.feed.host_platform", side_effect=RuntimeError("no")):
             self.assertEqual(feedmod.feed_name(), COMMON)
 
     def test_the_common_name_and_default_are_unchanged(self):
@@ -147,7 +147,7 @@ class ReadsTheRightFile(unittest.TestCase):
             asked.append(location)
             raise feedmod.transfer.TransferError("stop here")
 
-        with mock.patch("strata_control.feed.transfer.read_small", side_effect=read_small):
+        with mock.patch("nostroma_control.feed.transfer.read_small", side_effect=read_small):
             for plat, want in (("linux-aarch64", ARM), ("linux-x86_64", COMMON), ("windows-x86_64", COMMON), ("macos-arm64", COMMON)):
                 asked.clear()
                 with host(plat), self.assertRaises(feedmod.FeedError):

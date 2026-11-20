@@ -15,7 +15,7 @@ const MEMORY_NEXT = 'Close other programs and try again, or choose “Leave room
 
 /** Order matters: the first rule that matches wins. */
 const RULES: Rule[] = [
-  // A DeepSeek model of an earlier Strata (strata_control/retired.py, the owner's words of 11-11): Control's own sentences, with the model's name and where
+  // A DeepSeek model of an earlier Strata (nostroma_control/retired.py, the owner's words of 11-11): Control's own sentences, with the model's name and where
   // its files are and how large, filled in by Control; the next step is the third sentence. Before every other rule (its words name files and deleting).
   // [DRAFT] translations: these sentences stay English in every language (no locale key yet) until the owner has read the wording list; then
   // the next step and the two templated sentences get keys in the nine bundles.

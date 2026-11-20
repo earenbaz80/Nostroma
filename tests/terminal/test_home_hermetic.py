@@ -20,9 +20,9 @@ def inside(path: Path, base: Path) -> bool:
 
 class HomeIsHermetic(unittest.TestCase):
     def test_every_per_user_location_is_inside_the_temp_folder(self):
-        from strata_control import discovery, models, profiles
+        from nostroma_control import discovery, models, profiles
         import setup
-        from strata_cli import connections
+        from nostroma_cli import connections
         with Home() as h:
             places = {
                 "discovery.own_settings_file (Windows rule)": discovery.own_settings_file(windows=True),

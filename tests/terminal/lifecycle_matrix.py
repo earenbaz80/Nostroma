@@ -31,7 +31,7 @@ sys.path.insert(0, str(ROOT))
 
 import psutil  # noqa: E402
 
-from strata_control import components, engine_component as ec, procs, profiles, runtime  # noqa: E402
+from nostroma_control import components, engine_component as ec, procs, profiles, runtime  # noqa: E402
 
 WINDOWS = os.name == "nt"
 LINUX = sys.platform.startswith("linux")
@@ -580,7 +580,7 @@ def runtime_case(rig: Rig, name: str, what: str, *, vram: bool = False) -> Resul
             kill_hard(server.pid)
             graceful = None
             note = "server killed, owner left alive"
-            idents = [i for i in idents if "strata_control.runtime" not in " ".join(i.cmd) and "conhost" not in " ".join(i.cmd)]
+            idents = [i for i in idents if "nostroma_control.runtime" not in " ".join(i.cmd) and "conhost" not in " ".join(i.cmd)]
         elif what == "die-with":
             holder.kill(); holder.wait(timeout=10)
         if what == "server-killed":

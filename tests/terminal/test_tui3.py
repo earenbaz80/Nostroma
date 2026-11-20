@@ -9,10 +9,10 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_cli.launch import settings as S
-from strata_cli.launch import runner as R
-from strata_cli.launch.catalog import Catalog
-from strata_cli.launch.runner import LaunchError, Runner
+from nostroma_cli.launch import settings as S
+from nostroma_cli.launch import runner as R
+from nostroma_cli.launch.catalog import Catalog
+from nostroma_cli.launch.runner import LaunchError, Runner
 from tests.terminal.launch_support import HW_12, Home, catalog
 
 
@@ -40,8 +40,8 @@ class FailedStart(unittest.TestCase):
             srv.listen(1)
             port = srv.getsockname()[1]
             r = self.runner(port)
-            with mock.patch("strata_control.runtime.status", return_value={"state": "stopped"}), \
-                 mock.patch("strata_control.runtime.start", side_effect=AssertionError("must not start")):
+            with mock.patch("nostroma_control.runtime.status", return_value={"state": "stopped"}), \
+                 mock.patch("nostroma_control.runtime.start", side_effect=AssertionError("must not start")):
                 with self.assertRaises(LaunchError) as cm:
                     r.start()
         self.assertIn(f"Port {port} is already in use by another program.", cm.exception.text)
@@ -76,11 +76,11 @@ class FailedStart(unittest.TestCase):
         r = self.runner()
         r.config_path = None
         calls = []
-        with mock.patch("strata_control.runtime.status", return_value={"state": "stopped"}), \
+        with mock.patch("nostroma_control.runtime.status", return_value={"state": "stopped"}), \
              mock.patch.object(Runner, "check_port_free"), \
-             mock.patch("strata_control.runtime.start", return_value={"ok": False, "state": "failed", "error": "server_exited", "engine_exit_code": 2}), \
-             mock.patch("strata_control.runtime.stop", side_effect=lambda n, timeout=0: calls.append(("stop", n))), \
-             mock.patch("strata_control.runtime.cleanup", side_effect=lambda n=None: calls.append(("cleanup", n))):
+             mock.patch("nostroma_control.runtime.start", return_value={"ok": False, "state": "failed", "error": "server_exited", "engine_exit_code": 2}), \
+             mock.patch("nostroma_control.runtime.stop", side_effect=lambda n, timeout=0: calls.append(("stop", n))), \
+             mock.patch("nostroma_control.runtime.cleanup", side_effect=lambda n=None: calls.append(("cleanup", n))):
             with self.assertRaises(LaunchError):
                 r.start()
         self.assertEqual(calls, [("stop", "launch-gyro"), ("cleanup", "launch-gyro")])
@@ -88,11 +88,11 @@ class FailedStart(unittest.TestCase):
     def test_a_start_that_raises_also_ends_its_host(self):
         r = self.runner()
         calls = []
-        with mock.patch("strata_control.runtime.status", return_value={"state": "stopped"}), \
+        with mock.patch("nostroma_control.runtime.status", return_value={"state": "stopped"}), \
              mock.patch.object(Runner, "check_port_free"), \
-             mock.patch("strata_control.runtime.start", side_effect=RuntimeError("runtime host failed to start")), \
-             mock.patch("strata_control.runtime.stop", side_effect=lambda n, timeout=0: calls.append("stop")), \
-             mock.patch("strata_control.runtime.cleanup", side_effect=lambda n=None: calls.append("cleanup")):
+             mock.patch("nostroma_control.runtime.start", side_effect=RuntimeError("runtime host failed to start")), \
+             mock.patch("nostroma_control.runtime.stop", side_effect=lambda n, timeout=0: calls.append("stop")), \
+             mock.patch("nostroma_control.runtime.cleanup", side_effect=lambda n=None: calls.append("cleanup")):
             with self.assertRaises(LaunchError):
                 r.start()
         self.assertEqual(calls, ["stop", "cleanup"])
@@ -188,9 +188,9 @@ class SaveWaitsForRestartAnswer(unittest.TestCase):
 
     def test_the_save_screen_no_longer_writes_the_preset_itself(self):
         import asyncio
-        from strata_cli.launch import store
+        from nostroma_cli.launch import store
         from tests.terminal.test_launch_tui import Base, FakeRunner, press, make_ctx
-        from strata_cli.launch.app import LaunchApp
+        from nostroma_cli.launch.app import LaunchApp
 
         class Case(Base):
             def runTest(self):
@@ -206,7 +206,7 @@ class SaveWaitsForRestartAnswer(unittest.TestCase):
                 seen["presets_during_run"] = [p.name for p in store.list_presets()]
                 return super().run(start)
 
-        with mock.patch("strata_cli.launch.app.Runner", Holding):
+        with mock.patch("nostroma_cli.launch.app.Runner", Holding):
             async def go():
                 app = LaunchApp(make_ctx())
                 async with app.run_test(size=(110, 34)) as pilot:
@@ -227,7 +227,7 @@ class DraftingOffConfig(unittest.TestCase):
     BASE = {"args": ["--model", "m.gguf", "--mtp", "C:/x/mtp", "--spec-min-p", "0.5", "--batch-mtp", "--max-context", "32768"], "exe": "x"}
 
     def derive(self, base, **kw):
-        from strata_control import tune_knobs
+        from nostroma_control import tune_knobs
         s = S.LaunchSettings(family="gyro", model="Gyro-S", context=32768, **kw)
         return R.derive_config(base, s, bool_flags=tune_knobs.BOOL_FLAGS)
 

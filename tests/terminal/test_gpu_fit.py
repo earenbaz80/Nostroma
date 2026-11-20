@@ -1,4 +1,4 @@
-"""strata_control/gpu_fit.py: the one rule for which graphics cards a model uses (app, strata launch and setup share it)."""
+"""nostroma_control/gpu_fit.py: the one rule for which graphics cards a model uses (app, strata launch and setup share it)."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import re
 import unittest
 from pathlib import Path
 
-from strata_control import gpu_fit as G
+from nostroma_control import gpu_fit as G
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -120,7 +120,7 @@ class GpuFitRule(unittest.TestCase):
         self.assertEqual((G.DENSE_GB, G.SYSTEM_ROOM_GB, G.DENSE_EXTRA_GB), tuple(float(x) for x in m.groups()))
 
     def test_fit_matches_the_launch_catalog_port_of_native_fit(self):
-        from strata_cli.launch.catalog import fit_on
+        from nostroma_cli.launch.catalog import fit_on
         for ram, vram in ((62, 16), (32, 10), (16, 0), (128, 24)):
             a = fit_on({"memory_gb": 44.0}, ram, vram)
             b = G.fit(44.0, ram, vram)

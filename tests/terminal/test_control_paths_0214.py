@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from strata_control import control_paths
+from nostroma_control import control_paths
 
 
 def _control(root: Path, name: str) -> Path:

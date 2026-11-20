@@ -12,7 +12,7 @@ from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
-from strata_control import models  # noqa: E402
+from nostroma_control import models  # noqa: E402
 import setup as strata_setup  # noqa: E402
 
 

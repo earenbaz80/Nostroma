@@ -20,7 +20,7 @@ A new model ships as a signed feed update with the optional `models` member (pac
 fails when Control would leave one out.
 
 ``keygen`` never prints the secret and refuses to write inside a git checkout or over an existing file. The public file's
-entry goes into ``strata_control/update_keys.json`` (``keys``) once, in the commit that ships the first signed release.
+entry goes into ``nostroma_control/update_keys.json`` (``keys``) once, in the commit that ships the first signed release.
 The Tauri updater key is a different key (minisign, made by ``tauri signer generate``); its public half goes in
 ``tauri.conf.json`` and in ``update_keys.json`` as ``app_minisign_public``.
 """
@@ -44,7 +44,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from strata_control import engine_component as ec, feed as feedmod, signing  # noqa: E402
+from nostroma_control import engine_component as ec, feed as feedmod, signing  # noqa: E402
 
 
 def _inside_git(path: Path) -> bool:
@@ -82,7 +82,7 @@ def keygen(out: Path, *, allow_git: bool = False) -> dict:
     with os.fdopen(fd, "w", encoding="utf-8") as stream:
         json.dump(key, stream, indent=1)
         stream.write("\n")
-    from strata_control import private_files
+    from nostroma_control import private_files
     private_files.restrict_to_current_user(secret, directory=False)          # 0600, or a protected ACL on Windows
     public.write_text(json.dumps({"keys": [signing.public_part(key)]}, indent=1) + "\n", encoding="utf-8")
     return signing.public_part(key)
@@ -253,7 +253,7 @@ def pack_control(folder: Path, out: Path, *, version: str, platform: str, fmt: s
 
 def pack_drafter(pack: Path, out: Path, *, version: str, backends: list[str], url_prefix: str = "", base: str = "", licence: str = "", notes: str = "") -> dict:
     """Copy a DFlash2 drafter file into `out` (a flat release asset, as it is hosted) and write its feed entry (`<name>.entry.json`). The file is not an archive: the
-    client checks its size and SHA-256 against the signed feed AND against the pin in strata_control/drafting.py."""
+    client checks its size and SHA-256 against the signed feed AND against the pin in nostroma_control/drafting.py."""
     pack = Path(pack)
     Path(out).mkdir(parents=True, exist_ok=True)
     target = Path(out) / pack.name
@@ -283,7 +283,7 @@ def carried_dsv41(previous_feed: Path, base: str) -> dict:
     """The ``dsv41`` member of a published feed, frozen (owner 11-11, "Keep frozen"): Strata 0.2.13 and earlier read it to keep their DeepSeek
     engine; this Strata never does.  Every entry is kept as it was, except a relative ``url`` (a flat release asset, resolved against the feed's
     own release): it becomes ``base`` + url, the release that really holds the archive, because the new feed sits in a newer release that does
-    not.  Absolute https URLs are what those Controls accept (strata_control/transfer.py resolve_ref since 0.2.7).  ``base`` must be a real https
+    not.  Absolute https URLs are what those Controls accept (nostroma_control/transfer.py resolve_ref since 0.2.7).  ``base`` must be a real https
     release folder: the placeholder in DSV41_BASE_EXAMPLE stops the build."""
     if not isinstance(base, str) or not base.startswith("https://") or "<" in base or ">" in base or not base.endswith("/"):
         raise SystemExit(f"--carry-dsv41-base must be the https folder of the release that holds the DeepSeek archives, ending in '/' "
@@ -388,7 +388,8 @@ TAURI_TARGET_NAMES = tuple(feedmod.TAURI_TARGETS.values())
 
 def _default_app_pubkey() -> str:
     conf = Path(__file__).resolve().parents[1] / "apps" / "desktop" / "src-tauri" / "tauri.conf.json"
-    return json.loads(conf.read_text(encoding="utf-8"))["plugins"]["updater"]["pubkey"]
+    # App updates are off in this build: tauri.conf.json names no updater, so there is no key to sign an app update with.
+    return json.loads(conf.read_text(encoding="utf-8")).get("plugins", {}).get("updater", {}).get("pubkey", "")
 
 
 def _check_mac_archive(archive: Path) -> None:

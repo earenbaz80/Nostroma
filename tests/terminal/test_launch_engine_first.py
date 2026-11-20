@@ -12,9 +12,9 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_cli.launch import settings as S
-from strata_cli.launch.runner import LaunchError, NO_ENGINE_STEP, Runner, no_engine_final, no_engine_warning
-from strata_control import engine_component as ec
+from nostroma_cli.launch import settings as S
+from nostroma_cli.launch.runner import LaunchError, NO_ENGINE_STEP, Runner, no_engine_final, no_engine_warning
+from nostroma_control import engine_component as ec
 
 ROOT = Path(__file__).resolve().parents[2]
 

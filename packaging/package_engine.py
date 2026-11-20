@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Make a local, unpublished engine package for the component folder (strata_control/engine_component.py).
+"""Make a local, unpublished engine package for the component folder (nostroma_control/engine_component.py).
 
     python packaging/package_engine.py --src <folder with strata[.exe] and its libraries> --backend cuda \
         --version 0.1.45 --out <components>/engine --arch sm_86 --arch compute_89 \
@@ -39,8 +39,8 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import binary_deps  # noqa: E402
-from strata_control import engine_component as ec, shape_engine  # noqa: E402
-from strata_control.components import BACKEND_MATRIX, host_platform  # noqa: E402
+from nostroma_control import engine_component as ec, shape_engine  # noqa: E402
+from nostroma_control.components import BACKEND_MATRIX, host_platform  # noqa: E402
 
 
 
@@ -156,7 +156,7 @@ def select(src: Path, entrypoint: str, *, tree: bool, include: list[str]) -> lis
         if tree or (top_level and wanted(path)) or any(fnmatch.fnmatch(rel, pattern) for pattern in include):
             chosen.add(rel)
     for path in sorted((src / "tuning").glob("*.txt")) if (src / "tuning").is_dir() else []:
-        if path.is_file() and not path.is_symlink():      # the hipBLASLt tuning tables of an AMD package (strata_control/hipblaslt_tuning.py)
+        if path.is_file() and not path.is_symlink():      # the hipBLASLt tuning tables of an AMD package (nostroma_control/hipblaslt_tuning.py)
             chosen.add(path.relative_to(src).as_posix())
     chosen.discard(entrypoint)
     return [entrypoint] + sorted(chosen)
@@ -181,7 +181,7 @@ def build(src: Path, backend: str, version: str, target: str, out: Path, *, entr
         raise SystemExit("refusing to package the cuda12 engine without sm_60, sm_61 or sm_70: it is the Pascal and Volta build "
                          "(CUDA 12.9, -DSTRATA_EXPERIMENTAL_SM60=ON, --arch sm_60 --arch sm_61 --arch sm_70 ...; see packaging/build_cuda_linux.sh)")
     if backend == "hip":
-        from strata_control import hipblaslt_tuning
+        from nostroma_control import hipblaslt_tuning
         problems = hipblaslt_tuning.check_stage(src, archs)
         if problems:
             raise SystemExit("refusing to package the AMD engine:\n  " + "\n  ".join(problems))
@@ -207,7 +207,7 @@ def build(src: Path, backend: str, version: str, target: str, out: Path, *, entr
             shutil.copy2(src / rel, destination)
             files.append({"path": rel, "sha256": sha256(destination), "bytes": destination.stat().st_size})
         files += _bundle_missing_libraries(staging, target, [f["path"] for f in files], search or [], allow_libs or [])
-        component_id = shape_engine.component_id(shape) if shape else ec.COMPONENT_ID     # the engine of a model shape is its own component (strata_control/shape_engine.py)
+        component_id = shape_engine.component_id(shape) if shape else ec.COMPONENT_ID     # the engine of a model shape is its own component (nostroma_control/shape_engine.py)
         manifest = {"schema_version": ec.SCHEMA_VERSION, "id": component_id, "name": component_id,
                     "version": version, "platform": target, "backend": backend, "archs": list(archs),
                     "min_driver": dict(min_driver or {}), "build_id": build_id or git_build_id(),
@@ -308,7 +308,7 @@ def main(argv: list[str] | None = None) -> int:
                     help="an imported library that really is provided by the target system (rare; named so the check passes)")
     ap.add_argument("--shape", default="", metavar="GEOMETRY",
                     help="package the engine of a model shape (the name the engine was compiled for, -DSTRATA_GEOMETRY=q4_lite): its own component strata-q4-lite, installed "
-                         "next to the Strata engine and never in place of it (strata_control/shape_engine.py)")
+                         "next to the Strata engine and never in place of it (nostroma_control/shape_engine.py)")
     ap.add_argument("--include", action="append", default=[], metavar="GLOB", help="more files, relative to --src")
     ap.add_argument("--stamp-vision", type=Path, metavar="STAGE", help="write --vision-archs into STAGE/BUILD.json and exit")
     ap.add_argument("--vision-archs", default="", help="with --stamp-vision: the architectures the reader was built for, e.g. '60;61;70;75;80;86;89'")

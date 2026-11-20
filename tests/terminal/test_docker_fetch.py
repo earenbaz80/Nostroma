@@ -10,7 +10,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from strata_control import components
+from nostroma_control import components
 from tests.terminal import update_fixture as fx
 
 ROOT = Path(__file__).resolve().parents[2]

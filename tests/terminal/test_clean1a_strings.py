@@ -8,8 +8,8 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from strata_control import drafting
-from strata_cli.launch import cmd as launch_cmd
+from nostroma_control import drafting
+from nostroma_cli.launch import cmd as launch_cmd
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -25,7 +25,7 @@ class Wording(unittest.TestCase):
         self.assertIn("and downloads its drafter once (0.34 GB for the models that have a tuned drafter, 0.52 GB on Intel Arc, else 1.2 GB).", docs)
 
     def test_the_arc_launch_line_names_what_was_not_downloaded(self):
-        src = (ROOT / "strata_cli" / "launch" / "runner.py").read_text(encoding="utf-8")
+        src = (ROOT / "nostroma_cli" / "launch" / "runner.py").read_text(encoding="utf-8")
         self.assertIn("({path.name}). No model files were downloaded.\")", src)
         self.assertNotIn("({path.name}). Nothing was downloaded.", src)
 

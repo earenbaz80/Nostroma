@@ -64,11 +64,11 @@ the model. The section above is about the engine's HTTP server. This is what the
   client (the Terminal) attaches to it. On macOS and Linux that is a private Unix socket in a folder only you can open. On Windows it
   is a TCP listener on `127.0.0.1` that answers only requests carrying a 256-bit token kept in an owner-only folder. That is a weaker
   guarantee than a socket other users cannot open: on Windows the token is what protects it, as with any loopback service that has a
-  token (`strata_control/owner_transport.py`). The bridge between the app shell and the host (used for the app update) is also loopback and protected by a token.
+  token (`nostroma_control/owner_transport.py`). The bridge between the app shell and the host (used for the app update) is also loopback and protected by a token.
 - **Starting a model and serving never download anything.** Downloads and updates are one explicit step: `strata update`, or "Update
   engine" and "Update Strata" in the app's Settings. Models and saved tuning are never replaced by an update.
 - **Updates come from a signed feed.** The release publishes `strata-feed.json` and `strata-feed.json.sig` (Ed25519). An installed
-  Strata checks the signature against the public key it carries (`strata_control/update_keys.json`), refuses a feed older than the last
+  Strata checks the signature against the public key it carries (`nostroma_control/update_keys.json`), refuses a feed older than the last
   one it accepted (a replayed old feed) or expired, and checks every engine package against its SHA-256, its signed manifest and the
   card in your PC before it test-starts it and switches to it. Any failure keeps the engine you had. The app installer itself is signed
   with a separate key (Tauri's minisign key) that the app and the Terminal both check. The private keys are kept offline by the owner.

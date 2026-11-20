@@ -31,11 +31,11 @@ import sys
 sys.path.insert(0, sys.argv[1])
 from rich.console import Console
 from textual.widgets import Static
-from strata_cli.client import Endpoint
-from strata_cli.monitor import MonitorApp
-from strata_cli.dashboard import render_dashboard
-from strata_cli.detail_dashboard import render_detail_dashboard
-import strata_cli.monitor as monitor_module
+from nostroma_cli.client import Endpoint
+from nostroma_cli.monitor import MonitorApp
+from nostroma_cli.dashboard import render_dashboard
+from nostroma_cli.detail_dashboard import render_detail_dashboard
+import nostroma_cli.monitor as monitor_module
 
 async def main():
     source = str(monitor_module.__file__).replace("\\", "/")

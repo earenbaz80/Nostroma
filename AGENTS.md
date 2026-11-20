@@ -16,7 +16,7 @@ Strata has three parts:
   `Strata-0.2.15-windows-x64-setup.exe`, `Strata-0.2.15-linux-x86_64.AppImage`, `Strata-0.2.15-macos-arm64.dmg`.
   The Windows and Linux installers carry no engine: the app downloads the engine for the graphics card on first
   start, or installs a file the user already has. The Mac dmg keeps its small Metal engine inside.
-- **The Terminal** (`strata.py`, `strata_cli/`, `strata_control/`): the `strata` command. It sets up a model, serves
+- **The Terminal** (`strata.py`, `nostroma_cli/`, `nostroma_control/`): the `strata` command. It sets up a model, serves
   it and watches it. Agents use this part.
 - **The engine and the server** (`src/`, `include/`, `metal/`, `sycl/` for the C++/CUDA/HIP/SYCL/Metal engine;
   `serve/` for the Python server with an OpenAI- and Anthropic-compatible API and a web page). `setup.py`, started by

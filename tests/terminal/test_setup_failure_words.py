@@ -5,8 +5,8 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_cli.launch import runner
-from strata_cli.launch.runner import LaunchError, Runner, missing_file, python_failure, setup_failure
+from nostroma_cli.launch import runner
+from nostroma_cli.launch.runner import LaunchError, Runner, missing_file, python_failure, setup_failure
 
 TRACEBACK = [
     "  [..] Tuning Strata for this PC",

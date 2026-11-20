@@ -67,10 +67,10 @@ That is the full list found in the code. Some details:
   keeps serving; a script is refused (exit 7) unless it passes `--stop-model`. One quiet exception, the launch monitor only:
   once a day it reads the signed update feed (a few KB, no engine, a 5 second limit, nothing shown if it fails or there is no
   connection) so it can say "a new engine is available". `STRATA_UPDATE_CHECK=0` turns it off
-  (`strata_control/engine_update.py`, `refresh_cache`).
+  (`nostroma_control/engine_update.py`, `refresh_cache`).
 - **Starting and serving never download.** `strata serve` and the app's load button fetch nothing. The app sets
   `STRATA_PACKAGED=1` and `STRATA_NO_ACQUIRE=1` for its parts (`apps/desktop/src-tauri/src/main.rs`), and the downloaders
-  refuse to run under them (`strata_control/acquisition.py`, `apps/host/server/acquisition.mjs`). That is why the app
+  refuse to run under them (`nostroma_control/acquisition.py`, `apps/host/server/acquisition.mjs`). That is why the app
   never downloads `cloudflared` for you while it runs.
 - **The engine itself has no network code.** The part of Strata that runs the model (`src/`, `include/`, `sycl/`, `metal/`)
   contains no networking. The app's own pages load no fonts, scripts or trackers from the internet.
@@ -105,7 +105,7 @@ The server also has browser protections (a host check, an origin check, no CORS 
 **Updates for the engine, the Terminal and Control.**
 
 1. The release publishes `strata-feed.json` and `strata-feed.json.sig`, signed with an Ed25519 key. The matching public key is
-   inside every installed Strata (`strata_control/update_keys.json`). The private key is kept offline by the owner.
+   inside every installed Strata (`nostroma_control/update_keys.json`). The private key is kept offline by the owner.
 2. Before it uses the feed, your PC checks the signature, that the feed has not expired and that it is not older than the
    last feed it accepted (so an old feed cannot be replayed).
 3. Each engine package is checked against its SHA-256 and its signed manifest, then every file in it against its own hash,
@@ -203,10 +203,10 @@ To report a security problem, use GitHub's private reporting (the repository's *
 | Topic | Files |
 | --- | --- |
 | Model downloads and pins | `setup.py`, `tools/mtp_fetch.py`, `tools/image/qimage.py`, `apps/host/server/models.mjs`, `image-models.mjs` |
-| Update feed, signatures | `strata_control/feed.py`, `signing.py`, `transfer.py`, `update_keys.json`, `strata_cli/update_cmd.py` |
+| Update feed, signatures | `nostroma_control/feed.py`, `signing.py`, `transfer.py`, `update_keys.json`, `nostroma_cli/update_cmd.py` |
 | App updater | `apps/desktop/src-tauri/src/updater.rs`, `apps/desktop/src-tauri/tauri.conf.json` |
-| Downloads refused while running | `strata_control/acquisition.py`, `apps/host/server/acquisition.mjs` |
+| Downloads refused while running | `nostroma_control/acquisition.py`, `apps/host/server/acquisition.mjs` |
 | One-line installers | `packaging/install.sh`, `packaging/install.ps1` |
 | Web tools and the agent's approvals | `apps/host/server/agent/plugins/strata-gate.mjs`, `agent/profile.mjs`, `web-search-ddg.mjs`, `web-search-bing.mjs`, `web-search-keyed.mjs` |
 | Outside model services | `apps/host/server/model-providers.mjs` |
-| Sharing, tunnel | `apps/host/server/local-share.mjs`, `cloudflare.mjs`, `strata_cli/launch/access.py` |
+| Sharing, tunnel | `apps/host/server/local-share.mjs`, `cloudflare.mjs`, `nostroma_cli/launch/access.py` |

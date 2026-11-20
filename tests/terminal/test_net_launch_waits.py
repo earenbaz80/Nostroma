@@ -12,9 +12,9 @@ import unittest
 from unittest import mock
 
 import setup
-from strata_cli.launch import cmd
-from strata_cli.launch.runner import Event, LaunchError, Runner, capital
-from strata_control import netpolicy, progress_words
+from nostroma_cli.launch import cmd
+from nostroma_cli.launch.runner import Event, LaunchError, Runner, capital
+from nostroma_control import netpolicy, progress_words
 from tests.terminal.test_flow2_022 import Base as FlowBase
 from tests.terminal.test_netpolicy import AT_ONCE_S, REFUSED_WAIT_LINE_S, REFUSED_WINDOW, BlackHole, Server, ok_body, refused_port
 
@@ -73,7 +73,7 @@ class SetupDownloadWaits(unittest.TestCase):
     def test_a_short_model_list_read_does_not_cost_the_download_its_own_attempt(self):
         """The model-list read at the start of setup (5 s, optional) fails on a black hole; the engine or model download from the same host
         afterwards still gets its own full window and says W3, not W5 (coordinator 11-10)."""
-        from strata_control import transfer
+        from nostroma_control import transfer
         hole = BlackHole()
         self.addCleanup(hole.close)
         with self.assertRaises(transfer.TransferError):

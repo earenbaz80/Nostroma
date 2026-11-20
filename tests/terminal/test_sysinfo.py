@@ -16,7 +16,7 @@ from collections import namedtuple
 from pathlib import Path
 from unittest import mock
 
-from strata_control import engine_component, sysinfo, targets
+from nostroma_control import engine_component, sysinfo, targets
 
 WinVer = namedtuple("WinVer", "major minor build")
 
@@ -117,7 +117,7 @@ class OtherSystemsKeepTheirAnswers(unittest.TestCase):
         # the callers that can run on Windows were moved to sysinfo; a new direct call would bring the hang back
         root = Path(__file__).resolve().parents[2]
         bad = []
-        for rel in ("strata_control", "strata_cli", "serve"):
+        for rel in ("nostroma_control", "nostroma_cli", "serve"):
             for path in (root / rel).rglob("*.py"):
                 # mac_fit.py is macOS only; engine_component's one call is behind sys.platform.startswith("linux") on the same line
                 if path.name.startswith("test_") or path.name in ("sysinfo.py", "mac_fit.py"):

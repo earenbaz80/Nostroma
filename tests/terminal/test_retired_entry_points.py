@@ -1,4 +1,4 @@
-"""Every place a DeepSeek model can still come in (DeepSeek removed in release B; strata_control/retired.py) refuses it in plain words, at
+"""Every place a DeepSeek model can still come in (DeepSeek removed in release B; nostroma_control/retired.py) refuses it in plain words, at
 once, and leaves the person's config and files exactly as they were.  No model is needed: fake configs, folders and GGUF headers."""
 from __future__ import annotations
 
@@ -17,8 +17,8 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from strata_control import cfg_paths, models, retired, runtime  # noqa: E402
-from strata_control.profiles import ProfileError  # noqa: E402
+from nostroma_control import cfg_paths, models, retired, runtime  # noqa: E402
+from nostroma_control.profiles import ProfileError  # noqa: E402
 
 D1_HEAD = "is a DeepSeek model. This version of Strata no longer runs DeepSeek models, so it was not started."
 
@@ -87,7 +87,7 @@ class ConfigsNeverWritten(unittest.TestCase):
 
 
 class ModelList(unittest.TestCase):
-    """The app's model list and `strata models` read strata_control/models.py."""
+    """The app's model list and `strata models` read nostroma_control/models.py."""
 
     def test_listed_as_retired_without_inspection(self):
         with tempfile.TemporaryDirectory() as d:
@@ -175,21 +175,21 @@ class Setup(unittest.TestCase):
 
 class Launch(unittest.TestCase):
     def parse(self, *argv: str) -> argparse.Namespace:
-        from strata_cli.launch import cmd
+        from nostroma_cli.launch import cmd
         ap = argparse.ArgumentParser()
         cmd.add_parsers(ap.add_subparsers(dest="command"))
         return ap.parse_args(["launch", *argv])
 
     def test_typed_names(self):
-        from strata_cli.launch import cmd
+        from nostroma_cli.launch import cmd
         for argv in (("--model", "IST-DAS-2.00bpw"), ("--family", "deepseek41", "--model", "UD-Q8_K_XL"), ("--model", "ISTA-DAS-Coder")):
             with self.assertRaises(ValueError) as caught:
                 cmd.settings_from_args(self.parse(*argv), catalog=object())
             self.assertEqual(str(caught.exception), retired.NOT_OFFERED, argv)
 
     def test_saved_preset(self):
-        from strata_cli.launch import cmd, store
-        from strata_cli.launch.settings import LaunchSettings
+        from nostroma_cli.launch import cmd, store
+        from nostroma_cli.launch.settings import LaunchSettings
         saved = LaunchSettings()
         saved.family, saved.model = "deepseek41", "IST-DAS-2.00bpw"
         with mock.patch.object(store, "load", return_value=saved):
@@ -199,7 +199,7 @@ class Launch(unittest.TestCase):
 
     def test_each_dropped_deepseek_flag(self):
         """--dsv41-package, --speed, --full-quality and --dspark stay accepted (an old script, a saved shortcut) and answer D3."""
-        from strata_cli.launch import cmd
+        from nostroma_cli.launch import cmd
         for argv in (("--model", "IQ3_S", "--dsv41-package", "x.tar.gz"), ("--model", "IQ3_S", "--speed", "faster"),
                      ("--model", "IQ3_S", "--full-quality"), ("--model", "IQ3_S", "--dspark", "on")):
             with self.assertRaises(ValueError) as caught:
@@ -207,7 +207,7 @@ class Launch(unittest.TestCase):
             self.assertEqual(str(caught.exception), retired.NOT_OFFERED, argv)
 
     def test_the_dropped_flags_are_not_in_the_help(self):
-        from strata_cli.launch import cmd
+        from nostroma_cli.launch import cmd
         ap = argparse.ArgumentParser()
         sub = ap.add_subparsers(dest="command")
         cmd.add_parsers(sub)
@@ -216,7 +216,7 @@ class Launch(unittest.TestCase):
             self.assertNotIn(flag, text)
 
     def test_own_files(self):
-        from strata_cli.launch import runner
+        from nostroma_cli.launch import runner
         with tempfile.TemporaryDirectory() as d:
             _c, models_dir, _p = ds_install(Path(d))
             fake = mock.Mock()
@@ -227,7 +227,7 @@ class Launch(unittest.TestCase):
             self.assertEqual(caught.exception.code, 2)
 
     def test_qwen_names_pass(self):
-        from strata_cli.launch import cmd
+        from nostroma_cli.launch import cmd
 
         class Cat:
             def resolve(self, model, family):

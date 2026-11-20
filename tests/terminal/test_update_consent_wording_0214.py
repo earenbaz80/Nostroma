@@ -1,7 +1,7 @@
 """`strata update --yes` while a model serves: the refusal says "the update", not "an engine update" (only Control may be pending; ARCFIX E5, owner-approved 11-09)."""
 import pytest
 
-from strata_control import engine_update, updater
+from nostroma_control import engine_update, updater
 
 
 def test_the_refusal_names_the_update_not_an_engine_update(monkeypatch):

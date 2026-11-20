@@ -24,8 +24,8 @@ import { homedir } from 'node:os';
 import { requireChromium } from './browser.mjs';
 
 const run = promisify(execFile);
-const BASE = process.env.STRATA_URL ?? 'http://localhost:5199';
-const ROOT = resolve(process.env.STRATA_SHOTS ?? '.shots');
+const BASE = envVar('URL') ?? 'http://localhost:5199';
+const ROOT = resolve(envVar('SHOTS') ?? '.shots');
 const TMP = join(ROOT, 'motion-frames');
 mkdirSync(TMP, { recursive: true });
 
@@ -103,6 +103,7 @@ async function contactSheet(name, frames) {
   const out = join(ROOT, `motion-${name}.png`);
   const script = `
 import sys
+import { envVar } from '../server/env-compat.mjs';
 from PIL import Image
 paths, out = sys.argv[1:-1], sys.argv[-1]
 ims = [Image.open(p) for p in paths]

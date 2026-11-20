@@ -20,9 +20,9 @@ sys.path.insert(0, str(ROOT))
 
 from rich.console import Console  # noqa: E402
 
-from strata_cli.launch import access, settings as S, store  # noqa: E402
-from strata_cli.launch.app import Ctx, LaunchApp  # noqa: E402
-from strata_cli.launch.widgets import Glyphs  # noqa: E402
+from nostroma_cli.launch import access, settings as S, store  # noqa: E402
+from nostroma_cli.launch.app import Ctx, LaunchApp  # noqa: E402
+from nostroma_cli.launch.widgets import Glyphs  # noqa: E402
 from tests.terminal import test_overview as ov  # noqa: E402
 from tests.terminal.launch_support import HW_12, HW_2X16, Home, catalog, text_of  # noqa: E402
 
@@ -62,7 +62,7 @@ def run() -> None:
                      "  --prefill N          how many prompt tokens are read at once\n  --expert-cache N     experts kept in graphics memory\n"
                      "  --spec N             draft tokens per step (faster replies)\n  --native-rope        experimental pinned rotary arithmetic\n")
         patches = [mock.patch.object(Ctx, "base_config", lambda self: base), mock.patch.object(Ctx, "engine_exe", lambda self: "/engine/strata"),
-                   mock.patch("strata_cli.launch.params.engine_help_text", return_value=help_text),
+                   mock.patch("nostroma_cli.launch.params.engine_help_text", return_value=help_text),
                    mock.patch.object(access, "lan_ips", return_value=["192.168.88.21"]),
                    mock.patch.object(access, "find_cloudflared", return_value="/usr/bin/cloudflared"),
                    mock.patch.object(access, "tailscale_status", return_value={"installed": False, "running": False, "ip": None, "name": None})]
@@ -97,7 +97,7 @@ def run() -> None:
                 self.s, self.emit = s, kw["emit"]
 
             def run(self, start=True):
-                from strata_cli.launch.runner import Event, Result
+                from nostroma_cli.launch.runner import Event, Result
                 self.emit(Event("engine", "Engine 0.1.45 (cuda) is installed.", 100))
                 self.emit(Event("model", "Downloading 41.0 of 75.8 GB", 54.0))
                 time.sleep(1.2)
@@ -113,7 +113,7 @@ def run() -> None:
         async def run_screen():
             ctx = ctx_for(HW_12)
             ctx.settings = S.LaunchSettings(name="Demo", family="qwen", model="IQ3_XXS", context=131072, tune="quick")
-            with mock.patch("strata_cli.launch.app.Runner", Runner):
+            with mock.patch("nostroma_cli.launch.app.Runner", Runner):
                 app = LaunchApp(ctx)
                 async with app.run_test(size=SIZE) as pilot:
                     await pilot.pause(0.2)
@@ -124,7 +124,7 @@ def run() -> None:
         asyncio.run(run_screen())
 
         # the monitor: Overview, Connect, quit question
-        from strata_cli.launch.monitor_ext import LaunchMonitor
+        from nostroma_cli.launch.monitor_ext import LaunchMonitor
 
         async def monitor():
             src = ov.Source(ov.metrics("reading"))

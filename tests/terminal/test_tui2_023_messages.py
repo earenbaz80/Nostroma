@@ -4,7 +4,7 @@ never says "0.1.45.3 -> 0.1.45.3")."""
 import json
 import unittest
 
-from strata_control import updater
+from nostroma_control import updater
 from tests.terminal import test_updater
 from tests.terminal import update_fixture as fx
 

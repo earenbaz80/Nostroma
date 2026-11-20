@@ -15,7 +15,7 @@ from pathlib import Path
 from unittest import mock
 
 import serve.server as server
-from strata_cli.launch import runner as R
+from nostroma_cli.launch import runner as R
 
 ALLOC = "ggml_backend_cuda_buffer_type_alloc_buffer: allocating 865.48 MiB on device 0: cudaMalloc failed: out of memory"
 NOTE = ("Pictures are read on the processor, which is slower: graphics card 2 has no room for the picture reader "

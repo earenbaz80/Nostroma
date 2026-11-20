@@ -1,6 +1,6 @@
 /**
  * The line between running the app and acquiring software, on the host side. It mirrors
- * strata_control/acquisition.py: starting a model, serving, and opening the app never download or install
+ * nostroma_control/acquisition.py: starting a model, serving, and opening the app never download or install
  * an engine, a connector, a package or a compiler. Anything that would (the llama.cpp fetch, the cloudflared
  * fetch) calls `require()` first, and `require()` refuses where acquiring is forbidden.
  *
@@ -22,7 +22,7 @@ export class AcquisitionRefused extends Error {
 }
 
 export function forbidden(env = process.env) {
-  return TRUE.has(String(env.STRATA_NO_ACQUIRE ?? '').trim().toLowerCase()) || env.STRATA_PACKAGED === '1';
+  return TRUE.has(String((env.NOSTROMA_NO_ACQUIRE ?? env.STRATA_NO_ACQUIRE) ?? '').trim().toLowerCase()) || (env.NOSTROMA_PACKAGED ?? env.STRATA_PACKAGED) === '1';
 }
 
 /** Call before any download or install. Throws AcquisitionRefused where acquiring is forbidden. */

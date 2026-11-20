@@ -1,3 +1,4 @@
+import { envVar } from '../server/env-compat.mjs';
 /**
  * Drive the host over HTTP (no browser) against a real model and print what the page would receive.
  *
@@ -10,7 +11,7 @@
  *
  * Environment: STRATA_URL (required), CHAT (chat id, default a fresh one), WORKSPACE_ID.
  */
-const BASE = process.env.STRATA_URL;
+const BASE = envVar('URL');
 if (!BASE) { console.error('STRATA_URL is required'); process.exit(2); }
 const [command, ...rest] = process.argv.slice(2);
 const t0 = Date.now();

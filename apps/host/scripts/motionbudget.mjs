@@ -21,8 +21,9 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { requireChromium } from './browser.mjs';
+import { envVar } from '../server/env-compat.mjs';
 
-const BASE = process.env.STRATA_URL ?? 'http://localhost:5199';
+const BASE = envVar('URL') ?? 'http://localhost:5199';
 const BUDGET = 1.2;
 
 const executablePath = requireChromium();

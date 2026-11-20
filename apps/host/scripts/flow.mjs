@@ -8,10 +8,11 @@ import { existsSync, mkdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { homedir } from 'node:os';
 import { requireChromium } from './browser.mjs';
+import { envVar } from '../server/env-compat.mjs';
 
 const executablePath = requireChromium();
 
-const BASE = process.env.STRATA_URL ?? 'http://localhost:5199';
+const BASE = envVar('URL') ?? 'http://localhost:5199';
 const flow = process.argv[2] ?? 'chat';
 const shots = resolve('.shots');
 mkdirSync(shots, { recursive: true });

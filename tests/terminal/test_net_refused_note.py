@@ -19,7 +19,7 @@ import urllib.request
 from pathlib import Path
 from unittest import mock
 
-from strata_control import netpolicy, paths, transfer
+from nostroma_control import netpolicy, paths, transfer
 from tests.terminal.launch_support import Home
 from tests.terminal.test_netpolicy import refused_port
 

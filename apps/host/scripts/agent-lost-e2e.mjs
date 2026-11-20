@@ -25,6 +25,7 @@ import { existsSync, mkdtempSync, mkdirSync, readdirSync, readFileSync, statSync
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createAgentBridge } from '../server/agent/agent-bridge.mjs';
+import { envVar } from '../server/env-compat.mjs';
 
 const REPO = join(import.meta.dirname, '..', '..', '..');
 const env = (name, fallback) => process.env[name] ?? fallback;
@@ -41,7 +42,7 @@ const wanted = process.argv.slice(2);
 const want = id => wanted.length === 0 || wanted.includes(id);
 mkdirSync(OUT, { recursive: true });
 
-if (!process.env.STRATA_HARNESS_DIR) { console.error('STRATA_HARNESS_DIR is not set'); process.exit(2); }
+if (!envVar('HARNESS_DIR')) { console.error('STRATA_HARNESS_DIR is not set'); process.exit(2); }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 let server = null, bridge = null;

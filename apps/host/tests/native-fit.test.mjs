@@ -54,7 +54,7 @@ test('the group of the running version can be collapsed (Gyro-M running, the Gyr
 });
 
 test('the draft layer (MTP) counts about 1 GB of the card', () => {
-  assert.equal(MTP_VRAM_GB, 1.08);   // the engine's measured 1,082 MiB (strata_control/drafting.py DRAFTER_MIB)
+  assert.equal(MTP_VRAM_GB, 1.08);   // the engine's measured 1,082 MiB (nostroma_control/drafting.py DRAFTER_MIB)
   const on = fitOn(swift, { ram_gb: 40, vram_gb: 12 }), off = fitOn(swift, { ram_gb: 40, vram_gb: 12 }, false);
   assert.equal(Math.round((on.vramUseGb - off.vramUseGb) * 10) / 10, 0, 'the card is full either way here; the experts it cannot hold move to RAM');
   assert.equal(Math.round((on.ramUseGb - off.ramUseGb) * 10) / 10, 1.1);

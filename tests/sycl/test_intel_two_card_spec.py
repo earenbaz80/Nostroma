@@ -1,4 +1,4 @@
-"""strata_control/intel_spec.py: --spec 2 for a run config on exactly two Arc B-series (Battlemage) cards.
+"""nostroma_control/intel_spec.py: --spec 2 for a run config on exactly two Arc B-series (Battlemage) cards.
 
 The rule changes only the generated default (--spec 4).  Single cards, Alchemist cards, three cards, a config with no draft
 layer and anything the person set stay as they are.  Also checks the two places that apply it: sycl/setup_intel.py's
@@ -10,7 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT))
-from strata_control import intel_spec  # noqa: E402
+from nostroma_control import intel_spec  # noqa: E402
 
 B65 = {"driver": "xe", "devid": "e222"}
 B70 = {"driver": "xe", "devid": "e223"}
@@ -206,13 +206,13 @@ def test_server_wrapper_one_a_series_card_stays(monkeypatch):
 
 def _derive(base, settings, cards):
     from unittest import mock
-    from strata_cli.launch.runner import derive_config
+    from nostroma_cli.launch.runner import derive_config
     with mock.patch.object(intel_spec, "sysfs_cards", lambda *a, **k: cards):
         return derive_config(base, settings, bool_flags=frozenset())
 
 
 def test_launcher_writes_spec_2_for_two_b_series_cards():
-    from strata_cli.launch import settings as L
+    from nostroma_cli.launch import settings as L
     base = {"backend": "sycl", "gpu": [0, 1], "gpus_asked": True, "layer_split": "auto", "exe": "component:strata-engine",
             "args": list(ARGS), "port": 8095}
     two = [dict(B65, index=0), dict(B65, index=1)]

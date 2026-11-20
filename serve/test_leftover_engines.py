@@ -1,7 +1,7 @@
 """#4051: an engine an earlier run left behind is waited for until it has given its memory back.
 
 The new engine's arena is as big as the old one's; started beside it, a 60 GiB PC went into memory reclaim for good.  The
-server ends the old engine before it starts the next (strata_control.procs) and now waits for it to be gone for as long as
+server ends the old engine before it starts the next (nostroma_control.procs) and now waits for it to be gone for as long as
 a big engine needs; one that is still there after that is said in plain words, and the start goes on (nothing is refused).
 
     python -m unittest serve.test_leftover_engines -v
@@ -12,7 +12,7 @@ import unittest
 from unittest import mock
 
 from serve import server
-from strata_control import procs
+from nostroma_control import procs
 
 
 class LeftoverEngines(unittest.TestCase):

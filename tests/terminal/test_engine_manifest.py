@@ -12,7 +12,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_control import components, engine_component as ec, signing
+from nostroma_control import components, engine_component as ec, signing
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "packaging"))
@@ -211,7 +211,7 @@ class Arch(unittest.TestCase):
 
     def test_the_packages_of_each_engine(self):
         """The Qwen engine (sm_86 + PTX 89) and the DeepSeek engine (sm_86 + sm_120 + PTX 120) on the RTX 20 to 50 families."""
-        from strata_control import feed
+        from nostroma_control import feed
 
         def package(archs):
             return feed.EnginePackage(version="0.1.49.1", platform="linux-x86_64", backend="cuda", variant="cuda13", archs=tuple(archs),

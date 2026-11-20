@@ -17,11 +17,12 @@ import { CONTEXT_TOKENS, VARIANTS, downloadUrl, footprint, localModels, refreshL
  * no process is spawned. Set STRATA_REAL_ENGINE=1 to use the real path
  * (Hugging Face download + supervised llama.cpp engine).
  */
-export const REAL = process.env.STRATA_REAL_ENGINE === '1';
+export const REAL = envVar('REAL_ENGINE') === '1';
 import { MODELS_DIR, diskFreeGb, get as getStore, update } from './store.mjs';
 import * as supervisor from './supervisor.mjs';
 import { EventHub, nowIso, round, uid } from './util.mjs';
 import { locateModelFile } from './model-files.mjs';
+import { envVar } from './env-compat.mjs';
 
 /** In-memory runtime state that never needs persisting. */
 const runtime = new Map(); // id -> { state, progress, error }

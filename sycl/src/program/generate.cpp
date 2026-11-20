@@ -1796,7 +1796,7 @@ int main(int argc, char **argv) try {
             return 0;
         }
         // `strata --geometry`: the name of the model shape the kernels are compiled for (the geometry header's kGeometryName: flash_next for the default build);
-        // Control checks it against the shape of the package's signed manifest (strata_control/shape_engine.py)
+        // Control checks it against the shape of the package's signed manifest (nostroma_control/shape_engine.py)
         if (std::strcmp(argv[i], "--geometry") == 0) {
             std::printf("%s\n", strata::core::kGeometryName);
             return 0;

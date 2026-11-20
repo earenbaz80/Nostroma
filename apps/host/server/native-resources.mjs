@@ -37,7 +37,7 @@ export function defaultReserves(config,hardware,baselineReserve=0){
   *  through the RAM budget. A fifth of the shared pool here held back 16 GB of expert cache for nothing (#3510); the display floor stays. */
  const shared=placed.length>0&&placed.some(g=>g.uma===true||g.unified===true);
  /* A chip that shares the PC's memory has no memory of its own for the driver to page out of (#2065 is a display card's): the reserve is the one setup wrote into
-  *  the run config (Windows Strix Halo: 700, strata_control/setup_config.py UMA_WIN_RESERVE_MIB, pictures on or off), on both profiles, so the app's Load starts the
+  *  the run config (Windows Strix Halo: 700, nostroma_control/setup_config.py UMA_WIN_RESERVE_MIB, pictures on or off), on both profiles, so the app's Load starts the
   *  engine as `strata launch` does (QAGUI-STRIX 11-09: the Load made it 1024, 2048 with pictures). A config with none of setup's (an old one): the one setup would
   *  write for this chip, which Control's hardware report carries (setup_reserve_mib, one-card runs only, as setup's rule); without that (Linux, an older Control)
   *  the floor below, as before (with no reserve at all a Windows engine applies its own 2560 MiB floor, which hung UD-Q4_K_XL on Strix Halo: G16). */
@@ -158,11 +158,11 @@ export function saferStart(config,hardware,model,failure){
  const ram=Number(hardware?.ram_gb)||0,arena=Number(model?.arenaGb)||0;
  // Windows lets a program lock only about half the RAM for the graphics card; the engine pins the model's experts up to that.
  // When it ran out of locked memory, pin less of them: they stay in RAM, a little slower to reach.
- if(/pinned-memory-exhausted|mapped staging/i.test(text)&&!env.STRATA_ARENA_PIN_GIB){
+ if(/pinned-memory-exhausted|mapped staging/i.test(text)&&!(env.NOSTROMA_ARENA_PIN_GIB ?? env.STRATA_ARENA_PIN_GIB)){
   const hint=Number((text.match(/STRATA_ARENA_PIN_GIB=(\d+)/)??[])[1]);
   const gib=hint>0?hint:ram>0?Math.max(4,Math.floor(ram/2)-8):16;
-  env.STRATA_ARENA_PIN_GIB=String(gib);
-  return {config:{...config,env},words:`Windows would not lock as much memory as the model asked for, so Nostroma started again and locks ${gib} GB of the model instead of all of it. Replies may start a little slower.`,detail:`STRATA_ARENA_PIN_GIB=${gib}`};
+  env.NOSTROMA_ARENA_PIN_GIB=env.STRATA_ARENA_PIN_GIB=String(gib);
+  return {config:{...config,env},words:`Windows would not lock as much memory as the model asked for, so Nostroma started again and locks ${gib} GB of the model instead of all of it. Replies may start a little slower.`,detail:`NOSTROMA_ARENA_PIN_GIB=${gib}`};
  }
  if(['--resident-experts','--mmap-experts'].some(f=>args.includes(f)))return null;
  const at=args.indexOf('--resident-budget-gib');

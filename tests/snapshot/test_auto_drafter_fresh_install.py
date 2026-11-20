@@ -87,7 +87,7 @@ def offline_launch(m, s, with_pack=False):
     """A first Auto launch on a fresh install of a computer without internet: setup fetches no draft layer (setup.fetch_mtp offline goes on), the DFlash2
     drafter cannot be downloaded either. `with_pack`: the DFlash2 drafter is on disk already."""
     from unittest import mock
-    from strata_control import drafting_fetch
+    from nostroma_control import drafting_fetch
     from tests.snapshot import driver
     world = fresh_world(m, s)
     try:
@@ -130,19 +130,19 @@ def net_launch(m, s, extra=(), offline=False, setup_disagrees=False):
     where the start runs the MTP. `offline`: setup's draft-layer step goes on without the layer, and the DFlash2 drafter cannot be downloaded either."""
     from contextlib import ExitStack
     from unittest import mock
-    from strata_cli.launch import runner as R
-    from strata_control import drafting_fetch
+    from nostroma_cli.launch import runner as R
+    from nostroma_control import drafting_fetch
     from tests.snapshot import driver
     world = fresh_world(m, s)
     try:
         with world.patched(), ExitStack() as st:
             if offline:
-                from strata_control import netpolicy
+                from nostroma_control import netpolicy
                 world.setup_said = ["  [X]  " + netpolicy.WORDS["offline"].format(host="huggingface.co", what="the draft layer")]   # tools/mtp_fetch.py's line
                 st.enter_context(mock.patch.object(driver, "setup_fetches_layer", lambda *a, **k: None))
                 st.enter_context(mock.patch.object(drafting_fetch, "online", lambda *a, **k: False))
             if setup_disagrees == "blocked":
-                from strata_control import drafting
+                from nostroma_control import drafting
                 st.enter_context(mock.patch.object(drafting, "blocked_by", lambda *a, **k: True))
             elif setup_disagrees:
                 st.enter_context(mock.patch.object(R, "auto_signals", lambda *a, **k: {}))
@@ -173,11 +173,11 @@ class StartSafetyNet(unittest.TestCase):
                 rec = net_launch(get_machine(mkey), get_set(skey), extra, offline=True, setup_disagrees=disagrees)
                 self.assertNotIn("failed", rec, "no stop")
                 self.assertEqual(drafter(rec), "off")
-                from strata_control import drafting
+                from nostroma_control import drafting
                 self.assertEqual(rec["notices"].count(drafting.MTP_OFFLINE_NOTE), 1, f"the offline line, once: {rec['notices']}")
 
     def test_the_offline_line_is_not_said_when_another_drafter_runs_or_off_was_chosen(self):
-        from strata_control import drafting
+        from nostroma_control import drafting
         rec = net_launch(get_machine("nv_resident"), get_set("iq3_s"), ("--drafting", "off"), offline=True, setup_disagrees="blocked")
         self.assertNotIn(drafting.MTP_OFFLINE_NOTE, rec["notices"])
         rec = net_launch(get_machine("nv_12gb_streaming"), get_set("ud_q4_k_xl"), (), offline=True)          # Auto is DFlash2 there: its drafter runs
@@ -251,7 +251,7 @@ class SavedOffHolds(unittest.TestCase):
                 try:
                     with world.patched():
                         self.assertNotIn("failed", drive_launch(world, ("--drafting", "off")))
-                        from strata_cli.launch import catalog as C
+                        from nostroma_cli.launch import catalog as C
                         from unittest import mock
                         cat = C.Catalog(root=world.install, hardware=world.hardware_report())
                         with mock.patch.object(C, "Catalog", lambda *a, **k: cat):

@@ -17,7 +17,7 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from strata_cli import bench_facts  # noqa: E402
+from nostroma_cli import bench_facts  # noqa: E402
 
 KEY = "qatui-bench-key-0213-xyz"
 

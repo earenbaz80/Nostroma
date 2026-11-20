@@ -7,7 +7,7 @@ import { plainEngineError } from './update-messages.mjs';
  */
 
 const FAMILIES = ['qwen'];
-/** The engine of a Qwen4 model shape (strata_control/engine_library.py SHAPE_PREFIX, shape_engine.SHAPE_RE). */
+/** The engine of a Qwen4 model shape (nostroma_control/engine_library.py SHAPE_PREFIX, shape_engine.SHAPE_RE). */
 const SHAPE_FAMILY = /^shape:[a-z][a-z0-9_]{1,21}[a-z0-9]$/;
 
 /** { status, body } for GET /api/engines. Without Control (a source checkout) the list is not available and the page says so. */

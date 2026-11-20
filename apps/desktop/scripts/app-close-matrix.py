@@ -32,7 +32,7 @@ sys.path.insert(0, str(ROOT))
 
 import psutil  # noqa: E402
 
-from strata_control import procs, runtime  # noqa: E402
+from nostroma_control import procs, runtime  # noqa: E402
 from tests.terminal.lifecycle_matrix import install_fake_engine, port_open  # noqa: E402
 
 if os.name != "nt":
@@ -236,7 +236,7 @@ def case(name: str, install: Path, how: str) -> dict:
             engine_ports = [i["port"] for i in state["instances"]]
             idents, _ = tree_of(app, slots)
             kinds = sorted({("engine" if "engine" in " ".join(i.cmd) else "server" if "serve.server" in " ".join(i.cmd) else
-                             "owner" if "strata_control.runtime" in " ".join(i.cmd) else "app" if "strata-desktop" in i.cmd[0].lower()
+                             "owner" if "nostroma_control.runtime" in " ".join(i.cmd) else "app" if "strata-desktop" in i.cmd[0].lower()
                              else "host" if "node" in i.cmd[0].lower() else "other") for i in idents})
             note = f"tree {len(idents)} processes: {', '.join(kinds)}; engine ports {engine_ports}"
             t0 = time.monotonic()
@@ -280,7 +280,7 @@ def case(name: str, install: Path, how: str) -> dict:
             if how == "host-crash":
                 # the shell and its window stay (nothing here restarts a dead host); the host, Control's owner, the server and
                 # the engine must not
-                idents = [i for i in idents if any(k in " ".join(i.cmd) for k in ("strata_control.runtime", "serve.server", "engine", "node.exe"))]
+                idents = [i for i in idents if any(k in " ".join(i.cmd) for k in ("nostroma_control.runtime", "serve.server", "engine", "node.exe"))]
             left = wait_gone(idents, 90)
             if left:
                 problems.append(f"processes left: {left}")

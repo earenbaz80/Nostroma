@@ -18,8 +18,8 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from strata_cli import update_cmd  # noqa: E402
-from strata_control import engine_component as ec, updater  # noqa: E402
+from nostroma_cli import update_cmd  # noqa: E402
+from nostroma_control import engine_component as ec, updater  # noqa: E402
 
 
 class SourceTreeVersion(unittest.TestCase):

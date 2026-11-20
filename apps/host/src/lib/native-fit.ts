@@ -22,10 +22,10 @@ export interface Fit {
 const DENSE_GB = 5, SYSTEM_ROOM_GB = 10, DENSE_EXTRA_GB = 1;
 export { DENSE_GB };
 /** The draft layer (MTP) takes about 1.08 GB of graphics memory (1082 MiB: the layer 840 + draft head 213 + the rest); it comes out of the expert cache while MTP is on. DFlash2 alone takes 0.89 GB (890 MiB, the MTP layer not loaded beside it): the fit uses the drafter that is chosen
- *  (phaseA-tests/blackwell/RESULTS-DF2MEM.md section 1; strata_control/drafting.py DRAFTER_GB). */
+ *  (phaseA-tests/blackwell/RESULTS-DF2MEM.md section 1; nostroma_control/drafting.py DRAFTER_GB). */
 export const MTP_VRAM_GB = 1.08;
 export const DFLASH2_VRAM_GB = 0.89;
-/** DFlash2 alone with the converted pack (the selector's codebooks as Q4_0 rows: 715 MiB; strata_control/drafting.py DRAFTER_MIB "dflash2_selq4"). The page passes `dflash2_selq4` when `capabilities.dflash2Selq4` is true. */
+/** DFlash2 alone with the converted pack (the selector's codebooks as Q4_0 rows: 715 MiB; nostroma_control/drafting.py DRAFTER_MIB "dflash2_selq4"). The page passes `dflash2_selq4` when `capabilities.dflash2Selq4` is true. */
 export const DFLASH2_SELQ4_VRAM_GB = 0.72;
 export const DRAFTER_VRAM_GB: Record<string, number> = { mtp: MTP_VRAM_GB, dflash2: DFLASH2_VRAM_GB, dflash2_selq4: DFLASH2_SELQ4_VRAM_GB, off: 0 };
 const round1 = (n: number) => Math.round(n * 10) / 10;
@@ -37,14 +37,14 @@ export function memoryNeeded(v: FitInput): number {
 }
 
 /** The conversation cache of Flash-Next: 13 attention layers, bytes per token per layer by cache format, 5.4% over the bare cache
- *  (strata_control/vram_fit.py KV_BYTES, KV_MEASURED_FACTOR; setup.py UD_FIT_KV_BYTES). */
+ *  (nostroma_control/vram_fit.py KV_BYTES, KV_MEASURED_FACTOR; setup.py UD_FIT_KV_BYTES). */
 const KV_BYTES: Record<string, number> = { fp16: 2112, int8: 1056, q4_0: 576, k8v4: 816 };
 const KV_LAYERS = 13, KV_FACTOR = 1.054;
 export const BASE_CONTEXT = 32768;
 export function cacheGb(context: number, kv = 'int8'): number {
   return (121 + context * KV_LAYERS * (KV_BYTES[String(kv).toLowerCase()] ?? KV_BYTES.int8) * KV_FACTOR / 2 ** 20) / 1024;   // 121 MiB fixed per session
 }
-/** Qwen3.6-35B-A3B (its own engine path, #5715): the catalog's figures from strata_control/own_path_fit.py, the rule setup's context menu uses. Its cache
+/** Qwen3.6-35B-A3B (its own engine path, #5715): the catalog's figures from nostroma_control/own_path_fit.py, the rule setup's context menu uses. Its cache
  *  is fp32 for 11 layers, about 2.6x the Flash-Next int8 figure above, and fits a card when the fixed part plus the cache is at most the card's memory.
  *  Pinned to the Python by tests/own-path-fit.test.mjs. */
 export interface ContextFit { bytes_per_token: number; fixed_gb: number }
@@ -154,7 +154,7 @@ export function versionFit(v: FitInput & { on_this_pc?: string | null }, hw: Fit
 export interface RunCard { index: number; name: string; vram_gb: number; usable?: boolean; vendor?: string; arch?: string; uma?: boolean; integrated?: boolean; unified_gb?: number; /** a unified-memory chip: its BIOS carve-out (setup.py amd_apply_uma) */ dedicated_gb?: number }
 
 /**
- * The graphics memory that counts for the fit label, of the largest card: strata_control/fit_label.py card_room_gb, the same rule (the Terminal and the
+ * The graphics memory that counts for the fit label, of the largest card: nostroma_control/fit_label.py card_room_gb, the same rule (the Terminal and the
  * catalog's “on_this_pc” use it). A chip that shares the PC’s memory (Strix Halo: uma) counts only its own carve-out, because its “shared” part is the
  * RAM, already counted (QAGUI-STRIX 11-09: Q8_0, 133.8 GB, against 63.6 GB RAM + 95.8 GB carve-out-plus-shared said nothing; Control says “may run slower”
  * against 63.6 + 64). Pinned to the Python by tests/fit-label-rule.test.mjs.
@@ -166,7 +166,7 @@ export function cardRoomGb(cards: readonly Pick<RunCard, 'vram_gb' | 'uma' | 'de
 }
 
 /**
- * The cards a model can be placed on: the ones this engine can drive (strata_control/gpu_fit.py `usable_cards` and `for_vendor`, same rule).
+ * The cards a model can be placed on: the ones this engine can drive (nostroma_control/gpu_fit.py `usable_cards` and `for_vendor`, same rule).
  * A card the engine has no code for, a card of the other make (an engine drives one make; the report numbers each make from 0, so
  * two cards could share a number) and a chip that shares the system memory while the computer has a card of its own are left out.
  */

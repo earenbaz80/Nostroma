@@ -1,7 +1,7 @@
 """The all-cards split engine and the parallel setting: no collision, and the number means the split's lanes.
 
-The split's run config (strata_control/split_engine.split_config) always carries `--batch N`.  The launcher used to write a launch-profile override
-`parallel=<card fit>` beside it even when nobody asked, and `strata serve --profile` (strata_cli/cli.py _effective) refuses a parallel override next to
+The split's run config (nostroma_control/split_engine.split_config) always carries `--batch N`.  The launcher used to write a launch-profile override
+`parallel=<card fit>` beside it even when nobody asked, and `strata serve --profile` (nostroma_cli/cli.py _effective) refuses a parallel override next to
 --batch: every 2-card NVIDIA start with the split on Auto stopped with "parallel override conflicts with --batch/--slots in run config args".
 Now: the launcher writes no parallel override when the run config holds the slots; `--parallel N` is the split's lanes; the app's Concurrent requests
 (a profile override on the saved run config) is accepted for a split config and sets --batch in the engine's arguments.  Nothing is started.
@@ -18,10 +18,10 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_cli import cli
-from strata_cli.launch import settings as S
-from strata_cli.launch.runner import Runner
-from strata_control import profiles, split_engine as SE
+from nostroma_cli import cli
+from nostroma_cli.launch import settings as S
+from nostroma_cli.launch.runner import Runner
+from nostroma_control import profiles, split_engine as SE
 from tests.terminal.launch_support import HW_12, Home, catalog
 import serve.server  # noqa: F401  imported before any test patches sys.platform: serve/lifeline.py runs Linux-only libc code when it is imported as Linux
 
@@ -52,7 +52,7 @@ class Base(unittest.TestCase):
     def setUp(self):
         self.home = Home().__enter__()
         self.addCleanup(self.home.__exit__, None, None, None)
-        # the all-cards split rule asks the host OS and is Linux only (strata_control/split_engine.expected): these fake cards are a Linux PC
+        # the all-cards split rule asks the host OS and is Linux only (nostroma_control/split_engine.expected): these fake cards are a Linux PC
         plat = mock.patch("sys.platform", "linux")
         plat.start()
         self.addCleanup(plat.stop)
@@ -202,7 +202,7 @@ class AutoFetchesTheDraftLayer(Base):
     def runner(self, probe, **kw):
         r = Runner(self.settings(**kw), catalog=catalog(self.hw))
         self.patches = [mock.patch.object(SE, "probe_cards", lambda idx=None: probe), mock.patch.object(SE, "ram_gib", lambda: (500.0, 400.0)),
-                        mock.patch("strata_control.drafting.detect_hardware", lambda: ("cuda", ["sm_120"]))]
+                        mock.patch("nostroma_control.drafting.detect_hardware", lambda: ("cuda", ["sm_120"]))]
         for p in self.patches:
             p.start()
             self.addCleanup(p.stop)
@@ -219,7 +219,7 @@ class AutoFetchesTheDraftLayer(Base):
     def test_the_size_in_the_plan_is_the_size_setup_fetches(self):
         """tools/mtp_fetch.py reads the same 31 pinned tensors of the checkpoint for every set (5.214 GB) and packs them into the 0.9 GB layer the engine loads; the plan, the
         plan line, `strata drafting plan` and setup's own disk check all use that one number."""
-        from strata_control.discovery import MTP_FETCH_GB
+        from nostroma_control.discovery import MTP_FETCH_GB
         r = self.runner(cards(2), gpus=[0, 1])
         part = next(p for p in r.download_plan()["parts"] if p["kind"] == "mtp")
         self.assertEqual(part["gb"], MTP_FETCH_GB)
@@ -229,7 +229,7 @@ class AutoFetchesTheDraftLayer(Base):
         self.assertEqual(MTP_FETCH_GB, 5.2)
 
     def test_the_inputs_of_the_fetch_are_the_mtp_so_the_dflash2_drafter_is_not_fetched(self):
-        from strata_control import drafting
+        from nostroma_control import drafting
         r = self.runner(cards(2), gpus=[0, 1])
         want = r.drafting_inputs({"model_name": "qwen3.8-flash-next-unsloth-ud-q4_k_xl", "args": []})
         self.assertEqual(want["mode"], "mtp")
@@ -281,7 +281,7 @@ class AutoFetchesTheDraftLayer(Base):
         self.assertFalse(SE.expected({}, probe=lambda i: cards(2), ram=lambda: (500.0, 4.0), system="linux"), "not enough RAM for the locked tables")
 
     def test_the_apps_drafting_plan_follows_the_same_rule(self):
-        from strata_cli import drafting_cmd
+        from nostroma_cli import drafting_cmd
         cfg = {"gpu": [0, 1], "args": ["--native", "/nowhere/x-00001.gguf", "--max-context", "131072"]}
         self.runner(cards(2))
         self.assertTrue(drafting_cmd._split_expected(cfg, cfg["args"]))
@@ -336,7 +336,7 @@ class PlanTellsTheApp(Base):
         from tests.terminal.launch_support import run_cli
         data = Path(self.home.base) / "d"
         data.mkdir(exist_ok=True)
-        with mock.patch.object(SE, "probe_cards", lambda idx=None: probe), mock.patch.object(SE, "ram_gib", lambda: (500.0, 400.0)),                 mock.patch("strata_control.drafting.detect_hardware", lambda: ("cuda", ["sm_120"])):
+        with mock.patch.object(SE, "probe_cards", lambda idx=None: probe), mock.patch.object(SE, "ram_gib", lambda: (500.0, 400.0)),                 mock.patch("nostroma_control.drafting.detect_hardware", lambda: ("cuda", ["sm_120"])):
             code, out, err = run_cli(["drafting", "plan", "--family", "qwen", "--data-dir", str(data), "--output", "json", *extra])
         self.assertEqual(code, 0, err)
         return json.loads(out)
@@ -399,7 +399,7 @@ class AppPlanEqualsTerminalPlan(Base):
         else:
             argv += ["--family", "qwen"]
         with mock.patch.object(SE, "probe_cards", lambda idx=None: probe), mock.patch.object(SE, "ram_gib", lambda: (500.0, 400.0)), \
-                mock.patch("strata_control.drafting.detect_hardware", lambda: ("cuda", ["sm_120"])):
+                mock.patch("nostroma_control.drafting.detect_hardware", lambda: ("cuda", ["sm_120"])):
             code, out, err = run_cli(argv)
         self.assertEqual(code, 0, err)
         return json.loads(out)
@@ -409,7 +409,7 @@ class AppPlanEqualsTerminalPlan(Base):
         s = S.LaunchSettings(**{"family": "qwen", "model": "UD-Q4_K_XL", "context": 131072, "tune": "skip", "vision": "off", **kw})
         r = Runner(s, catalog=catalog(self.hw))
         with mock.patch.object(SE, "probe_cards", lambda idx=None: probe), mock.patch.object(SE, "ram_gib", lambda: (500.0, 400.0)), \
-                mock.patch("strata_control.drafting.detect_hardware", lambda: ("cuda", ["sm_120"])):
+                mock.patch("nostroma_control.drafting.detect_hardware", lambda: ("cuda", ["sm_120"])):
             return r.resolved_drafting("qwen"), r.split_expected(), [p["kind"] for p in r.download_plan()["parts"]]
 
     def test_the_apps_plan_on_two_cards_is_the_terminals_split_and_the_mtp(self):
@@ -422,7 +422,7 @@ class AppPlanEqualsTerminalPlan(Base):
 
     def test_without_the_mtp_layer_the_plan_asks_for_it(self):
         """The draft layer is not on disk (a DFlash2 install leaves it out): mtp_needed with its size, and nothing for DFlash2."""
-        from strata_control.discovery import MTP_FETCH_GB
+        from nostroma_control.discovery import MTP_FETCH_GB
         with tempdir() as tmp:
             cfg = app_cfg(tmp)
             set_arg(cfg, "--mtp", str(Path(tmp) / "nowhere" / "rt"))
@@ -432,7 +432,7 @@ class AppPlanEqualsTerminalPlan(Base):
         self.assertIn(f"{MTP_FETCH_GB:g} GB", p["line"])
 
     def test_the_plan_line_is_the_terminals_line(self):
-        from strata_control.discovery import MTP_FETCH_GB
+        from nostroma_control.discovery import MTP_FETCH_GB
         self.assertEqual(SE.split_plan_line(MTP_FETCH_GB), f"Drafting: MTP (the all-cards split engine uses the MTP draft layer, {MTP_FETCH_GB:g} GB)")
         self.assertEqual(SE.split_plan_line(), "Drafting: MTP (the all-cards split engine uses the MTP draft layer)")
 
@@ -497,7 +497,7 @@ class AppPlanEqualsTerminalPlan(Base):
 
 class AppStartsTheSplit(Base):
     """The app's engine start (apps/host: buildConfig, then `profile` + `runtime start`) never went through the Terminal's apply_split_engine; Control now answers it
-    (`strata split-engine apply`, strata_control/split_engine.apply_run_config) from the same rule, engine package and draft layer."""
+    (`strata split-engine apply`, nostroma_control/split_engine.apply_run_config) from the same rule, engine package and draft layer."""
 
     @staticmethod
     def model():
@@ -678,7 +678,7 @@ class LaneClamp(Base):
 
 
 class AppPath(Base):
-    """The app's Settings 'Concurrent requests = N' is a profile override on the saved run config (strata_control/profiles); `strata serve --profile` reads it."""
+    """The app's Settings 'Concurrent requests = N' is a profile override on the saved run config (nostroma_control/profiles); `strata serve --profile` reads it."""
 
     def engine_argv(self, cfg: dict, overrides: dict) -> list[str]:
         from serve.server import engine_args

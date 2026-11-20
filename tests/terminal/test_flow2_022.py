@@ -10,9 +10,9 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_cli.launch import settings as S
-from strata_cli.launch.catalog import Catalog
-from strata_cli.launch.runner import LaunchError, Runner
+from nostroma_cli.launch import settings as S
+from nostroma_cli.launch.catalog import Catalog
+from nostroma_cli.launch.runner import LaunchError, Runner
 from tests.terminal.launch_support import HW_12, Home, run_cli
 from tests.terminal.test_own_files import IQ3XXS, Q2, gguf_bytes
 
@@ -88,7 +88,7 @@ class MissingOwnFiles(Base):
         self.assertIn("finished steps are skipped", ctx.exception.next)
 
     def test_the_screens_say_the_same(self):
-        from strata_control import models
+        from nostroma_control import models
         text, nxt = models.own_path_problem(str(self.base / "nope"))
         self.assertIn("This folder does not exist", text)
         self.assertIn("Nothing was downloaded", nxt)
@@ -96,7 +96,7 @@ class MissingOwnFiles(Base):
 
     def test_a_folder_one_level_above_the_files_is_not_called_empty(self):
         self.files(self.base / "repo" / "IQ3_XXS", IQ3XXS, "IQ3_XXS")
-        from strata_control import models
+        from nostroma_control import models
         self.assertIsNone(models.own_path_problem(str(self.base / "repo")))
 
 
@@ -141,7 +141,7 @@ class LinkedShards(Base):
         self.assertIn(Q2[1], err)
 
     def test_the_same_problem_for_many_files_is_said_once(self):
-        from strata_control import models
+        from nostroma_control import models
         issues = [f"m-0000{i}-of-00005.gguf: GGUF metadata is truncated" for i in range(1, 6)] + ["incomplete_or_invalid_shard_set"]
         words = models.problem_words(issues)
         self.assertEqual(words.count("the file is cut short"), 1)
@@ -207,7 +207,7 @@ class PlanWords(Base):
         self.assertIn("About 5.2 GB to download: the draft layer (5.2 GB). Your model files are used where they are.", out)
 
     def test_a_model_whose_files_are_all_on_disk_does_not_list_a_zero_download(self):
-        from strata_cli.launch.modelstate import ModelState, Part
+        from nostroma_cli.launch.modelstate import ModelState, Part
         data = self.base / "d"
         (data / "mtp" / "rt").mkdir(parents=True)
         (data / "mtp" / "rt" / "experts.bin").write_bytes(b"x")
@@ -307,8 +307,8 @@ class QuietStep(Base):
 
     def test_the_plain_printer_shows_each_heartbeat(self):
         import io
-        from strata_cli.launch import cmd
-        from strata_cli.launch.runner import Event
+        from nostroma_cli.launch import cmd
+        from nostroma_cli.launch.runner import Event
         buf = io.StringIO()
         with mock.patch.object(cmd.sys, "stdout", buf):
             emit = cmd._printer()
@@ -327,7 +327,7 @@ class StoredTuning(Base):
 
     def setUp(self):
         super().setUp()
-        from strata_control import presets
+        from nostroma_control import presets
         self.presets = presets
         self.cfg_path = self.base / "launch.json"
         self.cfg = {"args": ["--native", "x/model-00001-of-00002.gguf", "--max-context", "32768", "--kv", "int8"], "model_name": "qwen"}

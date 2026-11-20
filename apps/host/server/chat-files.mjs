@@ -87,7 +87,7 @@ export function resolveChatFile(root, rawPath) {
  * `STRATA_OPENER=record` (tests) records the command instead of starting anything.
  */
 export function launch(command, args, { recorder = null } = {}) {
-  if (process.env.STRATA_OPENER === 'record' || recorder) { (recorder ?? launch.recorded).push([command, ...args]); return; }
+  if (envVar('OPENER') === 'record' || recorder) { (recorder ?? launch.recorded).push([command, ...args]); return; }
   // xdg-open and the browser it starts are the system's programs: they get the environment the AppImage was started from, not Strata's libraries.
   const child = spawn(command, args, { detached: true, stdio: 'ignore', windowsHide: false, env: externalEnvironment() });
   child.on('error', () => {});
@@ -125,6 +125,7 @@ export function openFile(root, rawPath, how = 'app', { platform = process.platfo
 
 import { readFileSync as readBytes } from 'node:fs';
 import { fileType } from './agent/deliverables.mjs';
+import { envVar } from './env-compat.mjs';
 
 const MIME = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', svg: 'image/svg+xml', bmp: 'image/bmp', ico: 'image/x-icon', pdf: 'application/pdf' };
 export const mimeOf = file => MIME[String(file).split('.').pop().toLowerCase()] ?? 'application/octet-stream';

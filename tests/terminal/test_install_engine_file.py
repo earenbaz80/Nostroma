@@ -5,7 +5,7 @@ import tarfile
 from pathlib import Path
 from unittest import mock
 
-from strata_control import updater
+from nostroma_control import updater
 from tests.terminal import update_fixture as fx
 from feed_tool import pack_engine      # noqa: E402  (update_fixture puts packaging/ on the path)
 from tests.terminal.test_updater import PLATFORM, UpdaterCase

@@ -1,4 +1,4 @@
-"""The picture files of a model that is already installed (strata_control/pictures.py): found or downloaded once, the data folder and the model's
+"""The picture files of a model that is already installed (nostroma_control/pictures.py): found or downloaded once, the data folder and the model's
 other files left exactly as they are, no internet answered in a sentence, and the run config's ``vision`` section worked out for the engine in use.
 
 The file is pinned (size and SHA-256), so the tests swap in a tiny pinned file of their own and a folder on disk for the download address."""
@@ -17,7 +17,7 @@ from pathlib import Path
 from unittest import mock
 
 import setup
-from strata_control import acquisition, pictures
+from nostroma_control import acquisition, pictures
 
 ROOT = Path(__file__).resolve().parents[2]
 BODY = b"mmproj-bytes-" * 5000
@@ -261,7 +261,7 @@ class Families(unittest.TestCase):
 
 class RunFolder(unittest.TestCase):
     def foot(self, *args):
-        from strata_control import discovery
+        from nostroma_control import discovery
         return discovery.footprint({"args": list(args)})
 
     def test_the_folder_comes_from_where_the_pack_and_the_draft_layer_are(self):

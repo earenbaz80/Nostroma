@@ -10,10 +10,10 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
-from strata_cli.launch import modelstate
-from strata_cli.launch import settings as S
-from strata_cli.launch.runner import derive_config
-from strata_control import drafting
+from nostroma_cli.launch import modelstate
+from nostroma_cli.launch import settings as S
+from nostroma_cli.launch.runner import derive_config
+from nostroma_control import drafting
 
 
 class TheChoiceStaysWithItsFamily(unittest.TestCase):
@@ -29,7 +29,7 @@ class TheChoiceStaysWithItsFamily(unittest.TestCase):
         self.assertEqual(modelstate.drafting_for_family("mtp", None), "mtp", "no family yet: nothing to decide")
 
     def test_the_model_list_does_it_when_the_person_changes_model(self):
-        from strata_cli.launch.screens import ModelScreen
+        from nostroma_cli.launch.screens import ModelScreen
         rows = [SimpleNamespace(family=f, model="m", verdict="fits", title=f) for f in ("qwen", "coder", "gyro")]
         for target, choice, want in (("coder", "off", None), ("gyro", "dflash2", "dflash2"), ("qwen", "mtp", "mtp")):
             s = S.LaunchSettings(family="qwen", model="m", drafting=choice)
@@ -67,7 +67,7 @@ class TheSelectorPackIsMadeWhereTheEngineReadsIt(unittest.TestCase):
 
     def test_a_launch_converts_only_for_such_an_engine(self):
         import inspect
-        from strata_cli.launch import runner
+        from nostroma_cli.launch import runner
         source = inspect.getsource(runner)
         self.assertIn("drafting.needs_conversion(**want) and drafting.engine_has_selector_q4()", source)
 

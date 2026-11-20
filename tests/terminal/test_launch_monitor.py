@@ -9,8 +9,8 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_cli.launch import check
-from strata_cli.launch.monitor_ext import LaunchMonitor
+from nostroma_cli.launch import check
+from nostroma_cli.launch.monitor_ext import LaunchMonitor
 from tests.terminal.launch_support import Home, text_of
 from tests.terminal.test_overview import Source, metrics
 

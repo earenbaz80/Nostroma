@@ -1,4 +1,4 @@
-"""A Qwen4 model of its own shape runs on its own engine component (strata_control/shape_engine.py), picked by the model, beside the Strata engine.
+"""A Qwen4 model of its own shape runs on its own engine component (nostroma_control/shape_engine.py), picked by the model, beside the Strata engine.
 
 What these tests pin:
   * the names: shape q4_lite, component strata-q4-lite, feed model family qwen4exp_q4_lite, run config reference component:strata-q4-lite;
@@ -32,8 +32,8 @@ sys.path.insert(0, str(ROOT / "packaging"))
 
 import feed_tool  # noqa: E402
 import package_engine  # noqa: E402
-from strata_control import components, engine_component as ec, feed as feedmod, shape_engine, signing, updater  # noqa: E402
-from strata_control.targets import host_platform  # noqa: E402
+from nostroma_control import components, engine_component as ec, feed as feedmod, shape_engine, signing, updater  # noqa: E402
+from nostroma_control.targets import host_platform  # noqa: E402
 from tests.terminal import update_fixture as fx  # noqa: E402
 
 REV = "0123456789abcdef0123456789abcdef01234567"
@@ -501,7 +501,7 @@ class Update(Base):
         self.assertIn("updated from 0.1.59 to 0.1.60", " ".join(lines))
         self.assertEqual(Path(ec.expand("component:strata-q4-lite", {"backend": "cuda"})), exe)
         self.publish("0.1.59", "0.1.60", "0.1.61", sequence=3)
-        with mock.patch.object(shape_engine, "_test_start", return_value=(True, "x")), mock.patch("strata_control.folder_use.in_use", return_value=False):
+        with mock.patch.object(shape_engine, "_test_start", return_value=(True, "x")), mock.patch("nostroma_control.folder_use.in_use", return_value=False):
             self.ensure()
         self.assertEqual(self.folders(), ["0.1.60", "0.1.61"])
         self.assertEqual(self.strata_before, tree(self.comp / "engine"))
@@ -527,7 +527,7 @@ class Update(Base):
 
     def test_a_refused_acquisition_with_an_engine_installed_never_stops_a_launch(self):
         self.installed("0.1.59")
-        from strata_control import acquisition
+        from nostroma_control import acquisition
         with mock.patch.object(updater, "open_feed", side_effect=acquisition.AcquisitionRefused("no")):
             lines = []
             self.assertTrue(self.ensure(lines).is_file())
@@ -550,7 +550,7 @@ class Update(Base):
     def test_a_refused_feed_is_asked_once_by_the_launch_check_then_not_for_six_hours(self):
         """netpolicy rule 4b: `strata launch` (automatic=True) with an engine installed reads the refusal note; setup (no flag) and a shape
         with no engine yet always read the feed."""
-        from strata_control import netpolicy, transfer
+        from nostroma_control import netpolicy, transfer
         from tests.terminal.test_netpolicy import refused_port
         self.installed("0.1.59")
         # the product's own windows (5 s with an engine installed), not net_dead's scaled 0.3 s: Windows reports a refusal only after about 2 s,
@@ -578,7 +578,7 @@ class Update(Base):
             self.assertEqual(len(calls), 3, "no engine installed: the feed is always read")
 
     def test_the_launch_asks_as_an_automatic_check_and_setup_does_not(self):
-        runner_src = (ROOT / "strata_cli" / "launch" / "runner.py").read_text(encoding="utf-8")
+        runner_src = (ROOT / "nostroma_cli" / "launch" / "runner.py").read_text(encoding="utf-8")
         call = runner_src[runner_src.index("exe = shape_engine.ensure("):]
         self.assertIn("automatic=True", call[:call.index("\n\n")])
         setup_src = (ROOT / "setup.py").read_text(encoding="utf-8")
@@ -613,7 +613,7 @@ class Update(Base):
         row = next(r for r in out["results"] if r.get("component") == COMP)
         self.assertEqual((row["status"], row["installed_after"]), ("updated", "0.1.60"))
         self.assertEqual(out["exit_code"], 0)
-        from strata_cli import update_cmd
+        from nostroma_cli import update_cmd
         self.assertEqual(update_cmd._line("Strata-q4-lite", row), "Model engine  Engine for q4_lite updated from 0.1.59 to 0.1.60.")
 
     def test_the_components_report_lists_a_shape_engine_only_when_there_is_one(self):
@@ -736,9 +736,9 @@ class ApprovedWords(unittest.TestCase):
 class NoAcquisitionOnStart(unittest.TestCase):
     def test_only_setup_launch_and_the_explicit_update_fetch_a_shape_engine(self):
         """Starting and serving never download: the code that fetches (shape_engine.ensure / update_one) is called from setup.py, the Terminal's launch and the updater only."""
-        allowed = {"setup.py", "strata_cli/launch/runner.py", "strata_control/updater.py", "strata_control/shape_engine.py"}
+        allowed = {"setup.py", "nostroma_cli/launch/runner.py", "nostroma_control/updater.py", "nostroma_control/shape_engine.py"}
         found = set()
-        for folder in ("serve", "strata_cli", "strata_control"):
+        for folder in ("serve", "nostroma_cli", "nostroma_control"):
             for p in (ROOT / folder).rglob("*.py"):
                 if p.name.startswith("test_"):
                     continue
@@ -752,9 +752,9 @@ class NoAcquisitionOnStart(unittest.TestCase):
         self.assertTrue(found, "the scan found nothing: the check is broken")
 
     def test_resolving_a_shape_engine_for_a_start_reaches_no_network_code(self):
-        code = ("import sys\nsys.path.insert(0, %r)\nfrom strata_control import engine_component as ec\n"
+        code = ("import sys\nsys.path.insert(0, %r)\nfrom nostroma_control import engine_component as ec\n"
                 "try:\n    ec.expand('component:strata-q4-lite', {})\nexcept ec.EngineMissing:\n    pass\n"
-                "bad = [m for m in ('strata_control.updater', 'strata_control.transfer', 'urllib.request') if m in sys.modules]\nprint(bad)\n" % str(ROOT))
+                "bad = [m for m in ('nostroma_control.updater', 'nostroma_control.transfer', 'urllib.request') if m in sys.modules]\nprint(bad)\n" % str(ROOT))
         out = subprocess.run([sys.executable, "-I", "-c", code], capture_output=True, text=True, env={**os.environ, "STRATA_COMPONENTS_DIR": tempfile.mkdtemp()})
         self.assertEqual(out.stdout.strip(), "[]", out.stdout + out.stderr)
 
@@ -763,7 +763,7 @@ class OlderControls(Base):
     """A Control from before the member reads the same feed as one without it, and never offers the model."""
 
     def _old_feed_module(self, ref: str):
-        shown = subprocess.run(["git", "-C", str(ROOT), "show", f"{ref}:strata_control/feed.py"], capture_output=True)
+        shown = subprocess.run(["git", "-C", str(ROOT), "show", f"{ref}:nostroma_control/feed.py"], capture_output=True)
         if shown.returncode != 0:
             self.skipTest(f"{ref} is not in this clone")
         path = self.root / f"feed_{ref.replace('.', '_')}.py"

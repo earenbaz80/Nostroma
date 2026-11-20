@@ -8,7 +8,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_control import models, updater
+from nostroma_control import models, updater
 
 
 class DiscoverRunConfigCase(unittest.TestCase):
@@ -25,7 +25,7 @@ class DiscoverRunConfigCase(unittest.TestCase):
     def discover(self, *entries):
         listed = {"models": [{"id": i, "component_status": "present", "source_config": c} for i, c in entries]}
         with mock.patch.object(models, "list_installed", return_value=listed), \
-                mock.patch("strata_control.profiles.list_profiles", return_value=[]):
+                mock.patch("nostroma_control.profiles.list_profiles", return_value=[]):
             return updater.discover_run_config()
 
     def test_deepseek_is_skipped_for_a_model_the_engine_under_test_can_run(self):

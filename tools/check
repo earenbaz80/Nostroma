@@ -80,7 +80,7 @@ class Scratch:
         env = dict(os.environ)
         tmp = self.path("tmp")
         env.update({"TMP": tmp, "TEMP": tmp, "TMPDIR": tmp, "PYTHONUTF8": "1", "PYTHONDONTWRITEBYTECODE": "1",
-                    "PYTHONUNBUFFERED": "1"})      # CI is left as the caller has it: some code asks whether a person can answer (strata_cli/launch/cmd.py)
+                    "PYTHONUNBUFFERED": "1"})      # CI is left as the caller has it: some code asks whether a person can answer (nostroma_cli/launch/cmd.py)
         env.update(extra or {})
         return env
 

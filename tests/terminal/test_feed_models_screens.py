@@ -9,8 +9,8 @@ import os
 import unittest
 from unittest import mock
 
-from strata_control import feed as feedmod
-from strata_control import feed_models, signing
+from nostroma_control import feed as feedmod
+from nostroma_control import feed_models, signing
 from tests.terminal.launch_support import text_of
 from tests.terminal.test_launch_tui import Base, make_ctx, press
 

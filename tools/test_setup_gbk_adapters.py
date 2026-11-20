@@ -34,7 +34,7 @@ class GbkOutput(unittest.TestCase):
 
     def test_the_tuning_probe_keeps_what_a_child_printed_with_odd_bytes(self):
         # #4629: the reader thread's UnicodeDecodeError left stdout None
-        from strata_control import tune_machine
+        from nostroma_control import tune_machine
         code = "import sys; sys.stdout.buffer.write(%r)" % (GBK_LINE,)
         text = tune_machine._run([sys.executable, "-X", "utf8", "-c", code])
         self.assertIsInstance(text, str)

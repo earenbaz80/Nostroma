@@ -12,8 +12,8 @@ on:
       - .github/workflows/snapshot.yml
       - tests/snapshot/**
       - serve/**
-      - strata_cli/**
-      - strata_control/**
+      - nostroma_cli/**
+      - nostroma_control/**
       - setup.py
       - strata.py
       - requirements*.txt
@@ -26,8 +26,8 @@ on:
       - .github/workflows/snapshot.yml
       - tests/snapshot/**
       - serve/**
-      - strata_cli/**
-      - strata_control/**
+      - nostroma_cli/**
+      - nostroma_control/**
       - setup.py
       - strata.py
       - requirements*.txt

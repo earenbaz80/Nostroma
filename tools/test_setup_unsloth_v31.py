@@ -281,7 +281,7 @@ class OwnFiles(unittest.TestCase):
                 "UD-IQ2_XS": "2-bit i-quant (Unsloth Dynamic v3.1)", "UD-Q2_K_XL": "2-bit (Unsloth Dynamic v3.1) with some 3-bit experts",
                 "UD-IQ3_XXS": "3-bit i-quant (Unsloth Dynamic v3.1)", "UD-Q3_K_XL": "3-bit (Unsloth Dynamic v3.1) with some 4-bit experts",
                 "UD-IQ4_XS-v31": "~4-bit i-quant (Unsloth Dynamic v3.1), a newer file than UD-IQ4_XS with other tensor types"}
-        from strata_control import mac_fit
+        from nostroma_control import mac_fit
         sys.path.insert(0, str(ROOT / "tools"))
         import strata_mcp
         for m, a in want.items():
@@ -400,10 +400,10 @@ class Pinning(Base):
 
 
 class FileSetsAndSplit(unittest.TestCase):
-    """strata_control: the known-file-set table the app's "Use a local GGUF" reads, and the split engine's clean decline."""
+    """nostroma_control: the known-file-set table the app's "Use a local GGUF" reads, and the split engine's clean decline."""
 
     def test_known_file_sets(self):
-        from strata_control import models
+        from nostroma_control import models
         for model in NEW:
             self.assertIn("unsloth/" + model, models.SUPPORTED_SELECTIONS)
             got = models._candidate_selection([Path("/m") / s["name"] for s in shards_of(HUB[model])])
@@ -415,7 +415,7 @@ class FileSetsAndSplit(unittest.TestCase):
         self.assertEqual(models._candidate_selection(q4)["model"], "UD-Q4_K_XL")
 
     def _facts(self, set_name):
-        from strata_control import split_engine
+        from nostroma_control import split_engine
         with tempfile.TemporaryDirectory() as t:
             first = None
             for i, s in enumerate(shards_of(set_name)):
@@ -427,7 +427,7 @@ class FileSetsAndSplit(unittest.TestCase):
             return split_engine.scan_model(first)
 
     def _decide(self, facts):
-        from strata_control import split_engine as se
+        from nostroma_control import split_engine as se
         cards = [se.Card(index=i, name="RTX A6000", vram_mib=49140, cc=86) for i in range(2)]
         return se.decide(enabled=True, system="linux", cards=cards, ram_total_gib=128, ram_available_gib=100, model=facts)
 

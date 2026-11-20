@@ -14,8 +14,9 @@
 import { chromium } from 'playwright-core';
 import { existsSync, mkdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { envVar } from '../server/env-compat.mjs';
 
-const BASE = process.env.STRATA_URL;
+const BASE = envVar('URL');
 if (!BASE) { console.error('STRATA_URL is required'); process.exit(2); }
 const SHOTS = resolve(process.env.SHOTS ?? 'agent2-tools-shots');
 mkdirSync(SHOTS, { recursive: true });

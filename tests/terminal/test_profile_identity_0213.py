@@ -44,7 +44,7 @@ class RunningLaunchesBrokenProfile(unittest.TestCase):
     """#4395: prof was read outside the try that binds it."""
 
     def _rows(self, first_broken: bool):
-        from strata_cli.launch import cmd
+        from nostroma_cli.launch import cmd
         with Home() as home:
             good_cfg = _cfg(home, "good", "sk-strata-GOOD")
             if first_broken:
@@ -53,7 +53,7 @@ class RunningLaunchesBrokenProfile(unittest.TestCase):
             else:
                 _profile(home, "launch-a-good", good_cfg, port=18123, host="0.0.0.0")
                 _broken(home, "launch-b-broken")
-            with mock.patch("strata_control.runtime.status", return_value={"state": "ready"}):
+            with mock.patch("nostroma_control.runtime.status", return_value={"state": "ready"}):
                 return cmd.running_launches()
 
     def test_broken_first_does_not_throw_and_good_row_is_intact(self):
@@ -74,14 +74,14 @@ class RunningLaunchesBrokenProfile(unittest.TestCase):
         self.assertEqual(bad["host"], "127.0.0.1")
 
     def test_connect_info_never_returns_another_profiles_key(self):
-        from strata_cli.launch import cmd
+        from nostroma_cli.launch import cmd
         for first_broken in (True, False):
             with self.subTest(first_broken=first_broken), Home() as home:
                 good_cfg = _cfg(home, "good", "sk-strata-GOOD")
                 bad_id, good_id = ("launch-a-broken", "launch-b-good") if first_broken else ("launch-b-broken", "launch-a-good")
                 _broken(home, bad_id)
                 _profile(home, good_id, good_cfg, port=18123)
-                with mock.patch("strata_control.runtime.status", return_value={"state": "ready"}):
+                with mock.patch("nostroma_control.runtime.status", return_value={"state": "ready"}):
                     bad = cmd.launch_info(bad_id[7:])
                     good = cmd.launch_info(good_id[7:])
                 self.assertIsNone(bad["key"])
@@ -94,7 +94,7 @@ class KeptKeyBrokenProfile(unittest.TestCase):
     """#4396: one unreadable profile must not make kept_key() mint a new key."""
 
     def test_valid_key_survives_a_damaged_profile_in_either_order(self):
-        from strata_cli.launch import access
+        from nostroma_cli.launch import access
         for order in ("broken-first", "broken-last"):
             for how in ("garbage", "missing-fields"):
                 with self.subTest(order=order, how=how), Home() as home:
@@ -108,7 +108,7 @@ class KeptKeyBrokenProfile(unittest.TestCase):
                     self.assertEqual(access.kept_key(), "sk-strata-KEEP")
 
     def test_the_named_launch_with_a_damaged_profile_falls_back_to_the_other_valid_key(self):
-        from strata_cli.launch import access
+        from nostroma_cli.launch import access
         with Home() as home:
             cfg = _cfg(home, "ok", "sk-strata-KEEP")
             _broken(home, "launch-mine")
@@ -116,16 +116,16 @@ class KeptKeyBrokenProfile(unittest.TestCase):
             self.assertEqual(access.kept_key("mine"), "sk-strata-KEEP")
 
     def test_a_config_row_without_a_source_is_skipped_not_fatal(self):
-        from strata_cli.launch import access
+        from nostroma_cli.launch import access
         with Home() as home:
             cfg = _cfg(home, "ok", "sk-strata-KEEP")
             _profile(home, "launch-ok", cfg)
             rows = [{"id": "launch-err", "error": "cannot read profile (PermissionError)"}, {"id": "launch-ok", "source_config": str(cfg)}]
-            with mock.patch("strata_control.profiles.list_profiles", return_value=rows):
+            with mock.patch("nostroma_control.profiles.list_profiles", return_value=rows):
                 self.assertEqual(access.kept_key(), "sk-strata-KEEP")
 
     def test_no_valid_profile_still_returns_none(self):
-        from strata_cli.launch import access
+        from nostroma_cli.launch import access
         with Home() as home:
             _broken(home, "launch-only")
             self.assertIsNone(access.kept_key())

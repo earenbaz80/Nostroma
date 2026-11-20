@@ -6,8 +6,8 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
-from strata_cli import update_cmd
-from strata_control import updater
+from nostroma_cli import update_cmd
+from nostroma_control import updater
 
 
 def remembered(root, source):

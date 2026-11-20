@@ -21,7 +21,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from strata_control import time_skip as ts  # noqa: E402
+from nostroma_control import time_skip as ts  # noqa: E402
 
 
 def _py(code: str) -> str:

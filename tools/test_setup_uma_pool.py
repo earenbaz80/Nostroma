@@ -1,5 +1,5 @@
 """A fixed expert cache beside a RAM budget on a Strix Halo (STRIX-2Q, 2026-11-01): UD-Q4_K_XL with --expert-cache 10000 or 5000 ended with
-exit code 1 after 41 s and no error text.  The estimate (strata_control/uma_pool.py) is the measured one of the 128 GB box; setup lowers its
+exit code 1 after 41 s and no error text.  The estimate (nostroma_control/uma_pool.py) is the measured one of the 128 GB box; setup lowers its
 own budget with the person's cache and only warns about a budget the person set; a launch whose engine stopped says what to change.
 No GPU, no network.
 
@@ -19,7 +19,7 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 import setup  # noqa: E402
-from strata_control import uma_pool  # noqa: E402
+from nostroma_control import uma_pool  # noqa: E402
 
 Q4_GB = setup.MODELS["UD-Q4_K_XL"]["arena_gb"]
 STRIX = {"uma": True, "vram_gb": 96.0, "dedicated_gb": 64.0, "shared_gb": 32.0, "name": "Radeon 8060S"}   # the measured box: 92,058 MiB of pool
@@ -97,7 +97,7 @@ class LaunchExplains(unittest.TestCase):
         return cfg
 
     def test_a_silent_exit_code_1_gets_a_plain_next_step_on_a_shared_memory_pc(self):
-        from strata_cli.launch import runner as R
+        from nostroma_cli.launch import runner as R
         result = {"state": "failed", "error": "server_exited", "engine_exit_code": 1}
         with tempfile.TemporaryDirectory() as d:
             cfg = self.config(d, ["--expert-cache", "4000", "--resident-budget-gib", "40"], user=["--expert-cache", "10000"])

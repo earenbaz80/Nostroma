@@ -19,7 +19,7 @@
  */
 
 export const DEFAULT_SLOTS = 4;
-/** What the person is told when DFlash2 is chosen and nobody picked a number of requests (strata_control/drafting.py ONE_REQUEST_NOTE). */
+/** What the person is told when DFlash2 is chosen and nobody picked a number of requests (nostroma_control/drafting.py ONE_REQUEST_NOTE). */
 export const DFLASH2_NOTE = 'DFlash2 answers one request at a time, so Nostroma set this model to one request at a time.';
 /** The most the engine's batch window holds without grouped MTP. */
 export const MAX_SLOTS = 8;
@@ -51,7 +51,7 @@ export const FIRST_CARD_OTHER_GB = 6.9;
 export const MTP_VRAM_GB = 1.08;
 /** Graphics memory of DFlash2 alone, with the MTP layer not loaded beside it (RESULTS-DF2MEM.md: 890 MiB; the MTP layer 1082 MiB). Fit, plan and slot estimates use the drafter that is chosen. */
 export const DFLASH2_VRAM_GB = 0.89;
-/** The same with the converted pack (the selector's codebooks as Q4_0 rows, 715 MiB; strata_control/drafting.py DRAFTER_MIB "dflash2_selq4"): `capabilities.dflash2Selq4` says it is the one in use. */
+/** The same with the converted pack (the selector's codebooks as Q4_0 rows, 715 MiB; nostroma_control/drafting.py DRAFTER_MIB "dflash2_selq4"): `capabilities.dflash2Selq4` says it is the one in use. */
 export const DFLASH2_SELQ4_VRAM_GB = 0.72;
 export const NEXT_CARD_OTHER_GB = 2.0;
 /**
@@ -113,7 +113,7 @@ export function chooseParallel({ config = {}, values = {}, hardware = null, requ
   if (facts.explicitBatch || (chosen !== null && Number.isFinite(chosen))) {
     const slots = facts.explicitBatch ? null : Math.max(1, Math.min(1024, Math.trunc(chosen)));
     // DFlash2 chosen by name with a number of requests (owner, 2026-11-03: the person's own choice wins) runs DFlash2 with that many requests, a drafter per request
-    // (strata_control/drafting.py blocked_by `named`). Expert mode's batch-mtp wish is still added here as in 0.2.10: the server knows the backend and the engine, takes
+    // (nostroma_control/drafting.py blocked_by `named`). Expert mode's batch-mtp wish is still added here as in 0.2.10: the server knows the backend and the engine, takes
     // --batch-mtp out when DFlash2 runs, and keeps it when the MTP runs instead (Metal, which has no per-request drafters).
     const wantMtp = (values.batchMtp ?? config.batchMtp) === true && !facts.batchMtp && facts.mtp && facts.gpus.length === 1 && (slots ?? 0) > 1;
     return { slots: slots ?? 0, batchMtp: wantMtp, explicit: true, requested, note: null, slotGb: slot };

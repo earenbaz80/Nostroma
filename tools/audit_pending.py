@@ -806,7 +806,7 @@ def build_fixture(root: Path) -> None:
         "    with zipfile.ZipFile(path) as zf:\n"
         "        zf.extractall(dest)\n\n\n"
         "def unpack_safe(archive, dest):\n"
-        "    from strata_control import components\n"
+        "    from nostroma_control import components\n"
         "    components.safe_extract(archive, dest)\n",
         encoding="utf-8",
     )

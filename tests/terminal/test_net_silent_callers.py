@@ -15,7 +15,7 @@ import time
 import unittest
 from pathlib import Path
 
-from strata_control import driver_floor, feed as feedmod, feed_models
+from nostroma_control import driver_floor, feed as feedmod, feed_models
 from tests.terminal import net_dead
 
 

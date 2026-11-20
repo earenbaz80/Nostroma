@@ -86,6 +86,10 @@ import { apiPath } from './api-paths.mjs';
 import { findFreePort, listenProblem } from './ports.mjs';
 import { validateChatImages } from './chat-images.mjs';
 import { createTimeSkip, measureFolder, timeskipRevisionMessage, imageTypeOf } from './timeskip.mjs';
+import { aliasOldNames, childEnv, envVar } from './env-compat.mjs';
+
+// The names moved to NOSTROMA_*; anything started with the older STRATA_* names keeps working, and children get both.
+aliasOldNames();
 
 const HERE = fileURLToPath(new URL('.', import.meta.url));
 const ROOT = resolve(HERE, '..');
@@ -96,13 +100,13 @@ const distFlag = argv.indexOf('--dist');
 // runs as the Electron main process, `process.argv` is Chromium's switch list and the host's own
 // flags are not reliably present. An explicit environment variable is unambiguous, and the CLI
 // `--dist` form keeps working unchanged.
-const DIST = process.env.STRATA_DIST
-  ? resolve(process.env.STRATA_DIST)
+const DIST = envVar('DIST')
+  ? resolve(envVar('DIST'))
   : distFlag >= 0
     ? resolve(argv[distFlag + 1] ?? join(ROOT, 'dist'))
     : join(ROOT, 'dist');
-const PORT = Number(process.env.STRATA_PORT ?? 8791);
-const HOST = process.env.STRATA_BIND ?? '127.0.0.1';
+const PORT = Number(envVar('PORT') ?? 8791);
+const HOST = envVar('BIND') ?? '127.0.0.1';
 /* DNS rebinding, with the rules of serve/server.py (host_names_for + host_allowed): a page of another site whose name its DNS points
    at 127.0.0.1 arrives here as the same origin and could call /api/* (chats, files, engine control). Its requests carry that site's
    name in Host, so the app answers to an IP, localhost, *.localhost (hostAllowed) and the names below. */
@@ -117,7 +121,7 @@ function hostNamesForApp(bind) {
     names.add(`${pc}.local`);                                                 // the mDNS name another device sees
     names.add('host.docker.internal');                                        // the name a container gives this PC
   }
-  for (const extra of String(process.env.STRATA_ALLOWED_HOSTS ?? '').split(',')) {
+  for (const extra of String(envVar('ALLOWED_HOSTS') ?? '').split(',')) {
     if (extra.trim()) names.add(extra.trim().toLowerCase());                  // a proxy in front of the app, comma separated
   }
   return [...names];
@@ -127,7 +131,7 @@ const HOST_NAMES = hostNamesForApp(HOST);
    directory, so `process.cwd()` was "host" in the sidebar and the agent could read and write the app): the person's own
    Documents\Nostroma\Workspace (the models folder is next to it, not in it), created on first use, unless NOSTROMA_WORKSPACE
    names one. A workspace from the Strata days moves once, so the chats' files are where the person left them. */
-const namedWorkspace = () => process.env.NOSTROMA_WORKSPACE ?? process.env.STRATA_WORKSPACE;
+const namedWorkspace = () => process.env.NOSTROMA_WORKSPACE ?? envVar('WORKSPACE');
 function defaultWorkspace() {
   if (namedWorkspace()) return resolve(namedWorkspace());
   const user = process.env.USERPROFILE ?? process.env.HOME ?? homedir();
@@ -151,11 +155,11 @@ const hub = new EventHub();
 const chatStore = createChatStore({ dir: store.DATA_DIR, privateDir: makePrivateDir });
 const modelProviders = createModelProviders({ directory: store.DATA_DIR, knownThinks: (connection, modelId) => visionProbe.knownThinks(connection, modelId), changed: value => hub.send('providers', withPictureAnswers(value)) });
 const imageModels = createImageModels({ dataDir: store.DATA_DIR, modelsDir: () => store.MODELS_DIR, real: models.REAL, changed: value => hub.send('image-models', value) });
-/* The installed app ships Strata Control (python + strata_control) next to the host; a source checkout has none and keeps its older paths. */
+/* The installed app ships Strata Control (python + nostroma_control) next to the host; a source checkout has none and keeps its older paths. */
 const CONTROL = findControl();
 const control = createControl({ control: CONTROL });
 // Files a run as administrator made in Strata's own folders (owner Administrators) are given back to the user at every start; best effort, never blocks.
-if (control && process.platform === 'win32' && !process.env.STRATA_NO_REPAIR_ACCESS) void control.repairAccess().catch(() => {});
+if (control && process.platform === 'win32' && !envVar('NO_REPAIR_ACCESS')) void control.repairAccess().catch(() => {});
 /* Which window shows the page (the app window or, when that cannot run, a browser tab) and what only the app window can do: app-ui.mjs. */
 const appUi = createAppUi({ shutdown: () => shutdown() });
 /* The app's version has one source: the desktop shell passes it (STRATA_APP_VERSION, from apps/desktop/src-tauri/Cargo.toml). Outside the app it is read from the same file in a checkout, else 'dev'. */
@@ -171,17 +175,17 @@ function shellState() {
     tray: desktop && process.platform !== 'linux',
     port: PORT, defaultPort: DEFAULT_PORT,
     pinnedPort: saved.port || null, minimizeToTray: saved.tray,
-    portNotice: parsePortNotice(process.env.STRATA_PORT_NOTICE),
+    portNotice: parsePortNotice(envVar('PORT_NOTICE')),
   };
 }
 /* The engine that ships inside the installer is put in the components folder when this PC has none (or an older one); no network, hashes checked. The model list waits for it. */
-const bundledEngine = control && !process.env.STRATA_NO_BUNDLED_ENGINE
-  ? installBundledEngine({ bundleDir: process.env.STRATA_ENGINE_BUNDLE_DIR || resolve(HERE, '..', '..', 'engine-bundle'), components: componentsDirectory(), log: line => console.log(line) })
+const bundledEngine = control && !envVar('NO_BUNDLED_ENGINE')
+  ? installBundledEngine({ bundleDir: envVar('ENGINE_BUNDLE_DIR') || resolve(HERE, '..', '..', 'engine-bundle'), components: componentsDirectory(), log: line => console.log(line) })
   : Promise.resolve({ action: 'none' });
-const engineBundleDir = process.env.STRATA_ENGINE_BUNDLE_DIR || resolve(HERE, '..', '..', 'engine-bundle');
+const engineBundleDir = envVar('ENGINE_BUNDLE_DIR') || resolve(HERE, '..', '..', 'engine-bundle');
 /* An update from a per-GPU installer leaves its engine-bundle behind; it goes only when the same engine is complete in the store (sizes and hashes). */
 cleanupAfterInstall(bundledEngine, { bundleDir: engineBundleDir, components: componentsDirectory() });
-let bundledEngineSettled = !(control && !process.env.STRATA_NO_BUNDLED_ENGINE);
+let bundledEngineSettled = !(control && !envVar('NO_BUNDLED_ENGINE'));
 bundledEngine.then(() => { bundledEngineSettled = true; }, () => { bundledEngineSettled = true; });
 /* A build made for another make of graphics card is not unpacked; Control's answer then carries the plain sentence (with the right download) instead of its own. */
 let bundledWrongMake = null;
@@ -784,7 +788,7 @@ const REVISE_SCRIPT = resolve(REPO_ROOT, 'integrations', 'harness', 'revise_once
 // The default revision step is the app's own assistant (server/timeskip-revise.mjs, run by Node), not the Harness's Python bridge, which
 // needs a Harness build next to the checkout that the installed app does not have.
 const REVISE_NODE_SCRIPT = resolve(HERE, 'timeskip-revise.mjs');
-const TIMESKIP_REVISE = process.env.STRATA_TIMESKIP_REVISE
+const TIMESKIP_REVISE = envVar('TIMESKIP_REVISE')
   ?? `"${process.execPath}" "${REVISE_NODE_SCRIPT}"`;
 /** Proves a revision request comes from a job this host started, not from some other program on this PC. */
 const INTERNAL_SECRET = randomBytes(24).toString('hex');
@@ -831,7 +835,7 @@ async function stopTrial(id) {
 /**
  * Tuning, from the App Host.
  *
- * The job contract is Strata Control's (`strata_control/tuning.py`) and is driven through
+ * The job contract is Strata Control's (`nostroma_control/tuning.py`) and is driven through
  * `strata tune`. Two things the UI needs and neither is computable here:
  *
  *   * **what a sweep would search, and why the rest was excluded** — that depends on the selected
@@ -849,7 +853,7 @@ function createTuning({ repoRoot, python, pythonArgs = [], env = process.env } =
   function runCli(args) {
     return new Promise((resolve) => {
       const child = spawn(python, [...pythonArgs, cli, ...args, '--output', 'json'], {
-        cwd: repoRoot, windowsHide: true, env: { ...env, PYTHONUTF8: '1', PYTHONIOENCODING: 'utf-8', STRATA_TUNE_DIR: stateDir() },
+        cwd: repoRoot, windowsHide: true, env: childEnv({ ...env, PYTHONUTF8: '1', PYTHONIOENCODING: 'utf-8', STRATA_TUNE_DIR: stateDir() }),
         stdio: ['ignore', 'pipe', 'pipe'],
       });
       let out = '', err = '';
@@ -918,7 +922,7 @@ const timeskip = createTimeSkip({
   repoRoot: REPO_ROOT,
   python: TS_PYTHON,
   pythonArgs: PYTHON.args,
-  env: { ...process.env, STRATA_TIMESKIP_DIR: process.env.STRATA_TIMESKIP_DIR ?? '' },
+  env: childEnv({ ...process.env, STRATA_TIMESKIP_DIR: envVar('TIMESKIP_DIR') ?? '' }),
 });
 
 const runAgentTask = createAgentTaskRunner({
@@ -926,7 +930,7 @@ const runAgentTask = createAgentTaskRunner({
   // The loaded local model. (STRATA_TASK_REMOTE_MODEL="<connection id>:<model id>" lets a developer or an API-only setup name a saved API model instead.)
   choice: () => {
     try { return { instanceId: native.resolveInstance(native.state().defaultId).id }; } catch { /* no local model is ready */ }
-    const [connectionId, ...rest] = String(process.env.STRATA_TASK_REMOTE_MODEL ?? '').split(':');
+    const [connectionId, ...rest] = String(envVar('TASK_REMOTE_MODEL') ?? '').split(':');
     return connectionId && rest.length ? { connectionId, modelId: rest.join(':') } : null;
   },
 });
@@ -954,9 +958,9 @@ taskTimer.unref();
 // The share and tunnel listeners take a free port (the next ones above the host's own) instead of a fixed PORT+1 / PORT+2 that Docker, WSL or Hyper-V may hold or reserve.
 // The probe listens on the loopback address only: a probe on 0.0.0.0 made Windows Defender Firewall ask "Allow Node.js to communicate on these networks?" on the
 // first start of every new install path (QA 0213). Reserved or taken ports are caught on any address; the share listener itself binds 0.0.0.0 only when the person turns sharing on.
-const sharePort = await findFreePort(Number(process.env.STRATA_SHARE_PORT ?? PORT + 1), '127.0.0.1', { skip: [PORT] });
+const sharePort = await findFreePort(Number(envVar('SHARE_PORT') ?? PORT + 1), '127.0.0.1', { skip: [PORT] });
 const localShare = createLocalShare({ handle: openai, hasKey: () => !!store.get().serving?.apiKey, port: sharePort, changed: () => serving.setSharing(localShare.state()) });
-const tunnelPort = await findFreePort(Number(process.env.STRATA_TUNNEL_PORT ?? PORT + 2), '127.0.0.1', { skip: [PORT, sharePort] });
+const tunnelPort = await findFreePort(Number(envVar('TUNNEL_PORT') ?? PORT + 2), '127.0.0.1', { skip: [PORT, sharePort] });
 const tunnelOrigin = createLocalShare({ handle: openai, hasKey: () => !!store.get().serving?.apiKey, host: '127.0.0.1', port: tunnelPort });
 const connector = createConnectorInstaller({ directory: join(store.HOME, 'engine', 'cloudflare'), componentDirectory: join(componentsDirectory(), 'cloudflared') });
 const cloudflare = createCloudflare({ origin: tunnelOrigin, originUrl: `http://127.0.0.1:${tunnelPort}`, hasKey: () => !!store.get().serving?.apiKey, changed: serving.setTunnel, locate: connector.locate, prepareConnector: connector.ensure, connectorInfo: connector.connector, findRunning: findRunningConnector });
@@ -1081,7 +1085,7 @@ async function api(req, res, path, method, url) {
    for(const l of native.logs())lines.push(`${l.at} ${l.instanceId}: ${l.line}`);
    lines.push('','== Operations ==');for(const j of native.state().jobs)lines.push(`${j.startedAt} ${j.kind} ${j.state}${j.error?`: ${j.error}`:''}${j.details?`${NL}  ${j.details}`:''}`);
    try{const logs=join(dirname(componentsDirectory()),'logs');const names=readdirSync(logs).filter(n=>/^desktop-.*\.log$/.test(n)).sort();const crash=names.filter(n=>n.startsWith('desktop-crash-')).slice(-3).reverse();const runs=names.filter(n=>!n.startsWith('desktop-crash-')).slice(-2).reverse();lines.push('',`== Desktop shell: window crash logs (${crash.length} newest) ==`);for(const n of crash)lines.push('',`-- ${n}`,readFileSync(join(logs,n),'utf8'));lines.push('',`== Desktop shell: last lines of the newest ${runs.length} run logs ==`);for(const n of runs)lines.push('',`-- ${n}`,...readFileSync(join(logs,n),'utf8').split(NL).slice(-300));}catch{/* no desktop logs (not the Linux app, or no crash) */}
-   try{const runtime=process.env.STRATA_RUNTIME_DIR??join(dirname(componentsDirectory()),'runtime');for(const name of readdirSync(runtime).filter(n=>n.endsWith('.server.log'))){lines.push('',`== ${name} (last lines) ==`,...readFileSync(join(runtime,name),'utf8').split(NL).slice(-200));}}catch{/* no server logs yet */}
+   try{const runtime=envVar('RUNTIME_DIR')??join(dirname(componentsDirectory()),'runtime');for(const name of readdirSync(runtime).filter(n=>n.endsWith('.server.log'))){lines.push('',`== ${name} (last lines) ==`,...readFileSync(join(runtime,name),'utf8').split(NL).slice(-200));}}catch{/* no server logs yet */}
    const folder=join(process.env.USERPROFILE??process.env.HOME??homedir(),'Downloads');mkdirSync(folder,{recursive:true});
    const file=join(folder,`nostroma-diagnostics-${new Date().toISOString().replace(/[:.]/g,'-').slice(0,19)}.txt`);writeFileSync(file,lines.join(NL),'utf8');
    return json(res,200,{path:file});}
@@ -1177,7 +1181,7 @@ async function api(req, res, path, method, url) {
 
   // ---------------------------------------------------------------- Time-skip
   //
-  // The job lives in Strata Control (`strata_control/time_skip.py`) and is driven through its CLI.
+  // The job lives in Strata Control (`nostroma_control/time_skip.py`) and is driven through its CLI.
   // These routes only start it, follow it and apply its result; they never compute a status or a
   // score of their own, so the UI cannot show progress the job did not report.
   if (path === '/api/timeskip' && method === 'GET') {
@@ -1353,17 +1357,17 @@ async function api(req, res, path, method, url) {
     // the first start copies the engine that came with the app (about a minute): say so instead of "no engine"
     if (engine && !engine.usable && !bundledEngineSettled) engine.notice = 'The engine that came with the app is being set up. This takes a minute the first time.';
     return json(res, 200, {
-      packaged: process.env.STRATA_PACKAGED === '1',
+      packaged: envVar('PACKAGED') === '1',
       control: control ? { dir: control.control.dir, python: control.control.python, version: control.version, bundle: control.control.bundle } : null,   // control.control: the Control in use now (a first-run update can switch it)
       engine,
       engineSetup: !bundledEngineSettled,
       componentsDir: componentsDirectory(),
-      acquisition: { forbidden: acquisitionForbidden(), env: process.env.STRATA_NO_ACQUIRE ?? null },
+      acquisition: { forbidden: acquisitionForbidden(), env: envVar('NO_ACQUIRE') ?? null },
     });
   }
   // The shell (and nothing else) holds the secret that lets it end the host or tell it which window is in use.
   const fromShell = () => {
-    const token = process.env.STRATA_SHUTDOWN_TOKEN ?? '';
+    const token = envVar('SHUTDOWN_TOKEN') ?? '';
     return token.length >= 32 && sameSecret(req.headers['x-strata-shutdown'], token);
   };
   // Which window the person is using: the page shows "Quit Strata" in browser mode only.
@@ -1436,7 +1440,7 @@ async function api(req, res, path, method, url) {
     await pipeline(req, createWriteStream(target, { mode: 0o600 }));
     return json(res, 202, native.operation('install-engine-file', { path: target }));
   }
-  if (path === '/api/updates/check' && method === 'GET' && control?.updateCheck) return json(res, 200, await checkComponentUpdates({ control, appVersion: process.env.STRATA_APP_VERSION || null }));
+  if (path === '/api/updates/check' && method === 'GET' && control?.updateCheck) return json(res, 200, await checkComponentUpdates({ control, appVersion: envVar('APP_VERSION') || null }));
   if (path === '/api/updates/check' && method === 'GET') return json(res, 200, await checkUpdates({ appVersion:appVersionToShow(setupState().app.version,native.state().version), engineVersion:native.state().available?(native.state().installed?.engine?.version??null):(await engine.config()).engine.version }));
 
   if (path === '/api/setup/step' && method === 'POST') {
@@ -2089,7 +2093,7 @@ async function api(req, res, path, method, url) {
     /* Agent turn, when the component is there and this request can use it. A client that disappears
        detaches from the turn (it keeps running in the Harness); Stop is its own request. */
     const chatId = typeof body.sessionId === 'string' && body.sessionId ? body.sessionId : null;
-    const agentSkip = process.env.STRATA_AGENT === 'off' ? 'The agent is turned off (STRATA_AGENT=off).'
+    const agentSkip = envVar('AGENT') === 'off' ? 'The agent is turned off (STRATA_AGENT=off).'
       : body.agent === false || body.tools === false ? 'This chat runs without the agent.'
       : !chatId ? 'This request did not name a chat.'
       : !(body.remoteModel || native.hasLive()) ? 'The agent needs a loaded Nostroma model or an API model.'
@@ -2104,7 +2108,7 @@ async function api(req, res, path, method, url) {
         return undefined;
       }
       res.write(`${JSON.stringify({ type: 'notice', code: 'agent-unavailable', message: `${capability.reason}`, ...(capability.detail ? { details: capability.detail } : {}) })}\n`);
-    } else if (agentSkip && chatId && body.agent !== false && body.tools !== false && process.env.STRATA_AGENT !== 'off') {
+    } else if (agentSkip && chatId && body.agent !== false && body.tools !== false && envVar('AGENT') !== 'off') {
       res.write(`${JSON.stringify({ type: 'notice', code: 'agent-skipped', message: agentSkip })}\n`);
     }
 
@@ -2350,7 +2354,7 @@ server.on('error', error => {
 server.listen(PORT, HOST, () => {
   if (process.send) process.send({ type: 'strata-ready', port: PORT });
   // Engines a lost owner left behind (an earlier crash, an older version): ended after a PID + start time + command-line check.
-  if (control && process.env.STRATA_PACKAGED === '1') control.cleanup().catch(() => {});
+  if (control && envVar('PACKAGED') === '1') control.cleanup().catch(() => {});
 });
 
 let stopping=false;
@@ -2366,7 +2370,7 @@ const shutdown = async () => {
 for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP', 'SIGBREAK']) { try { process.on(signal, shutdown); } catch { /* not on this platform */ } }
 // Started by the desktop shell: when the shell is gone (killed, crashed, logged off) stop what this app started and leave.
 // POSIX re-parents us (ppid changes); Windows keeps the old ppid, so the pid is probed (signal 0 never signals).
-if (process.env.STRATA_EXIT_WITH_PARENT === '1') {
+if (envVar('EXIT_WITH_PARENT') === '1') {
   const parent = process.ppid;
   const gone = () => {
     if (process.ppid !== parent) return true;

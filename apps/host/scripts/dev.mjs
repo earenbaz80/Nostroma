@@ -11,9 +11,10 @@
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
+import { envVar } from '../server/env-compat.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const HOST_PORT = process.env.STRATA_PORT ?? '8791';
+const HOST_PORT = envVar('PORT') ?? '8791';
 
 const palette = { host: '\u001b[38;5;114m', web: '\u001b[38;5;111m', dim: '\u001b[2m', off: '\u001b[0m' };
 

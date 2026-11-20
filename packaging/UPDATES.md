@@ -15,7 +15,7 @@ without the engine. An engine update downloads only the package for that PC's GP
 | What | How | Signed with |
 |---|---|---|
 | Engine package (per platform / backend / variant) | Control's component updater: download with resume, verify, install beside the old one, test-start, switch | the feed key (Ed25519) |
-| Control (Python runtime, `strata_control`, CLI, server) | the same updater: staged beside the running one, run once, then `components/control/active.json` points at it | the feed key |
+| Control (Python runtime, `nostroma_control`, CLI, server) | the same updater: staged beside the running one, run once, then `components/control/active.json` points at it | the feed key |
 | The desktop app | Tauri's signed updater in the shell, reached by the host through a token-protected loopback bridge | the Tauri updater key (minisign) |
 
 Two separate private keys, both kept by the owner, neither in git, neither the same as Apple/Windows code signing:
@@ -59,7 +59,7 @@ Comments are for this document only; actual feed files must be strict JSON.
 The `dsv41` member is kept frozen for Strata 0.2.13 and earlier, carried by `feed_tool build-feed --carry-dsv41`.
 
 **A Qwen4 model of another shape (`shape_engines`, optional).** An engine is compiled for one model geometry (`-DSTRATA_GEOMETRY=...`, `cmake/strata_geometry.cmake`) and refuses a GGUF of another one at load. A new-shape Qwen4 therefore ships with its own engine as a
-separate component, picked by the model, and never in place of the Strata engine, so Flash-Next and every other model keep the engine they have (`strata_control/shape_engine.py`):
+separate component, picked by the model, and never in place of the Strata engine, so Flash-Next and every other model keep the engine they have (`nostroma_control/shape_engine.py`):
 
 ```jsonc
 "shape_engines": {"packages": [{            // the same entry as "engine" (pack-engine writes it), plus the shape = the geometry's name the engine was compiled for
@@ -100,7 +100,7 @@ feed and its signature, checked again when read), so an offline PC still sees it
 turns the whole thing off. Build it with `feed_tool.py model-files FILE... [--repo-dir Q4_K_M]` (sizes and hashes of the real files) and `build-feed --models FOLDER` (the folder holds the
 `<id>.entry.json` files; a malformed one stops the build); `verify-feed` lists the models and exits 3 if Control would drop one. Older Controls (0.2.11 and before) ignore the member.
 
-The `drafters` member lists the tuned DFlash2 drafter (`strata_control/drafting.py` TUNED_NAME: Strata's fine-tuned copy of incoai/Qwen3.8-Flash-Next-DFlash2, Apache-2.0,
+The `drafters` member lists the tuned DFlash2 drafter (`nostroma_control/drafting.py` TUNED_NAME: Strata's fine-tuned copy of incoai/Qwen3.8-Flash-Next-DFlash2, Apache-2.0,
 modified by Strata). Control fetches it for the Mac sets that have a measured entry (`SET_DEFAULTS`: UD-Q4_K_XL and UD-IQ4_XS-v31) during setup, `strata launch` and
 `strata drafting fetch`: it reads this signed feed, takes the entry named TUNED_NAME that lists `metal`, and downloads `url` (resumable) into `<data>/dflash2/`. The size and SHA-256
 are pinned in the code too, so the feed can move the file but a feed that lists other bytes is ignored. No feed answer (offline, host down) or no such entry: nothing is said and the
@@ -117,7 +117,7 @@ For a GitHub release the assets are flat: pack with `--url-prefix ""` and upload
 
 ### What a PC checks, in order
 
-1. the signature of the feed (key ids it trusts: `strata_control/update_keys.json`, plus `STRATA_UPDATE_TRUSTED_KEYS` for a test setup, which
+1. the signature of the feed (key ids it trusts: `nostroma_control/update_keys.json`, plus `STRATA_UPDATE_TRUSTED_KEYS` for a test setup, which
    the CLI announces);
 2. `channel`, `expires_at`, and `sequence` not lower than the last accepted feed (the downgrade guard for a replayed old feed);
 3. the engine package that fits **this** PC (`feed.select_engine`): platform, backend (CUDA / HIP / SYCL / Metal as detected),
@@ -172,7 +172,7 @@ On an offline machine, outside any git checkout:
 Back both up (a lost feed key means every installed PC needs a build with a new key; a lost Tauri key means the same for the app).
 Then, in git, once, in the commit that ships the first signed release (the release key id is `5d1bc23abbeffd0d`):
 
-* the `keys` entry from `feed-key.pub.json` into `strata_control/update_keys.json`;
+* the `keys` entry from `feed-key.pub.json` into `nostroma_control/update_keys.json`;
 * the Tauri public key into `apps/desktop/src-tauri/tauri.conf.json` (`plugins.updater.pubkey`) and into `update_keys.json` as `app_minisign_public`
   (the Terminal verifies the app installer with it).
 
@@ -241,10 +241,10 @@ was made (a second `sign-and-notarize.sh` run) makes a new archive: sign and add
 `build-feed` leaves a pack in the wrong format out of the manifest and says so. Pack Control for every platform you want the one-line install to cover (`install.sh` knows `linux-x86_64`, `linux-aarch64` and `macos-arm64`, `install.ps1` `windows-x86_64`);
 a platform with no line gets "this release has no Terminal for <platform>". Upload `install.sh` and `install.ps1` from `packaging/` unchanged: their built-in address is the release folder.
 
-**Linux ARM64 (DGX Spark) has its own feed file.** A Control up to 0.1.52 refuses a feed that names a platform it does not know (`the feed's control entry names an unknown platform`), so the `linux-aarch64` entries are not in `strata-feed.json`, which every released client reads. They are in `strata-feed-linux-aarch64.json` (+ `.sig`, same format, same key, its own `sequence`, aarch64 entries only), uploaded to the same release. A Linux ARM64 Terminal reads that file by default, from a folder or a release address (`strata_control.feed.feed_name()`); a source that names its own `.json` file is used as given. Until every client skips unknown platforms, each release must publish both files, and the aarch64 file's sequence must never go down.
+**Linux ARM64 (DGX Spark) has its own feed file.** A Control up to 0.1.52 refuses a feed that names a platform it does not know (`the feed's control entry names an unknown platform`), so the `linux-aarch64` entries are not in `strata-feed.json`, which every released client reads. They are in `strata-feed-linux-aarch64.json` (+ `.sig`, same format, same key, its own `sequence`, aarch64 entries only), uploaded to the same release. A Linux ARM64 Terminal reads that file by default, from a folder or a release address (`nostroma_control.feed.feed_name()`); a source that names its own `.json` file is used as given. Until every client skips unknown platforms, each release must publish both files, and the aarch64 file's sequence must never go down.
 
 The feed is hosted as the files of a GitHub release of `Niko1221/Strata`. The built-in address is
-`https://github.com/Niko1221/Strata/releases/latest/download` (`strata_cli/update_cmd.py` `DEFAULT_FEED` adds `/strata-feed.json`; `install.sh`
+`https://github.com/Niko1221/Strata/releases/latest/download` (`nostroma_cli/update_cmd.py` `DEFAULT_FEED` adds `/strata-feed.json`; `install.sh`
 and `install.ps1` use the folder). GitHub assets are flat, so build the packages with `--url-prefix ""` and upload every file of the release folder
 as an asset: `strata-feed.json`, `strata-feed.json.sig`, `install-manifest.txt`, `install.sh`, `install.ps1`, the engine and Control archives and the
 app installer with `latest.json` (the Tauri updater endpoint). `STRATA_FEED` (installers) and `--feed` / `STRATA_UPDATE_FEED` (`strata update`) override the
@@ -269,11 +269,11 @@ layer for `drafter: none`, writes a second copy of the experts instead of a RAM 
 a second run must change nothing. It runs as `tools/test_feed_model_install_realfile.py` in `python tools/check` (py-tools) when a llama.cpp checkout is
 given (`STRATA_TEST_LLAMA_CPP`, for its gguf-py), and is SKIPPED with that reason otherwise: set the variable wherever the release gate runs. With
 `--full --tokenizer-from <real shard> --engine <engine folder built for that shape>` it also starts the engine from the run config and sends one chat request.
-Run it before every release that touches `setup.py`, `strata_control/feed_models.py`, `strata_control/setup_config.py` or the feed schema, and before a Qwen4 day.
+Run it before every release that touches `setup.py`, `nostroma_control/feed_models.py`, `nostroma_control/setup_config.py` or the feed schema, and before a Qwen4 day.
 
 ## History / older measurements
 
-- **Keys:** the feed key and the Tauri updater key were created once and the feed key's public half was committed in `strata_control/update_keys.json`
+- **Keys:** the feed key and the Tauri updater key were created once and the feed key's public half was committed in `nostroma_control/update_keys.json`
   with the first signed release (0.2.0-beta). Terminals from before that build trust no key and refuse every feed.
 - **Engine-less installers:** an app update once carried an engine. The Windows and Linux installers now drop `engine-bundle`
   (`tauri.update.conf.json`), so one `latest.json` entry per OS serves every card variant.

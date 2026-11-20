@@ -10,7 +10,7 @@ import tempfile
 import unittest
 from unittest import mock
 
-from strata_cli import bench_facts as bf
+from nostroma_cli import bench_facts as bf
 
 ASIC = {"gpu_data": [{"gpu": 0, "asic": {"market_name": "AMD Radeon AI PRO R9700", "target_graphics_version": "gfx1201"}},
                      {"gpu": 1, "asic": {"market_name": "AMD Radeon Graphics", "target_graphics_version": "gfx1036"}}]}

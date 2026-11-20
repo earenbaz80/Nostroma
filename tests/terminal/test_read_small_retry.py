@@ -5,7 +5,7 @@ import unittest
 import urllib.error
 from unittest import mock
 
-from strata_control import transfer
+from nostroma_control import transfer
 
 
 class Answer(io.BytesIO):

@@ -32,7 +32,7 @@ const home = mkdtempSync(join(tmpdir(), 'strata-ui-do-'));
 const ws = join(home, 'workspace'); mkdirSync(ws, { recursive: true });
 const port = await freePort();
 const env = { ...process.env, STRATA_HOME: home, STRATA_PORT: String(port), STRATA_WORKSPACE: ws, STRATA_REAL_ENGINE: '0', STRATA_COMPONENTS_DIR: join(home, 'components'), STRATA_SETTINGS_FILE: join(home, 'app-settings.json'), LOCALAPPDATA: join(home, 'Local'), APPDATA: join(home, 'Roaming'), XDG_DATA_HOME: join(home, 'xdg-data'), XDG_CONFIG_HOME: join(home, 'xdg-config'), XDG_STATE_HOME: join(home, 'xdg-state') };
-delete env.STRATA_HARNESS_DIR;
+delete (env.NOSTROMA_HARNESS_DIR ?? env.STRATA_HARNESS_DIR);
 const child = spawn(process.execPath, [join(HOST_DIR, 'server', 'index.mjs')], { cwd: HOST_DIR, env, stdio: 'ignore', windowsHide: true });
 export const base = `http://127.0.0.1:${port}`;
 for (let i = 0; i < 100; i++) { try { if ((await fetch(`${base}/api/health`)).ok) break; } catch { /* starting */ } await sleep(200); }

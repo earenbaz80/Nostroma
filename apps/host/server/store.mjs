@@ -5,6 +5,7 @@ import { alignModels, isDriveRoot, libraryFolderFromPick, makeFolder } from './m
 import { dirname, isAbsolute, join, parse, relative, resolve } from 'node:path';
 import { homedir } from 'node:os';
 import { defaultModelDirectory } from './model-directory-default.mjs';
+import { envVar } from './env-compat.mjs';
 
 /**
  * Prefer ~/.nostroma, the way the packaged app stores its data. A folder from the Strata days is moved once so chats and
@@ -13,7 +14,7 @@ import { defaultModelDirectory } from './model-directory-default.mjs';
  * that cannot write to the home directory fall back to a folder next to the checkout rather than failing to boot.
  */
 export function migrateOldHome(home = homedir()) {
-  if (process.env.NOSTROMA_HOME || process.env.STRATA_HOME) return false;
+  if (process.env.NOSTROMA_HOME || envVar('HOME')) return false;
   const from = join(home, '.strata');
   const to = join(home, '.nostroma');
   try {
@@ -27,7 +28,7 @@ export function migrateOldHome(home = homedir()) {
 migrateOldHome();
 function resolveHome() {
   const candidates = [
-    process.env.NOSTROMA_HOME, process.env.STRATA_HOME,
+    process.env.NOSTROMA_HOME, envVar('HOME'),
     join(homedir(), '.nostroma'), join(homedir(), '.strata'),
     join(process.cwd(), '.nostroma'), join(process.cwd(), '.strata'),
   ].filter(Boolean);
@@ -96,7 +97,7 @@ export function pickModelsDirectory({ saved, home, preferred, fixedByEnv = false
   return { directory: legacy, notice: `Nostroma could not use ${preferred} for models (${error.code ?? error.message}), so models go to ${legacy}. You can pick another folder in Settings.` };
  }
 }
-const MODELS_PICK = pickModelsDirectory({ saved: state.modelsDir, home: HOME, preferred: DEFAULT_MODELS_DIRECTORY, fixedByEnv: !!process.env.STRATA_MODELS_DIR });
+const MODELS_PICK = pickModelsDirectory({ saved: state.modelsDir, home: HOME, preferred: DEFAULT_MODELS_DIRECTORY, fixedByEnv: !!envVar('MODELS_DIR') });
 /** Plain words for the person when the usual model folder could not be used (empty otherwise). */
 export const MODELS_DIR_NOTICE = MODELS_PICK.notice;
 if (MODELS_DIR_NOTICE) console.warn(`[nostroma] ${MODELS_DIR_NOTICE}`);
@@ -119,7 +120,7 @@ export function nativeDataDirectory(input) {
   if(realpathSync(nativeModels)!==root&&!(a.ino&&a.ino===b.ino&&a.dev===b.dev))throw new Error('The model folder conflicts with another library. Choose a different folder.');
   return data;
  }
- if(process.env.STRATA_MODELS_DIR||!existsSync(DEFAULT_MODELS_DIRECTORY)||root!==realpathSync(DEFAULT_MODELS_DIRECTORY))return input;
+ if(envVar('MODELS_DIR')||!existsSync(DEFAULT_MODELS_DIRECTORY)||root!==realpathSync(DEFAULT_MODELS_DIRECTORY))return input;
  const data=dirname(root);
  // `models` and `Models` are one folder on Windows and macOS; where they are not (Linux) a link makes them one, and where no link can be made (exFAT, a share) models go in `models`.
  alignModels(data,root);

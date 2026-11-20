@@ -29,7 +29,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from strata_control import components as C  # noqa: E402
+from nostroma_control import components as C  # noqa: E402
 
 
 def manifest(**over) -> dict:
@@ -455,7 +455,7 @@ class TestInterruptedTransfer(StoreCase):
             def __exit__(self_inner, *a):
                 return False
 
-        from strata_control import netpolicy           # the download's own seam (strata_control/netpolicy.py)
+        from nostroma_control import netpolicy           # the download's own seam (nostroma_control/netpolicy.py)
         original = netpolicy.urlopen
         netpolicy.urlopen = lambda *a, **k: FakeResponse(body)
         try:
@@ -471,7 +471,7 @@ class TestInterruptedTransfer(StoreCase):
                         "the partial bytes must be kept for a resume")
 
     def test_an_unreachable_url_is_reported_as_an_interruption_not_a_crash(self):
-        from strata_control import netpolicy           # the download's own seam (strata_control/netpolicy.py)
+        from nostroma_control import netpolicy           # the download's own seam (nostroma_control/netpolicy.py)
         original = netpolicy.urlopen
 
         def boom(*a, **k):

@@ -47,7 +47,7 @@ class AutoStaysAuto(unittest.TestCase):
                 self.assertEqual(argv(recs[2]), argv(recs[1]))
 
     def test_null_is_auto_where_the_word_is_read(self):
-        from strata_control import drafting
+        from nostroma_control import drafting
         self.assertEqual(drafting.normalize(None), "auto")
         self.assertEqual(drafting.DEFAULT_MODE, "auto")
         for backend, archs in (("cuda", ["sm_120"]), ("hip", ["gfx1201"]), ("metal", []), ("sycl", ["arc_a"])):

@@ -16,8 +16,8 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_cli import drafting_cmd
-from strata_control import drafting
+from nostroma_cli import drafting_cmd
+from nostroma_control import drafting
 
 
 def _plan(**kw) -> dict:

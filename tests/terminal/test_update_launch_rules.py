@@ -15,9 +15,9 @@ from pathlib import Path
 from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from strata_cli.launch import settings as S  # noqa: E402
-from strata_cli.launch.runner import Runner  # noqa: E402
-from strata_control import engine_component as ec, engine_update, updater  # noqa: E402
+from nostroma_cli.launch import settings as S  # noqa: E402
+from nostroma_cli.launch.runner import Runner  # noqa: E402
+from nostroma_control import engine_component as ec, engine_update, updater  # noqa: E402
 from tests.terminal.test_launch_engine_first import FakeProc, qwen_catalog, update_events  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -80,7 +80,7 @@ class QwenStaleEngine(unittest.TestCase):
     def test_plan_says_it_will_ask(self):
         r = Runner(S.LaunchSettings(family="qwen", model="Q2_0", context=32768), catalog=qwen_catalog(), emit=lambda e: None)
         with mock.patch.object(ec, "status", return_value=OLD), mock.patch.object(Runner, "needed_engine", return_value=(0, 1, 50)), \
-                mock.patch("strata_cli.launch.runner.install_isolation_words", return_value=[]):
+                mock.patch("nostroma_cli.launch.runner.install_isolation_words", return_value=[]):
             words = r.preflight_words()
         self.assertTrue(any("will ask before updating it" in w for w in words), words)
 

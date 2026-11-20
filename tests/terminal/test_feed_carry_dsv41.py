@@ -17,7 +17,7 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "packaging"))
 
 import feed_tool  # noqa: E402
-from strata_control import feed as feedmod, transfer  # noqa: E402
+from nostroma_control import feed as feedmod, transfer  # noqa: E402
 
 BASE = "https://github.com/Niko1221/Strata/releases/download/v0.2.13.1/"
 FEED_URL = "https://github.com/Niko1221/Strata/releases/latest/download/strata-feed.json"

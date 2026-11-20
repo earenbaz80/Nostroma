@@ -1,6 +1,6 @@
 # packaging/shape_build.sh - SHAPE=<geometry> for the engine build scripts (sourced, POSIX sh).
 #
-#   SHAPE=q4_lite packaging/build_cuda_linux.sh       # the engine of a model shape: its own component strata-q4-lite (strata_control/shape_engine.py)
+#   SHAPE=q4_lite packaging/build_cuda_linux.sh       # the engine of a model shape: its own component strata-q4-lite (nostroma_control/shape_engine.py)
 #
 # With SHAPE set, a build script configures the engine for that geometry (-DSTRATA_GEOMETRY=<SHAPE>, unless STRATA_CMAKE_EXTRA already names
 # one, e.g. -DSTRATA_GEOMETRY_FILE=<the header made from the model's file>), checks that the built program's `strata --geometry` names SHAPE,

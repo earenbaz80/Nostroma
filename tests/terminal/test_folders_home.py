@@ -1,4 +1,4 @@
-"""strata_control/folders.problem: a system folder is refused, except inside the running user's own home (root's /root included)."""
+"""nostroma_control/folders.problem: a system folder is refused, except inside the running user's own home (root's /root included)."""
 from __future__ import annotations
 
 import os
@@ -7,7 +7,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_control import folders
+from nostroma_control import folders
 
 
 class OwnHome(unittest.TestCase):

@@ -2,7 +2,8 @@
 import { chromium } from 'playwright-core';
 import { existsSync, mkdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-const BASE = process.env.STRATA_URL, SHOTS = resolve(process.env.SHOTS ?? 'skills-shots');
+import { envVar } from '../server/env-compat.mjs';
+const BASE = envVar('URL'), SHOTS = resolve(process.env.SHOTS ?? 'skills-shots');
 mkdirSync(SHOTS, { recursive: true });
 const chrome = process.env.CHROME ?? ['C:/Program Files/Google/Chrome/Application/chrome.exe', '/usr/bin/google-chrome'].find(existsSync);
 const browser = await chromium.launch({ executablePath: chrome, headless: true });

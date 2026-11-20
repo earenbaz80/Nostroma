@@ -5,13 +5,13 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_control import atomic, private_files
+from nostroma_control import atomic, private_files
 
 ROOT = Path(__file__).resolve().parents[2]
-SITES = ["strata_control/calibration.py", "strata_control/components.py", "strata_control/presets.py",
-         "strata_control/preset_marks.py", "strata_control/procs.py", "strata_control/profiles.py",
-         "strata_control/tune_apply.py", "strata_control/updater.py", "strata_cli/bench.py", "strata_cli/connections.py",
-         "strata_cli/launch/runner.py", "strata_cli/launch/store.py", "strata_cli/tune_commands.py", "serve/runconfig.py"]
+SITES = ["nostroma_control/calibration.py", "nostroma_control/components.py", "nostroma_control/presets.py",
+         "nostroma_control/preset_marks.py", "nostroma_control/procs.py", "nostroma_control/profiles.py",
+         "nostroma_control/tune_apply.py", "nostroma_control/updater.py", "nostroma_cli/bench.py", "nostroma_cli/connections.py",
+         "nostroma_cli/launch/runner.py", "nostroma_cli/launch/store.py", "nostroma_cli/tune_commands.py", "serve/runconfig.py"]
 
 
 class Sites(unittest.TestCase):

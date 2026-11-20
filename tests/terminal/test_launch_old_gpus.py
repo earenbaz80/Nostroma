@@ -6,7 +6,7 @@ from __future__ import annotations
 import unittest
 from unittest import mock
 
-from strata_cli.launch.catalog import Catalog
+from nostroma_cli.launch.catalog import Catalog
 from tests.terminal.launch_support import HW_12, Home, catalog
 
 

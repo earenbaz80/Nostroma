@@ -9,8 +9,8 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_cli.launch import catalog as C
-from strata_control import engine_component as ec
+from nostroma_cli.launch import catalog as C
+from nostroma_control import engine_component as ec
 
 AMD, INTEL, NVIDIA = "0x1002", "0x8086", "0x10de"
 REAL_ARC = C.intel_arc_cards
@@ -113,7 +113,7 @@ class LauncherChoice(Tree):
             hw = {"ram_gb": 64.0, "os": "Linux", "cpu": {"avx2": True}, "gpus": shared_gpus, "disk_free_gb": 500}
             fake = lambda root="/sys/class/drm": REAL_ARC(str(self.root))      # noqa: E731
             with mock.patch.dict(os.environ, env or {}, clear=False), mock.patch.object(cat.strata, "hardware", return_value=hw), \
-                    mock.patch.object(C, "intel_arc_cards", fake), mock.patch("strata_control.engine_component.status", return_value={"usable": False}):
+                    mock.patch.object(C, "intel_arc_cards", fake), mock.patch("nostroma_control.engine_component.status", return_value={"usable": False}):
                 if not env:
                     os.environ.pop("STRATA_ENGINE_BACKEND", None)
                 comp = cat.computer()

@@ -25,8 +25,8 @@ from pathlib import Path
 from unittest import mock
 
 import setup
-from strata_cli import cli
-from strata_control import acquisition
+from nostroma_cli import cli
+from nostroma_control import acquisition
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -44,17 +44,17 @@ INSTALL_WORDS = {"pip", "pip3", "git", "cmake", "ninja", "npm", "npx", "pnpm", "
 NETWORK_ALLOWED = {
     ("serve/server.py", "urlopen"): "an image_url a client sends in a chat request is fetched at request time",
     ("serve/mcp.py", "urlopen"): "the MCP servers the user configured, at request time",
-    ("strata_control/tune_api.py", "urlopen"): "the loopback engine/server of a tuning job the user started",
-    ("strata_control/tune_session.py", "urlopen"): "the loopback engine (127.0.0.1) the auto-tuner a user started measures",
-    ("strata_control/loopback.py", "urlopen"): "the one opener for this computer's own servers (no proxy); any other address is passed on unchanged",
-    ("strata_control/components.py", "urlopen"): "the component fetcher: only `strata install`/UPDATE call it",
+    ("nostroma_control/tune_api.py", "urlopen"): "the loopback engine/server of a tuning job the user started",
+    ("nostroma_control/tune_session.py", "urlopen"): "the loopback engine (127.0.0.1) the auto-tuner a user started measures",
+    ("nostroma_control/loopback.py", "urlopen"): "the one opener for this computer's own servers (no proxy); any other address is passed on unchanged",
+    ("nostroma_control/components.py", "urlopen"): "the component fetcher: only `strata install`/UPDATE call it",
 }
 #: Modules that import the installer on purpose, with the explicit command that reaches them.
 INSTALLER_IMPORT_ALLOWED = {
-    "strata_control/calibration.py": "`strata engine calibrate`: an explicit tuning command, imports setup lazily",
+    "nostroma_control/calibration.py": "`strata engine calibrate`: an explicit tuning command, imports setup lazily",
 }
 
-SERVING_DIRS = ("serve", "strata_cli", "strata_control")
+SERVING_DIRS = ("serve", "nostroma_cli", "nostroma_control")
 
 
 def _sources():
@@ -71,9 +71,9 @@ class ImportGraphTests(unittest.TestCase):
         script = (
             "import sys, os, json\n"
             "sys.path.insert(0, os.getcwd())\n"
-            "import strata_cli.cli as c\n"
+            "import nostroma_cli.cli as c\n"
             "import serve.server\n"
-            "from strata_control import runtime\n"
+            "from nostroma_control import runtime\n"
             "c.parser()\n"
             "root = os.getcwd()\n"
             "mods = {n: os.path.relpath(m.__file__, root).replace(os.sep, '/') for n, m in list(sys.modules.items())\n"
@@ -86,10 +86,10 @@ class ImportGraphTests(unittest.TestCase):
         self.assertEqual(sorted(loaded & INSTALLER_MODULES), [])
         for name, rel in got["mods"].items():
             top = rel.split("/")[0]
-            self.assertIn(top, ("serve", "strata_cli", "strata_control"),
+            self.assertIn(top, ("serve", "nostroma_cli", "nostroma_control"),
                           f"{name} ({rel}) is loaded by starting/serving but is not part of it")
-        self.assertNotIn("strata_control.calibration", got["mods"])
-        self.assertNotIn("strata_control.components", got["mods"])
+        self.assertNotIn("nostroma_control.calibration", got["mods"])
+        self.assertNotIn("nostroma_control.components", got["mods"])
 
     def test_static_imports_of_the_installer_are_explicit_commands_only(self):
         found = {}
@@ -323,7 +323,7 @@ class CliServeIsOfflineTests(unittest.TestCase):
             return stem in probes or (stem in ("powershell", "pwsh") and any("Get-CimInstance" in a for a in argv))
         self.assertEqual(rec.network, [])
         self.assertEqual([a for a in rec.programs if not read_only(a)], [])
-        self.assertNotIn("setup", sys.modules.get("strata_cli.cli").__dict__.get("__name__", ""))
+        self.assertNotIn("setup", sys.modules.get("nostroma_cli.cli").__dict__.get("__name__", ""))
 
     def test_strata_install_without_the_installer_is_a_typed_error(self):
         err = io.StringIO()

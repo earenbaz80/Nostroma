@@ -6,8 +6,8 @@ on:
       - .github/workflows/terminal-portable-monitor.yml
       - packaging/monitor_bundle.py
       - strata.py
-      - strata_cli/**
-      - strata_control/**
+      - nostroma_cli/**
+      - nostroma_control/**
       - tools/minimal_cli_smoke.py
       - tools/portable_monitor_smoke.py
       - tools/portable_monitor_pty_smoke.py
@@ -18,8 +18,8 @@ on:
       - .github/workflows/terminal-portable-monitor.yml
       - packaging/monitor_bundle.py
       - strata.py
-      - strata_cli/**
-      - strata_control/**
+      - nostroma_cli/**
+      - nostroma_control/**
       - tools/minimal_cli_smoke.py
       - tools/portable_monitor_smoke.py
       - tools/portable_monitor_pty_smoke.py

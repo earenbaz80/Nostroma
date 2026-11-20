@@ -10,8 +10,8 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_cli.launch import settings as S
-from strata_control import drafting, drafting_fetch
+from nostroma_cli.launch import settings as S
+from nostroma_control import drafting, drafting_fetch
 from tests.terminal.launch_support import HW_12, Home, catalog, run_cli
 
 STRIX = ("hip", ["gfx1151"])
@@ -88,7 +88,7 @@ class TheLaunchPlan(unittest.TestCase):
         not_intel(self)
 
     def test_the_download_list_and_the_plan_line_use_the_tuned_pack(self):
-        from strata_cli.launch.runner import Runner
+        from nostroma_cli.launch.runner import Runner
         with Home():
             with serving(), hardware(STRIX):
                 runner = Runner(S.LaunchSettings(family="unsloth", model="UD-Q4_K_XL", context=32768, vision="off"), catalog=catalog(HW_12))
@@ -102,7 +102,7 @@ class TheLaunchPlan(unittest.TestCase):
                 self.assertNotIn("dflash2", [p["kind"] for p in mtp.download_plan()["parts"]])
 
     def test_a_stock_pack_already_here_still_lists_the_tuned_one(self):
-        from strata_cli.launch.runner import Runner
+        from nostroma_cli.launch.runner import Runner
         with Home():
             with serving(), hardware(STRIX), mock.patch.object(drafting, "pack_ready", return_value=True):
                 runner = Runner(S.LaunchSettings(family="unsloth", model="UD-Q4_K_XL", context=32768, vision="off"), catalog=catalog(HW_12))
@@ -165,7 +165,7 @@ class ABareFetch(AnAutomaticFetch):
 
     def installed(self, *names):
         rows = [{"path": str(self.cfg), "model_name": n} for n in names]
-        return mock.patch("strata_cli.launch.catalog.Catalog.installed_configs", return_value=rows)
+        return mock.patch("nostroma_cli.launch.catalog.Catalog.installed_configs", return_value=rows)
 
     def bare(self):
         return run_cli(["drafting", "fetch", "--data-dir", str(self.data), "--output", "jsonl"])

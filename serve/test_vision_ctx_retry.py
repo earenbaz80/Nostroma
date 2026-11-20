@@ -12,7 +12,7 @@ from pathlib import Path
 from unittest import mock
 
 import serve.server as server
-from strata_control import vision_reader as VR
+from nostroma_control import vision_reader as VR
 
 CTX = ("CUDA error: out of memory\n  current device: 0, in function ggml_cuda_init at ggml/src/ggml-cuda/ggml-cuda.cu:367\n"
        "ggml/src/ggml-cuda/ggml-cuda.cu:108: CUDA error\n")

@@ -13,7 +13,7 @@ setup.py's, unchanged.  What is replaced:
     sycl/serve/strata-sycl.sh; docs/INTEL.md) instead of a CUDA/HIP build;
   - pictures (on by default on every Arc card, see pictures_on_by_default): read by the portable CPU reader (`strata-vision`, the program the
     AMD packages carry beside their engine, compiled here by setup's own step) on the host; it hands the image embeddings to the engine through
-    /dev/shm, which strata-sycl.sh shares with the container.  The reader choice is strata_control/vision_reader.py's one rule (CPU reader under
+    /dev/shm, which strata-sycl.sh shares with the container.  The reader choice is nostroma_control/vision_reader.py's one rule (CPU reader under
     24 GB of VRAM); an Arc of 24 GB or more also keeps the CPU reader unless --vision gpu asks for the SYCL one (`strata-vision-sycl`, compiled
     on the host when the oneAPI compiler is there).  --vision no is the off switch;
   - the RAM rule: the CUDA engine keeps every expert in RAM, the SYCL port streams them from the GGUF into VRAM
@@ -35,7 +35,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 import setup as S  # noqa: E402
-from strata_control import intel_spec, vram_fit  # noqa: E402
+from nostroma_control import intel_spec, vram_fit  # noqa: E402
 
 SYCL_WRAPPER = ROOT / "sycl" / "serve" / "strata-sycl.sh"
 SYCL_IMAGE = "strata-sycl-dev"
@@ -159,10 +159,10 @@ READER_DIR = ROOT / "engine-sycl"    # the folder setup treats as the engine's: 
 
 
 def intel_vision(asked, vram_gb: float = 0.0) -> str:
-    """The picture reader wanted on an Intel Arc, by strata_control/vision_reader.py's rule: "none" when switched off, "cpu" by default (under 24 GB
+    """The picture reader wanted on an Intel Arc, by nostroma_control/vision_reader.py's rule: "none" when switched off, "cpu" by default (under 24 GB
     of VRAM the CPU reader is the rule, and an Arc of 24 GB or more keeps it too until the SYCL reader has run on such a card), "gpu" only when
     asked for.  Takes setup.hip_vision's arguments."""
-    from strata_control import vision_reader as VR
+    from nostroma_control import vision_reader as VR
     return VR.wanted(asked, vram_gb, "intel")
 
 
@@ -285,7 +285,7 @@ def to_sycl(cfg: dict, exe: Path, ram: float, keep: dict, vram_gb: float = 0.0, 
 
     0.2.2: a model that does not fit the card at the default context (Gyro-M on the 8 GB A750 is ~750 MiB short of one cache
     slot) gets a smaller prompt chunk and then a lower reserve until it does, never a smaller context (owner, 2026-11-02;
-    strata_control/vram_fit.py); one plain line per change goes to `fit_notes`.  A config that fits comes back as it was.
+    nostroma_control/vram_fit.py); one plain line per change goes to `fit_notes`.  A config that fits comes back as it was.
     `ctx_asked` / a reserve without `auto_reserve`: the user chose it, it is kept.  `fit=False`: a layer split.
 
     An Alchemist card (the A-series, i915 or xe) has no FP64 hardware, so its config carries the driver's FP64
@@ -511,7 +511,7 @@ def install(argv) -> None:
                       "experts the later card does not hold instead of the start being refused (#1980). Set it to 1 "
                       "in the config's env if your cards hold everything; a smaller model fits fully (docs/INTEL_ARC.md)")
             # exactly two Battlemage cards: --spec 2 (the engine pipelines the two cards' windows by default there and then answers
-            # as a 2-token window whatever --spec says; strata_control/intel_spec.py).  The person's own --spec always wins.
+            # as a 2-token window whatever --spec says; nostroma_control/intel_spec.py).  The person's own --spec always wins.
             cards_used = [intel[i] for i in gsel if isinstance(i, int) and 0 <= i < len(intel)]
             spec_note = intel_spec.apply_to_config(cfg, cards_used)
             if spec_note:

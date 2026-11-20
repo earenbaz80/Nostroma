@@ -1,4 +1,4 @@
-"""The draft vocabulary follows the computer's languages when the person chose none (strata_control/drafting.py vocab_for_languages, os_language_signals, auto_vocab, apply).
+"""The draft vocabulary follows the computer's languages when the person chose none (nostroma_control/drafting.py vocab_for_languages, os_language_signals, auto_vocab, apply).
 
 Measured on l620 (RESULTS-DRAFT-VOCAB.md): `cyrillic` Russian +26%, `latin` German / Spanish / French / Polish +8 to +12%, both within 0.3% of the default on English and code, and 12-16% slower on Chinese and
 Japanese than the default. So any Chinese / Japanese / Korean signal anywhere keeps the default."""
@@ -12,7 +12,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_control import drafting
+from nostroma_control import drafting
 
 ROOT = Path(__file__).resolve().parents[2]
 DATA = ROOT / "data"

@@ -6,7 +6,7 @@ import unittest
 from types import SimpleNamespace
 from unittest import mock
 
-from strata_control import engine_component as ec, feed as feedmod, updater
+from nostroma_control import engine_component as ec, feed as feedmod, updater
 
 WIN = "windows-x86_64"
 
@@ -116,7 +116,7 @@ class FeedStyleBackendName(unittest.TestCase):
 
     def test_update_backend_option_takes_it_too(self):
         import argparse
-        from strata_cli import update_cmd
+        from nostroma_cli import update_cmd
         seen = {}
 
         class Stop(Exception):

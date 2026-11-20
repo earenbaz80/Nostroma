@@ -1,4 +1,4 @@
-"""strata_control/amd_four_card.py: the serving profile of four Radeon AI PRO R9700 cards, and the places that apply it."""
+"""nostroma_control/amd_four_card.py: the serving profile of four Radeon AI PRO R9700 cards, and the places that apply it."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import os
 import unittest
 from unittest import mock
 
-from strata_control import amd_four_card as F
+from nostroma_control import amd_four_card as F
 
 R9700 = {"name": "AMD Radeon AI PRO R9700", "vram_gb": 31.9, "vendor": "amd", "usable": True}
 CARDS = [{**R9700, "index": i} for i in range(4)]
@@ -112,7 +112,7 @@ class Apply(unittest.TestCase):
 
 class Launcher(unittest.TestCase):
     def test_the_runner_fills_the_profile_and_the_profile_override(self):
-        from strata_cli.launch import runner as R, settings as S
+        from nostroma_cli.launch import runner as R, settings as S
         from tests.terminal.launch_support import HW_12, Home, catalog
         hw = {**HW_12, "gpus": [{**x, "usable": True} for x in CARDS]}
         with Home():
@@ -128,7 +128,7 @@ class Launcher(unittest.TestCase):
             self.assertIsNone(r2.four_card_parallel)
 
     def test_the_runner_leaves_other_computers_alone(self):
-        from strata_cli.launch import runner as R, settings as S
+        from nostroma_cli.launch import runner as R, settings as S
         from tests.terminal.launch_support import HW_2X16, Home, catalog
         with Home():
             r = R.Runner(S.LaunchSettings(), catalog=catalog(HW_2X16))

@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[2]
 PROBE = r"""
 import json, subprocess, sys
 from pathlib import Path
-from strata_control import private_files, procs
+from nostroma_control import private_files, procs
 
 assert private_files.adopt_user_defaults()
 child = subprocess.Popen(

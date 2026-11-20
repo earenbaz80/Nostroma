@@ -1566,7 +1566,7 @@
   },
   "extensions": {
     "suite": "standard-v1",
-    "runner": "strata_cli.bench_standard",
+    "runner": "nostroma_cli.bench_standard",
     "status_reasons": [
       "the Strata commit is unknown (not a git checkout and no COMMIT file)"
     ],

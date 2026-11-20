@@ -8,7 +8,7 @@ from pathlib import Path
 from unittest import mock
 
 from serve.server import EngineDied, StrataEngine
-from strata_control import drafting
+from nostroma_control import drafting
 
 FAKE = r'''
 import sys

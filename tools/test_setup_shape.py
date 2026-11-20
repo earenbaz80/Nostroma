@@ -1,4 +1,4 @@
-"""setup.py and a feed model of its own shape (strata_control/shape_engine.py, strata_control/feed_models.py).
+"""setup.py and a feed model of its own shape (nostroma_control/shape_engine.py, nostroma_control/feed_models.py).
 
     python -m pytest tools/test_setup_shape.py
 
@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tools"))
 
-from strata_control import engine_component as ec, feed_models, shape_engine  # noqa: E402
+from nostroma_control import engine_component as ec, feed_models, shape_engine  # noqa: E402
 import test_setup_feed_models as base  # noqa: E402
 
 
@@ -59,7 +59,7 @@ class Registered(base.Base):
         self.assertNotIn("shape", self.setup.FAMILIES["plain-one"])
 
     def test_it_is_offered_on_a_mac_like_the_two_file_sizes(self):
-        from strata_control import mac_fit
+        from nostroma_control import mac_fit
         self.assertIn("q4lite-test", mac_fit.FEED_FAMILIES)
         rows = {k: v for k, v in mac_fit.MAC_MODELS.items() if v.get("family") == "q4lite-test"}
         self.assertEqual(len(rows), 1)
@@ -68,7 +68,7 @@ class Registered(base.Base):
         self.assertEqual(mac_fit.app_sizes("q4lite-test"), [key])
 
     def test_the_mac_arguments_for_a_one_file_model_without_a_draft_layer(self):
-        from strata_control import mac_fit
+        from nostroma_control import mac_fit
         (key,) = [k for k, v in mac_fit.MAC_MODELS.items() if v.get("family") == "q4lite-test"]
         shard = Path("model.gguf")
         args = mac_fit.engine_args(Path("pack"), [shard], Path("rt"), 8192, False, 128.0, "profile.bin", key)
@@ -85,7 +85,7 @@ class Registered(base.Base):
 
     def test_a_family_older_controls_do_not_know_is_unavailable_for_them(self):
         """What the Control before this does with the same entry: its install table lacks the family, so the model is listed as unavailable and never offered."""
-        from strata_control import feed as feedmod
+        from nostroma_control import feed as feedmod
         self.assertNotIn("qwen4exp_q4_lite", ("qwen4exp", "qwen35moe"))
         self.assertIsNone(feedmod.FeedModel.shape.fget(base.parsed(base.flash_next())[0]))
 
@@ -120,7 +120,7 @@ class EngineStep(base.Base):
         self.assertEqual((eng, meta["version"], meta["shape"], lib_dirs, vision), (folder, "0.1.59", "q4_lite", [], "none"))
 
     def test_the_lines_and_the_run_config_name_the_models_title(self):
-        """A person reads the model's title, not the geometry's name; the run config keeps the title for the refusal at a start (strata_control/shape_engine.py USE_TITLE)."""
+        """A person reads the model's title, not the geometry's name; the run config keeps the title for the refusal at a start (nostroma_control/shape_engine.py USE_TITLE)."""
         self.setup.SHAPE_ENGINE.update(shape="q4_lite", title="Q4 Lite Shape")
         folder = self.root / "components" / "shapes" / "q4_lite" / "engine" / "0.1.59-linux-x86_64-cuda"
         folder.mkdir(parents=True)
@@ -166,7 +166,7 @@ class Launch(unittest.TestCase):
     """The Terminal's first step reads the shape from setup's table and checks that engine, not the Strata engine's."""
 
     def runner(self, families):
-        from strata_cli.launch import runner as R
+        from nostroma_cli.launch import runner as R
         fake = mock.Mock()
         fake.s.family = "q4lite-test"
         fake.catalog.strata.setup_module.return_value = mock.Mock(FAMILIES=families)

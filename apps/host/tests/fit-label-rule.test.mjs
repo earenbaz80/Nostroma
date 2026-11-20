@@ -1,5 +1,5 @@
 /**
- * The version list's fit word and Control's (strata_control/fit_label.py) are one rule (owner 11-08): the weight files without the lookup table against
+ * The version list's fit word and Control's (nostroma_control/fit_label.py) are one rule (owner 11-08): the weight files without the lookup table against
  * RAM + the graphics memory that counts. QAGUI-STRIX 11-09: the app counted a unified-memory chip's shared memory (the RAM again) as graphics memory, so
  * Q8_0 on Strix Halo said nothing while the catalog and the Terminal said "may run slower". This test runs the Python rule and the app's on the same
  * computers and sizes and needs them to agree.
@@ -40,7 +40,7 @@ function python() {
 
 test('the app\'s fit word is Control\'s (fit_label.py) on Strix Halo, an APU, a 12 GB card, two cards and no card', { skip: !python() && 'no python here' }, () => {
   const exe = python();
-  const script = 'import json,sys; sys.path.insert(0, sys.argv[1]); from strata_control import fit_label as f; pcs=json.loads(sys.argv[2]); sizes=json.loads(sys.argv[3]); '
+  const script = 'import json,sys; sys.path.insert(0, sys.argv[1]); from nostroma_control import fit_label as f; pcs=json.loads(sys.argv[2]); sizes=json.loads(sys.argv[3]); '
     + 'print(json.dumps({k: [f.label(s, p["ram"], f.card_room_gb(p["cards"])) for s in sizes] for k, p in pcs.items()}))';
   const r = spawnSync(exe, ['-I', '-B', '-c', script, repo, JSON.stringify(PCS), JSON.stringify(SIZES)], { encoding: 'utf8' });
   assert.equal(r.status, 0, r.stderr);

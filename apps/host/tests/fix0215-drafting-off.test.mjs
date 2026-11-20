@@ -153,6 +153,6 @@ test('a chosen MTP stays the saved choice over a later plain load, even when the
 });
 
 test('(b) the Terminal and the app hold the same words', () => {
-  const py = readFileSync(new URL('../../../strata_control/drafting.py', import.meta.url), 'utf8');
+  const py = readFileSync(new URL('../../../nostroma_control/drafting.py', import.meta.url), 'utf8');
   assert.ok(py.includes(`MTP_OFFLINE_NOTE = "${MTP_OFFLINE_NOTE}"`));
 });

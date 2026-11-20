@@ -30,7 +30,9 @@ const RING_LINES: usize = 300;
 
 /// `<data>/` : where Strata keeps its engine, runtime and logs on this system.
 pub fn data_dir() -> PathBuf {
-    if let Some(dir) = std::env::var_os("STRATA_DESKTOP_DATA_DIR") {
+    if let Some(dir) = std::env::var_os("NOSTROMA_DESKTOP_DATA_DIR")
+        .or_else(|| std::env::var_os("STRATA_DESKTOP_DATA_DIR"))
+    {
         return PathBuf::from(dir);
     }
     platform_data_dir()
@@ -363,7 +365,9 @@ pub fn run_log() -> Option<Log> {
 /// Open the run log and install the panic hook. Call it first in `main`: nothing that can fail runs before it. `dialog` is false for
 /// the self-test (no person to read a message box); `STRATA_NO_DIALOG` does the same for scripted runs.
 pub fn init_startup(dialog: bool) {
-    let dialog = dialog && std::env::var_os("STRATA_NO_DIALOG").is_none();
+    let dialog = dialog
+        && std::env::var_os("NOSTROMA_NO_DIALOG").is_none()
+        && std::env::var_os("STRATA_NO_DIALOG").is_none();
     let log = Log::open();
     log.line("shell", &system_line());
     if RUN.set(Run { log, dialog }).is_ok() {

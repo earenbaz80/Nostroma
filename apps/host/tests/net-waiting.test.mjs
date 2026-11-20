@@ -1,5 +1,5 @@
 /** The line shown while a download server has not answered yet (lane NET, W14): in all nine languages, the host and the seconds filled in from
- *  setup's English label (strata_control/netpolicy.py WORDS["waiting"], handed over as the install step's label). */
+ *  setup's English label (nostroma_control/netpolicy.py WORDS["waiting"], handed over as the install step's label). */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { build } from 'esbuild';

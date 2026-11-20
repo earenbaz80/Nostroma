@@ -16,7 +16,7 @@ import contextlib
 import socket
 from unittest import mock
 
-from strata_control import netpolicy
+from nostroma_control import netpolicy
 from tests.terminal.test_netpolicy import BlackHole, refused_port
 
 KINDS = ("offline", "refused", "never answers")

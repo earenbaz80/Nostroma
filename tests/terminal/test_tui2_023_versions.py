@@ -8,8 +8,8 @@ import sys
 import unittest
 from pathlib import Path
 
-import strata_cli
-from strata_control import feed as feedmod, updater
+import nostroma_cli
+from nostroma_control import feed as feedmod, updater
 from tests.terminal import test_updater
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -34,8 +34,8 @@ class VersionBump(unittest.TestCase):
         # 0.2.13.1 (Control-only, Linux x86_64: the app on an Intel Arc card, ARCFIX): the Terminal is 0.2.13.1 and Control 0.1.59.1 (the CMake project version); the app stays 0.2.13 and every engine package 0.1.59 (as 0.2.8.1 and 0.2.3.1 did).
         # 0.2.14.1 (Control-only: the drafter fixes of the Terminal and Control): the Terminal is 0.2.14.1 and Control 0.1.60.1; the app stays 0.2.14 and every engine package 0.1.60.
         # 0.2.15 (an app + Control fix release): the app and the Terminal are 0.2.15 and Control 0.1.61; every engine package stays 0.1.60 (the v0.2.14 files).
-        self.assertEqual(strata_cli.PRODUCT_VERSION, "0.2.15")
-        self.assertEqual(strata_cli.version(), "0.1.61")              # the CMake project version: Control
+        self.assertEqual(nostroma_cli.PRODUCT_VERSION, "0.2.15")
+        self.assertEqual(nostroma_cli.version(), "0.1.61")              # the CMake project version: Control
         self.assertEqual(first("CMakeLists.txt", r"^project\(strata VERSION ([0-9.]+) "), "0.1.61")
         self.assertIn('STRATA_VERSION="0.1.60-metal"', (ROOT / "metal" / "CMakeLists.txt").read_text(encoding="utf-8"))
 
@@ -59,15 +59,15 @@ class VersionBump(unittest.TestCase):
     def test_version_prints_the_product_and_the_build(self):
         done = subprocess.run([sys.executable, str(ROOT / "strata.py"), "--version"], capture_output=True, text=True, cwd=str(ROOT),
                               env={**os.environ, "STRATA_NO_HANDOVER": "1"})
-        self.assertTrue(done.stdout.startswith("strata 0.2.15 (build 0.1.61;"), done.stdout)
+        self.assertTrue(done.stdout.startswith("nostroma 0.2.15 (build 0.1.61;"), done.stdout)
 
 
 class UpdateFromTheLastRelease(test_updater.UpdaterCase):
     def feed_with_control(self, version):
         bundle = self.root / "control-bundle"
-        (bundle / "strata_control").mkdir(parents=True)
+        (bundle / "nostroma_control").mkdir(parents=True)
         (bundle / "strata.py").write_text(f"print('strata 0.2.3 (build {version})')\n")
-        (bundle / "strata_control" / "__init__.py").write_text("")
+        (bundle / "nostroma_control" / "__init__.py").write_text("")
         from feed_tool import build_feed, pack_control
         (self.release / "control").mkdir()
         pack_control(bundle, self.release / "control", version=version, platform=test_updater.PLATFORM)
@@ -86,6 +86,6 @@ class UpdateFromTheLastRelease(test_updater.UpdaterCase):
         self.assertEqual(updater.check(self.ctx())["control"]["status"], "current")
 
     def test_the_bumped_numbers_sort_above_the_last_release(self):
-        self.assertGreater(feedmod.version_key(strata_cli.version()), feedmod.version_key("0.1.47"))
+        self.assertGreater(feedmod.version_key(nostroma_cli.version()), feedmod.version_key("0.1.47"))
         self.assertGreater(feedmod.version_key("0.1.48"), feedmod.version_key("0.1.46.3"))
         self.assertGreater(feedmod.version_key("0.1.48"), feedmod.version_key("0.1.45.3"))

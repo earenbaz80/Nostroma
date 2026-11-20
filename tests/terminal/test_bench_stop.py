@@ -15,7 +15,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_cli import bench_standard
+from nostroma_cli import bench_standard
 
 WINDOWS = os.name == "nt"
 PARENT = ("import subprocess, sys, time\n"
@@ -26,7 +26,7 @@ PARENT = ("import subprocess, sys, time\n"
 
 def alive(pid: int) -> bool:
     if WINDOWS:
-        from strata_control import winproc
+        from nostroma_control import winproc
         return winproc.pid_alive(pid, None)
     try:
         os.kill(pid, 0)

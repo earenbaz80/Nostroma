@@ -5,8 +5,8 @@ from __future__ import annotations
 import threading
 import unittest
 
-from strata_control import autotune, tune_knobs
-from strata_control.tune_session import StartFailed
+from nostroma_control import autotune, tune_knobs
+from nostroma_control.tune_session import StartFailed
 
 from tests.tuning.stub_session import FakeClock, StubSession, flag
 
@@ -145,7 +145,7 @@ class RulesTest(unittest.TestCase):
         sy = make_ctx()
         sy.backend = "sycl"
         self.assertTrue(tune_knobs.default_unsteady(sy))
-        from strata_control import presets
+        from nostroma_control import presets
         steady = {"answers": {"class": "exact", "default_repeatable": True}}
         unsteady = {"answers": {"class": "exact", "default_repeatable": False}}
         self.assertIn("identical", presets.notice(steady))

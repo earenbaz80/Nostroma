@@ -10,8 +10,8 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
-from strata_cli import handover
-from strata_control import feed as feedmod, signing, updater
+from nostroma_cli import handover
+from nostroma_control import feed as feedmod, signing, updater
 from tests.terminal import update_fixture as fx
 from tests.terminal.test_handover import make_control
 from tests.terminal.test_update_feed import document, signed
@@ -144,7 +144,7 @@ class ClockTest(unittest.TestCase):
 
     def test_a_certificate_error_hints_at_the_clock(self):
         import urllib.error
-        from strata_control import transfer
+        from nostroma_control import transfer
         err = urllib.error.URLError("[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed")
         with mock.patch.object(transfer._opener, "open", side_effect=err):
             with self.assertRaisesRegex(transfer.TransferError, "date and time"):

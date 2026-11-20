@@ -19,7 +19,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from strata_control import tune_history as th  # noqa: E402
+from nostroma_control import tune_history as th  # noqa: E402
 
 
 class HistoryCase(unittest.TestCase):
@@ -220,7 +220,7 @@ class TestPlanCarriesIdentity(HistoryCase):
     """The plan records what it measured, so a later sweep can compare without re-deriving it."""
 
     def test_plan_tuning_records_a_content_identity(self):
-        from strata_control import tuning
+        from nostroma_control import tuning
         engine = self.file("strata", b"#!/bin/sh\necho 'x' >&2\n")
         model = self.file("model.gguf", b"weights" * 1000)
         plan = tuning.plan_tuning(
@@ -236,7 +236,7 @@ class TestPlanCarriesIdentity(HistoryCase):
 
     def test_a_plan_without_a_model_path_is_incomparable_rather_than_falsely_comparable(self):
         """Not knowing the weights must be recorded as unknown, not as a match."""
-        from strata_control import tuning
+        from nostroma_control import tuning
         engine = self.file("strata", b"#!/bin/sh\necho 'x' >&2\n")
         plan = tuning.plan_tuning(
             engine, "metal", "fixture", "generation",

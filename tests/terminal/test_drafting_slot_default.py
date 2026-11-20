@@ -1,5 +1,5 @@
 """Auto with 2 requests at once on one large Blackwell card that holds every expert starts DFlash2 slot drafts (``--draft dflash2 --batch N``, no MTP layer);
-every other class and every other number of requests keeps the rule it had (the MTP loaded, slots with no drafts). strata_control/drafting.py slot_drafts_by_default."""
+every other class and every other number of requests keeps the rule it had (the MTP loaded, slots with no drafts). nostroma_control/drafting.py slot_drafts_by_default."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
-from strata_control import drafting
+from nostroma_control import drafting
 
 GYRO = "qwen3.8-flash-next-gyro-gyro-s"
 IQ3S = "qwen3.8-flash-next-iq3_s"
@@ -250,8 +250,8 @@ class TheStart(unittest.TestCase):
         self.assertIn("--batch-mtp", c["args"])
 
     def plan_by_command(self, parallel, args=None, **env) -> str:
-        """The plan line `strata drafting plan` shows for this config (strata_cli/drafting_cmd.py: _inputs, then decide)."""
-        from strata_cli import drafting_cmd
+        """The plan line `strata drafting plan` shows for this config (nostroma_cli/drafting_cmd.py: _inputs, then decide)."""
+        from nostroma_cli import drafting_cmd
         cfg = {**self.cfg(), **({} if parallel is None else {"parallel": parallel}), "args": list(args if args is not None else self.args)}
         path = self.data / "plan.json"
         path.write_text(__import__("json").dumps(cfg), encoding="utf-8")
@@ -264,8 +264,8 @@ class TheStart(unittest.TestCase):
 
     def plan_by_launch(self, parallel, args=None, **env) -> str:
         """The plan line the Terminal's `strata launch --plan` shows (runner.drafting_plan_line) for an installed config like this one."""
-        from strata_cli.launch import settings as S
-        from strata_cli.launch.runner import Runner
+        from nostroma_cli.launch import settings as S
+        from nostroma_cli.launch.runner import Runner
         from tests.terminal.launch_support import HW_12, Home, catalog
         cfg = {**self.cfg(), "args": list(args if args is not None else self.args)}
         with Home():
@@ -292,7 +292,7 @@ class TheStart(unittest.TestCase):
         self.assertEqual("[strata] " + self.plan_by_command(3), self.lines(self.cfg(parallel=3))[0])
 
     def test_the_plan_agrees_with_the_start(self):
-        from strata_cli import drafting_cmd
+        from nostroma_cli import drafting_cmd
         self.pack()
         cfg_path = self.data / "run.json"
         for parallel, expect_blocked in ((2, False), (3, True), (4, True), (1, False)):

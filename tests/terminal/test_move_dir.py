@@ -7,7 +7,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_control import updater
+from nostroma_control import updater
 
 
 def tree(root: Path) -> Path:

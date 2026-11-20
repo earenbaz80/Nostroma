@@ -35,10 +35,10 @@ export const ENV_FLAG=/^STRATA_[A-Z0-9_]+$/;
  * environment entries `env` into the model's settings file ("env"); back in its default it removes them, so a default launch carries none of them.
  * "Faster long prompts" (Qwen KVA) is OFF by default (owner decision, 26 October): STRATA_KVA=1 turns it on, and an earlier test build's STRATA_KVA=0 reads as off.
  * "Faster answers on 12 GB NVIDIA cards" (residency-biased routing) is OFF by default since 0.2.8 (owner decision, 29 October; #4402): STRATA_ROUTE_PRIOR=1.5
- * turns it on, and the STRATA_ROUTE_PRIOR=0 that 0.2.7's Off wrote is the default state now. The other two are on by default. The names are the engine switch contract (phaseA-tests/notes-027-plan.md); strata_control/speed_switches.py says the
+ * turns it on, and the STRATA_ROUTE_PRIOR=0 that 0.2.7's Off wrote is the default state now. The other two are on by default. The names are the engine switch contract (phaseA-tests/notes-027-plan.md); nostroma_control/speed_switches.py says the
  * same for the Terminal (tests/terminal/test_speed_switches.py compares the two).
  */
-/* The table (ids, words, defaults, environment entries) is generated from strata_control/speed_switches.py into policy-generated.mjs; this file only adds the group the screen lists them under and the rules for where a switch applies (below), which tests/speed-switches.test.mjs and tests/terminal/test_speed_switches.py run against the same cases. */
+/* The table (ids, words, defaults, environment entries) is generated from nostroma_control/speed_switches.py into policy-generated.mjs; this file only adds the group the screen lists them under and the rules for where a switch applies (below), which tests/speed-switches.test.mjs and tests/terminal/test_speed_switches.py run against the same cases. */
 export const SPEED_SWITCHES=SPEED_SWITCH_TABLE.map(s=>({id:s.id,label:s.label,group:s.group??'Speed',hint:s.hint,default:s.default,env:s.env,...(s.legacy?{legacy:s.legacy}:{}),...(s.words?{words:s.words}:{})}));
 const GFX12=/^gfx120[01]$/i, RADEON_9000=/\b(?:RX\s*9\d{3}|AI\s*PRO\s*R97\d{2}|R97\d{2})\b/i;
 /**
@@ -75,17 +75,17 @@ export function setSpeedSwitch(env,id,on){
 export function speedSwitchRows(env,context){return SPEED_SWITCHES.filter(s=>speedSwitchApplies(s.id,context)).map(s=>({...s,on:speedSwitchIsOn(env,s.id)}));}
 /** Settings the app itself applies when it starts a model (they are not read from the engine's source, so the engine's text never says it supports them). */
 export const APP_OWNED_FIELDS=['mtp','batchMtp','drafting'];
-/** The families that have a Drafting choice and the model names the DFlash2 drafter was made for (strata_control/drafting.py SUPPORTED_FAMILIES, _SUPPORTED_NAME): Qwen3.8-Flash-Next, Gyro and Unsloth's quantizations of the same weights; not Swift, Coder or NVFP4. */
+/** The families that have a Drafting choice and the model names the DFlash2 drafter was made for (nostroma_control/drafting.py SUPPORTED_FAMILIES, _SUPPORTED_NAME): Qwen3.8-Flash-Next, Gyro and Unsloth's quantizations of the same weights; not Swift, Coder or NVFP4. */
 export const DRAFTING_FAMILIES=GENERATED_DRAFTING_FAMILIES;
 const DFLASH2_MODEL=new RegExp(DFLASH2_MODEL_PATTERN,'i');
-/** The drafter a choice means (one per run; strata_control/drafting.py choice_of): Auto is DFlash2 where the engine has it (`served`, Control's word) and the model is one it was made for, else the MTP; off and mtp are what they say. `model` is a run config's model name or a family. */
+/** The drafter a choice means (one per run; nostroma_control/drafting.py choice_of): Auto is DFlash2 where the engine has it (`served`, Control's word) and the model is one it was made for, else the MTP; off and mtp are what they say. `model` is a run config's model name or a family. */
 /** `split` (Control's plan: the all-cards split engine will take this start) makes Auto the MTP, the draft layer that engine runs; a DFlash2 the person chose by name stays. */
 export function resolveDrafter(choice,model,served,split){
  const c=String(choice??'auto').toLowerCase();if(c==='off'||c==='mtp')return c;
  const name=String(model??'');if(!(served===true&&(DRAFTING_FAMILIES.includes(name.toLowerCase())||DFLASH2_MODEL.test(name))))return 'mtp';
  return split===true&&c!=='dflash2'?'mtp':'dflash2';
 }
-/** The engine arguments without the draft layer: --mtp <folder or count>, --spec-min-p <p> (its confidence threshold) and --batch-mtp. --spec stays: prompt lookup still uses its windows. Same rule as strata_control/draft_layer.py. */
+/** The engine arguments without the draft layer: --mtp <folder or count>, --spec-min-p <p> (its confidence threshold) and --batch-mtp. --spec stays: prompt lookup still uses its windows. Same rule as nostroma_control/draft_layer.py. */
 export function withoutDraftLayer(args){
  const out=[];const list=(args??[]).map(String);
  for(let i=0;i<list.length;i++){const a=list[i];if(a==='--batch-mtp')continue;if(a==='--mtp'||a==='--spec-min-p'){if(i+1<list.length&&!list[i+1].startsWith('--'))i++;continue;}out.push(a);}

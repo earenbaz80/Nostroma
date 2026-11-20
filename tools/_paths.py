@@ -28,7 +28,7 @@ def _install_dirs() -> list[Path]:
     try:
         if str(ENGINE) not in sys.path:
             sys.path.append(str(ENGINE))
-        from strata_control import discovery
+        from nostroma_control import discovery
         out.append(discovery.app_install_dir())
         out += [pl.path for pl in discovery.places(here=ENGINE)]
     except Exception:

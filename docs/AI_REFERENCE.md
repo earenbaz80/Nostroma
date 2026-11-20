@@ -98,7 +98,7 @@ Default local server address: `http://127.0.0.1:8080`. The configured port and a
 | Anthropic Messages | `http://127.0.0.1:8080` | `POST /v1/messages` |
 
 Use the actual configured API key when authentication is enabled. See [API details](DETAILS.md#using-it).
-The [connection registry](../strata_cli/launch/harness.py) supplies these adapters:
+The [connection registry](../nostroma_cli/launch/harness.py) supplies these adapters:
 
 | Tool | `strata connect` identifier |
 | --- | --- |

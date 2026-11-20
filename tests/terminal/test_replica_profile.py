@@ -1,10 +1,10 @@
-"""strata_control/replica_profile.py: the opt-in replica serving profile (one engine per card, shared expert arena)."""
+"""nostroma_control/replica_profile.py: the opt-in replica serving profile (one engine per card, shared expert arena)."""
 
 from __future__ import annotations
 
 import unittest
 
-from strata_control import replica_profile as P
+from nostroma_control import replica_profile as P
 
 R9700 = {"name": "AMD Radeon AI PRO R9700", "vram_gb": 31.9, "vendor": "amd"}
 

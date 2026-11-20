@@ -23,8 +23,8 @@ import qwen4_intake as Q  # noqa: E402
 PREV = {"strata-engine-0.1.57-linux-x86_64-cuda-cuda13.tar.gz": 720_000_000, "strata-engine-0.1.57-linux-x86_64-sycl.tar.gz": 187_000_000,
         "strata-engine-0.1.57-windows-x86_64-cuda-cuda13.zip": 900_000_000, "strata-engine-0.1.57-macos-arm64-metal.tar.gz": 150_000_000,
         "strata-control-0.1.57-linux-x86_64.tar.gz": 99_000_000,
-        "Strata-0.2.11-windows-x64-setup.exe": 80_000_000, "Strata-0.2.11-windows-x64-setup.exe.sig": 400,
-        "Strata-0.2.11-linux-x86_64.AppImage": 90_000_000, "Strata-0.2.11-macos-arm64.dmg": 160_000_000, "Strata.app.tar.gz": 70_000_000,
+        "Nostroma-0.2.11-windows-x64-setup.exe": 80_000_000, "Nostroma-0.2.11-windows-x64-setup.exe.sig": 400,
+        "Nostroma-0.2.11-linux-x86_64.AppImage": 90_000_000, "Nostroma-0.2.11-macos-arm64.dmg": 160_000_000, "Nostroma.app.tar.gz": 70_000_000,
         "strata-feed.json": 9000, "strata-feed.json.sig": 200, "SHA256SUMS.txt": 5000, "latest.json": 1500, "install.sh": 9000}
 
 
@@ -76,10 +76,10 @@ class Plan(unittest.TestCase):
         self.assertFalse(any(n.startswith(("strata-engine-", "strata-dsv41-", "strata-control-")) for n in names))
         self.assertTrue({"strata-feed.json", "strata-feed.json.sig", "SHA256SUMS.txt"} <= names)
         # G12 of the Q4-P8 rehearsal: a feed model needs no app rebuild (the app lists it from the feed), so case A plans no app and no Mac step
-        self.assertFalse(names & {"latest.json", "Strata-0.2.12-windows-x64-setup.exe"})
+        self.assertFalse(names & {"latest.json", "Nostroma-0.2.12-windows-x64-setup.exe"})
         self.assertFalse(any("App text" in s["what"] or "Mac" in s["what"] for s in p["steps"]))
         kept = {k["name"] for k in p["kept"]}
-        self.assertTrue({n for n in PREV if n.startswith(("strata-engine-", "strata-control-", "Strata-"))} <= kept)
+        self.assertTrue({n for n in PREV if n.startswith(("strata-engine-", "strata-control-", "Nostroma-"))} <= kept)
         self.assertFalse(any("Build the Qwen engine" in s["what"] for s in p["steps"]))
         self.assertEqual(p["entry"]["family"], "qwen35moe")
         self.assertEqual(p["entry"]["hf"], {"repo": "x/y", "revision": "abc"})
@@ -89,7 +89,7 @@ class Plan(unittest.TestCase):
         code, out, err = run(self.base(self.a, "--json", "--with-app"))
         self.assertEqual(code, 0, err)
         p = json.loads(out)
-        self.assertTrue({"latest.json", "Strata-0.2.12-windows-x64-setup.exe"} <= {c["name"] for c in p["changed"]})
+        self.assertTrue({"latest.json", "Nostroma-0.2.12-windows-x64-setup.exe"} <= {c["name"] for c in p["changed"]})
         self.assertTrue(any("App text" in s["what"] for s in p["steps"]))
 
     def test_the_plan_names_the_boxes_of_the_rehearsal(self):
@@ -112,7 +112,7 @@ class Plan(unittest.TestCase):
         self.assertFalse(any(n.startswith(("strata-engine-", "strata-control-", "strata-dsv41-")) for n in names), "the Strata engine and the Controls are not rebuilt")
         self.assertFalse(any("0.1.57" in n for n in names))
         kept = {k["name"] for k in p["kept"]}
-        self.assertTrue({n for n in PREV if n.startswith(("strata-engine-", "strata-control-", "Strata-"))} <= kept)
+        self.assertTrue({n for n in PREV if n.startswith(("strata-engine-", "strata-control-", "Nostroma-"))} <= kept)
         self.assertFalse(any("Controls: pack" in s["what"] or "App text" in s["what"] for s in p["steps"]))
         self.assertIn("strata-q4-lite-0.1.58-macos-arm64-metal.tar.gz", names)
         self.assertTrue(any("Mac" in s["what"] and s["owner_only"] for s in p["steps"]), "the owner signs the Mac shape engine")
@@ -132,7 +132,7 @@ class Plan(unittest.TestCase):
         self.assertNotEqual(code, 0)                                # --shape is for case B
 
     def test_a_case_b_entry_names_the_family_of_its_shape(self):
-        from strata_control import feed as feedmod
+        from nostroma_control import feed as feedmod
         rep = json.loads(self.a.read_text())
         rep["sets"][0]["architecture"] = "qwen4exp"
         b = Path(self.tmp.name) / "b.json"
@@ -194,7 +194,7 @@ class Plan(unittest.TestCase):
 
     def test_write_makes_an_entry_in_the_feeds_schema_and_build_feed_refuses_what_is_unfilled(self):
         import feed_tool
-        from strata_control import feed as feedmod
+        from nostroma_control import feed as feedmod
         out = Path(self.tmp.name) / "outfeed"
         rev = "a" * 40
         code, _, err = run(self.base(self.a, "--write", str(out), "--revision", rev, "--hf-repo", "x/y", "--default-context", "131072", "--min-engine", "0.1.58"))
@@ -216,10 +216,10 @@ class Plan(unittest.TestCase):
         self.assertNotIn("[FILL", json.dumps(filled).replace("[FILL: sha256]", ""))
         for f in filled["quants"][0]["files"]:
             f["sha256"] = f["sha256"] if len(f["sha256"]) == 64 else "0" * 64
-        feedmod._model_entry(filled)                                     # strata_control/feed.py keeps it
+        feedmod._model_entry(filled)                                     # nostroma_control/feed.py keeps it
 
     def test_the_plan_prints_the_launch_line_with_the_size_name_a_person_types(self):
-        """Q4-READY: a feed size whose quant name is a built-in size is <quant>-<id> (strata_control/feed_models.py); the rehearsal typed the plain name twice."""
+        """Q4-READY: a feed size whose quant name is a built-in size is <quant>-<id> (nostroma_control/feed_models.py); the rehearsal typed the plain name twice."""
         code, out, err = run(self.base(self.a, "--json", "--quant", "UD-Q4_K_XL"))
         self.assertEqual(code, 0, err)
         launch = json.loads(out)["launch"]

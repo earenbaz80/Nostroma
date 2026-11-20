@@ -6,7 +6,7 @@ from types import SimpleNamespace
 from unittest import mock
 
 try:
-    from strata_cli.launch import screens
+    from nostroma_cli.launch import screens
 except ImportError:                                   # the optional Textual dependency is absent
     screens = None
 

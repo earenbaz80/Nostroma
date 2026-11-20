@@ -1,5 +1,5 @@
 """A model file under a name setup does not write (renamed, a hand-written config, no name) is judged by what the file IS: its GGUF header (architecture, layers, hidden size,
-vocabulary size) against what the DFlash2 drafter pack records. A renamed Qwen3.8-Flash-Next file used to start the MTP with no word said (strata_control/drafting.py, apply)."""
+vocabulary size) against what the DFlash2 drafter pack records. A renamed Qwen3.8-Flash-Next file used to start the MTP with no word said (nostroma_control/drafting.py, apply)."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_control import drafting
+from nostroma_control import drafting
 
 ROOT = Path(__file__).resolve().parents[2]
 REAL_HEADER = ROOT / "tests" / "terminal" / "data" / "flash_next_iq3s_header.gguf"   # the first 2,710 bytes of the Qwen3.8-Flash-Next IQ3_S file: the keys, no weights
@@ -203,10 +203,10 @@ class AKnownSetUnderAnotherName(unittest.TestCase):
         def inspect(path):
             t, p, e, a = next(halves)
             return {"architecture": a, "expert_tensor_types": sorted(e), "tensor_count_scanned": t, "payload_bytes_required": p}
-        return mock.patch("strata_control.models.inspect_metadata", side_effect=inspect)
+        return mock.patch("nostroma_control.models.inspect_metadata", side_effect=inspect)
 
     def test_the_header_of_a_set_names_it(self):
-        from strata_control import models
+        from nostroma_control import models
         experts = set(self.ROW["expert_bytes"])
         with tempfile.TemporaryDirectory() as tmp:
             first = self.shards(tmp)
@@ -229,7 +229,7 @@ class AKnownSetUnderAnotherName(unittest.TestCase):
             (Path(tmp) / "copy-00002-of-00002.gguf").unlink()
             with self.fake(self.ROW["tensors"], self.ROW["bytes"], experts):
                 self.assertIsNone(models.known_set_by_header(first), "a shard missing")
-            with mock.patch("strata_control.models.inspect_metadata", side_effect=OSError("unreadable")):
+            with mock.patch("nostroma_control.models.inspect_metadata", side_effect=OSError("unreadable")):
                 self.assertIsNone(models.known_set_by_header(first))
         self.assertIsNone(models.known_set_by_header("/no/such/file.gguf"))
 
@@ -240,7 +240,7 @@ class AKnownSetUnderAnotherName(unittest.TestCase):
             with tempfile.TemporaryDirectory() as tmp:
                 model = Path(tmp) / "m.gguf"
                 model.write_bytes(b"x")
-                with mock.patch("strata_control.models.known_set_by_header", return_value=found) as call:
+                with mock.patch("nostroma_control.models.known_set_by_header", return_value=found) as call:
                     self.assertEqual(drafting.known_name_of_file(["--native", str(model)]), want, found)
                     self.assertEqual(drafting.known_name_of_file(["--native", str(model)]), want)
                     self.assertEqual(call.call_count, 1, "read once per file, size and time")

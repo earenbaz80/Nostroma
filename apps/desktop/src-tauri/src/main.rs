@@ -220,7 +220,7 @@ fn random_token() -> String {
 }
 
 /// The Control component that ships beside the host (`<resources>/control`): the bundled CPython, the locked
-/// wheels, strata_control and the API server. None in a development checkout.
+/// wheels, nostroma_control and the API server. None in a development checkout.
 fn control_dir(res: &Path) -> Option<PathBuf> {
     let dir = res.join("control");
     let python = if cfg!(windows) { dir.join("python").join("python.exe") } else { dir.join("python").join("bin").join("python3") };
@@ -490,8 +490,8 @@ fn host_command(res: &Path, port: u16, shutdown_token: &str) -> Result<Command, 
     }
     // A user with the Strata API worker on a different port sets this; unset means the worker's
     // documented loopback default.
-    if let Ok(url) = std::env::var("STRATA_SERVER_URL") {
-        cmd.env("STRATA_SERVER_URL", url);
+    if let Ok(url) = std::env::var("NOSTROMA_SERVER_URL").or_else(|_| std::env::var("STRATA_SERVER_URL")) {
+        cmd.env("NOSTROMA_SERVER_URL", &url).env("STRATA_SERVER_URL", url);
     }
     Ok(cmd)
 }

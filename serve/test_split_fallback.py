@@ -98,9 +98,9 @@ class Fallback(unittest.TestCase):
         self.assertEqual([s[0] for s in FakeEngine.started], ["/e/strata-split-2", NORMAL])
 
     def test_a_split_config_keeps_its_arguments_through_the_drafter_step(self):
-        """strata_control/split_engine.split_config writes "drafting": "mtp" (what the split engine runs), so the drafter step, which resolves Auto to
+        """nostroma_control/split_engine.split_config writes "drafting": "mtp" (what the split engine runs), so the drafter step, which resolves Auto to
         DFlash2 where the engine has it, adds no DFlash2 flag to the split engine's arguments (it would refuse them and every start would fall back)."""
-        from strata_control import split_engine as SE
+        from nostroma_control import split_engine as SE
 
         base = {"exe": NORMAL, "args": ["--pack", "/p", "--native", "/m/a.gguf", "--mtp", "/d/mtp/rt", "--layer-split", "auto"], "cwd": "/x",
                 "tokenizer": "/t", "port": 8080}

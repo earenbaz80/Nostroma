@@ -9,8 +9,8 @@ from __future__ import annotations
 
 import unittest
 
-from strata_cli.launch.catalog import FITS, NO, SLOWER, verdict
-from strata_control import fit_label
+from nostroma_cli.launch.catalog import FITS, NO, SLOWER, verdict
+from nostroma_control import fit_label
 from tests.terminal.launch_support import HW_12, Home, catalog
 
 V100 = {"index": 0, "name": "Tesla V100-PCIE-32GB", "vram_gb": 32.0, "usable": True, "vendor": "nvidia", "arch": 70}

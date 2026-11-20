@@ -9,7 +9,7 @@ import copy
 import json
 import unittest
 
-from strata_control import feed as feedmod
+from nostroma_control import feed as feedmod
 
 
 def engine(**kw):

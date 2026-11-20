@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from strata_control import models
+from nostroma_control import models
 
 
 class DotInModelId(unittest.TestCase):

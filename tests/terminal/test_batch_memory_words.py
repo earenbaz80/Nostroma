@@ -7,7 +7,7 @@ import json
 import unittest
 from pathlib import Path
 
-from strata_cli.launch import runner as R
+from nostroma_cli.launch import runner as R
 from tests.terminal.launch_support import Home
 
 ENGINE_LINE = "strata: 4 requests at once do not fit in this PC's memory: start with --batch 3"

@@ -10,7 +10,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_control import feed as feedmod, signing, transfer
+from nostroma_control import feed as feedmod, signing, transfer
 from tests.terminal import update_fixture as fx
 
 SEED1 = bytes.fromhex("9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60")
@@ -305,7 +305,7 @@ class FeedTool(unittest.TestCase):
 
 class DeepSeekEnginePackages(FeedChecks):
     """The ``dsv41`` feed member stays in the feed, frozen, for Strata 0.2.13 and earlier (their DeepSeek engine); this Control runs no
-    DeepSeek model and does not read it (strata_control/retired.py)."""
+    DeepSeek model and does not read it (nostroma_control/retired.py)."""
 
     def test_the_member_is_ignored_and_is_never_an_engine_package(self):
         ds = entry(version="0.1.49", variant="cuda13", url="dsv41/strata-dsv41-0.1.49-linux-x86_64-cuda-cuda13.tar.gz")
@@ -390,9 +390,11 @@ class AppPlatform(unittest.TestCase):
             self.run_tool()
         self.assertIn("root", str(caught.exception))
 
-    def test_the_default_key_is_the_one_in_tauri_conf(self):
+    def test_there_is_no_app_key_because_app_updates_are_off(self):
         from feed_tool import _default_app_pubkey
-        self.assertEqual(_default_app_pubkey(), json.loads((fx.ROOT / "apps/desktop/src-tauri/tauri.conf.json").read_text())["plugins"]["updater"]["pubkey"])
+        conf = json.loads((fx.ROOT / "apps/desktop/src-tauri/tauri.conf.json").read_text())
+        self.assertEqual(_default_app_pubkey(), "")
+        self.assertNotIn("updater", conf.get("plugins", {}))
 
     def test_a_version_mismatch_is_refused(self):
         self.run_tool()

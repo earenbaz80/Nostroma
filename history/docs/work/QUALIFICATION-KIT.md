@@ -215,7 +215,7 @@ dsh web --port 0 --no-open          # prints an authenticated URL
 
 ## 8. Time-skip
 
-Time-skip is **implemented** (`strata_control/time_skip.py`, `strata timeskip`). The state machine,
+Time-skip is **implemented** (`nostroma_control/time_skip.py`, `strata timeskip`). The state machine,
 the non-regression gate and the apply/restore safety are covered by 24 tests that pass on this Mac.
 What those tests cannot show is whether a *real model* produces a candidate worth keeping, which is
 what this section qualifies.
@@ -263,7 +263,7 @@ selected, and the run id, digests and raw `run.json` retained as evidence.
 
 ## 9. Engine tuning
 
-The job contract is implemented (`strata_control/tuning.py`, `strata tune`), with 31 tests covering
+The job contract is implemented (`nostroma_control/tuning.py`, `strata tune`), with 31 tests covering
 the selection rule, failure recording, the exclusive lease and the exported-configuration retest.
 **The measurement harness is not written**, so no sweep has run against a real model — on this Mac
 there is no runnable workload, and inventing one would defeat the point. This section is what to do

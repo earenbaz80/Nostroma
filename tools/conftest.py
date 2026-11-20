@@ -5,7 +5,7 @@ the Metal installer (`sys.platform == "darwin"`), strata_mcp takes the unified-m
 On macOS only, for each test:
 * setup.py and tools/strata_mcp.py see sys.platform "linux" (their module-level `sys` is a view of the real one with another
   platform; the rest of the process, and the tests' own skip decisions, still see darwin);
-* the CPU reads as x86_64 (platform.machine and strata_control.sysinfo.machine), as on GitHub's Linux runner.
+* the CPU reads as x86_64 (platform.machine and nostroma_control.sysinfo.machine), as on GitHub's Linux runner.
 Linux and Windows are not touched. A test that wants darwin or arm64 patches it on top, as before (setup.sys.platform, is_arm64)."""
 import platform
 import sys
@@ -45,7 +45,7 @@ def _a_linux_x86_pc_on_macos():
     if sys.platform != "darwin":
         yield
         return
-    from strata_control import sysinfo
+    from nostroma_control import sysinfo
     with ExitStack() as stack:
         stack.enter_context(mock.patch.object(platform, "machine", lambda: "x86_64"))
         stack.enter_context(mock.patch.object(sysinfo, "machine", lambda: "x86_64"))

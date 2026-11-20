@@ -1,4 +1,4 @@
-"""0.2.2: the words for a model download and its preparation are plain and true (strata_control/progress_words.py), and the app's
+"""0.2.2: the words for a model download and its preparation are plain and true (nostroma_control/progress_words.py), and the app's
 and the Terminal's progress read the same lines the same way (tools/strata_mcp.py install_progress / combined_progress).
 
 The excerpts are from real setup logs (Gyro-S on the RTX 5070 PC, 2026-10-19) and from the steps a Q2_0 install adds."""
@@ -14,7 +14,7 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tools"))
 
 import strata_mcp  # noqa: E402
-from strata_control import progress_words as W  # noqa: E402
+from nostroma_control import progress_words as W  # noqa: E402
 
 HEAD = ["Strata - Qwen3.8-Flash-Next on a normal PC", "=== Step 1: checking your PC ===", "  [ok] GPU: NVIDIA GeForce RTX 5070",
         "=== Step 2: your choices ===", "  [ok] size: Gyro-S", "=== Step 3: Python packages ===", "  [ok] numpy ...",

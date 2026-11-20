@@ -120,7 +120,7 @@ inside the app's installer. The model install is `setup.py` in its Control mode 
 uses with `--gguf-dir`, and prepares the model files, and writes a run config whose engine is `component:strata-engine`. It does
 not run `metal/setup_mac.py`, needs no Command Line Tools, and writes the same Metal flags.
 
-The model list and the recommendation judge a Mac by its unified memory with the rules of `strata_control/mac_fit.py`, the module
+The model list and the recommendation judge a Mac by its unified memory with the rules of `nostroma_control/mac_fit.py`, the module
 `setup_mac.py` uses too. Q2_0, IQ3_XXS, IQ3_S and the Gyro packs are offered. Unsloth's many-shard files need the source
 installer's repack for now. A pack that does not stay in memory is listed as "read from the SSD", and a Mac under 16 GB of unified
 memory is told the model does not fit.

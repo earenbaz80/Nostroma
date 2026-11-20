@@ -287,7 +287,7 @@ bool Window::df2_bind(const std::string& vocab_file, std::string& err) {
     if (d.bound) return true;
     if (!taps_on_) { err = "dflash2: the window keeps no taps"; return false; }
     if (!df2_load_pack(err)) return false;
-    {   // the text strata_control/drafting.py looks for in the program to know that this engine reads a pack whose selector tables are Q4_0 rows
+    {   // the text nostroma_control/drafting.py looks for in the program to know that this engine reads a pack whose selector tables are Q4_0 rows
         const auto cb = d.ten.find("candidate_selector.predecessor_codebook");
         if (cb != d.ten.end() && cb->second.type == ref::Q4_0)
             std::fprintf(stderr, "strata metal: DFlash2 selector codebooks: Q4_0 rows (about 174 MiB less than bf16)\n");

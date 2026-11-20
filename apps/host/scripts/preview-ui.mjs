@@ -4,10 +4,11 @@ import {spawn} from 'node:child_process';
 import {mkdtempSync,existsSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {resolve,join} from 'node:path';
+import { envVar } from '../server/env-compat.mjs';
 const root=resolve(import.meta.dirname,'..');
 const home=mkdtempSync(join(tmpdir(),'strata-ui-preview-'));
-const hostPort=Number(process.env.STRATA_PREVIEW_HOST_PORT??8792);
-const webPort=Number(process.env.STRATA_PREVIEW_PORT??5272);
+const hostPort=Number(envVar('PREVIEW_HOST_PORT')??8792);
+const webPort=Number(envVar('PREVIEW_PORT')??5272);
 const children=[];let stopping=false;
 function stop(code=0){if(stopping)return;stopping=true;for(const child of children)child.kill('SIGTERM');setTimeout(()=>process.exit(code),300).unref();}
 function run(args,extra={}){const child=spawn(process.execPath,args,{cwd:root,env:{...process.env,STRATA_HOME:home,STRATA_MODELS_DIR:join(home,'models'),STRATA_WORKSPACE:home,STRATA_REAL_ENGINE:'0',STRATA_NATIVE_REPO:join(home,'no-native-installation'),STRATA_PORT:String(hostPort),...extra},stdio:'inherit'});children.push(child);child.on('error',error=>{console.error(error.message);stop(1);});child.on('exit',code=>{if(!stopping)stop(code??1);});return child;}

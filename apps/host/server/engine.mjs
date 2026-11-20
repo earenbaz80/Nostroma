@@ -4,6 +4,7 @@ import { cachedHardware, detect } from './hardware.mjs';
 import { get as getStore, update } from './store.mjs';
 import * as supervisor from './supervisor.mjs';
 import { nowIso } from './util.mjs';
+import { envVar } from './env-compat.mjs';
 
 const engineState = {
   running: false,
@@ -193,7 +194,7 @@ export async function reset() {
 }
 
 export async function restart() {
-  if (process.env.STRATA_REAL_ENGINE !== '1') throw new Error('Restart is unavailable with the example engine. Save settings for the next load.');
+  if (envVar('REAL_ENGINE') !== '1') throw new Error('Restart is unavailable with the example engine. Save settings for the next load.');
   const s = getStore();
   const id = supervisor.status().modelId ?? s.loaded;
   const v = id ? variant(id) : null;

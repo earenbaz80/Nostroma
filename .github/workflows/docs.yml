@@ -20,7 +20,7 @@ on:
       - tools/release_manifest.py
       - tools/capability_table.py
       - tools/settings_register.py
-      - strata_cli/__init__.py
+      - nostroma_cli/__init__.py
       - CMakeLists.txt
       - apps/host/package.json
       - apps/desktop/package.json
@@ -37,7 +37,7 @@ on:
       - tools/release_manifest.py
       - tools/capability_table.py
       - tools/settings_register.py
-      - strata_cli/__init__.py
+      - nostroma_cli/__init__.py
       - CMakeLists.txt
       - apps/host/package.json
       - apps/desktop/package.json

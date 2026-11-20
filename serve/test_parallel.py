@@ -18,8 +18,8 @@ from unittest import mock
 from serve.frontend import ChatTemplate
 from serve import server
 from serve.server import ByteTokenizer, Service, StrataEngine, engine_args, parallel_args, serve
-from strata_cli import bench
-from strata_cli.client import Endpoint
+from nostroma_cli import bench
+from nostroma_cli.client import Endpoint
 
 # The fake engine: one token every STEP seconds per active slot (a "window" serves every active slot at once);
 # GEN (solo) streams T lines; BGEN reads the prompt (one T line, DONE), answers BADM and continues in the slot.
@@ -248,7 +248,7 @@ class DFlash2ChosenWithRequests(unittest.TestCase):
     def build(self, **cfg):
         import contextlib
         import io
-        from strata_control import drafting
+        from nostroma_control import drafting
         shaped = {"model_name": "qwen3.8-flash-next-gyro-gyro-s", "args": list(self.BASE), **cfg}
         patches = (mock.patch.object(drafting, "detect_hardware", return_value=("cuda", ["sm_120"])), mock.patch.object(drafting, "pack_ready", return_value=True),
                    mock.patch.object(drafting, "vocab_path", return_value=Path("/d/draft_vocab.bin")), mock.patch.object(drafting, "mtp_ready", return_value=True),

@@ -1,4 +1,4 @@
-"""The RAM figure the Terminal's tools read (strata_control/cgroup_memory.py; split_engine.ram_gib, tune_machine.memory,
+"""The RAM figure the Terminal's tools read (nostroma_control/cgroup_memory.py; split_engine.ram_gib, tune_machine.memory,
 and setup's ram_gb through the same limit reader): inside a container the cgroup limit, outside it /proc/meminfo exactly
 as before.  Fake /proc and cgroup trees in a temporary folder; no container needed.
 """
@@ -8,8 +8,8 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_control import cgroup_memory as C
-from strata_control import split_engine, tune_machine
+from nostroma_control import cgroup_memory as C
+from nostroma_control import split_engine, tune_machine
 
 GIB = 1 << 30
 MIB = 1 << 20

@@ -1,6 +1,6 @@
 """Round 0213 TUICFG, step 3: one precedence for a launch's engine options (#5178, #5132, #4985).
 
-Explicit launch values, then persisted overrides, then calibrated values, then Auto (strata_control/arg_layers.py). Each case builds the run
+Explicit launch values, then persisted overrides, then calibrated values, then Auto (nostroma_control/arg_layers.py). Each case builds the run
 config like a launch does (derive_config, stamp, write, read back), then asks serve/server.py engine_args for the final native argv, and
 launches a second time with no new flags. The Control and the engine are doubles; nothing starts."""
 from __future__ import annotations
@@ -9,9 +9,9 @@ import json
 import unittest
 from unittest import mock
 
-from strata_cli.launch import settings as S
-from strata_cli.launch.runner import derive_config
-from strata_control import arg_layers, drafting, tune_knobs
+from nostroma_cli.launch import settings as S
+from nostroma_cli.launch.runner import derive_config
+from nostroma_control import arg_layers, drafting, tune_knobs
 from tests.terminal.test_drafting_single import Base, flag
 
 
@@ -112,7 +112,7 @@ class Launches(Base):
         self.assertNotIn("--cards", new["args"])
 
     def test_calibrated_values_are_kept_by_the_next_launch(self):
-        from strata_control import calibration
+        from nostroma_control import calibration
         cfg0 = self.launch()                                 # the launch config the profile points at
         applied = json.loads(json.dumps(cfg0))
         applied["args"] = tune_knobs.apply_to_argv(applied["args"], {"--pcie-frac": "0.2", "--pool-workers": "6"})

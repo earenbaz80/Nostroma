@@ -235,13 +235,13 @@ class InstalledModelsNeedNoNetwork(unittest.TestCase):
 
     def test_the_runtime_has_no_model_host_in_it(self):
         """strata launch, serve, the monitor and the API reach no model host: the names are in setup.py and the install
-        tools only (and strata_control.acquisition refuses a download under STRATA_NO_ACQUIRE=1)."""
+        tools only (and nostroma_control.acquisition refuses a download under STRATA_NO_ACQUIRE=1)."""
         hosts = re.compile(r"huggingface\.co|hf-mirror|HF_ENDPOINT|modelscope|hf_hub_download", re.I)
         # The harmless mentions: the model-card link a benchmark result file names (nothing opens it), and the pinned
         # DFlash2 drafter address, which only `strata drafting fetch` downloads from, behind acquisition.require (refused
         # under STRATA_NO_ACQUIRE, so a start or a server never reaches it). Dropping just those lines from the scan keeps
         # the rule exact for everything else.
-        # strata_control/pictures.py names the host for the picture-reader files that Load fetches when Read pictures is on and the files
+        # nostroma_control/pictures.py names the host for the picture-reader files that Load fetches when Read pictures is on and the files
         # are missing: its download calls acquisition.require first (refused under STRATA_NO_ACQUIRE, so a start or a server never reaches it).
         harmless = ('MODEL_CARD_URL = "https://huggingface.co/Qwen/Qwen3.8-Flash-Next"',
                     'BASE_URL = f"https://huggingface.co/{REPO}/resolve/{REVISION}/"',
@@ -249,7 +249,7 @@ class InstalledModelsNeedNoNetwork(unittest.TestCase):
                     'HF_DEFAULT = "https://huggingface.co"',
                     'base = (endpoint if endpoint is not None else (os.environ.get("HF_ENDPOINT") or "").strip().rstrip("/") or HF_DEFAULT)')
         found = []
-        for folder in ("strata_cli", "serve", "strata_control"):
+        for folder in ("nostroma_cli", "serve", "nostroma_control"):
             for p in (ROOT / folder).rglob("*.py"):
                 if "test" in p.name:
                     continue
@@ -261,7 +261,7 @@ class InstalledModelsNeedNoNetwork(unittest.TestCase):
         self.assertEqual(found, [])
 
     def test_a_download_is_refused_while_serving(self):
-        from strata_control import acquisition
+        from nostroma_control import acquisition
         with acquisition.forbidden():
             with self.assertRaises(acquisition.AcquisitionRefused):
                 setup.download(pinned_url("Q2_0/x.gguf"), Path(tempfile.gettempdir()) / "strata-never.gguf")

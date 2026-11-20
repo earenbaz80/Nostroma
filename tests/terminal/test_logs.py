@@ -13,9 +13,9 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from unittest import mock
 
-from strata_cli.cli import main
-from strata_cli.client import sanitize_telemetry
-from strata_cli.logs import ActivityContinuity, activity_delta
+from nostroma_cli.cli import main
+from nostroma_cli.client import sanitize_telemetry
+from nostroma_cli.logs import ActivityContinuity, activity_delta
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -49,13 +49,13 @@ class LogsTests(unittest.TestCase):
         endpoint = mock.Mock()
         endpoint.snapshot.return_value = sample("quiet-instance", 1, [1])
         output = io.StringIO()
-        with mock.patch("strata_cli.monitor_commands.Endpoint", return_value=endpoint), \
+        with mock.patch("nostroma_cli.monitor_commands.Endpoint", return_value=endpoint), \
              redirect_stdout(output):
             self.assertEqual(main(["logs", "--quiet"]), 0)
         self.assertNotIn("Recent request activity", output.getvalue())
         self.assertIn("queued", output.getvalue())
         output = io.StringIO()
-        with mock.patch("strata_cli.monitor_commands.Endpoint", return_value=endpoint), \
+        with mock.patch("nostroma_cli.monitor_commands.Endpoint", return_value=endpoint), \
              redirect_stdout(output):
             self.assertEqual(main(["logs", "--quiet", "--json"]), 0)
         self.assertEqual(json.loads(output.getvalue())["events"][0]["event"], "queued")
@@ -80,8 +80,8 @@ class LogsTests(unittest.TestCase):
         endpoint = mock.Mock()
         endpoint.snapshot.side_effect = snapshots
         stdout = io.StringIO()
-        with mock.patch("strata_cli.monitor_commands.Endpoint", return_value=endpoint), \
-             mock.patch("strata_cli.logs.time.sleep", side_effect=[None, None, None, KeyboardInterrupt]), \
+        with mock.patch("nostroma_cli.monitor_commands.Endpoint", return_value=endpoint), \
+             mock.patch("nostroma_cli.logs.time.sleep", side_effect=[None, None, None, KeyboardInterrupt]), \
              redirect_stdout(stdout):
             self.assertEqual(main(["logs", "--follow", "--output", "jsonl"]), 0)
         records = [json.loads(line) for line in stdout.getvalue().splitlines()]
@@ -102,7 +102,7 @@ class LogsTests(unittest.TestCase):
                 self.assertEqual(json.loads(stream.getvalue())["error"]["code"], expected)
         endpoint = mock.Mock()
         endpoint.snapshot.return_value = sanitize_telemetry({"schema_version": 1, "instance": {"id": "old"}})
-        with mock.patch("strata_cli.monitor_commands.Endpoint", return_value=endpoint), \
+        with mock.patch("nostroma_cli.monitor_commands.Endpoint", return_value=endpoint), \
              redirect_stdout(io.StringIO()) as stream:
             self.assertEqual(main(["logs", "--output", "json"]), 5)
             self.assertIn("unavailable", json.loads(stream.getvalue())["error"]["message"])

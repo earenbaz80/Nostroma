@@ -1,4 +1,4 @@
-/** The engine options a person set by hand in a model's run config (strata_control/user_args.py is the same rule in Python).
+/** The engine options a person set by hand in a model's run config (nostroma_control/user_args.py is the same rule in Python).
  *  "user_args" holds them; "args_written" is the whole "args" as setup or the app last wrote it, so an option in "args" that is not in
  *  that copy was added or changed by hand since. Every load and every write puts the person's options over the generated ones. */
 export const USER_KEY='user_args',WRITTEN_KEY='args_written';

@@ -1,4 +1,4 @@
-/** The host's launch-policy tables come from strata_control (policy-generated.mjs, written by python -m strata_control.app_policy; tests/terminal/test_app_policy.py checks the file is current).
+/** The host's launch-policy tables come from nostroma_control (policy-generated.mjs, written by python -m nostroma_control.app_policy; tests/terminal/test_app_policy.py checks the file is current).
  *  Here: the host really uses them, and the screen's own copy of the family list (src/lib/drafting.ts) is the same list. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -29,12 +29,12 @@ test('the screen copy of the drafting families (src/lib/drafting.ts) is the gene
   assert.deepEqual(JSON.parse(m[1].replaceAll("'", '"')), DRAFTING_FAMILIES);
 });
 
-/* The rules (where a switch applies, which models have a Drafting choice) are code in the host and in the screen; strata_control answers the same cases (policy-vectors.json, written by python -m strata_control.app_policy). */
+/* The rules (where a switch applies, which models have a Drafting choice) are code in the host and in the screen; nostroma_control answers the same cases (policy-vectors.json, written by python -m nostroma_control.app_policy). */
 const V = JSON.parse(await readFile(new URL('./data/policy-vectors.json', import.meta.url), 'utf8'));
 const { code } = await transform(await readFile(new URL('../src/lib/drafting.ts', import.meta.url), 'utf8'), { loader: 'ts', format: 'esm' });
 const T = await import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`);
 
-test('the host shows the speed switches strata_control shows, for every card, engine and model of the vectors', () => {
+test('the host shows the speed switches nostroma_control shows, for every card, engine and model of the vectors', () => {
   assert.ok(V.switches.length > 100);
   for (const row of V.switches) {
     const model = V.models[row.model];
@@ -44,7 +44,7 @@ test('the host shows the speed switches strata_control shows, for every card, en
   }
 });
 
-test('the host and the screen agree with strata_control on which models and families have a Drafting choice', () => {
+test('the host and the screen agree with nostroma_control on which models and families have a Drafting choice', () => {
   for (const { name, supported } of V.names) assert.equal(S.resolveDrafter('dflash2', name, true, false) === 'dflash2', supported, name);
   for (const { family, supported } of V.families) {
     assert.equal(T.resolveDrafter('dflash2', family, true, false) === 'dflash2', supported, `screen: ${family}`);

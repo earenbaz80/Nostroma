@@ -1,5 +1,5 @@
 /**
- * 0.2.10.1: the desktop app's Auto load uses the all-cards split engine wherever the Terminal does. The decision is Control's (strata_control/split_engine.py, `strata drafting plan`,
+ * 0.2.10.1: the desktop app's Auto load uses the all-cards split engine wherever the Terminal does. The decision is Control's (nostroma_control/split_engine.py, `strata drafting plan`,
  * `strata split-engine apply`; tests/terminal/test_split_parallel.py); this file drives the host's load with a fake Control and checks what the host asks and starts:
  * no --no-split on the plan or the fetch, the MTP draft layer fetched through the existing installer step (gguf_dir, so the model is not fetched again), the split engine's
  * run config saved as the profile, a person's DFlash2 kept, a failed layer fetch ending in a working layer split with one plain note. Nothing here starts an engine.

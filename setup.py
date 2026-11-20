@@ -62,17 +62,17 @@ import urllib.request
 import zipfile
 from pathlib import Path
 
-from strata_control import acquisition
-from strata_control import tls
-from strata_control import netpolicy
+from nostroma_control import acquisition
+from nostroma_control import tls
+from nostroma_control import netpolicy
 
 tls.install()      # #3722: HTTPS checks the server against the operating system's certificates (what Chrome and curl.exe do)
-from strata_control import atomic
-from strata_control import draft_layer
-from strata_control import engine_component
-from strata_control import sysinfo
-from strata_control.discovery import in_trash
-from strata_control import user_args
+from nostroma_control import atomic
+from nostroma_control import draft_layer
+from nostroma_control import engine_component
+from nostroma_control import sysinfo
+from nostroma_control.discovery import in_trash
+from nostroma_control import user_args
 
 ROOT = Path(__file__).resolve().parent
 # The desktop app runs this installer under Strata Control (its bundled Python, STRATA_CONTROL_INSTALL=1). The source
@@ -865,10 +865,10 @@ def ask(question, choices, default, yes):
 
 def _urlopen(req, timeout=None):
     """Every network request of this file goes through here: starting and serving never reach the network
-    (strata_control/acquisition.py), only an explicit setup, update or install does."""
+    (nostroma_control/acquisition.py), only an explicit setup, update or install does."""
     acquisition.require("a download")
     try:
-        # strata_control/netpolicy.py: `timeout` bounds the connection phase (lookup, connect, TLS, the answer's headers); a read after
+        # nostroma_control/netpolicy.py: `timeout` bounds the connection phase (lookup, connect, TLS, the answer's headers); a read after
         # the answer that gets no byte for netpolicy.STALL_S ends the connection
         return netpolicy.urlopen(req, timeout=timeout)
     except urllib.error.URLError as e:
@@ -878,7 +878,7 @@ def _urlopen(req, timeout=None):
 
 
 def _open_net(req, check_memory: bool = True):
-    """One request under the network rule (strata_control/netpolicy.py): 12 s, then one retry with 30 s, a line naming the host after
+    """One request under the network rule (nostroma_control/netpolicy.py): 12 s, then one retry with 30 s, a line naming the host after
     5 s, and a host that did not answer is not asked again in this run. Raises netpolicy.NetFailure, HTTPError or CertificateProblem."""
     return netpolicy.open_url(_urlopen, req, say=lambda line: say(f"  {line} ..."), check_memory=check_memory)
 
@@ -1116,8 +1116,8 @@ def ram_gb():
 
 def _cgroup_memory_limit(self_cgroup="/proc/self/cgroup", root="/sys/fs/cgroup"):
     """The smallest memory limit (bytes) on this process's cgroup and its ancestors, as the engine's memory guard reads
-    it (strata_control/cgroup_memory.py). None when no level sets a limit or the files cannot be read."""
-    from strata_control import cgroup_memory
+    it (nostroma_control/cgroup_memory.py). None when no level sets a limit or the files cannot be read."""
+    from nostroma_control import cgroup_memory
     return cgroup_memory.memory_limit(self_cgroup, root)
 
 
@@ -1789,17 +1789,17 @@ def cuda12_min_driver(feed: bool = False) -> tuple[int, str, str]:
     got = _CUDA12_FLOORS.get(True) or _CUDA12_FLOORS.get(feed)
     if got:
         return got
-    from strata_control import driver_floor
+    from nostroma_control import driver_floor
     roots = [engine_component.components_dir(), home() / "engine-feed"]
     source = None
     if feed and not acquisition.is_forbidden():
         try:
-            from strata_cli import update_cmd
+            from nostroma_cli import update_cmd
             source = update_cmd._feed_source(argparse.Namespace(feed=None), home())
         except Exception:                                  # noqa: BLE001 - no feed address: the built-in figure
             source = None
     try:
-        from strata_control import targets
+        from nostroma_control import targets
         platform_name = targets.host_platform()
     except Exception:                                      # noqa: BLE001
         platform_name = ""
@@ -2048,8 +2048,8 @@ def fallback_card(a, gpu, chosen):
 
 
 def card_speeds() -> dict:
-    """{card number: SMs x max clock} of the NVIDIA cards (strata_control/gpu_roles.py); {} when it cannot say."""
-    from strata_control import gpu_roles
+    """{card number: SMs x max clock} of the NVIDIA cards (nostroma_control/gpu_roles.py); {} when it cannot say."""
+    from nostroma_control import gpu_roles
     return gpu_roles.nvidia_speeds()
 
 
@@ -2063,7 +2063,7 @@ def choose_roles(a, found) -> list:
     """Two or more cards can share the model: the recommended role of each (the best card Main, the others Helper, a card with 8 GB or less
     Off) and ONE question, "Use these roles?".  n takes the person's own: 1=main,0=helper (cards left out are Off).  Returns the card
     numbers in the engine's order (Main last) and keeps the roles in a._roles for the config (docs/MULTI_GPU.md)."""
-    from strata_control import gpu_roles
+    from nostroma_control import gpu_roles
     cards = roles_cards(found)
     roles = dict(gpu_roles.recommend(cards)["roles"])
     say()
@@ -3443,7 +3443,7 @@ def _hash_file(s: Path, size: int) -> str:
 def own_gguf_is_whole(path: Path) -> bool:
     """The person's own GGUF reads as a whole file: its header parses and every tensor lies inside the file (a cut-short copy fails this)."""
     try:
-        from strata_control import gguf_preflight
+        from nostroma_control import gguf_preflight
         gguf_preflight.inspect_metadata(Path(path))
         return True
     except Exception:                                  # noqa: BLE001 - anything unreadable is "not whole"
@@ -3640,7 +3640,7 @@ def unsloth_budget(model, ram, gpu=None, asked=None) -> bool:
 
 
 def uma_holds_experts(model, ram, gpu) -> bool:
-    """A unified-memory GPU whose shared pool holds every expert of `model` beside everything else the engine keeps there (strata_control/uma_pool.py: the
+    """A unified-memory GPU whose shared pool holds every expert of `model` beside everything else the engine keeps there (nostroma_control/uma_pool.py: the
     measured fixed part, the experts, a margin) and whose RAM holds them with UNSLOTH_RESIDENT_BESIDE_GB more.  Only for a set that asks ("uma_pool_auto"):
     the sets measured under the budget mode (UD-IQ4_XS, UD-Q4_K_XL, ...) keep their plans."""
     if sys.platform == "darwin" or not MODELS.get(model, {}).get("uma_pool_auto") or not (gpu or {}).get("uma"):
@@ -3648,7 +3648,7 @@ def uma_holds_experts(model, ram, gpu) -> bool:
     shared = float((gpu or {}).get("vram_gb") or 0.0)
     if shared <= 0:
         return False
-    from strata_control import uma_pool
+    from nostroma_control import uma_pool
     arena_gib = MODELS[model]["arena_gb"] / 1.073741824
     return (uma_pool.FIXED_GIB + arena_gib + uma_pool.MARGIN_GIB <= uma_pool.pool_gib(shared)
             and ram >= arena_gib + UNSLOTH_RESIDENT_BESIDE_GB)
@@ -3657,7 +3657,7 @@ def uma_holds_experts(model, ram, gpu) -> bool:
 def images_default(model, family, ram, gpu=None) -> bool:
     """Is "images on" setup's default answer (the question's Enter, and --yes) for this choice?  Owner rule 2026-10-18: pictures are on
     wherever the model can read them - the original Flash-Next, Swift and Coder files, Unsloth's, NVFP4 - on every make of card; which
-    reader runs is strata_control/vision_reader.py's rule (the CPU under 24 GB of VRAM, the GPU from 24 GB).  The CPU reader takes no
+    reader runs is nostroma_control/vision_reader.py's rule (the CPU under 24 GB of VRAM, the GPU from 24 GB).  The CPU reader takes no
     VRAM (no --vram-reserve-mib), so a small card is no exception."""
     return MODELS.get(model, {}).get("vision", FAMILIES.get(family, {}).get("vision")) is not False
 
@@ -3665,7 +3665,7 @@ def images_default(model, family, ram, gpu=None) -> bool:
 unsloth_images_default = images_default     # the earlier name
 
 
-IMAGES_GPU_ENCODER_MIN_VRAM_GB = 23.5   # = strata_control/vision_reader.py GPU_MIN_VRAM_GB, the one place for the rule; #2406: below this the images answer "yes" gets the CPU encoder (a card of 12-16 GB: the GPU
+IMAGES_GPU_ENCODER_MIN_VRAM_GB = 23.5   # = nostroma_control/vision_reader.py GPU_MIN_VRAM_GB, the one place for the rule; #2406: below this the images answer "yes" gets the CPU encoder (a card of 12-16 GB: the GPU
                                         # encoder's ~1.1-1.4 GB is ~850 expert slots lost, 3-5% of decode and prompt on P100 / A4000
                                         # 16 GB (Linux, IQ3_S / IQ3_XXS), and 35-60% on an RTX 4080 SUPER under Windows as reported)
 
@@ -3703,11 +3703,11 @@ def uma_expert_cache(model, ram, budget_gib, kv_ram_gb=0.0):
 
 def uma_cache_guard(cfg: dict, model: str, gpu: dict) -> None:
     """A Strix Halo: a numeric --expert-cache the person fixed (kept from their earlier config, or given by hand) beside setup's RAM budget.  The
-    cache and the pinned RAM part draw on one pool, the pinned part twice (strata_control/uma_pool.py); a smaller cache with the budget unchanged ended
+    cache and the pinned RAM part draw on one pool, the pinned part twice (nostroma_control/uma_pool.py); a smaller cache with the budget unchanged ended
     the engine with exit code 1 and no message (STRIX-2Q, 2026-11-01).  The cache is the person's and stays; the budget, when it is setup's own, is
     lowered to what the pool holds, and a budget the person set too is only warned about (recommend, never force)."""
     try:
-        from strata_control import uma_pool
+        from nostroma_control import uma_pool
         args = cfg.get("args")
         fixed = uma_pool.fixed_cache_and_budget(args) if gpu.get("uma") and isinstance(args, list) else None
         if fixed is None:
@@ -4213,11 +4213,11 @@ def mem_have(model: str, ram: float, vram: float = 0.0) -> float:
 # below the tiers' names (40 / 48 / 64 GB) because the OS reports a little less than the installed memory.  64 GB and
 # up: IQ3_S (the original; Swift 1.5's IQ3_S is an equal choice), 48 GB: IQ3_XXS, 40 GB: Swift 1.5's IQ2_XS, with Gyro-M
 # (35 GB) as the other choice.  Below 40 GB the older rules stand (Gyro-S, or the Coder for code).  The Mac has its own
-# rules (strata_control/mac_fit.py).  tools/strata_mcp.py's recommend() holds the same floors (the app and `strata launch`).
+# rules (nostroma_control/mac_fit.py).  tools/strata_mcp.py's recommend() holds the same floors (the app and `strata launch`).
 MEMORY_TIERS = ((62.0, "qwen", "IQ3_S"), (46.0, "qwen", "IQ3_XXS"), (38.0, "swift", "IQ2_XS"))
 # #3425 (owner's rule): the tiers count RAM + VRAM less this much, which Windows and the system keep for themselves.  A PC
 # with a 16 GB card and 32 GB of RAM used to land in the 48 GB tier and then read ~11 GB of it from the SSD on every answer.
-# tools/strata_mcp.py has the same constant; the Mac (strata_control/mac_fit.py) keeps its own macOS share and does not use it.
+# tools/strata_mcp.py has the same constant; the Mac (nostroma_control/mac_fit.py) keeps its own macOS share and does not use it.
 TIER_SYSTEM_RESERVE_GB = 5.0
 
 
@@ -4741,7 +4741,7 @@ def hip_probe_path() -> Path:
     if own.exists():
         return own
     try:
-        from strata_control import engine_component as EC
+        from nostroma_control import engine_component as EC
         found = EC.resolve(backend="hip", full=False)
         return Path(found.root) / name
     except Exception:                                  # noqa: BLE001 - no component, a damaged one: the old answer
@@ -4884,7 +4884,7 @@ def engine_from_feed(eng: Path, updating: bool = False) -> Path | None:
     (into a folder of its own under the install), and its files then become the installed engine in `eng`, the same way a
     zip's do.  None when it cannot be had (no internet, nothing for this card): the caller goes on as before."""
     acquisition.require("the ready-made engine")
-    from strata_control import engine_component as ec
+    from nostroma_control import engine_component as ec
     store = home() / "engine-feed"
     env = dict(os.environ)
     env.pop("STRATA_NO_ACQUIRE", None)
@@ -5100,8 +5100,8 @@ def hipblaslt_table(arch, lib_dirs, ver=None, extra_dirs=()):
     ids are valid only for that pair (the engine refuses any other table and uses plain hipBLAS).  ver: the
     hipBLASLt version the ready-made engine ships (its BUILD.json), else read from the installed headers.  extra_dirs: the
     engine folder's own tuning/ first (a ready-made engine carries its tables), then tools/hip of this checkout.
-    STRATA_HIPBLASLT_TABLE=off: none (strata_control/hipblaslt_tuning.py)."""
-    from strata_control import hipblaslt_tuning as HT
+    STRATA_HIPBLASLT_TABLE=off: none (nostroma_control/hipblaslt_tuning.py)."""
+    from nostroma_control import hipblaslt_tuning as HT
     if HT.switched_off():
         say(f"  hipBLASLt tuning table: off ({HT.SWITCH}=off); the prompt's dense matrix products use plain hipBLAS")
         return None
@@ -5180,10 +5180,10 @@ def build_engine_hip(gpu, llama, vision="none") -> Path:
 
 def hip_vision(asked, vram_gb: float = 0.0) -> str:
     """The picture reader wanted with the AMD backend (--vision): when nothing was asked or "yes" (pictures are on by default) the
-    default of strata_control/vision_reader.py for this card - the CPU reader under 24 GB, the GPU reader from 24 GB (owner decision
+    default of nostroma_control/vision_reader.py for this card - the CPU reader under 24 GB, the GPU reader from 24 GB (owner decision
     2026-10-18, every make of card); "gpu" / "cpu" as asked (#304), "none" for no.  "gpu" is a wish: hip_reader() settles it against
     what the engine folder carries (the HIP reader, else the CPU one) once the engine is known."""
-    from strata_control import vision_reader as VR
+    from nostroma_control import vision_reader as VR
     return VR.wanted(asked, vram_gb)
 
 
@@ -5202,10 +5202,10 @@ def reader_archs(eng: Path) -> list:
 
 
 def hip_reader(eng: Path, vision: str, gpu: dict):
-    """AMD: the picture reader this engine folder gets for `vision` ("gpu" or "cpu"; strata_control/vision_reader.py): the HIP
+    """AMD: the picture reader this engine folder gets for `vision` ("gpu" or "cpu"; nostroma_control/vision_reader.py): the HIP
     reader with the CPU reader to fall back on, else the CPU reader.  Returns (vision, Reader); a Reader of mode "none" means
     the folder has no reader.  The one plain note (a card the HIP reader has no code for, no HIP reader in this engine) is said."""
-    from strata_control import vision_reader as VR
+    from nostroma_control import vision_reader as VR
     r = VR.choose(eng, vision, windows=WIN, gpu_arch=str(gpu.get("arch") or ""), archs=reader_archs(eng))
     if r.note:
         warn(r.note)
@@ -6460,17 +6460,17 @@ def low_ram_fits(model, ram, vram_gb, mtp=True) -> bool:
 
 
 def model_files_gb(model) -> float:
-    """The model's files without the n-gram / PLE lookup table's file, in GB: the download minus the table (strata_control/fit_label.py; the catalog's `fit_gb`,
+    """The model's files without the n-gram / PLE lookup table's file, in GB: the download minus the table (nostroma_control/fit_label.py; the catalog's `fit_gb`,
     the Terminal's "Needs (RAM + VRAM)" column)."""
-    from strata_control import fit_label
+    from nostroma_control import fit_label
     d = MODELS[model]
     return fit_label.files_gb((d.get("families") or (None,))[0], model, d)
 
 
 def model_fit_label(model, ram, gpu) -> str:
-    """"fits" or "may run slower" (strata_control/fit_label.py, the owner's one rule): the files without the lookup table against the RAM and the card's memory
+    """"fits" or "may run slower" (nostroma_control/fit_label.py, the owner's one rule): the files without the lookup table against the RAM and the card's memory
     together.  An integrated chip counts only its carve-out (`low_ram_vram`: its shared memory is the RAM)."""
-    from strata_control import fit_label
+    from nostroma_control import fit_label
     return fit_label.label(model_files_gb(model), ram, low_ram_vram(gpu) if gpu else 0.0)
 
 
@@ -6841,7 +6841,7 @@ def data_folder(requested: str | None, move: bool = False, yes: bool = True, set
     settings = load_settings()
     remembered = Path(settings["data_dir"]) if settings.get("data_dir") else home().parent / "Strata-data"
     dest = Path(requested).expanduser().resolve() if requested else remembered
-    from strata_control import folders
+    from nostroma_control import folders
     bad = folders.problem(dest)
     if bad and requested:
         fail(folders.without_nothing_changed(bad)[:400], "Nothing was downloaded or changed, and the folder was not saved as your data folder.")
@@ -6935,7 +6935,7 @@ def data_folder_in_place() -> tuple:
     configs name their model files, so an install made by an earlier Strata starts from where it is."""
     settings = load_settings()
     dest = Path(settings["data_dir"]) if settings.get("data_dir") else home().parent / "Strata-data"
-    from strata_control import folders
+    from nostroma_control import folders
     if settings.get("data_dir") and folders.problem(dest):      # a folder saved earlier that cannot be used: the default, and it is not kept
         dest = home().parent / "Strata-data"
     return dest, []
@@ -6951,7 +6951,7 @@ def write_config(path: Path, cfg: dict):
 
 # #629: the run config's keys setup writes itself (and rewrites on every setup run); any other key is the user's - a
 # "sampling" or "mcp_servers" block, "allowed_hosts", "cors_origins", "open_browser" - and is kept when setup runs again
-# "args_written" (strata_control/user_args.py) is setup's own; "user_args" is not in SETUP_KEYS on purpose: carry_over keeps it,
+# "args_written" (nostroma_control/user_args.py) is setup's own; "user_args" is not in SETUP_KEYS on purpose: carry_over keeps it,
 # then applies the person's options over the generated ones
 SETUP_KEYS = frozenset({"exe", "args", "cwd", "tokenizer", "model_name", "log", "lib_dirs", "port", "backend", "env",
                         "gpu", "gpus_asked", "gpus_by", "layer_split", "host", "api_key", "draft_vocab", "vision", "args_written"})
@@ -7029,7 +7029,7 @@ def explicit_args(a) -> list[str]:
 
 def carry_user_args(old: dict, cfg: dict, explicit: list[str] | None = None) -> list[str]:
     """#3216 #3215 #3270: the engine options the person set by hand in the earlier run config are put back over the
-    generated ones, and recorded in the new one's "user_args" (strata_control/user_args.py).  They are the earlier
+    generated ones, and recorded in the new one's "user_args" (nostroma_control/user_args.py).  They are the earlier
     "user_args", the options of "args" that differ from "args_written" (hand edits), for a config with no "args_written"
     the options its args had and the new ones do not (control vectors, --spec, ...) and an explicit --vram-reserve-mib of
     the earlier file.  `explicit`: options given on this run's command line, which win.  The names kept are returned."""
@@ -7094,13 +7094,13 @@ def args_dropped(old: dict, cfg: dict) -> list[str]:
     return list(dict.fromkeys(f for f in flags(old) if f not in new))
 
 
-SHAPE_ENGINE: dict = {}       # the model-shape engine the chosen model runs on: {"shape": "q4_lite"} (strata_control/shape_engine.py); empty: the Strata engine
+SHAPE_ENGINE: dict = {}       # the model-shape engine the chosen model runs on: {"shape": "q4_lite"} (nostroma_control/shape_engine.py); empty: the Strata engine
 
 
 def engine_exe(eng: Path) -> str:
     """The `exe` of a run config: the engine component in the app, else the engine binary's path. A model of its own shape names that shape's engine."""
     if SHAPE_ENGINE.get("shape"):
-        from strata_control import shape_engine
+        from nostroma_control import shape_engine
         return shape_engine.reference(SHAPE_ENGINE["shape"])
     return "component:strata-engine" if CONTROL else str(eng / EXE)
 
@@ -7111,7 +7111,7 @@ def write_setup_config(cfg_path: Path, cfg: dict, source: Path | None = None, ex
     strata-<model>.json.bak when it changes.  `source`: an earlier install's config to carry the keys over from when
     this folder has none yet (a copy set up like the last one).  A line says what was kept, one what was not."""
     if SHAPE_ENGINE.get("title") and SHAPE_ENGINE.get("shape") and cfg.get("exe") == engine_component.REFERENCE_PREFIX + "strata-" + SHAPE_ENGINE["shape"].replace("_", "-"):
-        cfg["shape_title"] = SHAPE_ENGINE["title"]                  # the engine's refusal at a start names the model, not the geometry (strata_control/shape_engine.py)
+        cfg["shape_title"] = SHAPE_ENGINE["title"]                  # the engine's refusal at a start names the model, not the geometry (nostroma_control/shape_engine.py)
     old_path = cfg_path if cfg_path.is_file() else source
     old = None
     if old_path is not None and old_path.is_file():
@@ -7176,7 +7176,7 @@ def previous_config(elsewhere_first: list, settings: dict):
     cands = []
     for folder in [*elsewhere_first, *other_installs(settings)]:
         cands += model_config_files(folder)
-    from strata_control import retired
+    from nostroma_control import retired
     cands = [c for c in dict.fromkeys(cands) if c.is_file() and not retired.config_file_reason(c)]   # never set up like a DeepSeek model
     return next((c for c in sorted(cands, key=lambda p: p.stat().st_mtime, reverse=True) if readable_config(c)), None)
 
@@ -7387,15 +7387,15 @@ def model_config(path: Path) -> bool:
 
 def installed_configs():
     """The model configs of this install, newest first; a DeepSeek one is not among them (this Strata does not run, check, tune or rewrite it:
-    retired_configs, strata_control/retired.py)."""
-    from strata_control import retired
+    retired_configs, nostroma_control/retired.py)."""
+    from nostroma_control import retired
     return [p for p in sorted(model_config_files(home()), key=lambda p: p.stat().st_mtime, reverse=True)
             if model_config(p) and not retired.config_file_reason(p)]
 
 
 def retired_configs() -> list:
     """The DeepSeek model configs of this install: left exactly as they are."""
-    from strata_control import retired
+    from nostroma_control import retired
     return [p for p in sorted(model_config_files(home())) if model_config(p) and retired.config_file_reason(p)]
 
 
@@ -7673,7 +7673,7 @@ def settings_summary(cfg: dict, port=None) -> str:
 
 def start(cfg_path: Path, port: int | None, gpu: int | list | None = None, open_browser=True, yes=False,
           layer_split=None, keep=None) -> int:
-    """Start the model.  Nothing is installed, downloaded or compiled while it starts (strata_control/acquisition.py):
+    """Start the model.  Nothing is installed, downloaded or compiled while it starts (nostroma_control/acquisition.py):
     what is missing is named with the command that installs it (SETUP / UPDATE / strata install)."""
     with acquisition.forbidden():
         return _start(cfg_path, port, gpu, open_browser, yes, layer_split, keep)
@@ -7712,7 +7712,7 @@ def _start(cfg_path: Path, port: int | None, gpu: int | list | None = None, open
     cfg_path.touch()                                     # the most recently used model
     if "--mtp" in cfg["args"][:-1] and not own_path_config(cfg):
         refresh_draft_vocab(Path(cfg["args"][cfg["args"].index("--mtp") + 1]), cfg.get("draft_vocab", "cjk"))
-        from strata_control import drafting
+        from nostroma_control import drafting
         refresh_dflash2_vocab(drafting.data_dir_of(cfg["args"]), cfg.get("draft_vocab", "cjk"))
     cmd = [sys.executable, str(ROOT / "serve" / "server.py"), "--engine", "strata", "--config", str(cfg_path),
            "--port", str(port or cfg.get("port", 8080))]
@@ -8111,9 +8111,9 @@ def mtp_corrupt(mtp: Path, env=None) -> bool:
 
 
 def provide_dflash2_vocab(data: Path, choice: str = "cjk") -> None:
-    """A DFlash2-only install has no MTP folder to hold the draft vocabulary: it is kept beside the DFlash2 pack (strata_control/drafting.py provide_vocab), as the subset the person chose
+    """A DFlash2-only install has no MTP folder to hold the draft vocabulary: it is kept beside the DFlash2 pack (nostroma_control/drafting.py provide_vocab), as the subset the person chose
     in setup (--draft-vocab, saved in the model's config; the default file when none)."""
-    from strata_control import drafting
+    from nostroma_control import drafting
     if drafting.provide_vocab(data, choice or "cjk") is None:
         warn("the draft vocabulary file (data/draft_vocab.bin) is missing from this Strata folder, so DFlash2 cannot start; update Strata")
 
@@ -8123,7 +8123,7 @@ def refresh_dflash2_vocab(data: Path | None, choice: str = "cjk") -> None:
     choice for a DFlash2-only install, which has no MTP folder for refresh_draft_vocab to work on."""
     if data is None:
         return
-    from strata_control import drafting
+    from nostroma_control import drafting
     if drafting.vocab_target(data).is_file():
         drafting.refresh_vocab(data, choice or "cjk")
 
@@ -8163,7 +8163,7 @@ def refresh_shared_draft_vocab(cfg: dict, done: set) -> None:
     args = cfg.get("args") or []
     if "--mtp" not in args[:-1]:
         return
-    from strata_control import drafting
+    from nostroma_control import drafting
     data = drafting.data_dir_of(args)
     if data is not None:                                  # the DFlash2 copy, once per data folder, the config used last first like the MTP folder below
         dkey = ("dflash2", os.path.normcase(os.path.abspath(data)))
@@ -8341,12 +8341,12 @@ def sycl_setup(argv) -> int:
 
 def intel_control_setup(a) -> int:
     """`--backend sycl` in the app's CONTROL mode (tools/strata_mcp.py passes it for an Intel Arc PC): what the Terminal does for an Arc
-    (strata_cli/launch/runner.py adopt_prepared_files): the pack from the model's GGUF files (`--prepare-pack`'s step), then the run config
-    (strata_cli/launch/adopt.py), the engine named as the component. Nothing is downloaded, nothing is compiled; Intel
+    (nostroma_cli/launch/runner.py adopt_prepared_files): the pack from the model's GGUF files (`--prepare-pack`'s step), then the run config
+    (nostroma_cli/launch/adopt.py), the engine named as the component. Nothing is downloaded, nothing is compiled; Intel
     cards do not download models, so the files must be on the computer (--gguf-dir, or <data folder>/models/<tag>). The older `--backend sycl`
     (a source build with oneAPI, sycl/setup_intel.py) is sycl_setup(), for a checkout; the app's bundle has no sycl/ folder."""
-    from strata_cli.launch import adopt
-    from strata_control import intel_app
+    from nostroma_cli.launch import adopt
+    from nostroma_control import intel_app
     say("Strata on an Intel Arc card (the SYCL engine)")
     step(1, "checking this computer")
     if not intel_app.supported_here():
@@ -8375,7 +8375,7 @@ def intel_control_setup(a) -> int:
     if a.check:
         return 0
     SHAPE_ENGINE.clear()
-    if fam.get("shape"):                               # a feed model of its own shape: its own engine component, fetched from the signed feed (strata_control/shape_engine.py)
+    if fam.get("shape"):                               # a feed model of its own shape: its own engine component, fetched from the signed feed (nostroma_control/shape_engine.py)
         SHAPE_ENGINE["shape"], SHAPE_ENGINE["title"] = fam["shape"], fam.get("title")
         shape_engine_fetch(a)
     step(2, "preparing the model for this graphics card")
@@ -8413,11 +8413,11 @@ def intel_control_setup(a) -> int:
 
 
 def control_engine_step(gpu, vision):
-    """Step 4 in the app: the engine is the component folder's package (strata_control/engine_component.py), found if it is
+    """Step 4 in the app: the engine is the component folder's package (nostroma_control/engine_component.py), found if it is
     there and never fetched or built. A model can be downloaded and prepared before the engine is installed; the run config
     names "component:strata-engine" and the engine is looked up when the model is loaded. llama.cpp's source zip is fetched
     for gguf-py only (the preparation tools), as setup always did: no git, no compiler."""
-    from strata_control import engine_component as EC
+    from nostroma_control import engine_component as EC
     llama = llama_cpp_if_here()
     try:
         found = EC.resolve(full=False)
@@ -8449,12 +8449,12 @@ def control_engine_step(gpu, vision):
 
 def shape_engine_fetch(a):
     """The engine of the chosen model's shape (SHAPE_ENGINE), fetched through the signed feed (--feed, STRATA_UPDATE_FEED, the remembered feed, or the release's), checked, started
-    once and kept (strata_control/shape_engine.py); the Strata engine is not touched. Returns its component (shape_engine.find), or None when there is none and the person said to
+    once and kept (nostroma_control/shape_engine.py); the Strata engine is not touched. Returns its component (shape_engine.find), or None when there is none and the person said to
     go on without it (STRATA_ALLOW_NO_ENGINE: the model is downloaded and prepared, and set up again later); otherwise it stops with the owner's lines."""
-    from strata_control import engine_component as EC, shape_engine
+    from nostroma_control import engine_component as EC, shape_engine
     shape, title = SHAPE_ENGINE["shape"], SHAPE_ENGINE.get("title")
     name = shape_engine.shown(shape, title)                          # what a person reads: the model's title (shape_engine.USE_TITLE)
-    from strata_cli import update_cmd
+    from nostroma_cli import update_cmd
     source = update_cmd._feed_source(argparse.Namespace(feed=getattr(a, "feed", None)), EC.components_dir())
     exe = shape_engine.ensure(shape, source, emit=lambda m: say("  " + m), title=title)
     if exe is None:
@@ -8468,7 +8468,7 @@ def shape_engine_fetch(a):
 
 
 def shape_engine_step(a, gpu, vision):
-    """Step 4 for a model that runs on the engine of its own shape (a Qwen4 model whose geometry is not Flash-Next's: strata_control/shape_engine.py). That engine is a
+    """Step 4 for a model that runs on the engine of its own shape (a Qwen4 model whose geometry is not Flash-Next's: nostroma_control/shape_engine.py). That engine is a
     separate component next to the Strata engine (shape_engine_fetch); the run config names it ("component:strata-q4-lite") and every start looks it up.
     Returns what engine_step returns."""
     shape = SHAPE_ENGINE["shape"]
@@ -8541,7 +8541,7 @@ FEED_UNAVAILABLE: dict = {}   # id -> {"title", "by", "family", "reason"}: feed 
 def feed_engine_families() -> set | None:
     """The model families the installed engine runs (`strata --families`), or None when there is no engine to ask. Asked once for each engine program."""
     try:
-        from strata_control import engine_component as EC
+        from nostroma_control import engine_component as EC
         eng = Path(EC.resolve(full=False).root)
     except Exception:                                  # noqa: BLE001 - no engine installed (yet): setup checks again when it installs
         return None
@@ -8554,7 +8554,7 @@ def feed_engine_families() -> set | None:
 
 
 class _SetupTables:
-    """This module's tables for strata_control/feed_models.py, which takes `setup` as an argument (this file is also loaded under other names, so no sys.modules lookup)."""
+    """This module's tables for nostroma_control/feed_models.py, which takes `setup` as an argument (this file is also loaded under other names, so no sys.modules lookup)."""
     def __getattr__(self, name):
         try:
             return globals()[name]
@@ -8567,12 +8567,12 @@ class _SetupTables:
 
 def feed_models_setup(feed: str | None = None, fetch: bool = True) -> None:
     """Add the models of the signed update feed (member `models`; the last verified list when the feed cannot be read) to the tables the menus read. Does
-    nothing, and prints nothing, when the feed has no models. See strata_control/feed_models.py."""
-    from strata_control import feed_models
+    nothing, and prints nothing, when the feed has no models. See nostroma_control/feed_models.py."""
+    from nostroma_control import feed_models
     source = None
     if fetch and not acquisition.is_forbidden():
         try:
-            from strata_cli import update_cmd
+            from nostroma_cli import update_cmd
             source = update_cmd._feed_source(argparse.Namespace(feed=feed), home())
         except Exception:                              # noqa: BLE001 - no feed address: the cached list only
             source = None
@@ -8589,14 +8589,14 @@ def own_path_contexts() -> list:
 
 def own_path_context(fam: dict, vram_gb: float, model: str | None = None) -> int:
     """The recommended context for an own-path family: 128K (owner, 2026-11-01), or on a card where 128K does not fit the largest
-    size that does (#5715, strata_control/own_path_fit.py; the smallest when none fits).  A recommendation only: any size can be chosen."""
-    from strata_control import own_path_fit
+    size that does (#5715, nostroma_control/own_path_fit.py; the smallest when none fits).  A recommendation only: any size can be chosen."""
+    from nostroma_control import own_path_fit
     return own_path_fit.recommended(own_path_fit.inputs(fam.get("name"), model), vram_gb, own_path_contexts())
 
 
 def own_path_context_warning(fam: dict, model: str, vram_gb: float, ctx: int) -> str | None:
     """The sentence said when the chosen context does not fit the card (#5715); None when it fits or cannot be said."""
-    from strata_control import own_path_fit
+    from nostroma_control import own_path_fit
     return own_path_fit.warning(own_path_fit.inputs(fam.get("name"), model), vram_gb, ctx, own_path_contexts())
 
 
@@ -8608,7 +8608,7 @@ def own_path_size(fam: dict, ram: float) -> str:
 
 def own_path_vision(a, fam: dict, gpu: dict, hip: bool) -> str:
     """The image encoder for an own-path family (Qwen3.6-35B-A3B): "gpu", "cpu" or "none".  Pictures are on by default (owner rule
-    2026-10-18) and the reader follows strata_control/vision_reader.py's one rule on every make of card: the CPU encoder under 24 GB of
+    2026-10-18) and the reader follows nostroma_control/vision_reader.py's one rule on every make of card: the CPU encoder under 24 GB of
     VRAM (the GPU one takes ~1.4 GB the experts would use), the GPU encoder from 24 GB.  --vision yes|no|gpu|cpu, else a question whose
     default answer is yes; what is asked for with --vision gpu / cpu is kept, with a note (recommend, never force)."""
     asked = a.vision
@@ -8616,7 +8616,7 @@ def own_path_vision(a, fam: dict, gpu: dict, hip: bool) -> str:
     if asked in ("no", "none"):
         return "none"
     if asked is None:
-        from strata_control import vision_reader as VR
+        from nostroma_control import vision_reader as VR
         mode = VR.default_mode(vram)
         say()
         say(f"  Images: {fam['title']} can also read pictures (screenshots, photos, scanned pages). This adds a "
@@ -8730,7 +8730,7 @@ def install_own_path(a, family, gpu, hip, amd, cuda_tk, multi, port, ram, adopte
     for i, m in enumerate(names, 1):
         d = fam["models"][m]
         size = fam["sha256"][fam["file"].format(q=m)][0]
-        from strata_control import fit_label
+        from nostroma_control import fit_label
         fit = f"   <- {fit_label.label(size / 1e9, ram, low_ram_vram(gpu))}"        # the file against the RAM and the card's memory together
         say(f"  {i}) {m:10s} {d['about']}; download {size / 1e9:.1f} GB{fit}")
     rec = own_path_size(fam, ram)
@@ -8883,7 +8883,7 @@ def install_own_path(a, family, gpu, hip, amd, cuda_tk, multi, port, ram, adopte
         cfg["vision"] = {"exe": str(eng / VEXE), "mmproj": str(mmproj), "model": str(gguf), "gpu": vision == "gpu",
                          "max_tokens": vt}          # the text model, opened vocab-only
         if reader is not None:                      # AMD: the HIP reader with the CPU reader behind it, or the CPU reader
-            from strata_control import vision_reader as VR
+            from nostroma_control import vision_reader as VR
             cfg["vision"] = VR.vision_section(reader, cfg["vision"])
         if vision == "cpu":
             cfg["vision"]["threads"] = vision_threads()
@@ -8964,9 +8964,9 @@ def preview_family(a) -> int:
 
 def mac_vision(asked, model: str, ram: float) -> str:
     """The picture setting of a Mac's setup: "gpu", "cpu" or "none".  Pictures are on wherever the model can read them (owner rule
-    2026-10-18) and the reader follows strata_control/vision_reader.py: on a Mac, the GPU (Metal) reader, because the memory is shared
+    2026-10-18) and the reader follows nostroma_control/vision_reader.py: on a Mac, the GPU (Metal) reader, because the memory is shared
     (no card to keep free) and the CPU reader is ~100x slower.  --vision cpu is kept, with a note (recommend, never force)."""
-    from strata_control import vision_reader as VR
+    from nostroma_control import vision_reader as VR
     if asked in ("no", "none", "off"):
         return "none"
     if asked is None and not images_default(model, "qwen", ram):
@@ -8984,7 +8984,7 @@ def mac_vision(asked, model: str, ram: float) -> str:
 def mac_reader(eng: Path, vision: str):
     """The picture reader the Mac engine folder carries (strata-vision: Metal built in), for `vision` "gpu" or "cpu".  A folder
     without it gets pictures off, said once."""
-    from strata_control import vision_reader as VR
+    from nostroma_control import vision_reader as VR
     r = VR.choose(eng, vision, windows=False, mac=True)
     if r.mode == "none":
         warn(r.note or "this engine has no picture reader: pictures off")
@@ -9057,7 +9057,7 @@ def mac_engine_pids() -> list[int]:
 
 def mac_experts_file(native: Path) -> None:
     """A streaming Mac: <model>.experts beside the GPU's GGUF (metal/tools/stream_experts.py), written only when the disk has room (metal/setup_mac.py experts_file)."""
-    from strata_control import mac_fit as MF
+    from nostroma_control import mac_fit as MF
     out = native.with_name(native.name + ".experts")
     if out.exists() and done(out):
         ok(f"the experts' streaming copy: {out.name}")
@@ -9097,7 +9097,7 @@ def mac_prepare_lock(native: Path) -> Path:
 def mac_repack(files: list, model: str, native: Path) -> None:
     """Unsloth's many-shard set as ONE GGUF for the GPU (metal/tools/metal_repack.py --verify: every tensor hashed against its shard; the n-gram table stays
     in its shard); the same step as metal/setup_mac.py."""
-    from strata_control import mac_fit as MF
+    from nostroma_control import mac_fit as MF
     say(f"  Writing the model's experts and weights into one file for the GPU (one time, "
         f"{MF.MAC_MODELS[model]['shard1_gb']:.0f} GB) ...")
     run([sys.executable, str(mac_tools_dir() / "metal_repack.py"), "--shard1", str(files[0]), "--out", str(native), "--verify"])
@@ -9109,8 +9109,8 @@ def mac_control_setup(a) -> int:
     downloads and prepares the model files and writes a run config whose engine is "component:strata-engine"; it builds nothing
     (the Metal engine is a component: a ready-made package from the feed, or the one inside the installer) and runs no
     metal/setup_mac.py. Which sizes a Mac can run, whether one stays in memory or streams its experts from the SSD, and the
-    Metal flags of the config are strata_control/mac_fit.py's, the module setup_mac.py and the model list use too."""
-    from strata_control import mac_fit as MF
+    Metal flags of the config are nostroma_control/mac_fit.py's, the module setup_mac.py and the model list use too."""
+    from nostroma_control import mac_fit as MF
     say("Strata on a Mac (Apple Silicon, Metal)")
     step(1, "checking your Mac")
     info = MF.mac_info()
@@ -9153,13 +9153,13 @@ def mac_control_setup(a) -> int:
     family = MF.MAC_MODELS[model].get("family", "qwen")
     fam = FAMILIES[family]
     SHAPE_ENGINE.clear()
-    if fam.get("shape"):                               # a feed model of its own shape: its own Metal engine component (strata_control/shape_engine.py)
+    if fam.get("shape"):                               # a feed model of its own shape: its own Metal engine component (nostroma_control/shape_engine.py)
         SHAPE_ENGINE["shape"], SHAPE_ENGINE["title"] = fam["shape"], fam.get("title")
     tag = fam["tag"] + model
     stream = MF.streams(model, ram)
 
     step(4, "the Strata engine (Metal)")
-    from strata_control import engine_component as EC
+    from nostroma_control import engine_component as EC
     llama = llama_cpp_if_here()                        # gguf-py for the preparation tools only (fetched when one runs): no git, no compiler
     ok(f"llama.cpp {LLAMA_CPP_COMMIT[:7]} (gguf-py for the preparation tools)")
     reader = None
@@ -9283,7 +9283,7 @@ def mac_control_setup(a) -> int:
     step(7, "writing the run settings")
     port = a.port or 8080
     profile = ROOT / "data" / "expert-profile.bin"
-    neutral = getattr(__import__("strata_control.setup_config", fromlist=["x"]), "neutral_profile_if_other_shape", None)       # (f-0213-p8merge: F4, the owner's line)
+    neutral = getattr(__import__("nostroma_control.setup_config", fromlist=["x"]), "neutral_profile_if_other_shape", None)       # (f-0213-p8merge: F4, the owner's line)
     if neutral is not None and fam.get("feed") and shards:       # a feed model of another shape than the shipped profile's: a neutral profile for the file's layers x experts
         sys.path.insert(0, str(ROOT / "tools"))
         from gguf_reader import GGUFFile
@@ -9300,8 +9300,8 @@ def mac_control_setup(a) -> int:
         cfg["draft_vocab"] = a.draft_vocab
     if a.browser is not None:
         cfg["open_browser"] = a.browser
-    if vision != "none":                               # the Mac's one program reads on the GPU (--gpu) or the CPU (strata_control/vision_reader.py)
-        from strata_control import vision_reader as VR
+    if vision != "none":                               # the Mac's one program reads on the GPU (--gpu) or the CPU (nostroma_control/vision_reader.py)
+        from nostroma_control import vision_reader as VR
         cfg["args"].append("--vision")
         cfg["vision"] = VR.vision_section(reader, {"exe": str(reader.exe), "mmproj": str(mmproj), "model": str(files[0]),
                                                    "gpu": vision == "gpu", "max_tokens": vision_tokens(a.vision_tokens, vision, None)})
@@ -9317,13 +9317,13 @@ def mac_control_setup(a) -> int:
 
 
 def main() -> int:
-    try:                                               # the engine programs setup runs start no debugger on a user's machine (strata_control/childenv.py)
-        from strata_control.childenv import quiet_crash_env
+    try:                                               # the engine programs setup runs start no debugger on a user's machine (nostroma_control/childenv.py)
+        from nostroma_control.childenv import quiet_crash_env
         quiet_crash_env()
     except Exception:
         pass
     try:                                               # files made by a run as administrator still belong to the user
-        from strata_control import private_files as _pf
+        from nostroma_control import private_files as _pf
         _pf.adopt_user_defaults()
     except Exception:
         pass
@@ -9331,10 +9331,10 @@ def main() -> int:
         return mac_setup(sys.argv[1:])
     _peek = lambda flag: next((v.split("=", 1)[1] if v.startswith(flag + "=") else sys.argv[i + 2] if i + 2 < len(sys.argv) else None   # noqa: E731
                                for i, v in enumerate(sys.argv[1:]) if v == flag or v.startswith(flag + "=")), None)
-    from strata_control import retired
+    from nostroma_control import retired
     if retired.is_name(_peek("--family")) or (_peek("--model") and retired.is_name(_peek("--model"))
                                               and (not _peek("--family") or retired.is_name(_peek("--family")))):
-        say("  " + retired.NOT_OFFERED)                # DeepSeek: no longer offered (strata_control/retired.py)
+        say("  " + retired.NOT_OFFERED)                # DeepSeek: no longer offered (nostroma_control/retired.py)
         return 2
     if (_peek("--family") and _peek("--family") not in {**FAMILIES, **OWN_PATH_FAMILIES}) \
             or (_peek("--model") and not _peek("--family") and model_alias(_peek("--model")) not in MODELS
@@ -9499,7 +9499,7 @@ def main() -> int:
     a = ap.parse_args()
     if getattr(a, "gguf_dir", None):                   # the person's own files: their finish marks go to Strata's marks/, never beside them
         own_files_in(a.gguf_dir)
-    if getattr(a, "dsv41_package", None):              # DeepSeek's engine package: no longer offered (strata_control/retired.py)
+    if getattr(a, "dsv41_package", None):              # DeepSeek's engine package: no longer offered (nostroma_control/retired.py)
         say("  " + retired.NOT_OFFERED)
         return 2
     if a.model and a.model not in MODELS and a.family not in PREVIEW_FAMILIES:
@@ -9534,7 +9534,7 @@ def main() -> int:
     if a.gpu_roles:
         if a.gpu is not None or a.gpus:
             ap.error("use --gpu-roles (a role for each card) or --gpu / --gpus (which cards), not both")
-        from strata_control import gpu_roles as GR
+        from nostroma_control import gpu_roles as GR
         try:
             named = GR.parse_roles(a.gpu_roles)
         except ValueError as e:
@@ -9555,7 +9555,7 @@ def main() -> int:
         + " on a normal PC (a GPU + system RAM + CPU)")
     have = installed_configs()
     if a.update or not (a.setup or a.model or a.family or a.check or a.no_start or a.calibrate or a.rollback_engine):
-        from strata_control import retired
+        from nostroma_control import retired
         for c in retired_configs():                    # DeepSeek: named, left as it is
             say("  " + retired.left_as_is(retired.title(None, c)))
     # A plain start of an installed model finds everything where it already is: it creates, moves and copies nothing
@@ -9679,7 +9679,7 @@ def main() -> int:
               " - docs/AMD_HIP.md)")
         say("  One engine drives the cards of one make: a model is never split across NVIDIA and AMD cards, and two models at the same")
         say("  time, one on each, is not supported yet.")
-        from strata_control import gpu_fit
+        from nostroma_control import gpu_fit
         bigger = gpu_fit.other_vendor_note([{**g, "vendor": "nvidia", "usable": gpu_problem(g) is None} for g in found] +
                                            [{**g, "vendor": "amd", "usable": True} for g in amd_ok], "nvidia")
         if bigger:
@@ -9696,7 +9696,7 @@ def main() -> int:
         for g in amd:
             say(f"    GPU {g['index']}: {g['name']}, {amd_mem_text(g)} - " + (amd_problem(g) or "can be used"))
         if not WIN:                                    # WSL: the Linux HIP engines hang there; a warning, the run goes on
-            from strata_control.engine_component import wsl_amd_note
+            from nostroma_control.engine_component import wsl_amd_note
             wsl_note = wsl_amd_note("hip", wsl=is_wsl())
             if wsl_note:
                 warn(wsl_note)
@@ -9888,7 +9888,7 @@ def main() -> int:
         return install_own_path(a, family, gpu, hip, amd, cuda_tk, multi, port, ram, adopted)
     fam = FAMILIES[family]
     SHAPE_ENGINE.clear()
-    if fam.get("shape"):                               # a feed model of its own shape: its own engine component (strata_control/shape_engine.py)
+    if fam.get("shape"):                               # a feed model of its own shape: its own engine component (nostroma_control/shape_engine.py)
         SHAPE_ENGINE["shape"], SHAPE_ENGINE["title"] = fam["shape"], fam.get("title")
     if fam.get("ready") and hip:
         # not a risk the user could take: the HIP engine has no NVFP4 expert kernels at all, so it would not start
@@ -9995,7 +9995,7 @@ def main() -> int:
     elif not low_ram and budget is None and ram < MODELS[model]["ram_gb"] - 4:
         confirm_paging(model, ram, a.low_ram, a.yes, bool(a.model))
     ok(f"size: {model}")
-    from strata_control import gpu_fit
+    from nostroma_control import gpu_fit
     _q4 = gpu_fit.strix_q4_stall_note(model, [gpu] if isinstance(gpu, dict) else (gpu or []))   # REMOVE with the Strix stall fix (see gpu_fit.STRIX_Q4_NOTE)
     if _q4:
         warn(_q4)
@@ -10190,7 +10190,7 @@ def main() -> int:
     prep_gb = MODELS[model].get("prepare_gb", 0.0) if ready and MODELS[model].get("prepare") and \
         not prepared_done(model, models_dir) else 0.0
     margin = 2 if mtp_have else 8                      # working room: a guess, not bytes that will be written
-    mtp_fetch = 5.2 if (not mtp_have and not ready and a.mtp != "off" and getattr(a, "drafter", None) != "dflash2") else 0.0      # the draft layer's tensors step 6 fetches (strata_control.discovery.MTP_FETCH_GB)
+    mtp_fetch = 5.2 if (not mtp_have and not ready and a.mtp != "off" and getattr(a, "drafter", None) != "dflash2") else 0.0      # the draft layer's tensors step 6 fetches (nostroma_control.discovery.MTP_FETCH_GB)
     copy_gb = MODELS[model]["arena_gb"] + 1 if low_ram and not q2_avx and not pack_bin else 0      # the low-RAM mode's copy of the experts (goes to the data folder's packs)
     real = to_fetch + prep_gb + mtp_fetch + \
         (40 if q2_avx and not pack_bin else 0) + (1 if vision != "none" else 0) + copy_gb
@@ -10370,7 +10370,7 @@ def main() -> int:
         # (a 4-shard file: the engine finds the PLE table's shard itself from shard 1, the measured setup)
         model_args = ["--pack", str(pack), "--native", str(shards[0]),
                       *(["--ple-gguf", str(ple)] if len(shards) <= 2 else [])]
-    from strata_control import setup_config            # the seam: the lines that built the run config live in strata_control/setup_config.py
+    from nostroma_control import setup_config            # the seam: the lines that built the run config live in nostroma_control/setup_config.py
     _built = setup_config.config_for(setup_config.SetupInputs(
         a=a, adopted=adopted, chosen=chosen, cuda_tk=cuda_tk, draft_vocab=draft_vocab, eng=eng, engine_ver=engine_ver, esp=esp, fam=fam, family=family, gpu=gpu, hip=hip, in_budget=in_budget, lib_dirs=lib_dirs, low_ram=low_ram, meta=meta, mmproj=mmproj, model=model, model_args=model_args, models_dir=models_dir, multi=multi, pack=pack, ple=ple, port=port, q4_split=q4_split, ram=ram, reader=reader, ready=ready, rope_scale=rope_scale, rt=rt, scaling=scaling, shards=shards, tag=tag, vision=vision, ctx=ctx, kv=kv, resident=resident, budget=budget, GGUFFile=GGUFFile), sys.modules[__name__])
     cfg, cfg_path, cal, args, ctx, kv, resident = (_built.cfg, _built.cfg_path, _built.cal, _built.args, _built.ctx, _built.kv, _built.resident)

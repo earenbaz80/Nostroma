@@ -1,4 +1,4 @@
-"""Qwen3.6-35B-A3B's context against the card's memory (GitHub #5715, strata_control/own_path_fit.py): the per-token figure the engine really
+"""Qwen3.6-35B-A3B's context against the card's memory (GitHub #5715, nostroma_control/own_path_fit.py): the per-token figure the engine really
 allocates, the formula's inputs where setup, the start and the app read them, and what it says about the field logs it was derived from."""
 
 from __future__ import annotations
@@ -8,7 +8,7 @@ import unittest
 from pathlib import Path
 
 import setup
-from strata_control import own_path_fit as F
+from nostroma_control import own_path_fit as F
 
 ROOT = Path(__file__).resolve().parents[2]
 ENGINE = ROOT / "src" / "qwen35" / "q36_engine.cu"

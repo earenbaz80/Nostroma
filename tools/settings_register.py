@@ -35,7 +35,7 @@ REGISTER = ROOT / "data" / "settings-register.json"
 SETTINGS_PAGE = "docs/SETTINGS.md"
 
 ENGINE_DIRS = ("src", "include", "metal/src", "sycl/src")
-LAUNCH_PATHS = ("strata_control", "strata_cli", "setup.py", "apps/host/server", "serve")
+LAUNCH_PATHS = ("nostroma_control", "nostroma_cli", "setup.py", "apps/host/server", "serve")
 DOC_PATHS = ("docs", "README.md", "AGENTS.md")
 LAUNCH_EXT = (".py", ".mjs", ".js", ".cjs", ".ts")
 SKIP_PARTS = ("node_modules", "/tests/", "/test/", "__pycache__")

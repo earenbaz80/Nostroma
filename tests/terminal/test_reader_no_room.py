@@ -1,4 +1,4 @@
-"""A launch onto a card another program has filled: the picture reader's out-of-memory lines are read as what they are (strata_control/reader_room.py),
+"""A launch onto a card another program has filled: the picture reader's out-of-memory lines are read as what they are (nostroma_control/reader_room.py),
 and the launch's error says so in plain words with the next step, not the last line of whatever a debugger printed.  Lane 10 (V100 box), 11-10:
 "Python Exception <class 'gdb.error'>: Couldn't get registers: No such process".
 """
@@ -8,8 +8,8 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from strata_cli.launch import runner as R
-from strata_control import reader_room, split_engine
+from nostroma_cli.launch import runner as R
+from nostroma_control import reader_room, split_engine
 
 ALLOC = "ggml_backend_cuda_buffer_type_alloc_buffer: allocating 865.48 MiB on device 0: cudaMalloc failed: out of memory"
 BUFFER = "alloc_tensor_range: failed to allocate CUDA0 buffer of size 907524736"

@@ -1,5 +1,5 @@
 /**
- * The host's copy of the roles rules it needs to WRITE a model's settings (src/lib/gpu-roles.ts has the screen's, strata_control/gpu_roles.py the
+ * The host's copy of the roles rules it needs to WRITE a model's settings (src/lib/gpu-roles.ts has the screen's, nostroma_control/gpu_roles.py the
  * Terminal's and the server's; tests/data/gpu_roles_vectors.json is run against all three).
  * Roles are { [card number]: 'main' | 'helper' | 'off' }. The engine takes the cards in stage order: Helpers, then the Main card LAST.
  */

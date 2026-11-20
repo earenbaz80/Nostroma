@@ -14,9 +14,9 @@ from pathlib import Path
 from unittest import mock
 
 from serve import server
-from strata_cli import update_cmd
-from strata_control import engine_component as ec
-from strata_control import updater
+from nostroma_cli import update_cmd
+from nostroma_control import engine_component as ec
+from nostroma_control import updater
 
 
 class DefaultFolder(unittest.TestCase):
@@ -86,7 +86,7 @@ class AppLaunchedEngine(unittest.TestCase):
         self.assertEqual(updater.serving_now(), [], "the lease is released when the server ends")
 
     def test_serving_does_not_depend_on_the_lease(self):
-        from strata_control import runtime
+        from nostroma_control import runtime
         with mock.patch.object(runtime, "acquire_activity_lease", side_effect=runtime.ProfileError("a managed runtime or calibration owns the local engine lease", 6)), \
                 mock.patch.object(server, "_main", return_value=7):
             self.assertEqual(server.main([]), 7)

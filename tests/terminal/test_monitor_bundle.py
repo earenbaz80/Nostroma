@@ -16,7 +16,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from unittest import mock
 
-from strata_cli.cli import main as source_main
+from nostroma_cli.cli import main as source_main
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -284,16 +284,16 @@ class MonitorBundleTests(unittest.TestCase):
                 verify(bundle)
 
     def test_bundle_carries_every_module_its_entry_point_imports(self):
-        """The import closure of strata_cli.monitor_commands (lazy imports included) minus the launch package must be in the bundle."""
+        """The import closure of nostroma_cli.monitor_commands (lazy imports included) minus the launch package must be in the bundle."""
         import ast
-        needed, todo = set(), ["strata_cli/monitor_commands.py"]
+        needed, todo = set(), ["nostroma_cli/monitor_commands.py"]
         while todo:
             name = todo.pop()
             if name in needed:
                 continue
             needed.add(name)
             for node in ast.walk(ast.parse((ROOT / name).read_text(encoding="utf-8"))):
-                if isinstance(node, ast.ImportFrom) and node.module and node.module.split(".")[0] == "strata_cli":
+                if isinstance(node, ast.ImportFrom) and node.module and node.module.split(".")[0] == "nostroma_cli":
                     names = [node.module] + [node.module + "." + a.name for a in node.names]
                 elif isinstance(node, ast.Import):
                     names = [a.name for a in node.names]
@@ -301,16 +301,16 @@ class MonitorBundleTests(unittest.TestCase):
                     continue
                 for module in names:
                     path = module.replace(".", "/") + ".py"
-                    if module.startswith("strata_cli") and (ROOT / path).is_file() and "/launch/" not in path:
+                    if module.startswith("nostroma_cli") and (ROOT / path).is_file() and "/launch/" not in path:
                         todo.append(path)
         self.assertLessEqual(needed, set(BUILDER_MODULE.SOURCES))
 
     def test_plain_monitor_runs_when_the_launch_package_is_not_bundled(self):
-        """The pyz has no strata_cli.launch: interactive `monitor` must fall back to the plain Monitor, not fail."""
-        from strata_cli import monitor as monitor_module
-        from strata_cli import monitor_commands
+        """The pyz has no nostroma_cli.launch: interactive `monitor` must fall back to the plain Monitor, not fail."""
+        from nostroma_cli import monitor as monitor_module
+        from nostroma_cli import monitor_commands
         ran = []
-        blocked = {"strata_cli.launch.monitor_ext": None}       # None in sys.modules makes the import raise ImportError
+        blocked = {"nostroma_cli.launch.monitor_ext": None}       # None in sys.modules makes the import raise ImportError
         with mock.patch.dict(sys.modules, blocked),                 mock.patch.object(monitor_module.MonitorApp, "run", lambda self: ran.append(self.endpoint.base_url)),                 mock.patch.object(sys.stdout, "isatty", return_value=True):
             code = monitor_commands.main(["monitor", "--url", "http://127.0.0.1:9"])
         self.assertEqual((code, ran), (0, ["http://127.0.0.1:9"]))
@@ -326,21 +326,21 @@ class MonitorBundleTests(unittest.TestCase):
             for old_bundle, version in ((current, 1), (previous, 2), (old_visual, 3)):
                 with zipfile.ZipFile(modern) as source, zipfile.ZipFile(old_bundle, "w", zipfile.ZIP_DEFLATED) as legacy:
                     for item in source.infolist():
-                        if item.filename not in ("strata_cli/detail_dashboard.py", "strata_cli/nav.py",
-                                                 "strata_cli/consoleinfo.py", "strata_cli/overview.py") and \
-                                (version >= 3 or item.filename != "strata_cli/dashboard.py") and \
+                        if item.filename not in ("nostroma_cli/detail_dashboard.py", "nostroma_cli/nav.py",
+                                                 "nostroma_cli/consoleinfo.py", "nostroma_cli/overview.py") and \
+                                (version >= 3 or item.filename != "nostroma_cli/dashboard.py") and \
                                 (version != 1 or item.filename != "LICENSE"):
                             legacy.writestr(item, source.read(item.filename))
                 report = json.loads((root / "next-monitor.pyz.manifest.json").read_text())
                 report["schema_version"] = version
                 report["bundle"] = old_bundle.name
                 report["sha256"] = hashlib.sha256(old_bundle.read_bytes()).hexdigest()
-                del report["files"]["strata_cli/detail_dashboard.py"]
-                del report["files"]["strata_cli/nav.py"]
-                del report["files"]["strata_cli/consoleinfo.py"]
-                del report["files"]["strata_cli/overview.py"]
+                del report["files"]["nostroma_cli/detail_dashboard.py"]
+                del report["files"]["nostroma_cli/nav.py"]
+                del report["files"]["nostroma_cli/consoleinfo.py"]
+                del report["files"]["nostroma_cli/overview.py"]
                 if version < 3:
-                    del report["files"]["strata_cli/dashboard.py"]
+                    del report["files"]["nostroma_cli/dashboard.py"]
                 if version == 1:
                     del report["files"]["LICENSE"]
                     for field in ("compatibility", "license", "license_file"):
@@ -352,8 +352,8 @@ class MonitorBundleTests(unittest.TestCase):
             self.assertEqual(verify(modern)["schema_version"], 6)
             with zipfile.ZipFile(modern) as archive:
                 self.assertIn(b"MIT License", archive.read("LICENSE"))
-                self.assertIn(b"render_dashboard", archive.read("strata_cli/dashboard.py"))
-                self.assertIn(b"render_detail_dashboard", archive.read("strata_cli/detail_dashboard.py"))
+                self.assertIn(b"render_dashboard", archive.read("nostroma_cli/dashboard.py"))
+                self.assertIn(b"render_detail_dashboard", archive.read("nostroma_cli/detail_dashboard.py"))
             target = root / "optional-monitor"
             install(current, target, if_candidate_sha256=verify(current)["sha256"])
             preview = update(modern, target, plan=True)
@@ -440,12 +440,12 @@ class MonitorBundleTests(unittest.TestCase):
                 self.assertLess(bundle.stat().st_size, 96 * 1024)
                 with zipfile.ZipFile(bundle) as archive:
                     self.assertIn(b"MIT License", archive.read("LICENSE"))
-                    self.assertIn("strata_cli/dashboard.py", archive.namelist())
+                    self.assertIn("nostroma_cli/dashboard.py", archive.namelist())
                 if importlib.util.find_spec("textual") is not None:
                     import_check = subprocess.run(
                         [sys.executable, "-I", "-c",
                          "import sys; sys.path.insert(0, " + repr(str(bundle)) + "); "
-                         "from strata_cli.monitor import MonitorApp; print(MonitorApp.__name__)"],
+                         "from nostroma_cli.monitor import MonitorApp; print(MonitorApp.__name__)"],
                         cwd=directory, capture_output=True, text=True, check=True)
                     self.assertEqual(import_check.stdout.strip(), "MonitorApp")
                 url = f"http://127.0.0.1:{server.server_port}"

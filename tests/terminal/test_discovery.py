@@ -1,5 +1,5 @@
 """Tester report 2026-10-18, T03 / T04 / T05: existing models are found the same way by the launch screens, `strata models list`, the
-own-files import and `strata launch` (strata_control/discovery.py), with a mock of the desktop app's folders and a Gyro-S file header
+own-files import and `strata launch` (nostroma_control/discovery.py), with a mock of the desktop app's folders and a Gyro-S file header
 (TQK6 / TQK7 experts, the one-file layout)."""
 
 from __future__ import annotations
@@ -15,10 +15,10 @@ from contextlib import redirect_stdout
 from pathlib import Path
 from unittest import mock
 
-from strata_cli.launch import modelstate, settings as S
-from strata_cli.launch.catalog import Catalog
-from strata_cli.launch.runner import Runner
-from strata_control import discovery, models
+from nostroma_cli.launch import modelstate, settings as S
+from nostroma_cli.launch.catalog import Catalog
+from nostroma_cli.launch.runner import Runner
+from nostroma_control import discovery, models
 from tests.terminal.launch_support import HW_12
 
 GYRO_S = "Qwen3.8-Flash-Next-Gyro-S-TQ1_0.gguf"
@@ -127,7 +127,7 @@ class GuiLayout(unittest.TestCase):
     def test_cli_list_names_where_it_looked_when_nothing_is_found(self):
         self.config_path.unlink()
         out = io.StringIO()
-        from strata_cli.cli import main
+        from nostroma_cli.cli import main
         with redirect_stdout(out):
             code = main(["models", "list"])
         self.assertEqual(code, 0)
@@ -195,7 +195,7 @@ class GuiLayout(unittest.TestCase):
         plan = models.plan_import(str(folder))
         self.assertIn("multiple_model_groups", plan["issues"])
         self.assertEqual(sorted((h["family"], h["model"]) for h in plan["folder_holds"]), [("gyro", "Gyro-M"), ("gyro", "Gyro-S")])
-        from strata_cli.cli import _import_problem
+        from nostroma_cli.cli import _import_problem
         text = _import_problem(plan)
         self.assertIn("more than one model", text)
         self.assertIn("holds 2 models", text)

@@ -1,6 +1,6 @@
 """The run average of the speed cards (community patch: keinebenutzer/STRATA-average-patch, MIT, made against v0.1.55 c62d5e3a; ported by hand onto rc1).
 
-serve/web/app.js (the Monitor tab's Decode and Prefill cards), serve/web/monitor.js and monitor.html (the API monitor page) and strata_cli/overview.py (the Terminal
+serve/web/app.js (the Monitor tab's Decode and Prefill cards), serve/web/monitor.js and monitor.html (the API monitor page) and nostroma_cli/overview.py (the Terminal
 Overview) show, when the server is idle, the token-weighted average of the run instead of the last request's speed. Live values stay live. This file runs the
 browser code the way a page would (a few lines of node, no browser, no network) and checks that what was added is display only."""
 import json
@@ -99,7 +99,7 @@ class AddedCodeIsDisplayOnly(unittest.TestCase):
 
     def test_nothing_but_arithmetic_and_text(self):
         pieces = [cards_block((WEB / "app.js").read_text(encoding="utf-8")), function_source((WEB / "monitor.js").read_text(encoding="utf-8"), "averageDecodeSpeed"),
-                  (Path(__file__).resolve().parents[1] / "strata_cli" / "overview.py").read_text(encoding="utf-8")]
+                  (Path(__file__).resolve().parents[1] / "nostroma_cli" / "overview.py").read_text(encoding="utf-8")]
         pieces[2] = pieces[2][pieces[2].index("def run_average_speed"):pieces[2].index("def _cards")]
         forbidden = re.compile(r"\b(fetch|XMLHttpRequest|WebSocket|sendBeacon|eval|Function|import|require|innerHTML|insertAdjacentHTML|document\.write|"
                                r"subprocess|socket|urllib|requests|os\.system|open)\s*\(|https?://|\.src\s*=|new Image")

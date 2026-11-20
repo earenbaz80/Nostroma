@@ -1,4 +1,4 @@
-"""strata_control/netpolicy.py against local servers: one that accepts and never answers (a black hole), a port that refuses, a server
+"""nostroma_control/netpolicy.py against local servers: one that accepts and never answers (a black hole), a port that refuses, a server
 that answers and then trickles bytes, a server that answers normally. Timings are scaled down (limits under a second); the rule's own
 numbers are checked as constants. The slow real-time trickle test (bytes every 20-50 s for more than 5 minutes) runs with
 STRATA_SLOW_NET_TESTS=1."""
@@ -14,7 +14,7 @@ import urllib.error
 import urllib.request
 from unittest import mock
 
-from strata_control import netpolicy as N
+from nostroma_control import netpolicy as N
 
 
 class BlackHole:

@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 from types import SimpleNamespace
 
-from strata_control import updater
+from nostroma_control import updater
 
 
 class ProbeHint(unittest.TestCase):

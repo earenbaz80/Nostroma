@@ -17,9 +17,9 @@ from pathlib import Path
 from unittest import mock
 
 import setup
-from strata_cli.launch import cmd, library
-from strata_cli.launch import settings as S
-from strata_cli.launch.runner import Runner
+from nostroma_cli.launch import cmd, library
+from nostroma_cli.launch import settings as S
+from nostroma_cli.launch.runner import Runner
 
 from tests.terminal.test_launch import HW_12, Home, catalog
 

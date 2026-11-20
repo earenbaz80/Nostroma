@@ -4,9 +4,9 @@ engine missing, B10/E04 `--drafting off` leaves `--mtp <path>` out of the writte
 import unittest
 from unittest import mock
 
-from strata_cli.launch import modelstate, settings as S
-from strata_cli.launch.runner import Runner, derive_config
-from strata_control import engine_component
+from nostroma_cli.launch import modelstate, settings as S
+from nostroma_cli.launch.runner import Runner, derive_config
+from nostroma_control import engine_component
 from tests.terminal.launch_support import HW_12, Home, catalog
 
 

@@ -17,7 +17,7 @@ from unittest import mock
 
 import sys
 
-from strata_control import acquisition, drafting, drafting_fetch, transfer
+from nostroma_control import acquisition, drafting, drafting_fetch, transfer
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "packaging"))
 import feed_tool as ft  # noqa: E402
@@ -255,7 +255,7 @@ class Fetch(Base):
 
     def accept(self, sequence):
         """What `strata update` leaves after it accepted a feed: <components>/.updates/state.json feed.sequence."""
-        from strata_control import updater
+        from nostroma_control import updater
         state = updater.State(self.root / "components")
         state.section("feed").update({"sequence": sequence, "key_id": "k", "source": "x", "channel": "stable"})
         state.save()
@@ -365,7 +365,7 @@ class Fetch(Base):
     def test_a_feed_that_cannot_be_read_or_a_build_with_no_key_is_silent(self):
         self.assertIsNone(drafting_fetch.ensure_tuned(self.data, feed=str(self.root / "no-such-feed")))
         feed = self.make_feed()
-        with mock.patch.dict("os.environ", {"STRATA_UPDATE_TRUSTED_KEYS": ""}), mock.patch("strata_control.signing.load_trusted_keys", return_value={}):
+        with mock.patch.dict("os.environ", {"STRATA_UPDATE_TRUSTED_KEYS": ""}), mock.patch("nostroma_control.signing.load_trusted_keys", return_value={}):
             self.assertIsNone(drafting_fetch.ensure_tuned(self.data, feed=str(feed)))
 
     def test_a_feed_nobody_answers_for_is_silent_offline_refused_or_never_answering(self):
@@ -392,14 +392,14 @@ class Fetch(Base):
         self.assertFalse(drafting_fetch._recent_miss(self.data), "a mark older than the interval is ignored")
 
     def test_with_no_feed_named_the_projects_release_feed_is_read(self):
-        from strata_cli import update_cmd
+        from nostroma_cli import update_cmd
         asked = []
 
         def fetch(source, trusted, **kw):
             asked.append(source)
             raise drafting_fetch.feedmod.FeedError("the update feed could not be read: offline", 6)
         env = {k: v for k, v in __import__("os").environ.items() if k != update_cmd.ENV_FEED}
-        with mock.patch.dict("os.environ", env, clear=True), mock.patch("strata_control.feed.fetch", fetch):
+        with mock.patch.dict("os.environ", env, clear=True), mock.patch("nostroma_control.feed.fetch", fetch):
             self.assertIsNone(drafting_fetch.ensure_tuned(self.data))
         self.assertEqual(asked, [update_cmd.default_feed()])
         self.assertTrue(update_cmd.default_feed().startswith("https://github.com/Niko1221/Strata/releases/"))

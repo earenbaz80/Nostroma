@@ -21,6 +21,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createAgentBridge } from '../server/agent/agent-bridge.mjs';
 import { countTokens } from '../server/agent/context-fit.mjs';
+import { envVar } from '../server/env-compat.mjs';
 
 const REPO = join(import.meta.dirname, '..', '..', '..');
 const env = (name, fallback) => process.env[name] ?? fallback;
@@ -44,7 +45,7 @@ const freeGb = () => {
 const rows = [];
 const note = (id, ok, detail) => { rows.push({ id, ok, detail }); console.log(`${ok ? 'PASS' : 'FAIL'}  ${id}  ${detail}`); };
 
-if (!process.env.STRATA_HARNESS_DIR) { console.error('STRATA_HARNESS_DIR is not set'); process.exit(2); }
+if (!envVar('HARNESS_DIR')) { console.error('STRATA_HARNESS_DIR is not set'); process.exit(2); }
 if (!EXISTING) for (const f of [ENGINE, GGUF]) if (!existsSync(f)) { console.error(`missing: ${f}`); process.exit(2); }
 if (!EXISTING && freeGb() < 20) { console.error(`only ${freeGb()} GB of RAM are free; wait for the other streams (lock.py status) and run again`); process.exit(2); }
 

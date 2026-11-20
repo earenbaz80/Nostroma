@@ -11,9 +11,9 @@ from contextlib import redirect_stdout
 from pathlib import Path
 from unittest import mock
 
-from strata_cli.launch import adopt, library, runner as R
-from strata_cli.launch import settings as S
-from strata_cli.launch.runner import Runner
+from nostroma_cli.launch import adopt, library, runner as R
+from nostroma_cli.launch import settings as S
+from nostroma_cli.launch.runner import Runner
 from tests.terminal.launch_support import HW_12, HW_2X16, Home, catalog
 
 
@@ -91,7 +91,7 @@ class NoTuiNeverAsks(unittest.TestCase):
         with tempfile.TemporaryDirectory() as old, tempfile.TemporaryDirectory() as new:
             (Path(old) / "models").mkdir()
             (Path(old) / "models" / "a.gguf").write_bytes(b"x" * 2048)
-            from strata_cli.launch import cmd
+            from nostroma_cli.launch import cmd
             a = argparse.Namespace(data_dir=new, move_data=False, yes=False, plan=False, no_tui=True)
             cat = mock.Mock()
             cat.data_dir.return_value = Path(old)
@@ -104,7 +104,7 @@ class NoTuiNeverAsks(unittest.TestCase):
             self.assertIn("--move-data", out.getvalue())
 
     def test_a_run_without_a_keyboard_says_the_same(self):
-        from strata_cli.launch import cmd
+        from nostroma_cli.launch import cmd
         a = argparse.Namespace(data_dir="/new", move_data=False, yes=False, plan=False, no_tui=False)
         out = io.StringIO()
         with mock.patch.object(library, "movable_library", return_value=3.0), mock.patch("builtins.input", side_effect=AssertionError("asked")), \
@@ -277,7 +277,7 @@ class EngineIsFreshEnough(unittest.TestCase):
             proc = mock.Mock()
             proc.stdout = iter([])
             proc.wait.return_value = 0
-            from strata_control import engine_component as ec
+            from nostroma_control import engine_component as ec
             with mock.patch.object(ec, "status", return_value=before), mock.patch.object(Runner, "_spawn", return_value=proc):
                 r.ensure_engine()
             self.assertTrue(any(level == "warn" and "older than this model needs" in text for level, text in events), events)
@@ -300,7 +300,7 @@ class InstallIsNotHijacked(unittest.TestCase):
             self.assertEqual(R.install_isolation_words(cat, None), [])
 
     def test_an_install_inside_strata_data_dir_comes_first(self):
-        from strata_control import discovery
+        from nostroma_control import discovery
         with tempfile.TemporaryDirectory() as data, tempfile.TemporaryDirectory() as other:
             for folder in (Path(data) / "install", Path(other) / "install"):
                 folder.mkdir()
@@ -315,7 +315,7 @@ class IdentityAndAdoption(unittest.TestCase):
         with Home() as h:
             r = Runner(S.LaunchSettings(family="swift", model="IQ2_XS", model_path=str(h.base)), catalog=catalog(HW_12))
             plan = {"candidate_selection": {"family": "qwen", "model": "IQ3_XXS"}, "folder_holds": [], "issues": []}
-            from strata_control import models
+            from nostroma_control import models
             with mock.patch.object(models, "own_path_problem", return_value=None), mock.patch.object(models, "plan_import", return_value=plan), \
                     mock.patch.object(models, "import_target", return_value=str(h.base)):
                 r.resolve_own_files()
@@ -345,7 +345,7 @@ class IdentityAndAdoption(unittest.TestCase):
 
 class UpdateCheckNamesTheChoice(unittest.TestCase):
     def test_the_selected_package_is_printed_before_the_rejected_ones(self):
-        from strata_cli import update_cmd
+        from nostroma_cli import update_cmd
         report = {"feed": {"sequence": 107, "channel": "stable", "key_id": "k", "trusted_by": "built-in keys"},
                   "engine": {"status": "install", "installed": None, "download_bytes": 5 << 20,
                              "offered": {"version": "0.1.47", "platform": "linux-x86_64", "backend": "cuda", "variant": "cuda12"},

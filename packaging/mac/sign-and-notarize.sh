@@ -447,7 +447,7 @@ print("python ok", sys.version.split()[0])' >>"$LOG" 2>&1); then rec OK "smoke: 
   if [ -x "$py" ] && [ -d "$res/engine-bundle" ]; then
     out="$(cd "$ctl" && env HOME="$home" "$py" -c '
 import sys, pathlib
-from strata_control import engine_component as ec
+from nostroma_control import engine_component as ec
 bad = 0; n = 0
 for m in sorted(pathlib.Path(sys.argv[1]).glob("*/engine-component.json")):
     n += 1

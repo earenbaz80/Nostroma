@@ -13,6 +13,7 @@ import { MODELS_DIR, diskFreeGb, diskTotalGb } from './store.mjs';
 import { probe, round } from './util.mjs';
 import { utf8Script } from './powershell-utf8.mjs';
 import { DX_ADAPTERS_SCRIPT, parseDxAdapters, windowsOtherGpus } from './windows-gpu.mjs';
+import { envVar } from './env-compat.mjs';
 
 let cached = null;
 let cachedAt = 0;
@@ -34,7 +35,7 @@ export function cachedHardware() {
 }
 
 function testHardware() {
-  const raw = process.env.STRATA_TEST_HARDWARE;
+  const raw = envVar('TEST_HARDWARE');
   if (!raw) return null;
   try { const value = JSON.parse(raw); return value && typeof value === 'object' ? value : null; } catch { return null; }
 }

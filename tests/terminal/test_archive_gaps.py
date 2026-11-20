@@ -14,9 +14,9 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from strata_control import calibration, tune_apply, tuning  # noqa: E402
-from strata_control.profiles import ProfileError  # noqa: E402
-from strata_control.targets import host_platform  # noqa: E402
+from nostroma_control import calibration, tune_apply, tuning  # noqa: E402
+from nostroma_control.profiles import ProfileError  # noqa: E402
+from nostroma_control.targets import host_platform  # noqa: E402
 
 
 class BooleanFlags(unittest.TestCase):
@@ -33,7 +33,7 @@ class BooleanFlags(unittest.TestCase):
         self.assertEqual(tune_apply.args_to_argv({"--kv-grow": "1"}), ["--kv-grow"])
 
     def test_the_harness_argv_follows_the_same_rule(self):
-        from strata_control import tune_engine
+        from nostroma_control import tune_engine
         harness = tune_engine.EngineHarness(Path("engine"), {"--kv-grow": "0", "--pool-workers": "0", "--host-core": "first"})
         argv = harness._argv()
         self.assertNotIn("--kv-grow", argv)
@@ -95,14 +95,14 @@ class HipPackageForAnotherCard(unittest.TestCase):
             (node / "properties").write_text("cpu_cores_count 1\ngfx_target_version " + value + "\n", encoding="utf-8")
 
     def test_gfx_target_version_becomes_the_gfx_name(self):
-        from strata_control import engine_component as ec
+        from nostroma_control import engine_component as ec
         with tempfile.TemporaryDirectory() as d:
             self._kfd(Path(d), ["0", "110003", "120001", "90010", "100300"])
             self.assertEqual(ec.hip_archs_present(d), ["gfx1103", "gfx1201", "gfx90a", "gfx1030"])
         self.assertEqual(ec.hip_archs_present("/nonexistent/kfd"), [])
 
     def test_a_package_without_the_cards_arch_is_not_chosen_and_one_with_it_is(self):
-        from strata_control import engine_component as ec
+        from nostroma_control import engine_component as ec
         from tests.terminal.test_engine_component import make_package, rewrite
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
@@ -121,7 +121,7 @@ class HipPackageForAnotherCard(unittest.TestCase):
 
 class DeviceAccess(unittest.TestCase):
     def test_a_render_node_the_user_cannot_open_is_named(self):
-        from strata_control import doctor
+        from nostroma_control import doctor
         if not sys.platform.startswith("linux"):
             self.skipTest("Linux device nodes")
         with tempfile.TemporaryDirectory() as d:

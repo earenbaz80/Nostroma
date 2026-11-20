@@ -54,7 +54,7 @@ class Home:
 
 
 def catalog(hw: dict | None = None, root: Path | None = None):
-    from strata_cli.launch.catalog import Catalog
+    from nostroma_cli.launch.catalog import Catalog
     return Catalog(root=root or Path(os.environ["STRATA_INSTALL_DIR"]), hardware=hw or HW_12)
 
 
@@ -65,7 +65,7 @@ def text_of(app) -> str:
 
 
 def run_cli(argv: list[str]) -> tuple[int, str, str]:
-    from strata_cli.cli import main
+    from nostroma_cli.cli import main
     out, err = io.StringIO(), io.StringIO()
     with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
         try:
@@ -78,7 +78,7 @@ def run_cli(argv: list[str]) -> tuple[int, str, str]:
 def not_intel(testcase) -> None:
     """These fixtures describe an NVIDIA PC (catalog(HW_12)). Runner.intel_chosen asks the machine that runs the test, so on a box with an
     Intel Arc (p1006) the launch became an Intel one and the plan words changed. Patched for the length of the test."""
-    from strata_cli.launch.runner import Runner
+    from nostroma_cli.launch.runner import Runner
     p = mock.patch.object(Runner, "intel_chosen", lambda self: False)
     p.start()
     testcase.addCleanup(p.stop)
