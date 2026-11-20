@@ -26,7 +26,7 @@ static void put_env(const char* k, const char* v) {
     setenv(k, v, 1);
 #endif
 }
-// a synthetic Strata-form (s2) expert: random codes, fp16 scales ~0.004-0.016 (as expert_multi_test's)
+// a synthetic Nostroma-form (s2) expert: random codes, fp16 scales ~0.004-0.016 (as expert_multi_test's)
 static void make_s2_blob(uint8_t* b, std::mt19937& rng) {
     for (size_t i = 0; i < cpu::O_GU_SCALES; ++i) b[i] = (uint8_t) rng();
     for (size_t i = cpu::O_GU_SCALES; i < cpu::BLOB; i += 2) {
@@ -145,7 +145,7 @@ int main(int argc, char** argv) {
             }
         // The split with modes 0-4 between the native batches, on one pool: a mode-0..4 batch lives on `head_`, a
         // native one on the slice heads, so this alternates the two families of heads (a stale claim must fail on
-        // the other family) and runs the per-slice `parked` through the non-native modes.  The Strata-form kernels
+        // the other family) and runs the per-slice `parked` through the non-native modes.  The Nostroma-form kernels
         // need AVX-512 VBMI, the oracle contract included (a Xeon Gold 6226 stops on vpmultishiftqb inside
         // s2_expert_vnni_q with the oracle on), so a CPU without it skips this part.
         // CBA: no coverage on a VBMI-free CPU (the 6226 box); a test-only kernel seam in the pool if it must have it.

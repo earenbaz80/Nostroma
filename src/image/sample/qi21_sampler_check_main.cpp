@@ -1,4 +1,4 @@
-// src/image/sample/qi21_sampler_check_main.cpp - test program strata-sampler-check (not shipped): Strata's Turbo
+// src/image/sample/qi21_sampler_check_main.cpp - test program strata-sampler-check (not shipped): Nostroma's Turbo
 // sampler (include/strata/image/qi21_sampler.hpp) against stable-diffusion.cpp's own stage dumps.
 //
 //   strata-sampler-check <dump dir> [<dump dir> ...] [--fixture OUT [--fixture-n N]]

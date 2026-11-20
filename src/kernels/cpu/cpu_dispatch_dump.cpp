@@ -95,7 +95,7 @@ int main(int argc, char** argv) {
         float* ff[kMaxT];
         float* out[kMaxT];
         for (int t = 0; t < kMaxT; ++t) { act[t] = xa[(size_t) t].data(); hq[t] = ha[(size_t) t].data(); ff[t] = ffv[(size_t) t].data(); out[t] = outv[(size_t) t].data(); }
-        // a Q2_0 down (or gate/up) takes the pool's own path (pool.cpp): the activation as an ActQ and Strata's Q2_0 rows, not ggml's dot
+        // a Q2_0 down (or gate/up) takes the pool's own path (pool.cpp): the activation as an ActQ and Nostroma's Q2_0 rows, not ggml's dot
         const bool q2_down = cpu::q2_native_kernels(f.d_type), q2_gu = cpu::q2_native_kernels(f.gu_type);
         std::vector<cpu::ActQ> h2(q2_down ? kMaxT : 0), x2(q2_gu ? kMaxT : 0);
         const cpu::ActQ* a2[kMaxT] = {};

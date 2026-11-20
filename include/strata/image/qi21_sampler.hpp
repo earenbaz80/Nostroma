@@ -1,4 +1,4 @@
-// include/strata/image/qi21_sampler.hpp - Qwen-Image-2.1 Turbo's sampling loop pieces in Strata's own code (step 5):
+// include/strata/image/qi21_sampler.hpp - Qwen-Image-2.1 Turbo's sampling loop pieces in Nostroma's own code (step 5):
 // the fixed sigma schedule, the timestep the DiT gets, and one Euler step with CFG 1 for the flow model, written to
 // give stable-diffusion.cpp 2988060's bytes (src/runtime/denoiser.hpp sample_euler, DiscreteFlowDenoiser,
 // src/pipeline/diffusion_engine.cpp's model callback).  CPU, plain float; no ggml.

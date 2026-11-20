@@ -1,4 +1,4 @@
-// include/strata/image/wan_vae.hpp - Strata's own decoder for Qwen-Image-2.1's VAE (a Wan2.2-style residual decoder),
+// include/strata/image/wan_vae.hpp - Nostroma's own decoder for Qwen-Image-2.1's VAE (a Wan2.2-style residual decoder),
 // CUDA and HIP from one source (src/image/vae/wan_vae.cu; HIP through include/strata/hip_compat).
 //
 // It computes what stable-diffusion.cpp 2988060's WanVAE::decode computes for one picture, with one deliberate

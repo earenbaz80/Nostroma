@@ -46,7 +46,7 @@
 #include <vector>
 #include "strata/platform/cpu_relax.hpp"
 
-// --mtp-q4: the head rows' and projections' formats, dequantized and requantized at load: with the Strata quant layer (STRATA_OWN_CPU_QUANT) or, as
+// --mtp-q4: the head rows' and projections' formats, dequantized and requantized at load: with the Nostroma quant layer (STRATA_OWN_CPU_QUANT) or, as
 // before, with ggml-base
 #if defined(STRATA_OWN_CPU_QUANT)
 #include "strata/quant/act.hpp"

@@ -281,7 +281,7 @@ inline void convert(Tensor& t, uint32_t target, std::vector<uint8_t>& out) {
     t.offset = 0;
 }
 
-// Strata's Q2_0 (64 values in 18 bytes: f16 d, two bits per value, value j in byte j / 4 at bit 2 (j % 4), meaning (code - 1) * d) as two
+// Nostroma's Q2_0 (64 values in 18 bytes: f16 d, two bits per value, value j in byte j / 4 at bit 2 (j % 4), meaning (code - 1) * d) as two
 // Q4_0 blocks (32 values in 18 bytes: f16 d, nibble i of the low half = value i, of the high half = value i + 16, meaning (nibble - 8) * d).
 // Lossless: nibble = code + 7 gives (code + 7 - 8) * d, the same product. The engine's Q4_0 kernels then read it (the draft layer's
 // experts.bin goes the same way, model.cpp Mtp::experts). Twice the bytes.

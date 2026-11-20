@@ -331,7 +331,7 @@ std::vector<std::string> apply_arch_defaults(const char* gcn_arch, bool integrat
             if (kv.first == "STRATA_MMQ_KQ") kq = true; else any = true;
         }
         if (kq && !mmq_built)   // a build without MMQ: the 'prompt kernels' line (prefill.cpp mmq_plan) follows in every such build once a prompt runs
-            std::fprintf(stderr, "strata: gfx12 (RDNA4): a model with K-quant experts (Unsloth UD-Q4/Q5/Q6_K_XL) reads its prompt on Strata's own kernels; "
+            std::fprintf(stderr, "strata: gfx12 (RDNA4): a model with K-quant experts (Unsloth UD-Q4/Q5/Q6_K_XL) reads its prompt on Nostroma's own kernels; "
                                  "the 'prompt kernels' line below gives the counts\n");
         else if (kq)   // the engine says nothing more on a pack without K-quant experts: the variable is never read there
             std::fprintf(stderr, "strata: gfx12 (RDNA4): a model with K-quant experts (Unsloth UD-Q4/Q5/Q6_K_XL) reads its prompt on llama.cpp's MMQ kernels (+10..17%% prompt speed on an R9700, "
@@ -378,7 +378,7 @@ std::vector<std::string> apply_arch_defaults(const char* gcn_arch, bool integrat
 #else
     const bool win_host = false;
 #endif
-    // Linux integrated gfx11 (gfx1103 / gfx1150 / gfx1151): the prompt experts on Strata's fused int8 kernels.  Silent: the prefill's own line
+    // Linux integrated gfx11 (gfx1103 / gfx1150 / gfx1151): the prompt experts on Nostroma's fused int8 kernels.  Silent: the prefill's own line
     // ("prompt experts on the fused int8 kernels (STRATA_PF_FUSED=1 ...") is printed when the kernels are taken.  A value the user set is kept (=0 = MMQ).
     if (igpu_fused_prompt_default(gcn_arch, integrated, win_host) && std::getenv("STRATA_PF_FUSED") == nullptr)
         set_default({"STRATA_PF_FUSED", "1"});

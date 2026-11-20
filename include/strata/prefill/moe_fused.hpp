@@ -1,5 +1,5 @@
 // include/strata/prefill/moe_fused.hpp - #136 (prompt speed): the routed experts of a Q2_0 pack in the prompt path on
-// Strata's own int8 tensor-core kernels, opt-in with STRATA_PF_FUSED=1 (NVIDIA sm_80 and newer; sm_75 and HIP: MMQ).
+// Nostroma's own int8 tensor-core kernels, opt-in with STRATA_PF_FUSED=1 (NVIDIA sm_80 and newer; sm_75 and HIP: MMQ).
 //
 // The MMQ path (moe_mmq.hpp) per MoE layer: a host sync to group the (token, k) pairs by expert, a gather of each
 // expert into a 16-expert group buffer, then per group the q8_1 activations of every routed slot, gate/up, SwiGLU,
@@ -78,7 +78,7 @@ void group(const int32_t* ids, int64_t n, int k, int n_expert, void* scratch, in
 /// `scratch`: group_bytes(bounds[n_expert], n_expert).
 void group_bounds(const int32_t* bounds, int n_expert, void* scratch, void* stream);
 
-/// Experts [e0, e1) of one layer (e1 - e0 <= kMaxBatch); blob[e - e0]: the Strata Q2_0 blob of expert e on the
+/// Experts [e0, e1) of one layer (e1 - e0 <= kMaxBatch); blob[e - e0]: the Nostroma Q2_0 blob of expert e on the
 /// device (16-byte aligned), read only for an expert with rows.
 struct Batch {
     int e0 = 0, e1 = 0;

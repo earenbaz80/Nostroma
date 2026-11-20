@@ -111,7 +111,7 @@ Gguf::Gguf(const std::string& first) {
     convert_small_tensors();
 }
 
-// A file with routed experts in the IQ types or Strata's 2-bit type (the ISTA IQ3_S set) also keeps its dense matrices, routers,
+// A file with routed experts in the IQ types or Nostroma's 2-bit type (the ISTA IQ3_S set) also keeps its dense matrices, routers,
 // embeddings and projections in K-quants, IQ4_XS and BF16, which the engine does not read. Those are dequantized and written
 // again as Q8_0 (F32 for the small ones), once, here; the routed experts are left as they are. A file without such experts
 // (UD-Q4_K_XL, Q8_0) is not touched at all: the check below is the only difference for it.

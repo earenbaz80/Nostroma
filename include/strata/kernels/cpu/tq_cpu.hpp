@@ -31,7 +31,7 @@ namespace strata::kernels::cpu {
 
 enum class TqIsa : int { scalar = 0, avx2 = 1, avx512 = 2 };
 
-/// EXPERIMENTAL lower-rate versions of the TQK rule (tools/trellis/tqenc.hpp, version 1; Strata-internal ids, not ggml
+/// EXPERIMENTAL lower-rate versions of the TQK rule (tools/trellis/tqenc.hpp, version 1; Nostroma-internal ids, not ggml
 /// types, not in any GGUF): TQK5X = 22 bytes / 128 weights (1.375 bpw), TQK4X = 18 bytes (1.125 bpw).  Same hash,
 /// codebook, 15-bit mask, LSB-first circular stream and fp16 scale as TQK6/7 with K = 5 / 4.
 inline constexpr int kTqTypeK5X = 224;   ///< version 2: K = 5 with the computed codebook (tq_computed.hpp)

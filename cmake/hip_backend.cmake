@@ -1,8 +1,8 @@
-# Opt-in HIP configuration. Strata's CUDA-shaped kernels target wave32 RDNA2 / RDNA3 / RDNA4 (64 KiB LDS per
+# Opt-in HIP configuration. Nostroma's CUDA-shaped kernels target wave32 RDNA2 / RDNA3 / RDNA4 (64 KiB LDS per
 # workgroup, a signed dot4 instruction). CMake/compiler discovery stays machine-independent; pass CMAKE_HIP_COMPILER when it
 # is not on PATH.
 if(NOT DEFINED CMAKE_HIP_ARCHITECTURES OR CMAKE_HIP_ARCHITECTURES STREQUAL "")
-  set(CMAKE_HIP_ARCHITECTURES gfx1100 CACHE STRING "Strata HIP target architecture(s), e.g. gfx1100 or gfx1100;gfx1201")
+  set(CMAKE_HIP_ARCHITECTURES gfx1100 CACHE STRING "Nostroma HIP target architecture(s), e.g. gfx1100 or gfx1100;gfx1201")
 endif()
 # Validated on real cards: gfx1100 (RX 7900 XT / XTX) and gfx1201 (RX 9070 / 9070 XT, Radeon AI PRO R9700) by the
 # maintainers; gfx1101 (RX 7800 XT, #254) and gfx1200 (RX 9060 XT, #256) by their owners. gfx1102 (RX 7600) has the
@@ -24,19 +24,19 @@ foreach(_arch IN LISTS _strata_hip_norm)
   string(REGEX REPLACE ":.*$" "" _base "${_arch}")      # gfx1100:xnack- -> gfx1100
   if(_base IN_LIST _strata_hip_validated)
   elseif(_base IN_LIST _strata_hip_community)
-    message(STATUS "Strata HIP: ${_base} was validated by community reports (docs/AMD_HIP.md)")
+    message(STATUS "Nostroma HIP: ${_base} was validated by community reports (docs/AMD_HIP.md)")
   elseif(_base IN_LIST _strata_hip_unvalidated)
-    message(WARNING "Strata HIP: ${_base} builds, but it is not validated on a real card yet; please report results")
+    message(WARNING "Nostroma HIP: ${_base} builds, but it is not validated on a real card yet; please report results")
   else()
     message(FATAL_ERROR
-      "Strata HIP supports wave32 gfx1100, gfx1101, gfx1200 and gfx1201 (unvalidated: ${_strata_hip_unvalidated}); "
+      "Nostroma HIP supports wave32 gfx1100, gfx1101, gfx1200 and gfx1201 (unvalidated: ${_strata_hip_unvalidated}); "
       "CMAKE_HIP_ARCHITECTURES is '${CMAKE_HIP_ARCHITECTURES}'")
   endif()
   list(APPEND STRATA_HIP_ARCH_LIST "${_base}")
 endforeach()
 list(REMOVE_DUPLICATES STRATA_HIP_ARCH_LIST)
 if(NOT STRATA_HIP_ARCH_LIST)
-  message(FATAL_ERROR "Strata HIP: CMAKE_HIP_ARCHITECTURES is empty")
+  message(FATAL_ERROR "Nostroma HIP: CMAKE_HIP_ARCHITECTURES is empty")
 endif()
 # The compiled architectures reach the runtime device check (src/core/device.cu) as "gfx1100,gfx1201": a binary
 # carried to a card it has no code for stops at startup with a clear message instead of "invalid device function".
@@ -79,16 +79,16 @@ if(TARGET roc::hipblaslt)
   set(STRATA_HIPBLASLT_AVAILABLE ON)
 else()
   set(STRATA_HIPBLASLT_AVAILABLE OFF)
-  message(STATUS "Strata: hipBLASLt not found; solution-table dispatch is unavailable")
+  message(STATUS "Nostroma: hipBLASLt not found; solution-table dispatch is unavailable")
 endif()
 if(TARGET roc::rocblas)
   set(STRATA_ROCBLAS_AVAILABLE ON)
 else()
   set(STRATA_ROCBLAS_AVAILABLE OFF)
-  message(STATUS "Strata: rocBLAS CMake package not found; the rocBLAS solution table (gfx103x) is unavailable")
+  message(STATUS "Nostroma: rocBLAS CMake package not found; the rocBLAS solution table (gfx103x) is unavailable")
 endif()
 
-# HIP's link step produces a PIE; make Strata and ggml objects PIC for the ROCm linker.
+# HIP's link step produces a PIE; make Nostroma and ggml objects PIC for the ROCm linker.
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 set(STRATA_HIP_COMPAT_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include/strata/hip_compat")
@@ -120,7 +120,7 @@ endif()
 target_compile_options(strata_hip_runtime INTERFACE
   "$<$<COMPILE_LANGUAGE:HIP>:-include>" "$<$<COMPILE_LANGUAGE:HIP>:${_strata_hip_force}>")
 
-# CMake does not infer HIP from Strata's existing CUDA-shaped .cu suffixes.
+# CMake does not infer HIP from Nostroma's existing CUDA-shaped .cu suffixes.
 file(GLOB_RECURSE _strata_hip_sources CONFIGURE_DEPENDS
   "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cu"
   "${CMAKE_CURRENT_SOURCE_DIR}/bench/*.cu"
@@ -134,4 +134,4 @@ foreach(_source IN ITEMS tests/hip/intrinsics.cpp tests/hip/native_qsa_score.cpp
   endif()
 endforeach()
 
-message(STATUS "Strata: HIP enabled, arch ${STRATA_HIP_ARCHS}")
+message(STATUS "Nostroma: HIP enabled, arch ${STRATA_HIP_ARCHS}")

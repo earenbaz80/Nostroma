@@ -1,11 +1,11 @@
 // src/prefill/moe_helpers.cu - see include/strata/prefill/moe_mmq.hpp.  The prompt experts' helpers that need nothing of llama.cpp's
 // ggml-cuda: the gathers of expert blobs into group buffers, the SwiGLU passes, the row table and the buffer sizes.  P4-SPLIT: cut
-// unchanged from moe_mmq.cu into Strata's own prompt library (strata_pf_own), so that a build without llama.cpp's MMQ keeps them.
+// unchanged from moe_mmq.cu into Nostroma's own prompt library (strata_pf_own), so that a build without llama.cpp's MMQ keeps them.
 #include "strata/prefill/moe_mmq.hpp"
 
 #include "strata/prefill/moe_fused.hpp"   // kMoeEmbd, kMoeFF: the compiled geometry's widths
 
-#include "strata/quant/types.hpp"   // the block geometry of a type id (Strata's own type table, no ggml)
+#include "strata/quant/types.hpp"   // the block geometry of a type id (Nostroma's own type table, no ggml)
 
 #include <cuda_runtime.h>
 
@@ -73,12 +73,12 @@ __global__ void copy1_kernel(const uint8_t* __restrict__ a, int64_t na, const ui
     else if (i < na + nb + nc) c_dst[i - na - nb] = c[i - na - nb];
 }
 
-// Strata blob: gate/up codes [2 F][E / 4 B], down codes [E][F / 4 B], gate/up scales [2 F][E / 64] f16, down scales
+// Nostroma blob: gate/up codes [2 F][E / 4 B], down codes [E][F / 4 B], gate/up scales [2 F][E / 64] f16, down scales
 // [E][F / 64] f16 (the layout of prefill/kernels.cu's blob_dequant_kernel; E, F the compiled geometry's: Flash-Next
 // [1280][640 B], [2560][160 B], [1280][40], [2560][10]).  A GGUF Q2_0 block is {f16 d; 16 code
 // bytes} with the same 2-bit codes in the same order, so a block is a scale and a 16-byte run of codes.
 constexpr int Q2_GU_ROWS = fused::kMoeGuRows, Q2_ROW_GU = fused::kMoeEmbd / 4, Q2_ROW_D = fused::kMoeFF / 4, Q2_SC_GU = fused::kMoeEmbd / 64, Q2_SC_D = fused::kMoeFF / 64;
-static_assert(fused::kMoeEmbd % 64 == 0 && fused::kMoeFF % 64 == 0, "the Strata Q2 blob holds whole 64-weight blocks");
+static_assert(fused::kMoeEmbd % 64 == 0 && fused::kMoeFF % 64 == 0, "the Nostroma Q2 blob holds whole 64-weight blocks");
 __global__ void strata_q2_kernel(const uint8_t* __restrict__ blob, uint16_t* __restrict__ gu, uint16_t* __restrict__ dn) {
     constexpr size_t O_D_CODES = (size_t) Q2_GU_ROWS * Q2_ROW_GU, O_GU_SC = O_D_CODES + (size_t) fused::kMoeEmbd * Q2_ROW_D,
                      O_D_SC = O_GU_SC + (size_t) Q2_GU_ROWS * Q2_SC_GU * 2;
@@ -149,7 +149,7 @@ unsigned blocks(int64_t n) { return (unsigned) ((n + 255) / 256); }
 
 }  // namespace
 
-// The block geometry comes from Strata's type table (src/quant/types.cpp): the GGUF format's ids with ggml's sizes, the trellis types
+// The block geometry comes from Nostroma's type table (src/quant/types.cpp): the GGUF format's ids with ggml's sizes, the trellis types
 // 144-149 included (128 weights; 34 / 26 / 30 / 42 / 50 / 58 bytes); tests/quant/type_geometry_oracle.cpp checks it against ggml's
 // own table.  An id the table does not know has no size here (0): no prompt path reads such a matrix.
 size_t matrix_bytes(int t, int64_t rows, int64_t cols) {

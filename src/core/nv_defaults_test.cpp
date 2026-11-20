@@ -88,19 +88,19 @@ int main() {
     put("STRATA_NV_KQ_DEFAULT", "0");
     CHECK(nv_kq_default_env(12, 0, false).empty());    // its own off switch
     unset("STRATA_NV_KQ_DEFAULT");
-    // the start-up line of that default: the earlier line byte for byte where Strata's own kernels do not read the K-quant experts, one that says what happens where they do
+    // the start-up line of that default: the earlier line byte for byte where Nostroma's own kernels do not read the K-quant experts, one that says what happens where they do
     CHECK(nv_kq_default_line(false) ==
           "strata: a model with K-quant experts (Unsloth UD-Q4/Q5/Q6_K_XL) reads its prompt on llama.cpp's MMQ kernels (STRATA_MMQ_KQ=0 or STRATA_NV_KQ_DEFAULT=0 turns it off)");
     CHECK(nv_kq_default_line(true) ==
-          "strata: a model with K-quant experts (Unsloth UD-Q4/Q5/Q6_K_XL) reads its prompt on Strata's own kernels where they cover the layer (Q4_K and Q5_K gate/up with a Q5_1 or Q8_0 down) "
+          "strata: a model with K-quant experts (Unsloth UD-Q4/Q5/Q6_K_XL) reads its prompt on Nostroma's own kernels where they cover the layer (Q4_K and Q5_K gate/up with a Q5_1 or Q8_0 down) "
           "and on llama.cpp's MMQ kernels for the rest (STRATA_PF_FUSED_KQ=0 gives all of them back to MMQ)");
     CHECK(nv_kq_default_line(true, true) == nv_kq_default_line(true) && nv_kq_default_line(false, true) == nv_kq_default_line(false));
     // a build without MMQ names no MMQ kernel it does not have
     CHECK(nv_kq_default_line(true, false) ==
-          "strata: a model with K-quant experts (Unsloth UD-Q4/Q5/Q6_K_XL) reads its prompt on Strata's own kernels (Q4_K and Q5_K gate/up with a Q5_1 or Q8_0 down); "
+          "strata: a model with K-quant experts (Unsloth UD-Q4/Q5/Q6_K_XL) reads its prompt on Nostroma's own kernels (Q4_K and Q5_K gate/up with a Q5_1 or Q8_0 down); "
           "the 'prompt kernels' line below gives the counts");
     CHECK(nv_kq_default_line(false, false) ==
-          "strata: a model with K-quant experts (Unsloth UD-Q4/Q5/Q6_K_XL) reads its prompt on Strata's own int8 kernels (this engine has no MMQ kernels)");
+          "strata: a model with K-quant experts (Unsloth UD-Q4/Q5/Q6_K_XL) reads its prompt on Nostroma's own int8 kernels (this engine has no MMQ kernels)");
     {   // the line is printed only for a loaded set that has K-quant experts (ggml types: IQ2_XS 17, IQ3_S 21, IQ4_NL 20, IQ2_S 22, Q8_0 8, Q5_1 7, Q4_K 12, Q5_K 13, Q6_K 14)
         CHECK(nv_kq_expert_type(12) && nv_kq_expert_type(13) && nv_kq_expert_type(14) && nv_kq_expert_type(7));
         CHECK(!nv_kq_expert_type(8) && !nv_kq_expert_type(17) && !nv_kq_expert_type(21) && !nv_kq_expert_type(20) && !nv_kq_expert_type(22) && !nv_kq_expert_type(-1) && !nv_kq_expert_type(0));

@@ -1,7 +1,7 @@
 // When the split engine checks a card's kernels before it loads the model, and the plain lines it prints (AMD only). CPU only, so
 // tools/selftest_policy_test.cpp holds the rules without a card.
 //
-// Strata has run the HIP kernels on gfx1201 (Radeon AI PRO R9700) only. The same sources are built for the other RDNA cards (gfx1200, gfx1100..gfx1103), whose WMMA operand
+// Nostroma has run the HIP kernels on gfx1201 (Radeon AI PRO R9700) only. The same sources are built for the other RDNA cards (gfx1200, gfx1100..gfx1103), whose WMMA operand
 // layouts differ from gfx12's (hip/mma.h), and nobody has run them. On a card that is not gfx1201 the engine therefore (1) says once that the split is experimental there and
 // asks the person to report whether it works, and (2) runs hip/selftest.cu on every card before anything is loaded: the expert tile, the attention tile's WMMA shapes, the
 // dense product, the dp4a and the recurrent step against a scalar reference on random data. Any mismatch or error: the engine refuses to start with one line (the server then
@@ -18,7 +18,7 @@ namespace fnx {
 
 constexpr const char* SPLIT_REPORT_URL = "https://github.com/Niko1221/Strata/issues/new?template=amd_split_report.yml";
 
-// the architectures Strata has run the split on (gcnArchName starts with one of these)
+// the architectures Nostroma has run the split on (gcnArchName starts with one of these)
 inline bool arch_tested(const std::string& gcn_arch) { return gcn_arch.rfind("gfx1201", 0) == 0; }
 
 struct SelftestDecision {
@@ -35,7 +35,7 @@ inline SelftestDecision selftest_decide(const std::string& gcn_arch, const char*
     if (tested && !forced) return d;
     const std::string arch = gcn_arch.substr(0, gcn_arch.find(':'));
     if (!tested)
-        d.lines.push_back("The split engine is experimental on this card (" + arch + "): Strata has not run it on this architecture. Please report whether it works: " +
+        d.lines.push_back("The split engine is experimental on this card (" + arch + "): Nostroma has not run it on this architecture. Please report whether it works: " +
                           std::string(SPLIT_REPORT_URL));
     d.run = true;
     std::string covered, bad;

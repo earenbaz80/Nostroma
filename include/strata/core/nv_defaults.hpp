@@ -45,7 +45,7 @@ namespace strata::core {
 constexpr bool kNvKqDefaultOn = true;
 std::vector<std::pair<std::string, std::string>> nv_kq_default_env(int min_major, int min_minor, bool defaults026);
 std::vector<std::pair<std::string, std::string>> nv_kq_default_env(int min_major, int min_minor);
-/// Sets what nv_kq_default_env returns where the user has not set the variable; prints one line to stderr when it set anything and `say` is true.  fused_here: Strata's own fused
+/// Sets what nv_kq_default_env returns where the user has not set the variable; prints one line to stderr when it set anything and `say` is true.  fused_here: Nostroma's own fused
 /// kernels read the K-quant experts on this machine (nv_kq_fused_here for a visible card); the line then says so, otherwise it is the earlier line, byte for byte.
 /// The engine calls it with say = false before it knows the model (option time) and prints the line itself once the expert layout is loaded, only when
 /// nv_kq_line_wanted says the loaded set has experts the switch decides for.
@@ -56,7 +56,7 @@ bool nv_kq_expert_type(int ggml_type);
 /// Whether the start-up line about K-quant experts is true of the loaded set: some layer has such a type as gate/up or as down (pairs of ggml types per layer).
 /// IQ3_S / IQ2_XS sets: no.  UD-Q4_K_XL (Q4_K / Q5_K gate/up): yes.  A set whose only K-quant-family tensor is a Q5_1 down: yes, the switch decides that product.
 bool nv_kq_line_wanted(const std::vector<std::pair<int, int>>& layer_gate_up_down_types);
-/// Whether a CUDA card (raw compute capability, its multiprocessor count) reads UD-Q4_K_XL's K-quant experts (Q4_K / Q5_K gate/up with a Q5_1 or Q8_0 down) on Strata's
+/// Whether a CUDA card (raw compute capability, its multiprocessor count) reads UD-Q4_K_XL's K-quant experts (Q4_K / Q5_K gate/up with a Q5_1 or Q8_0 down) on Nostroma's
 /// own fused kernels, from the environment as the engine reads it: the card rule of fused_tile::kq_takes with STRATA_PF_FUSED_KQ, STRATA_PF_FUSED_SM40 and
 /// STRATA_PF_FUSED_SM86; STRATA_PF_FUSED=0 turns every fused kernel off.
 bool nv_kq_fused_here(int major, int minor, int sms);

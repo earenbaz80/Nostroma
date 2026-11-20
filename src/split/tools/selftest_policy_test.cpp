@@ -24,7 +24,7 @@ int main() {
     calls = 0;
     d = selftest_decide("gfx1100", nullptr, nullptr, pass);
     CHECK(d.ok && d.run && calls == 1 && d.lines.size() == 2);
-    CHECK(d.lines[0] == std::string("The split engine is experimental on this card (gfx1100): Strata has not run it on this architecture. Please report whether it works: ") + SPLIT_REPORT_URL);
+    CHECK(d.lines[0] == std::string("The split engine is experimental on this card (gfx1100): Nostroma has not run it on this architecture. Please report whether it works: ") + SPLIT_REPORT_URL);
     CHECK(d.lines[1] == "The split engine's self-test passed on gfx1100 (card 0: wmma, expert tile against a scalar reference).");
     for (const std::string& l : d.lines) CHECK(l.find('\n') == std::string::npos);
     // a failure: not ok, the second line says why in one plain sentence and what happens next

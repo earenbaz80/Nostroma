@@ -4,7 +4,7 @@
 // tile with the expert's rows (the main kernel skips an empty tile first; the fixup only skips its writes).  Its tiles
 // run to ceil(max_rows / J) * J for every expert of the launch, and col_low is the expert's first row, which can be the
 // table's last.  A table of exactly `rows` entries is therefore read up to roundup(max_rows, J) entries past its end, and
-// the main kernel reads up to J - 1 past the last row of its last expert.  Strata's tables were exact-sized cudaMallocs:
+// the main kernel reads up to J - 1 past the last row of its last expert.  Nostroma's tables were exact-sized cudaMallocs:
 // one that ended a 2 MiB page faulted on the next (Xid 31, "prefill copy_i32: an illegal memory access" on a long prompt).
 //
 // J is bounded by the backend: mul_mat_q_switch_J tries J = 8, 16, ... kMmqTileColsMax and launches one of those.  The

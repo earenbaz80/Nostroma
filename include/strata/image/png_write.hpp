@@ -1,4 +1,4 @@
-// include/strata/image/png_write.hpp - a small PNG writer of Strata's own (step 5): 8-bit grey / RGB / RGBA, every row
+// include/strata/image/png_write.hpp - a small PNG writer of Nostroma's own (step 5): 8-bit grey / RGB / RGBA, every row
 // with filter 0, the pixel data in deflate STORED blocks inside a zlib stream (no compression yet: no dependency), and
 // the "parameters" tEXt chunk right after IHDR, where stable-diffusion.cpp's stb_image_write puts it (sd-cli writes
 // the generation parameters there).  The file bytes are not stb's (stb compresses); the decoded pixels are the same.

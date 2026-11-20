@@ -1,4 +1,4 @@
-// include/strata/image/dit_gemm.hpp - the matrix products of Strata's Qwen-Image-2.1 DiT (src/image/dit/dit_gemm.cu),
+// include/strata/image/dit_gemm.hpp - the matrix products of Nostroma's Qwen-Image-2.1 DiT (src/image/dit/dit_gemm.cu),
 // CUDA and HIP: the weight's GGUF blocks decoded to f16 (te_dequant.hpp), the activations rounded to f16, cuBLAS /
 // hipBLAS GemmEx with f32 accumulation and f32 output - the arithmetic of the text encoder (step 3) and of
 // tools/image/gate/dit_ref.py's "f16op" mode.  stable-diffusion.cpp's MMQ rounds the activations to 8 bits instead.

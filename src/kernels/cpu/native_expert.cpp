@@ -13,7 +13,7 @@
 #include "strata/kernels/cpu/hadamard.hpp"
 #include "strata/kernels/cpu/tq_cpu.hpp"
 
-// The weight types' dot products, the activation quantizers and the row geometry: the Strata quant layer (STRATA_OWN_CPU_QUANT, the default build, no
+// The weight types' dot products, the activation quantizers and the row geometry: the Nostroma quant layer (STRATA_OWN_CPU_QUANT, the default build, no
 // ggml-cpu in the pool) or, as before, ggml-cpu's type traits (pool_quant.hpp).
 #include "strata/kernels/cpu/pool_quant.hpp"
 
@@ -32,7 +32,7 @@ namespace {
 
 using namespace pq;   // Tr, traits(), row_size_of(), blck_size_of(), flavour_*(), layer_init(), kTQ8_0 ... (pool_quant.hpp)
 
-// Do the trellis rows take Strata's own kernels (tq_cpu.hpp)?  Always, unless STRATA_NO_TQ_KERNELS=1 asks for ggml-cpu's
+// Do the trellis rows take Nostroma's own kernels (tq_cpu.hpp)?  Always, unless STRATA_NO_TQ_KERNELS=1 asks for ggml-cpu's
 // vec_dot AND this ggml has the type (the agentionai fork; an upstream ggml does not, and must never be asked about it).
 bool tq_rows_own(int type) {
     if (!tq_supported(type)) return false;
@@ -562,7 +562,7 @@ void native_gu_rows_impl(const NativeFmt& f, const uint8_t* blob, const void* co
         kq256_gu_rows(f.gu_type, blob, f.gu_row, f.up_off, (int) f.n_embd, act, nt, ff, r0, r1);
         return;
     }
-    // The trellis types (TQ2_T / TQK6 / TQK7): Strata's own kernels (tq_cpu.hpp), for every group size - they decode
+    // The trellis types (TQ2_T / TQK6 / TQK7): Nostroma's own kernels (tq_cpu.hpp), for every group size - they decode
     // a block once for all the tokens and give each token the same bits whatever the group (no #152 rule needed).
     if (tq_rows_own(f.gu_type)) {
         tq_gu_rows(tq_isa(), f.gu_type, blob, f.gu_row, f.up_off, (int) f.n_embd, act, nt, ff, r0, r1);

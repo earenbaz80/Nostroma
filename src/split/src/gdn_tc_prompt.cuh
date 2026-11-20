@@ -1,12 +1,12 @@
-// src/split/src/gdn_tc_prompt.cuh - Strata's tensor-core chunk scan for the delta rule (src/prefill/gdn_tc.cuh) in the split's prompt GDN
+// src/split/src/gdn_tc_prompt.cuh - Nostroma's tensor-core chunk scan for the delta rule (src/prefill/gdn_tc.cuh) in the split's prompt GDN
 // (FNX_PFX_GDN_TC=1, sm_80+ CUDA only; the HIP build and every card the scan does not fit keep k_gdn_ch_prep / k_gdn_ch_rec).
 //
 // Included by kernels.cu inside the anonymous namespace, after gdn_prompt.cuh (it uses HS, GCH and k_gdn_pf_norm_own from there).
-// The algebra, the f16 hi / lo split products, the scaling by powers of two and the register-resident state are Strata's, unchanged;
+// The algebra, the f16 hi / lo split products, the scaling by powers of two and the register-resident state are Nostroma's, unchanged;
 // what changes is the geometry: the card's slice has nv local value heads (vmap: local key head | first-of-its-key-head << 8), the
 // state is [local value head][key row][value column] (the split's S), the conv output xc has the row stride (2 nk + nv) HS, and
 // the gate and beta come from ab (the alpha / beta logits) as k_gdn_ch_prep makes them.  The scan runs NTL column tiles a head so
-// that a card with 24 heads fills its SMs.  Tolerances: the harness of Strata holds this scan within 1e-4 of the fp32 chunk kernel.
+// that a card with 24 heads fills its SMs.  Tolerances: the harness of Nostroma holds this scan within 1e-4 of the fp32 chunk kernel.
 #pragma once
 // compiled in the part that holds gdn_prompt() only (kernels.cu is built in nine parts)
 #if FNX_KPART == 4 && !FNX_HIP && FNX_ARCH >= 80
@@ -318,7 +318,7 @@ __device__ __forceinline__ void gtc_update_state(float (&s)[16][4], const float 
 constexpr size_t kTcPrepSmem = (size_t) 4 * GCH * GTC_KP * 2 + 2 * GCH * GTP * 4;   // the images, then k_t.k_i and q_t.k_i
 static_assert(1 * GCH * GTP * 4 <= 4 * GCH * GTC_KP * 2, "gdn_tc_prep_kernel: A fits where the images were");
 // A block per (chunk, LOCAL value head): the split's card holds nv value heads, vmap[lv] = local key head | first-of-its-key-head << 8.  The Gram of
-// the key head is done by each of its value heads' blocks (Strata's block did it once for its VPK heads); the k / q images in the scratch are written by
+// the key head is done by each of its value heads' blocks (Nostroma's block did it once for its VPK heads); the k / q images in the scratch are written by
 // the first one.  The gate and beta come from ab (nv alpha then nv beta logits a row) as k_gdn_ch_prep makes them.
 __global__ void __launch_bounds__(256) gdn_tc_prep_kernel(const float* __restrict__ h, const float* __restrict__ ab,
                                                           const float* __restrict__ dtb, const float* __restrict__ ssm_a,

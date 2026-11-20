@@ -20,7 +20,7 @@ macro(strata_hip_gfx906_toolchain)
   set(CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}/include/strata/platform/hip_compat)
   include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/include/strata/platform/hip_compat)
   add_compile_definitions(STRATA_HIP_GFX906=1)
-  message(STATUS "Strata: HIP (gfx906 compat) enabled, arch ${CMAKE_HIP_ARCHITECTURES}")
+  message(STATUS "Nostroma: HIP (gfx906 compat) enabled, arch ${CMAKE_HIP_ARCHITECTURES}")
   set(_strata_gpu_runtime_target CUDA::cudart)
   set(_strata_gpu_blas_target CUDA::cublas)
   set(_strata_gpu_include_directories ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
@@ -44,7 +44,7 @@ macro(strata_hip_mmq)
       src/prefill/moe_mmq.cu
       src/prefill/ggml_cuda_host.cu
       "${_strata_quantize_cu}")
-    # P4-SPLIT: Strata's own prompt kernels in a library of their own (strata_pf_own, as on CUDA)
+    # P4-SPLIT: Nostroma's own prompt kernels in a library of their own (strata_pf_own, as on CUDA)
     set(_strata_pf_own_sources
       src/prefill/moe_fused.cu
       src/prefill/moe_fused_iq.cu
@@ -66,7 +66,7 @@ macro(strata_hip_mmq)
       endforeach()
     endif()
     set_source_files_properties(${_strata_mmq_sources} ${_strata_pf_own_sources} PROPERTIES LANGUAGE HIP)
-    # moe_fused.cu is Strata's own CUDA-shaped source: it takes the HIP compat headers, ggml's MMQ sources do not
+    # moe_fused.cu is Nostroma's own CUDA-shaped source: it takes the HIP compat headers, ggml's MMQ sources do not
     set_source_files_properties(${_strata_pf_own_sources}
                                 PROPERTIES INCLUDE_DIRECTORIES "${STRATA_HIP_COMPAT_INCLUDE_DIR}")
     add_library(strata_mmq STATIC ${_strata_mmq_sources})
@@ -99,7 +99,7 @@ macro(strata_hip_mmq)
     set(_strata_pf_tests_lib strata_mmq)
 endmacro()
 
-# P4-SPLIT, HIP without llama.cpp's MMQ (STRATA_MMQ=OFF, the default, or STRATA_PREFILL_MMQ off): Strata's own prompt kernels alone (strata_pf_own, with
+# P4-SPLIT, HIP without llama.cpp's MMQ (STRATA_MMQ=OFF, the default, or STRATA_PREFILL_MMQ off): Nostroma's own prompt kernels alone (strata_pf_own, with
 # mmq_absent.cpp for the MMQ half of moe_mmq.hpp), compiled as strata_hip_mmq compiles them, with the ggml-base headers only
 macro(strata_hip_pf_own)
     set(_strata_gg "${_strata_ggml_root}/ggml")
@@ -118,13 +118,13 @@ macro(strata_hip_pf_own)
     target_link_libraries(strata_prefill PUBLIC strata_pf_own)
     target_compile_definitions(strata_prefill PUBLIC STRATA_PREFILL_FUSED=1)
     set(_strata_pf_tests_lib strata_pf_own)
-    message(STATUS "Strata: no llama.cpp MMQ prompt kernels (HIP): Strata's own prompt kernels and the FP16 path")
+    message(STATUS "Nostroma: no llama.cpp MMQ prompt kernels (HIP): Nostroma's own prompt kernels and the FP16 path")
 endmacro()
 
 # the prompt kernels' tests on HIP: the fused experts' (linked to ${_strata_pf_tests_lib}) and, with MMQ, MMQ's own
 macro(strata_hip_prompt_tests)
     if(NOT TARGET strata_mmq)
-      # P4-SPLIT: the engine and Strata's prompt library hold none of llama.cpp's MMQ (names in the bytes, nm; tools/check_no_mmq.py)
+      # P4-SPLIT: the engine and Nostroma's prompt library hold none of llama.cpp's MMQ (names in the bytes, nm; tools/check_no_mmq.py)
       find_package(Python3 QUIET COMPONENTS Interpreter)
       if(Python3_Interpreter_FOUND)
         add_test(NAME no_mmq_symbols COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tools/check_no_mmq.py $<TARGET_FILE:strata> $<TARGET_FILE:strata_pf_own>)
@@ -234,7 +234,7 @@ if(STRATA_HIP_GFX906)
       endforeach()
       list(APPEND _strata_cu ${_strata_tq_hip})
     endif()
-    target_sources(strata_pf_own PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/prefill/moe_f16_kq.cu)   # (Strata's own: beside moe_fused_iq.cu)
+    target_sources(strata_pf_own PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/prefill/moe_f16_kq.cu)   # (Nostroma's own: beside moe_fused_iq.cu)
     target_sources(strata_pf_own PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/prefill/moe_p1a.cu)    # (the same: moe_fused_iq.cu calls it)
   endif()
   set_source_files_properties(${_strata_cu} PROPERTIES LANGUAGE HIP)

@@ -83,7 +83,7 @@ inline unsigned long long bar1_bytes(const std::string& text, const std::string&
 // second card too, and from 2 there is none. which: "card 2", "card 1 or card 2". Card numbers count the config's "gpu"
 // list in order (CUDA_VISIBLE_DEVICES), not nvidia-smi's: card 0 of "gpu": [1, 2, 3] is nvidia-smi's GPU 1
 inline std::string leave_card_out(const std::string& which, int ncard) {
-    if (ncard <= 2) return "replace " + which + ": a two-card build has no smaller count to fall back to (one card is Strata's)";
+    if (ncard <= 2) return "replace " + which + ": a two-card build has no smaller count to fall back to (one card is Nostroma's)";
     const int m = ncard == 8 ? 6 : ncard == 6 ? 4 : ncard - 1;
     std::string s = "leave " + which + " out of the config's \"gpu\" (card n is its list's n-th entry, counting from 0) and build for " +
                     std::to_string(m) + " (make FNX_NCARD=" + std::to_string(m) + ")";

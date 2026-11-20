@@ -1,4 +1,4 @@
-// src/prefill/wmma_gemm.h - RDNA3 WMMA FP16 & BF16 GEMM for Strata prefill.
+// src/prefill/wmma_gemm.h - RDNA3 WMMA FP16 & BF16 GEMM for Nostroma prefill.
 #pragma once
 
 #include <cstdint>

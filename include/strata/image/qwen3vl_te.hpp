@@ -1,4 +1,4 @@
-// include/strata/image/qwen3vl_te.hpp - Strata's own text encoder for Qwen-Image-2.1: the Qwen3-VL-8B text model run
+// include/strata/image/qwen3vl_te.hpp - Nostroma's own text encoder for Qwen-Image-2.1: the Qwen3-VL-8B text model run
 // once over a prompt's token ids, CUDA and HIP from one source (src/image/te/qwen3vl_te.cu; HIP through
 // include/strata/hip_compat).
 //

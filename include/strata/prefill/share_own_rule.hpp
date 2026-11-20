@@ -1,4 +1,4 @@
-// include/strata/prefill/share_own_rule.hpp - whether a prompt layer on which the CPU share took experts (rows_cpu > 0) may still run the GPU's own experts on Strata's own kernels:
+// include/strata/prefill/share_own_rule.hpp - whether a prompt layer on which the CPU share took experts (rows_cpu > 0) may still run the GPU's own experts on Nostroma's own kernels:
 // the staged fused entry (prefill.cpp fz_staged) and the int8 kernels (i8_l).
 //
 // Both once required rows_cpu == 0, because they were written for a layer whose rows are all the GPU's.  They do not need it: the share carves the CPU experts' rows out as the LAST

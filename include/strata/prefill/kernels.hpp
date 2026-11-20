@@ -91,7 +91,7 @@ void gdn_recurrence_state_only(float* state, const float* h, const float* gate, 
 // ---- MoE
 /// softmax over 512, top-10 (ties to the lower id), weights renormalised over the ten (the native router).
 void route(const float* logits, int32_t* ids, float* weights, int64_t T, int64_t n_expert, void* stream);
-/// Expert blob (Strata pack layout, Q2_0) -> BF16 matrices: gate/up interleaved [1280, 2560], down [2560, 640].
+/// Expert blob (Nostroma pack layout, Q2_0) -> BF16 matrices: gate/up interleaved [1280, 2560], down [2560, 640].
 void blob_dequant(const uint8_t* blob, uint16_t* gu16, uint16_t* down16, void* stream);
 /// h16[n, r] = fp16(silu(gu[n, 2r]) * gu[n, 2r + 1])   (the interleaved expert gate/up)
 void swiglu_interleaved(const float* gu, uint16_t* h16, int64_t n, void* stream);
@@ -130,12 +130,12 @@ void moe_scatter_add(const float* Dm, const int32_t* u_tok, const int32_t* u_off
 void moe_combine_peer(const float* D, const int32_t* slot, const float* w, const float* shared, const float* sg,
                       const float* peer, int64_t rows_local, float* bo, int64_t T, void* stream);
 /// sum[t, :] += wk[p] * rows[r, :] with p = pair[r], t = p / 10 (the routed pair's token), for n rows of ONE expert
-/// (no token twice: launches in a fixed expert order make the sums repeatable).  After eddoursul/Strata's
+/// (no token twice: launches in a fixed expert order make the sums repeatable).  After eddoursul/Nostroma's
 /// moe_scatter_add (f8de703).
 void peer_scatter_add(float* sum, const float* rows, const float* wk, const int32_t* pair, int64_t n, void* stream);
 /// The same for a group of experts in one launch (a token may recur): token tok[b] adds its rows list[start[b] ..
 /// start[b + 1]) in that order (the experts' order), row r at rows[r - r0]: bitwise the per-expert launches'.
-/// eddoursul/Strata's moe_gather_add, with the weight looked up through the row's pair.
+/// eddoursul/Nostroma's moe_gather_add, with the weight looked up through the row's pair.
 void peer_gather_add(float* sum, const float* rows, int64_t r0, const float* wk, const int32_t* pair, const int32_t* tok,
                      const int32_t* start, const int32_t* list, int64_t n_tok, void* stream);
 /// moe_combine_peer with the peer's sums in FP16 (`peer16`, may be mapped host memory)

@@ -27,15 +27,15 @@ enum class Finish { stop, length, cancel };
 const char* finish_name(Finish f);
 
 // the sampler outside a Session (batched rows): the penalty row for a pick that follows seq (its last pen_last_n
-// tokens), whether s penalizes at all, and a token drawn from a row's candidates (Engine::top_tokens) as Strata's sampler
+// tokens), whether s penalizes at all, and a token drawn from a row's candidates (Engine::top_tokens) as Nostroma's sampler
 // draws it (top_k, top_p, min_p, temperature)
 Engine::Penalties::Row penalty_row(const std::vector<int>& seq, const Sampling& s);
 bool penalizes(const Sampling& s);
-// throws std::runtime_error naming the first value out of range (the ranges Strata's sampler takes; a greedy request's
+// throws std::runtime_error naming the first value out of range (the ranges Nostroma's sampler takes; a greedy request's
 // values other than the temperature are not used and not checked)
 void check_sampling(const Sampling& s);
 int sample_token(const std::vector<std::pair<float, int>>& cand, const Sampling& s, std::mt19937_64& rng);
-// a row's distribution from its candidates (logit descending, token ascending on ties), as Strata's sampler makes it:
+// a row's distribution from its candidates (logit descending, token ascending on ties), as Nostroma's sampler makes it:
 // top_k, then top_p over the untempered softmax of those (in double), then min_p as a logit threshold, then the
 // temperature's softmax over the survivors; draw(d, u) the token at u in [0, 1)
 struct Dist {
@@ -61,7 +61,7 @@ struct GenStats {
     int draft_calls = 0;
 };
 
-// a prompt's cache hints (Strata's GEN keys)
+// a prompt's cache hints (Nostroma's GEN keys)
 struct ReadHints {
     int keep = -1;       // keep=N: a checkpoint where the trailing late notes start
     bool cache = true;   // ckpt=0: a one-off request (no checkpoints, nothing parked for it)

@@ -1,7 +1,7 @@
 // FNX_PFX_GDN_TC=1 against the kernels it replaces, on one card (not a ctest: needs a GPU, no model).
 //   bin/split_gdn_tc_test [nk nv [C ...]]       default nk 8, nv 24 (one card of two), C = 33 1000 2048 8192 32768
 // The prompt GDN's recurrence for one card's slice, random inputs of the model's shapes (q, k unit rows, gates from ab / dt_bias / A as
-// k_gdn_ch_prep makes them): the existing sub-chunk path (k_gdn_ch_prep + k_gdn_ch_rec, fp32 on the CUDA cores) and Strata's tensor-core scan
+// k_gdn_ch_prep makes them): the existing sub-chunk path (k_gdn_ch_prep + k_gdn_ch_rec, fp32 on the CUDA cores) and Nostroma's tensor-core scan
 // (gdn_tc_run, f16 hi / lo split products) from the same state, compared on the outputs and the end state, and timed (the two launches each).
 // Compiles kernels.cu's part 4 as one translation unit with its own main, so the kernels in the anonymous namespace are reachable.
 #define FNX_KPART 4

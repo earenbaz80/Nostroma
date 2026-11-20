@@ -1,4 +1,4 @@
-// src/prefill/moe_fused_iq_q36.cu - Strata's fused int8 prompt-expert kernels (moe_fused_iq.cu) compiled a second time
+// src/prefill/moe_fused_iq_q36.cu - Nostroma's fused int8 prompt-expert kernels (moe_fused_iq.cu) compiled a second time
 // for Qwen3.6-35B-A3B's expert shape (n_embd 2048, n_ff 512), beside the copy for the compiled geometry (Flash-Next:
 // 2560 / 640), so the Qwen3.6 engine (src/qwen35/q36_engine.cu) reads its prompt experts with them instead of llama.cpp's
 // MMQ.  moe_fused_iq.cu is not changed: it is included here with the shape override of moe_fused.hpp and its namespace

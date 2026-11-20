@@ -138,7 +138,7 @@ bool ple_batch_enabled() {
 
 #if !defined(STRATA_PREFILL_MMQ) && !defined(STRATA_PREFILL_FUSED)
 // A build without the llama.cpp sources (no STRATA_NATIVE_EXPERTS): no MMQ, the FP16 expert path everywhere.  (P4-SPLIT: a build with
-// Strata's own prompt kernels but no MMQ, -DSTRATA_MMQ=OFF, has the real helpers and src/prefill/mmq_absent.cpp instead.)
+// Nostroma's own prompt kernels but no MMQ, -DSTRATA_MMQ=OFF, has the real helpers and src/prefill/mmq_absent.cpp instead.)
 #include "strata/core/geometry.hpp"
 
 namespace strata::prefill::mmq {
@@ -202,10 +202,10 @@ void hadamard128_rows(float*, int64_t, int64_t, const float*, void*) {}
 }  // namespace strata::prefill::fused
 #endif
 #if defined(STRATA_PREFILL_FUSED) && !defined(STRATA_PREFILL_MMQ)
-// P4-SPLIT: built with Strata's own prompt kernels and without llama.cpp's MMQ (-DSTRATA_MMQ=OFF, or HIP without STRATA_PREFILL_MMQ)
+// P4-SPLIT: built with Nostroma's own prompt kernels and without llama.cpp's MMQ (-DSTRATA_MMQ=OFF, or HIP without STRATA_PREFILL_MMQ)
 #define STRATA_PF_OWN_ONLY 1
 namespace {
-// Such an engine takes Strata's fused kernels wherever they exist for the card and the layer's formats, so the opt-in switches of those
+// Such an engine takes Nostroma's fused kernels wherever they exist for the card and the layer's formats, so the opt-in switches of those
 // kernels are on by default here (a switch the user set, either value, is kept); every other layer takes the FP16 path.  Set before main(),
 // so the first reader of each (the engine's start-up rules, the kernels' own static reads) sees it.  Listed once in the prompt path's line.
 // (the list lives in own_only_switches.hpp: the start-up rules of generate.cpp ask it which names the build set and which the user did)
@@ -1336,7 +1336,7 @@ struct PeerPrefill {
     // SUMS (the host route's default, STRATA_PF_PEER_SUMS=0: rows): the peer adds its rows into one weighted sum per
     // token (`sum`, from the routing weights `wk` and each row's routed pair `pair`) and sends that back (`host_sum`,
     // T x N) instead of its rows (rows_peer x N, up to K times more over the primary's link); the primary's combine
-    // adds it to its own experts' rows (eddoursul/Strata's second-GPU prompt path, f8de703).
+    // adds it to its own experts' rows (eddoursul/Nostroma's second-GPU prompt path, f8de703).
     bool sums = false;
     cudaStream_t x_stream = nullptr;      // primary: the host route's copies beside its compute stream
     cudaEvent_t ev_x = nullptr;
@@ -1849,7 +1849,7 @@ uint64_t qsa_set_bytes(size_t T, int64_t cap, int64_t max_blocks, int64_t sel_ba
     a.take<float>((size_t) attn_batch * strata::kernels::qsa_decode_attn_scratch_floats(cap, s), ok);
     return a.used;
 }
-// Step 2b: which layers' experts go through MMQ (both weight types covered; the Strata Q2_0 pack always - its blob
+// Step 2b: which layers' experts go through MMQ (both weight types covered; the Nostroma Q2_0 pack always - its blob
 // is converted to GGUF Q2_0 blocks on the gather), whether any layer keeps the FP16 path (IQ1_M), and the largest
 // gate/up and down matrices a group buffer slot holds.  STRATA_PREFILL_MMQ=0: the FP16 path everywhere (the A/B).
 constexpr int MMQ_GROUP = 16;                  // experts per MMQ launch (the gather is per expert, as blobs arrive)
@@ -2002,7 +2002,7 @@ const MmqPlan& mmq_plan() {
                 // the fused path's buffers (Xq, H) exist for it; a chunk it does not take (a small one) keeps the FP16 path
                 if (on && lay.native && fused::native_supported(gt, dt)) { p.fo[(size_t) l] = 1; p.any = true; }
 #if defined(STRATA_PF_OWN_ONLY)
-                if (on && !lay.native && fused::enabled()) { p.fo[(size_t) l] = 1; p.any = true; }   // the Strata Q2_0 pack (moe_fused.cu)
+                if (on && !lay.native && fused::enabled()) { p.fo[(size_t) l] = 1; p.any = true; }   // the Nostroma Q2_0 pack (moe_fused.cu)
 #endif
                 if (mf) {
                     const bool fo = p.fo[(size_t) l] != 0;

@@ -1,4 +1,4 @@
-# cmake/backends/quant.cmake - the Strata quant layer (own-stack phase 2): strata_quant, its self-test and the ggml-cpu oracle test.
+# cmake/backends/quant.cmake - the Nostroma quant layer (own-stack phase 2): strata_quant, its self-test and the ggml-cpu oracle test.
 #
 # strata_quant has no ggml dependency (the block layouts and codebooks come from third_party/strata-ggml/strata-quant-common.h, a plain header).
 # Only quant_parity links ggml-cpu, as the oracle.  Called from CMakeLists.txt after the ggml subproject is configured, and (OWN-2N) from metal/CMakeLists.txt

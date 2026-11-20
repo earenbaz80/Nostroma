@@ -80,7 +80,7 @@ function(strata_ggml_tq_overlay LLAMA OUT)
   # ---- ggml.h: the three enumerators (values above GGML_TYPE_COUNT: ggml's own tables never see them) ---------------------
   _tq_read(_h "${_inc}/ggml.h")
   _tq_edit(_h BEFORE "        GGML_TYPE_COUNT   = 43,"
-    "        GGML_TYPE_TQ2_T   = 144, // Agention trellis types (Strata overlay; the fork's ids)
+    "        GGML_TYPE_TQ2_T   = 144, // Agention trellis types (Nostroma overlay; the fork's ids)
         GGML_TYPE_TQK6    = 145,
         GGML_TYPE_TQK7    = 146,
         GGML_TYPE_TQP5    = 147, // Gyro-L pair trellis (the same fork's 147-149)
@@ -120,7 +120,7 @@ function(strata_ggml_tq_overlay LLAMA OUT)
   # ---- mmq-load-tiles.cuh: the loader, at the end -------------------------------------------------------------------
   _tq_read(_l "${_cu}/mmq-load-tiles.cuh")
   file(WRITE "${OUT}/mmq-load-tiles.cuh" "${_l}\n#include \"tq-mmq-tiles.cuh\"\n")
-  # the vendored tq.cuh names its two Strata headers by path from its own folder; here they sit beside it (the caller copies them): plain names
+  # the vendored tq.cuh names its two Nostroma headers by path from its own folder; here they sit beside it (the caller copies them): plain names
   file(READ "${_tq}/tq.cuh" _tqh)
   set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${_tq}/tq.cuh")
   string(REPLACE "#include \"../../../../ggml/ggml-common-tq.h\"" "#include \"ggml-common-tq.h\"" _tqh "${_tqh}")
@@ -157,7 +157,7 @@ function(strata_ggml_tq_overlay LLAMA OUT)
   foreach(_ty tq2_t tqk6 tqk7 tqp5 tqp6 tqp7)
     string(TOUPPER "${_ty}" _TY)
     file(WRITE "${OUT}/template-instances/mmq-instance-${_ty}.cu"
-         "// Strata trellis overlay (cmake/strata_ggml_tq_overlay.cmake)\n\n#include \"../mmq.cuh\"\n\nDECL_MMQ_CASE(GGML_TYPE_${_TY});\n")
+         "// Nostroma trellis overlay (cmake/strata_ggml_tq_overlay.cmake)\n\n#include \"../mmq.cuh\"\n\nDECL_MMQ_CASE(GGML_TYPE_${_TY});\n")
   endforeach()
 
   if(_tq_fail)

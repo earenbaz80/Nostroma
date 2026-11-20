@@ -1,4 +1,4 @@
-// src/image/vae/convert.hpp - host-side weight conversion of Strata's VAE decoder, split over threads.
+// src/image/vae/convert.hpp - host-side weight conversion of Nostroma's VAE decoder, split over threads.
 // Every value is converted on its own (bf16 -> f32 exact, f32 -> f16 round to nearest even with
 // strata::kernels::f16_from_f32), so the result is the same bytes for any thread count
 // (tools/image/gate/test_vae_convert.py checks it on every bf16 bit pattern).  Host only.

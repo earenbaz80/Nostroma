@@ -1,4 +1,4 @@
-// sFNX engine process for its front end (front/, Strata's line protocol): the engine half on stdin/stdout (token ids
+// sFNX engine process for its front end (front/, Nostroma's line protocol): the engine half on stdin/stdout (token ids
 // only; the server tokenizes, applies the chat template, matches stop strings and parses tools).
 //
 //   sfnx --serve --native MODEL.gguf --mtp RT_DIR --draft-vocab VOCAB.bin [--max-context N] [--spec K] [--lookup K]
@@ -90,7 +90,7 @@ Args parse_args(int argc, char** argv) {
         else if (k == "--lookup") a.lookup = std::stoi(val());
         else if (k == "--conversation-cache-mib") a.cache_mib = std::stol(val());
         else if (k == "--batch") a.batch = std::stoi(val());
-        else if (k == "--layer-split") val();   // Strata's layer split; sFNX splits every layer across the cards
+        else if (k == "--layer-split") val();   // Nostroma's layer split; sFNX splits every layer across the cards
         else if (k == "--rope-scale") {   // YaRN for a longer context: the engine reads it as FNX_ROPE_SCALE
             const std::string s = val();
             if (const char* e = std::getenv("FNX_ROPE_SCALE"); e && s != e)
@@ -282,11 +282,11 @@ GenReq parse_gen(const std::string& line, int vocab, int pad, bool batch, bool i
             if (!said) std::fprintf(stderr, "sfnx: pin= (a client's strata_prefix) is not supported: such requests go on without it\n");
             said = true;
         }
-        // Strata's per-request engine tuning (strata_tune) and its control vector: nothing in sFNX to set
+        // Nostroma's per-request engine tuning (strata_tune) and its control vector: nothing in sFNX to set
         else if (k == "pcie_frac" || k == "spec_min_p" || k == "pipe" || k == "aux_cpus" || k == "cvec") {
             static std::set<std::string> said;
             if (said.insert(k).second)
-                std::fprintf(stderr, "sfnx: %s= (Strata's per-request engine tuning or control vector) has nothing to set in sfnx: "
+                std::fprintf(stderr, "sfnx: %s= (Nostroma's per-request engine tuning or control vector) has nothing to set in sfnx: "
                                      "such requests go on without it\n", k.c_str());
         }
         else throw std::runtime_error(cmd + ": unknown key " + k);

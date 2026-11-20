@@ -1,7 +1,7 @@
 // src/kernels/cpu/pool_rows_bench.cpp - the CPU expert pool's own row functions (native_gu_rows / native_down_rows), no model, no GPU:
 // (1) bits: every token's gate/up and down rows against ggml-cpu's own one-row dot and the same SwiGLU, at 1..16 tokens per expert;
 // (2) speed: one thread, E experts streamed from memory, ns per expert for gate/up and down at each token count.
-// With STRATA_OWN_CPU_QUANT the rows run on the Strata quant layer and (1) checks them against ggml-cpu; without it both sides are ggml-cpu.
+// With STRATA_OWN_CPU_QUANT the rows run on the Nostroma quant layer and (1) checks them against ggml-cpu; without it both sides are ggml-cpu.
 // Comparing the two builds' (2) is the pool-level A/B of the layer against ggml-cpu (OWN-2N2: the arm64 gap sat in this loop, not in a dot).
 //
 // usage: pool_rows_bench [--check-only] [--rounds N] [--experts E] [--nt 1,2,4,8,16] [--pair gu/down ...]   (pairs by ggml type name, e.g. iq3_s/iq4_nl)

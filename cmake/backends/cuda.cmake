@@ -27,7 +27,7 @@ macro(strata_cuda_toolchain)
   option(STRATA_EXPERIMENTAL_SM60 "community build for GPUs below compute capability 7.5: Pascal sm_60, Volta sm_70 (#236)" OFF)
   if(_strata_cuda_arch_defaulted)
     # a recommendation, not a refusal: the release engine is built for 75;86;89;120, a hand build names its card
-    message(WARNING "Strata: CMAKE_CUDA_ARCHITECTURES was not set, so this build is for ${CMAKE_CUDA_ARCHITECTURES} only (sm_120 = RTX 50). For another "
+    message(WARNING "Nostroma: CMAKE_CUDA_ARCHITECTURES was not set, so this build is for ${CMAKE_CUDA_ARCHITECTURES} only (sm_120 = RTX 50). For another "
                     "card pass it: -DCMAKE_CUDA_ARCHITECTURES=native (the GPUs in this PC), 75 (RTX 20), 86 (RTX 30), "
                     "89 (RTX 40), or a list like \"86;120\".")
   endif()
@@ -51,7 +51,7 @@ macro(strata_cuda_toolchain)
     # 12.x toolkit: CUDA 13 dropped sm_60 and sm_70 (nvcc fails CMake's compiler test with "compute_70").
     if(_base LESS 75 AND NOT STRATA_EXPERIMENTAL_SM60)
       message(FATAL_ERROR
-        "Strata needs an NVIDIA GPU of compute capability 7.5 or newer (RTX 20 / 30 / 40 / 50 series), but "
+        "Nostroma needs an NVIDIA GPU of compute capability 7.5 or newer (RTX 20 / 30 / 40 / 50 series), but "
         "CMAKE_CUDA_ARCHITECTURES is '${CMAKE_CUDA_ARCHITECTURES}'.  (A Pascal sm_60 or Volta sm_70 build is "
         "-DSTRATA_EXPERIMENTAL_SM60=ON; upstream does not support it.)")
     endif()
@@ -77,13 +77,13 @@ macro(strata_cuda_toolchain)
     # build only, so the ready-made engine (sm_75+) keeps exactly the code it had
     add_compile_definitions(STRATA_EXPERIMENTAL_SM60=1)
   endif()
-  message(STATUS "Strata: CUDA enabled, arch ${CMAKE_CUDA_ARCHITECTURES}")
+  message(STATUS "Nostroma: CUDA enabled, arch ${CMAKE_CUDA_ARCHITECTURES}")
   set(_strata_gpu_runtime_target CUDA::cudart)
   set(_strata_gpu_blas_target CUDA::cublas)
   set(_strata_gpu_include_directories ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 endmacro()
 
-# strata_pf_own (Strata's own prompt kernels) with strata_mmq's include directories (in their order, the trellis overlay's
+# strata_pf_own (Nostroma's own prompt kernels) with strata_mmq's include directories (in their order, the trellis overlay's
 # first), definitions and options: the same command line for the files that left strata_mmq (CUDA and HIP)
 macro(strata_pf_own_mirror)
   foreach(_strata_p INCLUDE_DIRECTORIES COMPILE_DEFINITIONS COMPILE_OPTIONS)
@@ -106,12 +106,12 @@ macro(strata_cuda_mmq)
     if(_strata_mmq_tq_overlay)
       set(_strata_quantize_cu ${_strata_tq_overlay_dir}/quantize.cu)
     endif()
-    # #136: the Q2_0 pack's prompt experts on Strata's own int8 kernels (moe_fused.cu, opt-in STRATA_PF_FUSED=1; CUDA
+    # #136: the Q2_0 pack's prompt experts on Nostroma's own int8 kernels (moe_fused.cu, opt-in STRATA_PF_FUSED=1; CUDA
     # only: the HIP branch below keeps MMQ, and an sm_75 device or an sm_75-only build reports them unavailable)
     add_library(strata_mmq STATIC src/prefill/moe_mmq.cu src/prefill/moe_iq4_w4a8.cu
                 src/prefill/mmq_nvfp4_w4a8.cu
                 src/prefill/ggml_cuda_host.cu ${_strata_quantize_cu})
-    # P4-SPLIT: Strata's own prompt kernels (the fused int8 experts) are a library of their own, strata_pf_own, so that a
+    # P4-SPLIT: Nostroma's own prompt kernels (the fused int8 experts) are a library of their own, strata_pf_own, so that a
     # build without llama.cpp's MMQ keeps them.  With MMQ they are compiled with strata_mmq's command line (strata_pf_own_mirror
     # below) and strata_mmq hands them on (PUBLIC): every target that links strata_mmq gets the same objects as before.
     add_library(strata_pf_own STATIC src/prefill/moe_fused.cu src/prefill/moe_fused_iq.cu src/prefill/moe_helpers.cu
@@ -282,7 +282,7 @@ macro(strata_cuda_mmq)
     set(_strata_pf_tests_lib strata_mmq)
 endmacro()
 
-# P4-SPLIT, STRATA_MMQ=OFF (the default): Strata's own prompt kernels without llama.cpp's MMQ (strata_pf_own alone, with mmq_absent.cpp for the MMQ half
+# P4-SPLIT, STRATA_MMQ=OFF (the default): Nostroma's own prompt kernels without llama.cpp's MMQ (strata_pf_own alone, with mmq_absent.cpp for the MMQ half
 # of moe_mmq.hpp); the same sources and options as strata_cuda_mmq gives them, the ggml-base headers only
 macro(strata_cuda_pf_own)
     set(_strata_gg ${_strata_ggml_root}/ggml)
@@ -305,13 +305,13 @@ macro(strata_cuda_pf_own)
     target_link_libraries(strata_prefill PUBLIC strata_pf_own)
     target_compile_definitions(strata_prefill PUBLIC STRATA_PREFILL_FUSED=1)
     set(_strata_pf_tests_lib strata_pf_own)
-    message(STATUS "Strata: no llama.cpp MMQ prompt kernels (STRATA_MMQ=OFF): Strata's own prompt kernels and the FP16 path")
+    message(STATUS "Nostroma: no llama.cpp MMQ prompt kernels (STRATA_MMQ=OFF): Nostroma's own prompt kernels and the FP16 path")
 endmacro()
 
 # the prompt kernels' tests: the fused experts' (linked to ${_strata_pf_tests_lib}) and, with MMQ, MMQ's own
 macro(strata_cuda_prompt_tests)
     if(STRATA_BUILD_TESTS AND NOT STRATA_MMQ)
-      # P4-SPLIT: the engine and Strata's prompt library hold none of llama.cpp's MMQ (names in the bytes, nm, cuobjdump; tools/check_no_mmq.py)
+      # P4-SPLIT: the engine and Nostroma's prompt library hold none of llama.cpp's MMQ (names in the bytes, nm, cuobjdump; tools/check_no_mmq.py)
       find_package(Python3 QUIET COMPONENTS Interpreter)
       if(Python3_Interpreter_FOUND)
         add_test(NAME no_mmq_symbols COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tools/check_no_mmq.py
@@ -324,7 +324,7 @@ macro(strata_cuda_prompt_tests)
       # stored digests: the same file on CUDA and HIP (exit 77 without a card).  Those device functions exist only for sm_75 and newer
       # (moe_fused_iq.cu's __CUDA_ARCH__ >= 750 sections), so a list with an older architecture (STRATA_EXPERIMENTAL_SM60) does not build it
       if(_strata_cuda_below75)
-        message(STATUS "Strata: prefill_decode_golden not built: ${CMAKE_CUDA_ARCHITECTURES} has an architecture below sm_75")
+        message(STATUS "Nostroma: prefill_decode_golden not built: ${CMAKE_CUDA_ARCHITECTURES} has an architecture below sm_75")
       else()
         add_executable(prefill_decode_golden tests/cuda/prefill_decode_golden.cu)
         target_include_directories(prefill_decode_golden PRIVATE $<TARGET_PROPERTY:strata_pf_own,INCLUDE_DIRECTORIES>)

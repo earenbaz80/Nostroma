@@ -2270,10 +2270,10 @@ __global__ void route_kernel(const float* __restrict__ logits, int32_t* __restri
     selected_sum = fmaxf(warp_sum(selected_sum), 6.103515625e-5f);
     if (lane < KU) wout[t * KU + lane] = selected / selected_sum;
 }
-// Strata blob: gate/up codes [2 F][E / 4 B], down codes [E][F / 4 B], gate/up scales [2 F][E / 64] f16, down scales [E][F / 64] f16
+// Nostroma blob: gate/up codes [2 F][E / 4 B], down codes [E][F / 4 B], gate/up scales [2 F][E / 64] f16, down scales [E][F / 64] f16
 // (E = N, F = FFC: the compiled geometry's; Flash-Next 2560 and 640: [1280][640 B], [2560][160 B], [1280][40], [2560][10])
 constexpr int BLOB_GU_ROWS = 2 * (int) FFC, BLOB_ROW_GU = N / 4, BLOB_ROW_D = (int) FFC / 4, BLOB_SC_GU = N / 64, BLOB_SC_D = (int) FFC / 64;
-static_assert(N % 64 == 0 && FFC % 64 == 0, "the Strata Q2 blob holds whole 64-weight blocks");
+static_assert(N % 64 == 0 && FFC % 64 == 0, "the Nostroma Q2 blob holds whole 64-weight blocks");
 template <bool HALF>
 __global__ void blob_dequant_kernel(const uint8_t* __restrict__ blob, uint16_t* __restrict__ gu16,
                                     uint16_t* __restrict__ d16) {

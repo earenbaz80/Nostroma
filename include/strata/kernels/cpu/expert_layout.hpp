@@ -1,6 +1,6 @@
 // include/strata/kernels/cpu/expert_layout.hpp - plan v0.3 P6: where each routed expert lives in experts.bin.
 //
-// A Q2_0 pack (tools/strata_pack.py) has one blob size for every layer, `BLOB`, in the Strata expert form.  A
+// A Q2_0 pack (tools/strata_pack.py) has one blob size for every layer, `BLOB`, in the Nostroma expert form.  A
 // native pack (tools/iq_pack.py, the IQ2_XS / IQ3_XXS files) keeps each expert's raw GGUF slices, so the blob
 // size and the formats change from layer to layer; `native_experts.txt` says how.  Everything that touches an
 // expert blob - the arena, the VRAM tier, the prompt path, the CPU pool, the GPU window - asks this table.
@@ -85,7 +85,7 @@ bool cpu_gather_fast_here();
 /// STRATA_FORCE_ISA, and not an older-CPU build (STRATA_ISA_FLOOR, which stays on its floor and AVX2).
 /// STRATA_NO_AVXVNNI=1 answers no.
 bool cpu_avxvnni_ok();
-/// Whether a native pack's layer of this ggml type runs on Strata's own Q2_0 kernels (AVX2 / AVX-512).  On a
+/// Whether a native pack's layer of this ggml type runs on Nostroma's own Q2_0 kernels (AVX2 / AVX-512).  On a
 /// CPU without AVX2 (a native, non-portable build: ggml-cpu compiled for this CPU's SSE) a Q2_0 layer takes
 /// ggml-cpu's own Q2_0 vec_dot like every other native type: slower, but it runs.
 inline bool q2_native_kernels(int type) { return type == 42 && cpu_avx2_ok(); }

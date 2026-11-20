@@ -1,5 +1,5 @@
 // include/strata/image/qi21_image.hpp - the small steps of stable-diffusion.cpp 2988060's Qwen-Image-2.1 picture
-// pipeline that sit between Strata's tested parts (step 5, src/image/pipeline/qi21_glue.cpp), each written in sd.cpp's
+// pipeline that sit between Nostroma's tested parts (step 5, src/image/pipeline/qi21_glue.cpp), each written in sd.cpp's
 // own float order so that, given the same inputs, it gives sd.cpp's bytes.  CPU, plain float; no ggml.
 //
 //   the starting latent  src/runtime/denoiser.hpp DiscreteFlowDenoiser::noise_scaling on a zero init latent:

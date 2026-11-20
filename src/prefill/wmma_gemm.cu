@@ -1,4 +1,4 @@
-// src/prefill/wmma_gemm.cu - RDNA3 WMMA FP16 & BF16 GEMM for Strata prefill (gfx1100).
+// src/prefill/wmma_gemm.cu - RDNA3 WMMA FP16 & BF16 GEMM for Nostroma prefill (gfx1100).
 //
 // Computes Y[t, n] = beta * Y[t, n] + sum_k W[n, k] * X[t, k] using RDNA3 WMMA intrinsics:
 //   * X is T x K row-major (leading dim K), fp16 or bf16

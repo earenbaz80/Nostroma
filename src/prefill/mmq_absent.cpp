@@ -1,5 +1,5 @@
 // src/prefill/mmq_absent.cpp - see include/strata/prefill/moe_mmq.hpp.  P4-SPLIT: an engine built without llama.cpp's MMQ prompt kernels
-// (-DSTRATA_MMQ=OFF) keeps Strata's own (strata_pf_own: the fused experts and moe_helpers.cu); this file answers the MMQ half of the
+// (-DSTRATA_MMQ=OFF) keeps Nostroma's own (strata_pf_own: the fused experts and moe_helpers.cu); this file answers the MMQ half of the
 // interface for it.  Every query says "no MMQ", so the prompt path never plans an MMQ product; the calls that would launch one cannot be
 // reached from there and stop the process with a plain message instead of leaving garbage in a buffer.
 #include "strata/prefill/moe_mmq.hpp"

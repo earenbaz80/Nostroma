@@ -1,4 +1,4 @@
-// HIP only: the kernel self-test the engine runs on a card Strata has not run it on (hip/selftest_policy.hpp has the rule and the lines). Random small data, a scalar
+// HIP only: the kernel self-test the engine runs on a card Nostroma has not run it on (hip/selftest_policy.hpp has the rule and the lines). Random small data, a scalar
 // reference on the host, a few milliseconds each:
 //   wmma     the nvcuda::wmma stand-in (hip/mma.h) in the four operand layouts the attention tiles use (Q K^T, P V, and the transposed forms), both stores
 //   expert   the prompt path's routed-expert tile (moe_mma.cuh, Q8_0 weights) through the engine's own launcher, jobs of 40 and 5 tokens, 96 rows (a partial tile)

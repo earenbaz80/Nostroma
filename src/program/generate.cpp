@@ -4229,7 +4229,7 @@ int main(int argc, char** argv) {
                     if (cudaDeviceGetAttribute(&m, cudaDevAttrComputeCapabilityMajor, d) == cudaSuccess &&
                         cudaDeviceGetAttribute(&n, cudaDevAttrComputeCapabilityMinor, d) == cudaSuccess && (m < lo_m || (m == lo_m && n < lo_n))) { lo_m = m; lo_n = n; }
                 }
-                // does Strata's own fused kernel read the K-quant experts on a visible card (the line says so then; strata::core::nv_kq_fused_here)
+                // does Nostroma's own fused kernel read the K-quant experts on a visible card (the line says so then; strata::core::nv_kq_fused_here)
                 bool kq_fused_here = false;
                 for (int d = 0; d < nd; ++d) {
                     int m = 0, n = 0, sms = 0;
@@ -4795,7 +4795,7 @@ int main(int argc, char** argv) {
             // every shard of the model (<name>-0000N-of-0000M.gguf beside --native).  A missing shard is an error
             // here: it used to be skipped, leaving a model with some tensors absent and a later error, or none.
             o.native_shards = strata::gguf_split_paths(o.native_preset);
-            // a model family Strata recognises but has no engine path for yet (Qwen3.6-35B-A3B) is refused here,
+            // a model family Nostroma recognises but has no engine path for yet (Qwen3.6-35B-A3B) is refused here,
             // with a message that says so, before anything else about the file is judged
             {
                 const strata::GgufFile meta(o.native_shards.front());
@@ -4996,7 +4996,7 @@ int main(int argc, char** argv) {
     if (!strata::kernels::cpu::cpu_avx2_ok() && isa_floor[0] == '\0') {
 #endif
         std::fprintf(stderr, "strata generate: this CPU (%s) does not support AVX2 with FMA and F16C, which this engine's "
-                             "CPU expert kernels need; Strata runs on Intel Haswell (2013), AMD Zen (2017) or newer. "
+                             "CPU expert kernels need; Nostroma runs on Intel Haswell (2013), AMD Zen (2017) or newer. "
                              "Older CPUs are EXPERIMENTAL and slow: setup compiles an engine for them on this PC "
                              "(STRATA_ISA_FLOOR, see \"Older CPUs\" in docs/INSTALL.md)\n",
                      strata::kernels::cpu::cpu_name().c_str());
@@ -5264,7 +5264,7 @@ int main(int argc, char** argv) {
         // arm64: every x86 test above is false, so say which expert pool this build links
         std::fprintf(stderr, "strata generate: CPU expert kernels: %s\n",
 #if defined(STRATA_OWN_CPU_QUANT)
-                     "the Strata quant layer (NEON)");
+                     "the Nostroma quant layer (NEON)");
 #else
                      "ggml-cpu (NEON)");
 #endif
@@ -8384,7 +8384,7 @@ int main(int argc, char** argv) {
         if (arena_src.load_gib_per_second() > 0.0 && arena_src.load_gib_per_second() < 0.2) {
             std::fprintf(stderr,
                          "strata generate: hint: ~24x below what this hardware streams from a normal "
-                         "launch. If Strata is started by Task Scheduler or a service, register the task "
+                         "launch. If Nostroma is started by Task Scheduler or a service, register the task "
                          "with Priority 4 (Normal) and 'Run with highest privileges' - the scheduler's "
                          "defaults (Below normal + a least-privilege token) throttle the load. See "
                          "docs/DETAILS.md ('Running it at startup').\n");
@@ -9206,7 +9206,7 @@ int main(int argc, char** argv) {
         // to hold back is the windows - and `free_b` has already lost the drafter.  Not the draft head and its
         // logits: the drafter allocates them when it binds, after this, as on one GPU (#199), so on the last stage
         // they come out of the cache here.  Out of the reserve instead, a later card without a display (300 MiB)
-        // had no room left for them: "mtp: the draft head does not fit" on two 16 GB cards.  (Strata-DualGPU)
+        // had no room left for them: "mtp: the draft head does not fit" on two 16 GB cards.  (Nostroma-DualGPU)
         const int64_t draft_head = (&st == last_st && !o.mtp.empty() && st.head.loaded())
                                        ? (int64_t) mtp.bind_bytes(st.head.row_bytes(), n_vocab) : 0;
         int64_t room = stage_room(st.dev, true, false) - draft_head;

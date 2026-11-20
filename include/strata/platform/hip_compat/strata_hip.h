@@ -1,10 +1,10 @@
-// strata_hip.h - the CUDA runtime/cuBLAS names Strata uses, mapped onto HIP/hipBLAS for AMD GPUs (gfx906).
+// strata_hip.h - the CUDA runtime/cuBLAS names Nostroma uses, mapped onto HIP/hipBLAS for AMD GPUs (gfx906).
 //
 // This directory is put FIRST on the include path of a STRATA_ENABLE_HIP build only; its `cuda_runtime.h`,
 // `cuda_fp16.h` and `cublas_v2.h` include this header instead of the NVIDIA ones, so the engine's sources stay
 // one tree.  The mapping list follows llama.cpp's ggml-cuda/vendors/hip.h (MIT) where the two overlap.
 //
-// The warp contract: every Strata kernel is written for a 32-lane warp.  gfx906 runs 64-lane wavefronts, so
+// The warp contract: every Nostroma kernel is written for a 32-lane warp.  gfx906 runs 64-lane wavefronts, so
 // here a CUDA warp is a LOGICAL 32-lane half of a wavefront: every shuffle defaults to width 32 (a
 // `__shfl_down_sync(m, v, 1)` at lane 31 must not read lane 32), `__ballot_sync` returns the 32-bit mask of the
 // caller's own half, and `__syncwarp` is a wavefront barrier plus an LDS fence.  That keeps every kernel's

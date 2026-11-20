@@ -1,4 +1,4 @@
-// src/image/noise/qi21_noise_check_main.cpp - test program strata-noise-check (not shipped): Strata's initial noise
+// src/image/noise/qi21_noise_check_main.cpp - test program strata-noise-check (not shipped): Nostroma's initial noise
 // (include/strata/image/qi21_noise.hpp) against stable-diffusion.cpp's own noise dumps.
 //
 //   strata-noise-check <dump dir> [<dump dir> ...]     each dir dump_p<P>_s<SEED> with noise.bin (stage_hooks.py)

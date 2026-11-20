@@ -1,13 +1,13 @@
 // Attention over a prompt chunk on INT8 tensor cores (included by kernels.cu after attn_prompt.cuh; FNX_PFX_ATTN_I8, on by default on NVIDIA).
 //
-// Strata's prompt_attn_i8v3_kernel (src/kernels/cuda/qsa_prompt_attn.cu) adapted to the split's K/V pages and to the cross-card merge: one block of
+// Nostroma's prompt_attn_i8v3_kernel (src/kernels/cuda/qsa_prompt_attn.cu) adapted to the split's K/V pages and to the cross-card merge: one block of
 // four warps per (query row, KV head); a warp owns 64 of the 256 head dimensions; the K and V codes of 32 cells at a time come through cp.async into
 // the warp's own stage (one stage each, so the warp needs no block barrier to reuse it); q.k and p.v are INT8 tensor-core products. The query (and,
 // for p.v, the probabilities times the V scale) are split into three 8-bit parts per row (h, l: signed bytes, m: unsigned) so that the product with
-// the exact int8 K/V codes carries 24 bits, as in Strata's kernel; the parts' exact int32 sums are joined in f32.
+// the exact int8 K/V codes carries 24 bits, as in Nostroma's kernel; the parts' exact int32 sums are joined in f32.
 //
-// Differences from Strata's kernel:
-//  - the split's int8 K/V rows carry an fp16 scale per 32 values (KV8_GROUP), Strata's per 64: a warp's 64 dimensions have TWO scales a cell. q.k adds the
+// Differences from Nostroma's kernel:
+//  - the split's int8 K/V rows carry an fp16 scale per 32 values (KV8_GROUP), Nostroma's per 64: a warp's 64 dimensions have TWO scales a cell. q.k adds the
 //    two 32-dimension k-steps' joined sums scaled each by its group's K scale; p.v runs its three-part product once with p scaled by the first group's V
 //    scale (the columns of dimensions 0..31 take that result) and once with the second group's (dimensions 32..63): twice the p.v products.
 //  - the keys of a row are the card's own: the QSA cell list of this card (cells + t * QSA_MAXSEL, n_cells[t]) or, dense, its rows 0 .. kv_owned - 1,

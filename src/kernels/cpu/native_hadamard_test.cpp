@@ -1,7 +1,7 @@
 // src/kernels/cpu/native_hadamard_test.cpp - APR port, stage 3: one Hadamard-folded trellis expert (TQ2_T / TQK6 /
-// TQK7, ggml types 144-146) on Strata's CPU path against llama.cpp's own graph for the same weights and input.
+// TQK7, ggml types 144-146) on Nostroma's CPU path against llama.cpp's own graph for the same weights and input.
 //
-// Strata's path:  native_quant_act (signs, FWHT, Q8_0) -> native_gu_rows (ggml-cpu vec_dot + SwiGLU)
+// Nostroma's path:  native_quant_act (signs, FWHT, Q8_0) -> native_gu_rows (ggml-cpu vec_dot + SwiGLU)
 //                 -> native_quant_h (signs, FWHT, Q8_0) -> native_down_rows
 // The reference:  the ops llama.cpp's build_lora_mm_id builds for a prism.hadamard weight - ggml_mul(x, signs),
 //                 llama_mul_mat_hadamard (reshape to [128, n/128], ggml_mul_mat(rot, .)), ggml_mul_mat(W', .) -
@@ -59,7 +59,7 @@ double rel(const std::vector<float>& a, const std::vector<float>& b) {
 
 float silu(float g) { return g / (1.f + std::exp(-g)); }
 
-// Strata's CPU path for one token; `loaded` = the layer's NativeFmt as expert_layout_load made it from a pack
+// Nostroma's CPU path for one token; `loaded` = the layer's NativeFmt as expert_layout_load made it from a pack
 std::vector<float> strata_expert(const Expert& e, const std::vector<float>& x, bool rotate,
                                  const NativeFmt* loaded = nullptr) {
     NativeFmt f;

@@ -1,4 +1,4 @@
-// src/image/vae/wan_vae.cu - Strata's Qwen-Image-2.1 VAE decoder (see include/strata/image/wan_vae.hpp).
+// src/image/vae/wan_vae.cu - Nostroma's Qwen-Image-2.1 VAE decoder (see include/strata/image/wan_vae.hpp).
 //
 // Layout: every activation is pixel-major float32, [H][W][C] (a pixel is a row of C channels).  A convolution is
 //   gather   -> f16 operand rows for a band of PB output pixels: per pixel the k*k taps x C channels, each value

@@ -29,7 +29,7 @@ inline bool fewrows_switch(const char* v, bool dflt) {
 
 /// Whether the expert with `rows` rows (its rows of this layer's chunk) runs on the quantized kernels instead of the
 /// dequantize + FP16 GEMMs.  `on`: the switch; `fp16_path`: the layer takes the FP16 path (not MMQ, not the fused kernels);
-/// `native_pack`: the layer's experts are GGUF blocks in a native pack (a Strata pack's blob has another layout and no
+/// `native_pack`: the layer's experts are GGUF blocks in a native pack (a Nostroma pack's blob has another layout and no
 /// grouped-kernel layout here); `apr`: the pack carries APR (Hadamard-folded) gate/up or down weights, which the FP16 path
 /// rotates itself (hadamard_rows_f16) and this route does not.
 inline bool fewrows_takes(bool on, bool fp16_path, bool native_pack, bool apr, int64_t rows) {

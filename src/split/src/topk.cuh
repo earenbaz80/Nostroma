@@ -1,5 +1,5 @@
 // The sampler's candidates (included by kernels.cu): per verify row, this card's slice of the head's logits with the
-// row's penalties applied (llama.cpp's penalties stage, as Strata applies it: repeat multiplies a non-positive logit
+// row's penalties applied (llama.cpp's penalties stage, as Nostroma applies it: repeat multiplies a non-positive logit
 // and divides a positive one, then frequency x count and presence once), then its TOPK_N highest, ordered by logit
 // (descending) and token id (ascending) on ties. A block per row: a radix select of the TOPK_N-th highest key, then
 // everything at or above it sorted. More than TOPK_CAP at or above it (a tie at the threshold that wide: a row of equal

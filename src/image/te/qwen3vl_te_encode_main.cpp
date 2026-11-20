@@ -1,4 +1,4 @@
-// src/image/te/qwen3vl_te_encode_main.cpp - test program strata-te-encode (not shipped): Strata's text encoder on token
+// src/image/te/qwen3vl_te_encode_main.cpp - test program strata-te-encode (not shipped): Nostroma's text encoder on token
 // ids that stable-diffusion.cpp built (tools/image/gate/stage_hooks.py dumps tokens.bin + tokens.start).
 //
 //   strata-te-encode <te.gguf> <src dir> <dst dir> [--repeat N] [--mode auto|resident|streamed]

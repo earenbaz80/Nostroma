@@ -1,4 +1,4 @@
-# Strata Engine - top-level build.
+# Nostroma Engine - top-level build.
 #
 # One project builds the engine for every backend: CUDA (STRATA_ENABLE_CUDA), HIP (STRATA_ENABLE_HIP; the layer-split
 # engine is the STRATA_BUILD_SPLIT option), the CPU-only build, and the test
@@ -16,7 +16,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/strata_geometry.cmake)   # -DSTRATA_GE
 # block used to be - so this file reads in the order the old single CMakeLists.txt evaluated.
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/strata_ggml.cmake)          # which ggml: the vendored third_party/strata-ggml, or -DSTRATA_GGML_DIR
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/backends/cpu.cmake)         # strata_kernels_cpu, the native (ggml-cpu) expert rows, the CPU tests
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/backends/quant.cmake)       # strata_quant: the Strata quant layer (no ggml) and its oracle tests
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/backends/quant.cmake)       # strata_quant: the Nostroma quant layer (no ggml) and its oracle tests
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/backends/cuda.cmake)        # NVIDIA: toolchain, llama.cpp's MMQ kernels (strata_mmq, strata_kq)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/backends/hip.cmake)         # AMD: gfx906 compat, MMQ on HIP
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/strata_gpu_engine.cmake)    # the GPU engine both of them build
@@ -40,12 +40,12 @@ if(MSVC AND CMAKE_BUILD_TYPE STREQUAL "Release")
 endif()
 
 # The prebuilt release (setup.py downloads it, so users need no compiler): ggml's CPU backend for any AVX2 CPU
-# instead of this machine's (Strata's own AVX-512 kernels are per-file and chosen at run time either way), and
+# instead of this machine's (Nostroma's own AVX-512 kernels are per-file and chosen at run time either way), and
 # the MSVC runtime linked in, so no Visual C++ redistributable is needed.
 option(STRATA_PORTABLE "build for other PCs: AVX2 baseline, static MSVC runtime" OFF)
 # EXPERIMENTAL, opt-in: an engine for CPUs without AVX2 (#394, #595, #623), compiled on that PC.  ggml-cpu, which then
 # computes every CPU expert row, is built for this floor instead of AVX2 or the build host: "avx" (Sandy/Ivy Bridge:
-# AVX, no FMA/F16C/AVX2) or "none" (SSE4.2 + POPCNT: Nehalem/Westmere).  Strata's own AVX2/AVX-512 kernels stay in the
+# AVX, no FMA/F16C/AVX2) or "none" (SSE4.2 + POPCNT: Nehalem/Westmere).  Nostroma's own AVX2/AVX-512 kernels stay in the
 # binary behind their CPU checks; the router lookahead gets an AVX1 kernel.  Empty (the default) changes nothing.
 set(STRATA_ISA_FLOOR "" CACHE STRING "experimental older-CPU build: empty (default, AVX2 floor), avx, or none (SSE4.2)")
 set_property(CACHE STRATA_ISA_FLOOR PROPERTY STRINGS "" avx none)
@@ -104,7 +104,7 @@ endif()
 option(STRATA_ENABLE_HIP "Build the HIP targets for wave32 AMD GPUs (gfx1100, gfx1201; gfx1012/gfx1030 unvalidated)" OFF)
 option(STRATA_PREFILL_MMQ "Build the optional GGML MMQ prefill path for HIP (only together with STRATA_MMQ=ON)" OFF)
 # P4-SPLIT: llama.cpp's MMQ prompt kernels (strata_mmq, strata_mmq_w4a4, strata_kq) are built only with -DSTRATA_MMQ=ON: on CUDA, and on HIP
-# together with STRATA_PREFILL_MMQ=ON.  The default (OFF) leaves them out of both.  Strata's own prompt kernels (strata_pf_own: the fused experts
+# together with STRATA_PREFILL_MMQ=ON.  The default (OFF) leaves them out of both.  Nostroma's own prompt kernels (strata_pf_own: the fused experts
 # and their helpers) are built either way; without MMQ the prompt path takes them where they cover a layer and the FP16 path elsewhere.  A name
 # of its own rather than STRATA_PREFILL_MMQ for CUDA: every CUDA build folder configured before has STRATA_PREFILL_MMQ=OFF in its cache.
 # A build folder configured before the default changed keeps STRATA_MMQ=ON in its cache: setup and the packaging scripts pass the value.
@@ -140,7 +140,7 @@ if(STRATA_ENABLE_HIP OR STRATA_ENABLE_CUDA)
     set(_strata_window_max_t ${STRATA_WINDOW_MAX_T})
   endif()
   add_compile_definitions(STRATA_VERIFY_MAX_T=${_strata_window_max_t})
-  message(STATUS "Strata: verify / batch windows hold up to ${_strata_window_max_t} rows")
+  message(STATUS "Nostroma: verify / batch windows hold up to ${_strata_window_max_t} rows")
 endif()
 # MMQ prompt kernels for Q4_K / Q5_K / Q5_1 / Q6_K (Unsloth's UD-Q4/Q5/Q6_K_XL experts; on HIP also the dense GGUF
 # projections, STRATA_DENSE_MMQ).  On by default since MODEL-UPDATE Phase 1: on CUDA they are their own library
@@ -161,7 +161,7 @@ if(STRATA_Q6K_EXPERTS)
 endif()
 option(STRATA_ORCA_Q4KS_MMQ "Build the GGML Q5_0 MMQ instance for OrcaRouter Q4_K_S" OFF)
 # CUDA: the pointer-table MMQ behind STRATA_MMQ_DIRECT=1 (the prompt path's MMQ reads resident experts in their cache
-# slots through a Strata-side copy of llama.cpp's MMQ scheduler, src/prefill/moe_mmq_tab.cuh).  Off by default, like
+# slots through a Nostroma-side copy of llama.cpp's MMQ scheduler, src/prefill/moe_mmq_tab.cuh).  Off by default, like
 # the K-quant options above: the engine loads every kernel when it starts (CUDA_MODULE_LOADING=EAGER), and these nine
 # instances (+15 MB of binary) take 36-38 MiB of VRAM per GPU on sm_86 - expert slots every model would lose, with
 # STRATA_MMQ_DIRECT unset too.  They also add ~70% of the upstream MMQ instances' compile time per CUDA arch (175 s
@@ -205,12 +205,12 @@ option(STRATA_WERROR "Treat compiler warnings as errors" OFF)
 # #2027: defined here, before the GPU section reads it to register the native-expert tests (it was defined at the
 # native-experts section far below, so a first configure registered four tests fewer than the second)
 option(STRATA_NATIVE_EXPERTS "Native (IQ) expert support through ggml-cpu" ON)
-# Own-stack phase 2: the CPU expert pool's dot products, activation quantizers and the --mtp-q4 requantizer come from the Strata quant layer
+# Own-stack phase 2: the CPU expert pool's dot products, activation quantizers and the --mtp-q4 requantizer come from the Nostroma quant layer
 # (src/quant, no ggml-cpu in the pool) instead of ggml-cpu's type traits.  OFF keeps the ggml path, selectable for two releases.  Default ON on x86 (AVX /
 # AVX2 tiers) and on arm64 (the NEON tier: bit-exact against ggml-cpu's NEON dots, tests/quant/run_oracle.sh and pool_rows_bench on the Spark and the Mac,
 # token gates identical).  arm64 was OFF until the gate/up loop's store-forwarding stall was fixed (OWN-2N2); the Spark pool decode then measured
 # 0.992 of ggml's over 18 interleaved pairs.  -DSTRATA_OWN_CPU_QUANT=OFF builds the ggml-cpu pool.
-option(STRATA_OWN_CPU_QUANT "CPU expert pool on the Strata quant layer (src/quant) instead of ggml-cpu's type traits" ON)
+option(STRATA_OWN_CPU_QUANT "CPU expert pool on the Nostroma quant layer (src/quant) instead of ggml-cpu's type traits" ON)
 
 if(STRATA_BUILD_CONVERSATION_TESTS)
   enable_testing()
@@ -611,7 +611,7 @@ if(STRATA_NATIVE_EXPERTS)
   if(STRATA_ENABLE_CUDA AND STRATA_MMQ)
     strata_cuda_mmq()
   elseif(STRATA_ENABLE_CUDA)
-    strata_cuda_pf_own()   # P4-SPLIT: no MMQ, Strata's own prompt kernels only
+    strata_cuda_pf_own()   # P4-SPLIT: no MMQ, Nostroma's own prompt kernels only
   elseif(STRATA_PREFILL_MMQ AND STRATA_MMQ)
     strata_hip_mmq()
   elseif(STRATA_ENABLE_HIP)

@@ -631,7 +631,7 @@ bool expert_layout_load(const std::string& pack_dir, int64_t n_layers, int64_t n
                       std::to_string(l) + "'s expert widths";
                 return false;
             }
-            // the Q2_0 rows quantize their activations with Strata's own act_quant_any, which does not rotate
+            // the Q2_0 rows quantize their activations with Nostroma's own act_quant_any, which does not rotate
             if ((f.had_gu && f.gu_type == 42) || (f.had_d && f.d_type == 42)) {
                 err = "hadamard.txt: layer " + std::to_string(l) + " folds a Q2_0 expert, which this engine cannot rotate";
                 return false;

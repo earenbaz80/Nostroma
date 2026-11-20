@@ -1,7 +1,7 @@
 // include/strata/kernels/cpu/pool_quant.hpp - what the CPU expert pool (native_expert.cpp) and the DeepSeek CPU lane (dsv41/ds4_gg_cpu.cpp) ask of a quant type:
 // its dot product, the activation format that dot takes, the activation quantizer, row geometry.
 //
-// With STRATA_OWN_CPU_QUANT (the default build) these come from the Strata quant layer (src/quant): no ggml-cpu function is called by the pool.  Without it
+// With STRATA_OWN_CPU_QUANT (the default build) these come from the Nostroma quant layer (src/quant): no ggml-cpu function is called by the pool.  Without it
 // they are ggml-cpu's type traits, exactly as before (kept selectable for two releases).  The two builds expose the same names, so the callers do not care.
 #pragma once
 

@@ -1,4 +1,4 @@
-// src/image/te/qwen3vl_te.cu - Strata's Qwen-Image-2.1 text encoder (see include/strata/image/qwen3vl_te.hpp).
+// src/image/te/qwen3vl_te.cu - Nostroma's Qwen-Image-2.1 text encoder (see include/strata/image/qwen3vl_te.hpp).
 //
 // Layout: activations are token-major, [T][width] (a token is a row).  Per layer:
 //   h16  = f16(RMSNorm(x) * attn_norm)                                    rms_f16_kernel

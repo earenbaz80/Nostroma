@@ -129,7 +129,7 @@ void check_cards() {
 #endif
     }
 #if FNX_HIP
-    // a card Strata has not run the split on (anything but gfx1201): say so once, then check its kernels against a scalar reference before the model is loaded (hip/selftest_policy.hpp)
+    // a card Nostroma has not run the split on (anything but gfx1201): say so once, then check its kernels against a scalar reference before the model is loaded (hip/selftest_policy.hpp)
     {
         cudaDeviceProp prop;
         ck(cudaGetDeviceProperties(&prop, 0), "cudaGetDeviceProperties");
@@ -886,7 +886,7 @@ void load_card(Stager& st, CardW& c, const std::vector<std::vector<char>>& resid
 }
 
 // ---------------------------------------------------------------- the draft layer
-// Strata's runtime files: dense.txt lines "name kind rows cols offset bytes" into dense.bin (kind q8_0 | bf16 | f32)
+// Nostroma's runtime files: dense.txt lines "name kind rows cols offset bytes" into dense.bin (kind q8_0 | bf16 | f32)
 struct MtpFiles {
     std::map<std::string, Tensor> t;
     void* base = nullptr;
@@ -923,11 +923,11 @@ struct MtpFiles {
             if (off + bytes > size || x.row_bytes() * rows != bytes) throw std::runtime_error("mtp: dense.txt: " + name + " does not fit");
             t[name] = x;
         }
-        // FNX_MTP_EXPERTS: q2_0 is Strata's experts.bin (unpacked to Q4_0 blocks), q4_0 is tools/mtp_experts.py's
+        // FNX_MTP_EXPERTS: q2_0 is Nostroma's experts.bin (unpacked to Q4_0 blocks), q4_0 is tools/mtp_experts.py's
         // experts-q4_0.bin, made from the BF16 checkpoint; the same VRAM either way. Q8_0 drafted exactly as Q4_0 did
         // for ~420 MiB more a card, which the arena's reserve does not count: not offered.
         const char* ex_s = std::getenv("FNX_MTP_EXPERTS");
-        const std::string ex = ex_s ? ex_s : "q2_0";   // strata-split: Strata's draft-layer files (mtp/rt), no download; FNX_MTP_EXPERTS=q4_0 for sFNX's
+        const std::string ex = ex_s ? ex_s : "q2_0";   // strata-split: Nostroma's draft-layer files (mtp/rt), no download; FNX_MTP_EXPERTS=q4_0 for sFNX's
         if (ex == "q2_0") experts(dir + "/experts.bin");
         else if (ex == "q4_0") experts_blocks(dir + "/experts-q4_0.bin", T_Q4_0, 18);
         else throw std::runtime_error("mtp: FNX_MTP_EXPERTS=" + ex + ": q2_0 or q4_0");
@@ -950,7 +950,7 @@ struct MtpFiles {
         constexpr size_t O_D = 2ull * F * ROW_GU, O_GS = O_D + (size_t) H * ROW_D, O_DS = O_GS + 2ull * F * SC_GU * 2;
         constexpr size_t BLOB = O_DS + (size_t) H * SC_D * 2;
 #if !FNX_27B
-        static_assert(BLOB == 1382400, "Strata's Q2_0 expert blob");
+        static_assert(BLOB == 1382400, "Nostroma's Q2_0 expert blob");
 #endif
         std::FILE* f = std::fopen(path.c_str(), "rb");
         if (!f) throw std::runtime_error("mtp: cannot open " + path);

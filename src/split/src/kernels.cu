@@ -2006,7 +2006,7 @@ static void gdn_prompt_impl(const float* qkvz, const float* ab, float* hist, con
     k_gdn_pf_conv<<<dim3(C, 2 * nk + nv), HS, 0, s>>>(qkvz, hist, convw, ctl, xc, nk, nv);
     k_gdn_pf_hist<<<(ch + 255) / 256, 256, 0, s>>>(qkvz, hist, ctl, ng, C, nk, nv);
 #if FNX_GDN_TC_ON
-    // FNX_PFX_GDN_TC: on by default on NVIDIA sm_80+ except for the IQ3_S-type sets (FNX_PFX_GDN_TC=0/1 overrides): Strata's tensor-core chunk scan (gdn_tc_prompt.cuh); false -> this card cannot run it, the sub-chunk kernels below do
+    // FNX_PFX_GDN_TC: on by default on NVIDIA sm_80+ except for the IQ3_S-type sets (FNX_PFX_GDN_TC=0/1 overrides): Nostroma's tensor-core chunk scan (gdn_tc_prompt.cuh); false -> this card cannot run it, the sub-chunk kernels below do
     static const int gdn_tc_env = (int) fnx::env_int("FNX_PFX_GDN_TC", -1);   // -1: the file decides (gdn_tc_set_default)
     const bool gdn_tc = gdn_tc_env >= 0 ? gdn_tc_env != 0 : g_gdn_tc_default.load();
     if (gdn_tc && gdn_tc_run(xc, ab, dt, a, S, y32, nk, nv, vmap, C, s)) {

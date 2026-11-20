@@ -54,12 +54,12 @@ std::string arch_problem(const cudaDeviceProp& p, int ordinal) {
     const std::string arch = base_arch(p.gcnArchName);
     const std::string card = "GPU " + std::to_string(ordinal) + " (" + p.name + ", " + arch + ")";
     if (!compiled_for(arch)) {
-        return card + " is not an architecture this Strata engine was compiled for (" + STRATA_HIP_ARCHS +
+        return card + " is not an architecture this Nostroma engine was compiled for (" + STRATA_HIP_ARCHS +
                "); compile it for this card (./setup.sh --backend hip, or -DCMAKE_HIP_ARCHITECTURES=" + arch +
                ", docs/AMD_HIP.md) or choose another GPU with HIP_VISIBLE_DEVICES";
     }
     if (p.warpSize != 32) {
-        return card + " runs wave" + std::to_string(p.warpSize) + "; Strata's HIP kernels need wave32";
+        return card + " runs wave" + std::to_string(p.warpSize) + "; Nostroma's HIP kernels need wave32";
     }
     return "";
 }
@@ -260,7 +260,7 @@ DeviceInfo device_info(int ordinal) {
 #if defined(STRATA_USE_HIP)
         throw CudaError(std::string("no HIP device is present; this engine was compiled for ") + STRATA_HIP_ARCHS, -1);
 #else
-        throw CudaError("no CUDA device is present; Strata needs an NVIDIA GPU (RTX 20 series or newer)", -1);
+        throw CudaError("no CUDA device is present; Nostroma needs an NVIDIA GPU (RTX 20 series or newer)", -1);
 #endif
     }
     if (ordinal < 0 || ordinal >= count) {
@@ -317,7 +317,7 @@ DeviceInfo device_info(int ordinal) {
 #endif
     if (d.cc_major * 10 + d.cc_minor < kMinCc) {
         throw CudaError("device " + d.name + " reports compute capability " + std::to_string(d.cc_major) +
-                            "." + std::to_string(d.cc_minor) + "; Strata needs compute capability " + kNeed,
+                            "." + std::to_string(d.cc_minor) + "; Nostroma needs compute capability " + kNeed,
                         -1);
     }
 #endif

@@ -1,4 +1,4 @@
-// include/strata/image/qi21_dit.hpp - Strata's Qwen-Image-2.1 DiT without ggml (step 4, D4): one denoising step,
+// include/strata/image/qi21_dit.hpp - Nostroma's Qwen-Image-2.1 DiT without ggml (step 4, D4): one denoising step,
 // latent + text condition + timestep -> velocity, on CUDA / HIP.
 //
 // The weights come from the DiT GGUF through our own reader (strata/artifact/gguf_reader.hpp) into one device buffer

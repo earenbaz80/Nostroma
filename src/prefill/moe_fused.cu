@@ -1,5 +1,5 @@
 // src/prefill/moe_fused.cu - see include/strata/prefill/moe_fused.hpp (#136: the Q2_0 pack's prompt experts on
-// Strata's own int8 tensor-core kernels, with the grouping on the GPU).
+// Nostroma's own int8 tensor-core kernels, with the grouping on the GPU).
 //
 // The arithmetic.  A Q2_0 block is 64 weights w = d_w * (q - 1), q in 0..3, four codes per byte, weight j of a block
 // in byte j / 4 at bits 2 * (j % 4).  An activation block of 32 values is x = d_x * a with a = round(x / d_x) in
@@ -44,7 +44,7 @@ void ck(cudaError_t e, const char* what) {
 constexpr int AB = 80;                  // activation bytes per 64 values: 64 codes, then {d0, c0, d1, c1}
 constexpr int MAGIC = 0x4B400000;       // the bits of 1.5 * 2^23
 constexpr float MAGICF = 12582912.0f;
-// The Strata Q2_0 blob (moe_mmq.cu strata_q2_kernel, kernels.cu blob_dequant_kernel): gate/up codes [2 F][E / 4 B]
+// The Nostroma Q2_0 blob (moe_mmq.cu strata_q2_kernel, kernels.cu blob_dequant_kernel): gate/up codes [2 F][E / 4 B]
 // (rows interleaved: gate of feature f at row 2f, its up at 2f + 1), down codes [E][F / 4 B], gate/up scales
 // [2 F][E / 64] fp16, down scales [E][F / 64] fp16; E, F the compiled geometry's (Flash-Next 2560, 640: [1280][640 B],
 // [2560][160 B], [1280][40], [2560][10]).
@@ -52,7 +52,7 @@ constexpr int GU_ROWS = kMoeGuRows, D_ROWS = kMoeEmbd;           // weight rows 
 constexpr int ROW_GU = kMoeEmbd / 4, ROW_D = kMoeFF / 4;         // code bytes per weight row
 constexpr int SC_GU = kMoeEmbd / 64, SC_D = kMoeFF / 64;         // 64-weight blocks (scales) per row = stages along K
 constexpr int H_ROW_BYTES = SC_D * AB;                           // bytes of a row of H (AB per 64 values)
-static_assert(kMoeEmbd % 64 == 0 && kMoeFF % 64 == 0, "the Strata Q2 blob holds whole 64-weight blocks");
+static_assert(kMoeEmbd % 64 == 0 && kMoeFF % 64 == 0, "the Nostroma Q2 blob holds whole 64-weight blocks");
 constexpr size_t O_GU_CODES = 0, O_D_CODES = (size_t) GU_ROWS * ROW_GU, O_GU_SC = O_D_CODES + (size_t) D_ROWS * ROW_D,
                  O_D_SC = O_GU_SC + (size_t) GU_ROWS * SC_GU * 2;
 constexpr int THREADS = 512;            // 16 warps: 4 along the weight rows (64 each) x 4 along the tile rows (16 each)
@@ -259,8 +259,8 @@ expert_kernel(const Batch b, const Tables tb, const uint8_t* __restrict__ act, c
 #if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 750
     constexpr int NKB = GU ? SC_GU : SC_D;            // 64-weight blocks along K
     constexpr int NFB = (GU ? GU_ROWS : D_ROWS) / WROWS;   // weight-row blocks per tile
-    static_assert(GU_ROWS % WROWS == 0 && D_ROWS % WROWS == 0, "the Strata Q2 expert kernel: weight rows are whole work items of 256");
-    static_assert((SC_GU * 2) % 16 == 0, "the Strata Q2 expert kernel stages a row's gate/up scales in 16-byte copies (hidden width a multiple of 512)");
+    static_assert(GU_ROWS % WROWS == 0 && D_ROWS % WROWS == 0, "the Nostroma Q2 expert kernel: weight rows are whole work items of 256");
+    static_assert((SC_GU * 2) % 16 == 0, "the Nostroma Q2 expert kernel stages a row's gate/up scales in 16-byte copies (hidden width a multiple of 512)");
     constexpr int NSC = GU ? SC_GU * 2 / 16 : SC_D * 2 / 4;   // scale copies per weight row (16 B for gate/up, 4 B for down)
     constexpr int CODE_LD = GU ? ROW_GU : ROW_D;      // code bytes per weight row
     constexpr size_t O_CODES = GU ? O_GU_CODES : O_D_CODES, O_SC = GU ? O_GU_SC : O_D_SC;
@@ -450,7 +450,7 @@ expert_w11_kernel(const Batch b, const Tables tb, const uint8_t* __restrict__ ac
 #if STRATA_FUSED_W11
     constexpr int NKB = GU ? SC_GU : SC_D;            // 64-weight blocks along K
     constexpr int NFB = (GU ? GU_ROWS : D_ROWS) / W_ROWS;  // work items per tile
-    static_assert(GU_ROWS % W_ROWS == 0 && D_ROWS % W_ROWS == 0, "the Strata Q2 gfx11 kernel: weight rows are whole work items of 128");
+    static_assert(GU_ROWS % W_ROWS == 0 && D_ROWS % W_ROWS == 0, "the Nostroma Q2 gfx11 kernel: weight rows are whole work items of 128");
     constexpr int CODE_LD = GU ? ROW_GU : ROW_D;      // code bytes per weight row
     constexpr size_t O_CODES = GU ? O_GU_CODES : O_D_CODES, O_SC = GU ? O_GU_SC : O_D_SC;
     constexpr int ACT_LD = NKB * AB;                  // bytes per activation row

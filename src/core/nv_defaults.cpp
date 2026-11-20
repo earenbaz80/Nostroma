@@ -151,14 +151,14 @@ std::string nv_kq_default_line(bool fused_here) {
 }
 
 std::string nv_kq_default_line(bool fused_here, bool mmq_built) {
-    if (!mmq_built) {   // a build without MMQ: Strata's own kernels read every K-quant layer
+    if (!mmq_built) {   // a build without MMQ: Nostroma's own kernels read every K-quant layer
         if (fused_here)
-            return "strata: a model with K-quant experts (Unsloth UD-Q4/Q5/Q6_K_XL) reads its prompt on Strata's own kernels "
+            return "strata: a model with K-quant experts (Unsloth UD-Q4/Q5/Q6_K_XL) reads its prompt on Nostroma's own kernels "
                    "(Q4_K and Q5_K gate/up with a Q5_1 or Q8_0 down); the 'prompt kernels' line below gives the counts";
-        return "strata: a model with K-quant experts (Unsloth UD-Q4/Q5/Q6_K_XL) reads its prompt on Strata's own int8 kernels (this engine has no MMQ kernels)";
+        return "strata: a model with K-quant experts (Unsloth UD-Q4/Q5/Q6_K_XL) reads its prompt on Nostroma's own int8 kernels (this engine has no MMQ kernels)";
     }
     if (fused_here)
-        return "strata: a model with K-quant experts (Unsloth UD-Q4/Q5/Q6_K_XL) reads its prompt on Strata's own kernels where they cover the layer "
+        return "strata: a model with K-quant experts (Unsloth UD-Q4/Q5/Q6_K_XL) reads its prompt on Nostroma's own kernels where they cover the layer "
                "(Q4_K and Q5_K gate/up with a Q5_1 or Q8_0 down) and on llama.cpp's MMQ kernels for the rest (STRATA_PF_FUSED_KQ=0 gives all of them back to MMQ)";
     return "strata: a model with K-quant experts (Unsloth UD-Q4/Q5/Q6_K_XL) reads its prompt on llama.cpp's MMQ kernels "
            "(STRATA_MMQ_KQ=0 or STRATA_NV_KQ_DEFAULT=0 turns it off)";

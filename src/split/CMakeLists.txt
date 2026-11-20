@@ -69,7 +69,7 @@ set(_sp_engine
     ${_sp}/src/gguf.cpp ${_sp}/src/model.cpp ${_sp}/src/store.cpp ${_sp}/src/moe_mma.cu ${_sp}/src/engine.cu
     ${_sp}/src/engine_common.cu ${_sp}/src/prefill.cu ${_sp}/src/session.cpp ${_sp}/src/batch.cpp ${_sp}/tools/sfnx.cpp)
 if(_fnx_hip)
-  list(APPEND _sp_engine ${_sp}/src/selftest.cu)   # the kernel self-test of a card Strata has not run the split on (hip/selftest_policy.hpp)
+  list(APPEND _sp_engine ${_sp}/src/selftest.cu)   # the kernel self-test of a card Nostroma has not run the split on (hip/selftest_policy.hpp)
 endif()
 if(_fnx_hip)
   set(_fnx_lang HIP)
@@ -144,7 +144,7 @@ foreach(_n ${STRATA_SPLIT_CARDS})
 endforeach()
 
 # the engine's kernel self-test on one card, with no model and no engine start (cleanup 4.4; tools/selftest_main.cpp).  HIP only, off by default
-# (EXCLUDE_FROM_ALL: built by name).  The engine runs the same src/selftest.cu before it loads a model on a card Strata has not run the split on;
+# (EXCLUDE_FROM_ALL: built by name).  The engine runs the same src/selftest.cu before it loads a model on a card Nostroma has not run the split on;
 # this is the way to ask a card that question alone:
 #   cmake --build <dir> --target strata-split-selftest && <dir>/src/split/strata-split-selftest [device]     (exit 0: every test passed)
 if(_fnx_hip)

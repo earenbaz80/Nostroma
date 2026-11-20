@@ -1,6 +1,6 @@
 // src/prefill/moe_f16_kq.cu - see moe_f16_kq.hpp.  gfx11 only (opt-in STRATA_PF_F16=1 with STRATA_PF_FUSED_KQ=1).
 //
-// gufo's routed-expert kernels for the K-quants, on Strata's tables, int8 activations and H (the work item, the
+// gufo's routed-expert kernels for the K-quants, on Nostroma's tables, int8 activations and H (the work item, the
 // activation staging and the epilogues are moe_f16_common.cuh's):
 //   - gate/up (Q4_K, Q5_K): the weight codes stay packed in LDS (one 32-byte nibble group per row and stage) and
 //     each wave turns its own 16 rows into F16 right after the LDS read: w = q * (d sc) - dmin m as one packed FMA;

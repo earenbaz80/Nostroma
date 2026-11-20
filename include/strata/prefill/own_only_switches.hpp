@@ -1,4 +1,4 @@
-// include/strata/prefill/own_only_switches.hpp - the opt-in switches of Strata's fused prompt kernels that an engine built without llama.cpp's MMQ prompt kernels turns on by default.
+// include/strata/prefill/own_only_switches.hpp - the opt-in switches of Nostroma's fused prompt kernels that an engine built without llama.cpp's MMQ prompt kernels turns on by default.
 //
 // Such an engine takes the fused kernels wherever they exist for the card and the layer's formats (prefill.cpp, g_own_only_defaults); a switch the user set, either value, is kept.
 // The list is a pure function of the backend so a unit test can pin it.  CUDA: STRATA_PF_FUSED_Q2N, the native Q2_0 pack's Q2_0 gate/up with a Q2_0 down, joined on 11-13: on an RTX A4000 (sm_86)

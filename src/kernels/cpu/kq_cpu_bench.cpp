@@ -135,7 +135,7 @@ int main(int argc, char** argv) {
         const void* act[kMaxT];
         const void* hq[kMaxT];
         // a Q2_0 down takes the pool's own path (pool.cpp, run_split_multi_native and drain mode 6): the activation
-        // as an ActQ (act_quant_any) and Strata's Q2_0 rows (q2_rows_any), not ggml-cpu's Q2_0 dot
+        // as an ActQ (act_quant_any) and Nostroma's Q2_0 rows (q2_rows_any), not ggml-cpu's Q2_0 dot
         const bool q2_down = cpu::q2_native_kernels(f.d_type);
         std::vector<cpu::ActQ> h2(q2_down ? kMaxT : 0);
         const cpu::ActQ* a2[kMaxT] = {};
@@ -163,7 +163,7 @@ int main(int argc, char** argv) {
             hq[t] = ha[t].data();
         }
         std::printf("\n%s: %zu experts of %.3f MB (%.0f MB)%s%s\n", pair.c_str(), E, f.bytes / 1e6, E * (double) f.bytes / 1e6,
-                    q2_gu ? ", Q2_0 gate/up" : "", q2_down ? ", Q2_0 down on Strata's rows (the pool's path)" : "");
+                    q2_gu ? ", Q2_0 gate/up" : "", q2_down ? ", Q2_0 down on Nostroma's rows (the pool's path)" : "");
         const double part_bytes = do_gu && do_down ? (double) f.bytes : do_gu ? (double) f.down_off : (double) (f.bytes - f.down_off);
         for (int nt : nts) {
             for (int T : threads) {

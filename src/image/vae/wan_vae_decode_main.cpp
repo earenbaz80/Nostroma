@@ -1,4 +1,4 @@
-// src/image/vae/wan_vae_decode_main.cpp - test program for Strata's VAE decoder (OWN-5 gate harness).
+// src/image/vae/wan_vae_decode_main.cpp - test program for Nostroma's VAE decoder (OWN-5 gate harness).
 //
 //   strata-vae-decode <vae.safetensors> <latent.bin> <out.f32> [--dump DIR] [--repeat N] [--device D] [--stream on|off] [--band-rows N] [--threads N] [--stats FILE]
 //

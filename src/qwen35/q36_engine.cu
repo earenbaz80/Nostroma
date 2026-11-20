@@ -1,6 +1,6 @@
 // src/qwen35/q36_engine.cu - strata-q36: the engine path for Qwen3.6-35B-A3B (GGUF architecture qwen35moe),
 // NEW-MODELS-PLAN.md T1.  A driver of its own beside Flash-Next's (generate/verify/prefill stay untouched, so the
-// Flash-Next identity gate cannot move), built from Strata's kernels:
+// Flash-Next identity gate cannot move), built from Nostroma's kernels:
 //
 //   * weights straight from the GGUF: dense Q8_0 / K-quant matrices in their blocks (native MMVQ), the 1-D tensors and
 //     the F32 projections (ssm_alpha/beta, the router, the shared-expert gate) as f32, the routed experts repacked at
@@ -1190,7 +1190,7 @@ struct Engine {
     __half* att_p16 = nullptr;         // the probabilities in FP16 (kAttScoreFloats halves)
     __half *k16 = nullptr, *v16 = nullptr, *q16 = nullptr;   // the prompt attention's FP16 operands
     size_t kAttScoreFloats = (size_t) 64 << 20;   // 256 MB (16 M floats when the experts' fit is close)
-    // the prompt's experts on Strata's fused int8 kernels (moe_fused_iq_q36.cu, CUDA): per layer (fused_on), the rest on MMQ
+    // the prompt's experts on Nostroma's fused int8 kernels (moe_fused_iq_q36.cu, CUDA): per layer (fused_on), the rest on MMQ
     // where it has a tile, else the native grouped kernels.  use_pf: every layer's prompt chunks have one of the two, so the
     // hybrid mode streams each layer's experts for a chunk (the strategy MMQ had alone before)
     std::vector<char> fused_on;   // by state index (the MTP block last)
@@ -1401,7 +1401,7 @@ struct Engine {
         const size_t n_state = m->layers.size() + (m->has_mtp ? 1 : 0);
         fused_on.assign(n_state, 0);
         // (HIP: gfx12 only, STRATA_PF_FUSED=1, which this engine sets itself in a build without MMQ: fused_tile::q36_takes_gfx12)
-        // Strata's fused kernels where they cover the layer's pair on this card: the default on the cards the Flash-Next engine's rule takes (sm_86-class and sm_120 cards
+        // Nostroma's fused kernels where they cover the layer's pair on this card: the default on the cards the Flash-Next engine's rule takes (sm_86-class and sm_120 cards
         // with 80+ SMs, the staged launches on 40-79 SMs: fused_tile::q36_takes, the rule of takes_by_default), STRATA_PF_FUSED=1 on every card that covers the pair,
         // STRATA_PF_FUSED=0 keeps every layer on MMQ; HIP builds, cards under 40 SMs and compute capability below 8 are as before (MMQ)
         if (g.n_embd == FQ::kQ36Embd && g.n_ff == FQ::kQ36FF)
@@ -2020,7 +2020,7 @@ struct Engine {
                                                                      d_gslot, d_grow0, d_gcnt);
             } else {
                 // one token, a window or a chunk: the same kernels (every token in one launch each), so a decode step and a
-                // verify window compute bitwise the same rows and the MTP's greedy text is the plain greedy text.  (Strata's
+                // verify window compute bitwise the same rows and the MTP's greedy text is the plain greedy text.  (Nostroma's
                 // fused single-token kernels are not used here: fused_gdn_conv_l2's 4-tap sum contracts into FMAs
                 // differently from k_conv_seq's, a 1-ulp difference in h that the Q8_1 activation rounding can turn into a
                 // flipped near-tie later; with them the KL is the same, 1.05x / 0.81x the floor, but MTP would not be exact.)
@@ -2129,7 +2129,7 @@ struct Engine {
         if (hy_rows) {
             moe_hybrid_gpu(L, li, T);
         } else if (T > kGemmT && use_pf) {
-            // a prompt chunk: each expert's weights read once for all its rows, on Strata's fused int8 kernels where they
+            // a prompt chunk: each expert's weights read once for all its rows, on Nostroma's fused int8 kernels where they
             // cover the layer (fused_on), else on llama.cpp's MMQ.  In the hybrid mode the layer's experts come streamed
             // (stream_take); the routing counts feed the slots' scores there
             const int ne = (int) g.n_expert;
@@ -3947,7 +3947,7 @@ int strata::qwen35::run(int argc, char** argv) {
     if (std::getenv("STRATA_Q8_PACKED") == nullptr) _putenv_s("STRATA_Q8_PACKED", "1");   // as on Linux (it was missing here)
     if (std::getenv("CUDA_MODULE_LOADING") == nullptr) _putenv_s("CUDA_MODULE_LOADING", "EAGER");
 #endif
-    // Strata's fused prompt kernels for this family's formats (moe_fused_iq_q36.cu): the K-quant, Q6_K and Q8_0 gate/up
+    // Nostroma's fused prompt kernels for this family's formats (moe_fused_iq_q36.cu): the K-quant, Q6_K and Q8_0 gate/up
     // instances are opt-in for Flash-Next's packs; this engine sets them up by default (=0 keeps a format on MMQ)
     for (const char* v : {"STRATA_PF_FUSED_KQ", "STRATA_PF_FUSED_Q6K", "STRATA_PF_FUSED_Q8GU"}) {
 #if !defined(_WIN32)

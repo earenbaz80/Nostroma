@@ -1,5 +1,5 @@
 // src/image/dit/qi21_dit_step_main.cpp - test program strata-dit-step (not shipped): one Qwen-Image-2.1 DiT step in
-// Strata's own code (include/strata/image/qi21_dit.hpp) on the inputs stable-diffusion.cpp gave its DiT.
+// Nostroma's own code (include/strata/image/qi21_dit.hpp) on the inputs stable-diffusion.cpp gave its DiT.
 //
 //   strata-dit-step <dit.gguf> <out dir> <dump dir> [<dump dir> ...] [--repeat N] [--call K] [--f16-resident]
 //

@@ -1,5 +1,5 @@
 // src/image/qi21_image_main.cpp - test program strata-image (step 5; not shipped, not called by the server, in no build
-// that ships): prompt + size + seed -> PNG with Strata's own parts only, no stable-diffusion.cpp and no ggml in the
+// that ships): prompt + size + seed -> PNG with Nostroma's own parts only, no stable-diffusion.cpp and no ggml in the
 // process.  sd-cli stays the default and the fallback everywhere.
 //
 //   strata-image --te <Qwen3-VL text encoder .gguf> --dit <qwen-image-2.1 DiT .gguf> --vae <VAE .safetensors>

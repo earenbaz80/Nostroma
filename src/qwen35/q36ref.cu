@@ -1,7 +1,7 @@
 // src/qwen35/q36ref.cu - NEW-MODELS-PLAN.md phase T1: the reference path for Qwen3.6-35B-A3B (GGUF architecture
 // qwen35moe), exactness first.  One GPU, the whole model resident in VRAM (UD-Q4_K_XL: 21.3 GiB on a 32 GB card),
 // one token at a time (the prompt too), fp32 activations, every weight read in its GGUF form.  Two kernel sets:
-// --kernels plain, this file's own plain kernels (the reference), and --kernels strata (default), Strata's native
+// --kernels plain, this file's own plain kernels (the reference), and --kernels strata (default), Nostroma's native
 // MMVQ for the quantized matmuls (dense and routed experts) and its fused GDN step with the SiLU-gated norm - the
 // engine's kernels on the new family's shapes.  No expert cache, no MTP, no graphs: checked against llama.cpp
 // (per-layer hidden states, greedy tokens, teacher-forced KL: tools/qwen35/).
@@ -387,10 +387,10 @@ bool g_act_q8 = true;
 float* g_act_buf = nullptr;
 constexpr size_t kActBuf = 1 << 16;
 
-// --kernels strata (the default): the quantized matmuls run on Strata's native MMVQ (llama.cpp's pinned MMVQ: q8_1
-// activations, one launch per routed expert) and the GDN step on Strata's fused kernels (conv + SiLU + L2, then the
+// --kernels strata (the default): the quantized matmuls run on Nostroma's native MMVQ (llama.cpp's pinned MMVQ: q8_1
+// activations, one launch per routed expert) and the GDN step on Nostroma's fused kernels (conv + SiLU + L2, then the
 // step with the SiLU-gated norm); --kernels plain keeps every op on this file's own kernels (the reference).  The
-// Strata kernels run on a blocking stream, so they and the null-stream work here stay in order.
+// Nostroma kernels run on a blocking stream, so they and the null-stream work here stay in order.
 bool g_strata = true;
 cudaStream_t g_st = nullptr;
 void* g_q8 = nullptr;
@@ -621,7 +621,7 @@ void forward(const Model& m, State& s, int tok, float* layers) {
             gemv(m.W(L(l, "ssm_beta.weight")), s.h, s.beta);
             gemv(m.W(L(l, "ssm_alpha.weight")), s.h, s.alpha);
             if (g_strata && D == 128 && g.ssm_d_conv == 4) {
-                // Strata's fused GDN (its own state layouts: conv history [channel][3], S [row][head][col])
+                // Nostroma's fused GDN (its own state layouts: conv history [channel][3], S [row][head][col])
                 strata::kernels::fused_gdn_conv_l2(s.conv_state[l], s.qkv, m.F(L(l, "ssm_conv1d.weight")), s.conv_out,
                                                    C, 2 * HK, m.eps, g_st);
                 k_gdn_gb<<<1, 64, 0, g_st>>>(s.alpha, m.F(L(l, "ssm_dt.bias")), m.F(L(l, "ssm_a")), s.beta, HV);
@@ -655,7 +655,7 @@ void forward(const Model& m, State& s, int tok, float* layers) {
         // router: softmax over every expert, top-k, renormalised (host side: exact and simple)
         gemv(m.W(L(l, "ffn_gate_inp.weight")), s.h, s.router);
         if (g_strata && strata::kernels::native_router_topk_supported((int) g.n_expert, K)) {
-            // Strata's router (llama.cpp's topk-moe contract) for 256 / 8; the ids come back for the per-expert launches
+            // Nostroma's router (llama.cpp's topk-moe contract) for 256 / 8; the ids come back for the per-expert launches
             strata::kernels::native_router_topk(s.router, s.ids, s.wts, (int) g.n_expert, K, 1, g_st);
             g_ids_host.resize((size_t) K);
             CK(cudaMemcpy(g_ids_host.data(), s.ids, K * sizeof(int), cudaMemcpyDeviceToHost));
