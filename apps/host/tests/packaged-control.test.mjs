@@ -296,7 +296,8 @@ test('packaged: update, rollback and calibration are refused with the Terminal n
   const f = packagedFixture();
   try {
     await f.native.refresh(true);
-    for (const [kind, args] of [['update-engine', {}], ['update-strata', {}], ['rollback', {}], ['calibrate', { model: 'iq3_s' }]]) {
+    assert.throws(() => f.native.operation('update-strata', {}), /App updates are off/, 'this build has no app feed of its own');
+    for (const [kind, args] of [['update-engine', {}], ['rollback', {}], ['calibrate', { model: 'iq3_s' }]]) {
       const job = await finish(f.native, f.native.operation(kind, args).id);
       assert.equal(job.state, 'error', kind);
       assert.match(job.error, /Terminal|calibrates NVIDIA|No saved previous engine/, `${kind}: ${job.error}`);

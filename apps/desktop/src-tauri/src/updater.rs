@@ -4,14 +4,13 @@
 //! The shell therefore opens one loopback listener, protected by a random token it hands only to the host it started
 //! (`STRATA_SHELL_BRIDGE`, `STRATA_SHELL_TOKEN`), and the host's `app-updater.mjs` talks to it:
 //!
-//!   GET  /app-update/check    -> { available, version, current, notes }   (signature-verified metadata from the feed)
+//!   GET  /app-update/check    -> { available, disabled, reason, current }  (off in this build; a test feed answers as before)
 //!   POST /app-update/install  -> starts download + install in the background
 //!   GET  /app-update/status   -> { state: idle|downloading|installing|done|error, downloaded, total, version, error }
 //!
-//! The update itself is Tauri's: it downloads the installer, checks its minisign signature against the public key in
-//! `tauri.conf.json` (`plugins.updater.pubkey`, the owner's separate updater key) and installs. A check or an install happens
-//! only when the user presses "Check for updates" / "Update Strata"; nothing here runs on start, and nothing here touches
-//! engines or models (those are Control's component updater: `strata update`).
+//! App updates are OFF in this build (see `APP_UPDATES_OFF`): `tauri.conf.json` names no feed and no public key, so there is
+//! nothing to download and nothing to verify. A check answers "off" and an install is refused; nothing here runs on start, and
+//! nothing here touches engines or models (those are Control's component updater: `strata update`).
 
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
@@ -21,8 +20,18 @@ use std::time::Duration;
 use tauri::AppHandle;
 use tauri_plugin_updater::UpdaterExt;
 
-/// Where an endpoint other than the one in `tauri.conf.json` may come from: a local test feed. Only loopback or https.
+/// Where an endpoint may come from: a local test feed. Only loopback or https.
 const ENDPOINT_ENV: &str = "STRATA_UPDATE_APP_ENDPOINT";
+
+/// App updates are off in this build. This checkout is a personal build of the product and publishes no release feed of its
+/// own: the only feed it could name is another product's, and installing from it would replace this app with that one. A
+/// check therefore says updates are off and an install is refused. Engine and model updates are Control's own path and are
+/// not affected. A local test feed can still be named through `STRATA_UPDATE_APP_ENDPOINT` (loopback or https only).
+const APP_UPDATES_OFF: &str = "App updates are off in this build. Engine updates still work.";
+
+fn app_updates_available() -> bool {
+    endpoint_override().is_some()
+}
 
 #[derive(Clone, Default)]
 struct Progress {
@@ -68,6 +77,12 @@ fn updater_for(app: &AppHandle) -> Result<tauri_plugin_updater::Updater, String>
 }
 
 async fn check(app: &AppHandle) -> Result<serde_json::Value, String> {
+    if !app_updates_available() {
+        return Ok(serde_json::json!({
+            "available": false, "disabled": true, "reason": APP_UPDATES_OFF,
+            "current": app.package_info().version.to_string(),
+        }));
+    }
     let updater = updater_for(app)?;
     match updater.check().await.map_err(|e| e.to_string())? {
         Some(update) => Ok(serde_json::json!({
@@ -83,13 +98,16 @@ async fn install(app: AppHandle, progress: Arc<Mutex<Progress>>) {
         p.state = "error";
         p.error = Some(message);
     };
+    if !app_updates_available() {
+        return fail(APP_UPDATES_OFF.into());
+    }
     let updater = match updater_for(&app) {
         Ok(u) => u,
         Err(e) => return fail(e),
     };
     let update = match updater.check().await {
         Ok(Some(update)) => update,
-        Ok(None) => return fail("There is no newer version of the Strata app.".into()),
+        Ok(None) => return fail("There is no newer version of the Nostroma app.".into()),
         Err(e) => return fail(e.to_string()),
     };
     {

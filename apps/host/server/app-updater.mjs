@@ -7,7 +7,8 @@
  * Outside the desktop app (a browser, a test, a source checkout) there is no bridge and `createAppUpdater` returns null.
  *
  * The shell does the checking against the signed feed (its own minisign key) and the installing; nothing here downloads
- * anything. These calls happen only for an explicit "Update" or "Check for updates", never when the host starts.
+ * anything. These calls happen only for an explicit "Update" or "Check for updates", never when the host starts. In this
+ * build the shell answers "app updates are off" (it names no feed of its own), so nothing is ever installed from here.
  */
 
 export function createAppUpdater({ env = process.env, fetcher = fetch, sleep = ms => new Promise(r => setTimeout(r, ms)) } = {}) {

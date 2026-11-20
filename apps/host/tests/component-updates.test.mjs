@@ -7,6 +7,7 @@ import { join, basename } from 'node:path';
 import { tmpdir } from 'node:os';
 import { bundledPython, controlEnvironment, createControl, findControl, runCli, updatedControlDirectory } from '../server/control-runtime.mjs';
 import { checkComponentUpdates, engineFirstRun } from '../server/updates.mjs';
+import { APP_UPDATES_OFF } from '../server/update-messages.mjs';
 import { createAppUpdater } from '../server/app-updater.mjs';
 import { createNativeControl } from '../server/native-control.mjs';
 
@@ -104,21 +105,18 @@ test('createControl: the update calls ask the explicit commands; a failed step c
   await assert.rejects(failing.update({}), err => err.code === 'engine_serving' && /serving/.test(err.message) && err.exitCode === 7);
 });
 
-test('the Settings check says so, in plain words, when the own update check of the app fails, and keeps the raw text for Details', async () => {
-  const feed = (control = { installed: '0.2.5', offered: '0.2.5', status: 'current' }) => ({ version: '0.2.5', async updateCheck() { return { ok: true, feed: { sequence: 3 }, engine: { installed: { version: '0.1.50' }, offered: { version: '0.1.50' }, status: 'current' }, control, app: { status: 'not-in-feed' } }; } });
-  const failing = { check: async () => { throw new Error('error decoding response body for url (http://127.0.0.1:19090/latest.json)'); } };
-  const nothing = await checkComponentUpdates({ control: feed(), appUpdater: failing, appVersion: '0.2.5' });
-  assert.equal(nothing.strata.status, 'error', 'it no longer says "up to date" when the app could not be checked');
-  assert.match(nothing.strata.message, /couldn't check for a new version of the app itself/);
-  assert.doesNotMatch(nothing.strata.message, /decoding|http|latest\.json/, 'no raw text in the main line');
-  assert.match(nothing.strata.details, /error decoding response body/);
-  const withControl = await checkComponentUpdates({ control: feed({ installed: '0.2.5', offered: '0.2.6', status: 'available' }), appUpdater: failing, appVersion: '0.2.5' });
-  assert.equal(withControl.strata.status, 'available');
-  assert.match(withControl.strata.message, /new version of Nostroma is available.*couldn't check for a new version of the app itself/s);
-  assert.match(withControl.strata.details, /decoding/);
-  const fine = await checkComponentUpdates({ control: feed(), appUpdater: { check: async () => ({ available: false }) }, appVersion: '0.2.5' });
-  assert.equal(fine.strata.status, 'current');
-  assert.equal(fine.strata.details, undefined);
+test('the app row is off whatever the feed and the shell say, and the shell is never asked', async () => {
+  const feed = (control = { installed: '0.2.5', offered: '0.2.5', status: 'current' }) => ({ version: '0.2.5', async updateCheck() { return { ok: true, feed: { sequence: 3 }, engine: { installed: { version: '0.1.50' }, offered: { version: '0.1.50' }, status: 'current' }, control, app: { status: 'available', offered: '0.2.6' } }; } });
+  const shell = { check: async () => { throw new Error('the shell must not be asked about the app'); } };
+  const nothing = await checkComponentUpdates({ control: feed(), appUpdater: shell, appVersion: '0.2.5' });
+  assert.equal(nothing.strata.status, 'unavailable');
+  assert.equal(nothing.strata.canInstall, false);
+  assert.equal(nothing.strata.message, APP_UPDATES_OFF);
+  assert.equal(nothing.strata.latestVersion, undefined);
+  const withControl = await checkComponentUpdates({ control: feed({ installed: '0.2.5', offered: '0.2.6', status: 'available' }), appVersion: '0.2.5' });
+  assert.equal(withControl.strata.status, 'unavailable', 'a newer Control in the feed is not an app update to offer');
+  assert.equal(withControl.strata.canInstall, false);
+  assert.equal(withControl.engine.status, 'current');
 });
 
 test('the Settings update check maps the feed to the existing result shape', async () => {
@@ -130,7 +128,7 @@ test('the Settings update check maps the feed to the existing result shape', asy
   assert.match(result.engine.message, /new engine is available \(505 MB\)/);
   assert.doesNotMatch(result.engine.message, /0\.1\.4|sha|exit/i);
   assert.equal(result.engine.canInstall, true);
-  assert.equal(result.strata.status, 'current');
+  assert.equal(result.strata.status, 'unavailable');
   result = await checkComponentUpdates({ control: make(report({ engine: { installed: null, offered: { version: '0.1.46' }, status: 'install', download_bytes: 505_000_000 } })) });
   assert.equal(result.engine.status, 'available');
   assert.match(result.engine.message, /needs an engine to run models\. Press Update engine/);
@@ -151,12 +149,12 @@ test('the Settings update check maps the feed to the existing result shape', asy
   assert.doesNotMatch(result.engine.message, /update key/);
   assert.match(result.engine.details, /no update key/);
   assert.match(result.engine.message, /aren't available in this version/);
-  // the app's verdict comes from the shell's updater when the bridge exists
-  const appUpdater = { check: async () => ({ available: true, version: '0.2.0', notes: 'Faster starts.' }) };
-  result = await checkComponentUpdates({ control: make(report()), appUpdater, appVersion: '0.1.0' });
-  assert.equal(result.strata.status, 'available');
-  assert.equal(result.strata.latestVersion, '0.2.0');
-  assert.match(result.strata.message, /new version of Nostroma is available\. Faster starts/);
+  // a shell verdict is no longer used: the app row stays off
+  const shell = { check: async () => { throw new Error('the shell must not be asked about the app'); } };
+  result = await checkComponentUpdates({ control: make(report()), appUpdater: shell, appVersion: '0.1.0' });
+  assert.equal(result.strata.status, 'unavailable');
+  assert.equal(result.strata.canInstall, false);
+  assert.equal(result.strata.message, APP_UPDATES_OFF);
 });
 
 test('the shell bridge client exists only inside the desktop app, speaks to loopback with the token, and polls to the end', async () => {
@@ -271,41 +269,38 @@ test('packaged: no update while a model is loaded; calibration is still refused'
   } finally { await f.native.close(); f.cleanup(); }
 });
 
-test('packaged: "Update Nostroma" updates Control through the feed, then the app through the shell', async () => {
+test('packaged: "Update Nostroma" is refused before Control is asked, so nothing is downloaded', async () => {
   const f = fixture({ withApp: true });
   try {
     await f.native.refresh(true);
-    const job = await finish(f.native, f.native.operation('update-strata', {}).id);
-    assert.equal(job.state, 'done', job.error);
-    assert.deepEqual(f.calls.map(c => c[0]), ['update', 'app-install']);
-    assert.deepEqual(f.calls[0], ['update', false, true]);
-    assert.match(job.summary, /app update is installed\. Nostroma will restart/);
+    const before = f.calls.length;
+    assert.throws(() => f.native.operation('update-strata', {}), /App updates are off/);
+    assert.deepEqual(f.calls.slice(before), [], 'Control was not asked for an update and the shell was not asked for an installer');
+    assert.deepEqual(f.native.state().jobs, [], 'no job was started');
   } finally { await f.native.close(); f.cleanup(); }
 });
 
-test('packaged: an app update that ends the app is recorded as finished by the new version, not as an interrupted operation', async () => {
+test('packaged: an app update job an earlier build left running is settled by the version that comes back', async () => {
   const before = process.env.STRATA_APP_VERSION;
-  process.env.STRATA_APP_VERSION = '0.2.2';
-  const f = fixture({ withApp: true, appInstall: () => new Promise(() => {}) });      // the installer ends the app: install() never returns
+  const f = fixture({ withApp: true });
   try {
-    await f.native.refresh(true);
-    const started = f.native.operation('update-strata', {});
-    await new Promise(r => setTimeout(r, 60));
-    assert.equal(f.native.state().jobs.find(j => j.id === started.id).state, 'running');
-    const saved = JSON.parse(readFileSync(join(f.data, 'native-jobs.json'), 'utf8')).find(j => j.id === started.id);
-    assert.equal(saved.appUpdateFrom, '0.2.2', 'the job was saved with the version it started from before the app was ended');
-    // the app is gone; the installer starts the new one (0.2.3) on the same data
+    // this build starts no app update, but a job an earlier one wrote is still on disk
+    const saved = { id: 'u1', kind: 'update-strata', state: 'running', startedAt: new Date().toISOString(), summary: 'Installing the app update…', result: null, error: null, appUpdateFrom: '0.2.2', appUpdateTo: '0.2.3' };
+    const mk = () => createNativeControl({ control: f.control, directory: f.data, spawnProcess: () => { throw new Error('no process'); }, fetcher: async () => Response.json({}), requests: () => [] });
+    writeFileSync(join(f.data, 'native-jobs.json'), JSON.stringify([saved]));
+    // the app is gone; the installer started the new version (0.2.3) on the same data
     process.env.STRATA_APP_VERSION = '0.2.3';
-    const again = createNativeControl({ control: f.control, directory: f.data, spawnProcess: () => { throw new Error('no process'); }, fetcher: async () => Response.json({}), requests: () => [] });
-    const job = again.state().jobs.find(j => j.id === started.id);
-    assert.equal(job.state, 'done');
-    assert.equal(job.error, null);
-    assert.match(job.summary, /updated to 0\.2\.3/);
-    await again.close();
+    const after = mk();
+    const done = after.state().jobs.find(j => j.id === 'u1');
+    assert.equal(done.state, 'done');
+    assert.equal(done.error, null);
+    assert.match(done.summary, /updated to 0\.2\.3/);
+    await after.close();
     // the same record read by an app that did NOT change version stays an interruption
     process.env.STRATA_APP_VERSION = '0.2.2';
-    const same = createNativeControl({ control: f.control, directory: f.data, spawnProcess: () => { throw new Error('no process'); }, fetcher: async () => Response.json({}), requests: () => [] });
-    const unfinished = same.state().jobs.find(j => j.id === started.id);
+    writeFileSync(join(f.data, 'native-jobs.json'), JSON.stringify([saved]));
+    const same = mk();
+    const unfinished = same.state().jobs.find(j => j.id === 'u1');
     assert.equal(unfinished.state, 'error');
     assert.match(unfinished.error, /update to 0\.2\.[0-9] did not finish.*releases/s, 'the app came back as the old version: the installer did not finish, and the alert says so');
     await same.close();
@@ -379,13 +374,12 @@ test('first-run card data: an offer with its size, nothing-fits with reasons, of
   assert.equal(offline.status, 'offline');
 });
 
-test('without the shell bridge "Update Nostroma" still updates Control and says nothing false about the app', async () => {
+test('the app update is refused in a source checkout too, before git or Control is touched', async () => {
   const f = fixture();
   try {
-    await f.native.refresh(true);
-    const job = await finish(f.native, f.native.operation('update-strata', {}).id);
-    assert.equal(job.state, 'done', job.error);
-    assert.doesNotMatch(job.summary, /app update is installed/);
+    assert.throws(() => f.native.operation('update-strata', {}), /App updates are off/);
+    assert.deepEqual(f.calls, [], 'no git command, no Control call');
+    assert.deepEqual(f.native.state().jobs, []);
   } finally { await f.native.close(); f.cleanup(); }
 });
 

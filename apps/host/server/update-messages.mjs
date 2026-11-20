@@ -23,6 +23,9 @@ export function looksOffline(error) {
 }
 export const OFFLINE_MESSAGE = "No internet connection. Try again when you're online.";
 
+/** The app row in this build: this checkout publishes no release feed of its own, so "Check for updates" never offers an app installer. */
+export const APP_UPDATES_OFF = 'App updates are off in this build. Engine updates still work.';
+
 /** { message, details, next } for an error thrown by Control's update calls (or the shell bridge). `subject` is "engine" or "Strata".
  * `retry` names the button of a screen that has no Settings page yet (the first-run card's Continue): the next step then says that button. */
 export function plainUpdateError(error, subject = 'engine', retry = undefined) {

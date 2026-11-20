@@ -11,8 +11,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 /**
  * Strata works without internet. The host is started with every non-loopback fetch failing (and logged), the way a PC with the cable
- * pulled behaves. Starting, reading the screens' data and loading a model make no outside call. The update check is the one
- * thing that reaches out, and only when it is asked for: opening Settings does not ask.
+ * pulled behaves. Starting, reading the screens' data, loading a model and the update check make no outside call at all: this
+ * build publishes no release feed of its own, so "Check for updates" answers in plain words without reaching anywhere.
  */
 const root = fileURLToPath(new URL('..', import.meta.url));
 const preload = pathToFileURL(fileURLToPath(new URL('./helpers/offline-preload.mjs', import.meta.url))).href;
@@ -57,15 +57,16 @@ test('with no internet the host starts, serves its screens and loads a model wit
   assert.deepEqual(h.calls(), [], 'opening the screens and loading a model made no outside call');
 });
 
-test('the update check reaches out only when it is asked for, and offline it answers in plain words', async t => {
+test('the update check reaches out to nothing: it answers in plain words, online or not', async t => {
   const h = await startOfflineHost();
   t.after(h.stop);
   await h.get('/api/setup'); await h.get('/api/native'); await h.get('/api/models');
   assert.equal(h.calls().length, 0, 'opening the screens does not check');
   const checked = await h.get('/api/updates/check');
   assert.equal(checked.status, 200);
-  assert.equal(h.calls().length, 1, 'one check, from the click');
-  assert.equal(checked.data.strata.status, 'error');
-  assert.equal(checked.data.strata.message, "No internet connection. Try again when you're online.");
+  assert.equal(h.calls().length, 0, 'the click reaches out to nothing: this build has no feed of its own');
+  assert.equal(checked.data.strata.status, 'unavailable');
+  assert.equal(checked.data.strata.canInstall, false);
+  assert.equal(checked.data.strata.message, 'App updates are off in this build. Engine updates still work.');
   assert.doesNotMatch(JSON.stringify(checked.data), /fetch failed/);
 });

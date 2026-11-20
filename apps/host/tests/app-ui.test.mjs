@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { EventEmitter } from 'node:events';
 import { createAppUi, openInBrowser, startOpener, APP_UPDATE_UNAVAILABLE, BROWSER_UPDATE_MESSAGE } from '../server/app-ui.mjs';
 import { checkComponentUpdates } from '../server/updates.mjs';
+import { APP_UPDATES_OFF } from '../server/update-messages.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const delay = ms => new Promise(r => setTimeout(r, ms));
@@ -78,18 +79,14 @@ test('an opener that is missing or fails fast is a failure; one still running is
   assert.equal(await startOpener('x', [], { env: {}, settleMs: 50, spawnProcess: fake(() => {}) }), true);
 });
 
-test('update check in browser mode: the app part says it cannot be done here, engine/component updates stay possible', async () => {
-  const control = { version: '0.1.0', updateCheck: async () => ({ app: { status: 'available', offered: '0.2.0', notes: 'Faster.' }, engine: { status: 'current', installed: { version: '1' } }, control: { status: 'current' } }) };
-  const browser = createAppUi({ env: { STRATA_UI_MODE: 'browser' } });
-  const inBrowser = await checkComponentUpdates({ control, appUpdater: browser.updater, appVersion: '0.1.0' });
-  assert.equal(inBrowser.strata.status, 'available');
-  assert.equal(inBrowser.strata.canInstall, false);
-  assert.match(inBrowser.strata.message, /can't be updated in browser mode/);
-  // the same check with the window's updater in place offers the update as before
-  const windowed = createAppUi({ env: { STRATA_UI_MODE: 'window', ...bridgeEnv }, createUpdater: ({ env }) => env.STRATA_SHELL_BRIDGE ? { check: async () => ({ available: true, version: '0.2.0', notes: 'Faster.' }), install: async () => {} } : null });
-  const inWindow = await checkComponentUpdates({ control, appUpdater: windowed.updater, appVersion: '0.1.0' });
-  assert.equal(inWindow.strata.canInstall, true);
-  assert.doesNotMatch(inWindow.strata.message, /browser mode/);
+test('update check: the app row says updates are off, and the engine row still comes from Control', async () => {
+  const control = { version: '0.1.0', updateCheck: async () => ({ app: { status: 'available', offered: '0.2.0', notes: 'Faster.' }, engine: { status: 'current', installed: { version: '1' } }, control: { status: 'available', offered: '0.1.1' } }) };
+  const result = await checkComponentUpdates({ control, appVersion: '0.1.0' });
+  assert.equal(result.strata.status, 'unavailable');
+  assert.equal(result.strata.canInstall, false);
+  assert.equal(result.strata.message, APP_UPDATES_OFF);
+  assert.equal(result.strata.latestVersion, undefined, 'the app installer or Control package of the feed is not offered as this app');
+  assert.equal(result.engine.status, 'current', 'engine updates keep their own path');
 });
 
 async function freePort() { const s = createServer(); await new Promise(r => s.listen(0, '127.0.0.1', r)); const p = s.address().port; await new Promise(r => s.close(r)); return p; }

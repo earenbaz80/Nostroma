@@ -166,19 +166,15 @@ test('an app update job the old host closed as "cancelled" is read as finished b
   } finally { if (before === undefined) delete process.env.STRATA_APP_VERSION; else process.env.STRATA_APP_VERSION = before; rmSync(root, { recursive: true, force: true }); }
 });
 
-test('closing the host during an app update leaves its job running (the next start settles it)', async () => {
-  const before = process.env.STRATA_APP_VERSION;
-  process.env.STRATA_APP_VERSION = '0.2.14';
+test('an app update cannot start any more: nothing runs, no job is recorded and Control is not asked', async () => {
   const root = mkdtempSync(join(tmpdir(), 'strata-applin-close-'));
-  const control = { control: { dir: '/c' }, version: '0.1.60', async update() { return { ok: true, results: [] }; } };
-  const appUpdater = { check: async () => ({ available: true, version: '0.2.15' }), install: () => new Promise(() => {}) };
-  const native = createNativeControl({ control, appUpdater, directory: root, spawnProcess: () => { throw new Error('no process'); }, fetcher: async () => Response.json({}), requests: () => [] });
+  const control = { control: { dir: '/c' }, version: '0.1.60', async update() { throw new Error('Control must not be asked for an app update'); } };
+  const native = createNativeControl({ control, directory: root, spawnProcess: () => { throw new Error('no process'); }, fetcher: async () => Response.json({}), requests: () => [] });
   try {
-    const started = native.operation('update-strata', {});
-    for (let i = 0; i < 100 && !native.state().jobs.find(j => j.id === started.id)?.appUpdateFrom; i++) await new Promise(r => setTimeout(r, 10));
+    assert.throws(() => native.operation('update-strata', {}), /App updates are off/);
+    assert.deepEqual(native.state().jobs, [], 'no job was started');
     await native.close();
-    assert.equal(native.state().jobs.find(j => j.id === started.id).state, 'running');
-  } finally { if (before === undefined) delete process.env.STRATA_APP_VERSION; else process.env.STRATA_APP_VERSION = before; rmSync(root, { recursive: true, force: true }); }
+  } finally { rmSync(root, { recursive: true, force: true }); }
 });
 
 // ------------------------------------------------------------------ item 5: the first-run card offers the Control update

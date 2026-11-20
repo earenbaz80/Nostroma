@@ -25,8 +25,8 @@ test('benchmarks retain reported rates and cancellation aborts measurement',asyn
  f.setBenchmarkWait(true);const job=f.control.operation('benchmark',{instanceId:loaded.result.instanceId});await new Promise(r=>setTimeout(r,10));await f.control.cancel(job.id);assert.equal(f.control.state().jobs.find(j=>j.id===job.id).state,'cancelled');assert.equal(f.control.benchmarkReport().outputTps,41);
  }finally{await f.cleanup();}
 });
-test('native update refuses local edits; calibration targets the chosen installed configuration',async()=>{
- const f=nativeFixture();try{await f.control.refresh();const update=await finishJob(f.control,f.control.operation('update-strata').id);assert.equal(update.state,'error');assert.match(update.error,/local edits/);assert.equal(f.calls.some(c=>c.command==='git'&&c.args[0]==='pull'),false);
+test('the app update is refused before git runs; calibration targets the chosen installed configuration',async()=>{
+ const f=nativeFixture();try{await f.control.refresh();const asked=f.calls.length;assert.throws(()=>f.control.operation('update-strata'),/App updates are off/);assert.deepEqual(f.calls.slice(asked),[],'the refused update ran nothing (no git status, no pull)');
  const calibrated=await finishJob(f.control,f.control.operation('calibrate',{model:'iq3_s'}).id);assert.equal(calibrated.state,'done',calibrated.error);assert.ok(f.calls.find(c=>c.args[0]==='-c'&&c.args[2].endsWith('strata-iq3_s.json')));
  f.setExternal([{port:8080,model:'other'}]);await f.control.refresh(true);const load=await finishJob(f.control,f.control.operation('load',{model:'iq2_xs'}).id);assert.equal(load.state,'error');assert.match(load.error,/outside this UI/);
  }finally{await f.cleanup();}
