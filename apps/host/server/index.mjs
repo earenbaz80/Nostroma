@@ -22,7 +22,7 @@ import { createAgentTools } from './agent/tools-settings.mjs';
 import { withPlainStatus } from './agent/status.mjs';
 import { findBrowser, findPlaywrightMcp } from './agent/browser-probe.mjs';
 /**
- * Strata engine host.
+ * Nostroma engine host.
  *
  *   node server/index.mjs                 # API only (use with `npm run dev`)
  *   node server/index.mjs --dist dist     # API + the built web app on one port
@@ -130,7 +130,7 @@ const HOST_NAMES = hostNamesForApp(HOST);
 /* The folder chats work in when nothing else is chosen. It is never the app's own folder (the host is started inside its install
    directory, so `process.cwd()` was "host" in the sidebar and the agent could read and write the app): the person's own
    Documents\Nostroma\Workspace (the models folder is next to it, not in it), created on first use, unless NOSTROMA_WORKSPACE
-   names one. A workspace from the Strata days moves once, so the chats' files are where the person left them. */
+   names one. A workspace from the Nostroma days moves once, so the chats' files are where the person left them. */
 const namedWorkspace = () => process.env.NOSTROMA_WORKSPACE ?? envVar('WORKSPACE');
 function defaultWorkspace() {
   if (namedWorkspace()) return resolve(namedWorkspace());
@@ -155,10 +155,10 @@ const hub = new EventHub();
 const chatStore = createChatStore({ dir: store.DATA_DIR, privateDir: makePrivateDir });
 const modelProviders = createModelProviders({ directory: store.DATA_DIR, knownThinks: (connection, modelId) => visionProbe.knownThinks(connection, modelId), changed: value => hub.send('providers', withPictureAnswers(value)) });
 const imageModels = createImageModels({ dataDir: store.DATA_DIR, modelsDir: () => store.MODELS_DIR, real: models.REAL, changed: value => hub.send('image-models', value) });
-/* The installed app ships Strata Control (python + nostroma_control) next to the host; a source checkout has none and keeps its older paths. */
+/* The installed app ships Nostroma Control (python + nostroma_control) next to the host; a source checkout has none and keeps its older paths. */
 const CONTROL = findControl();
 const control = createControl({ control: CONTROL });
-// Files a run as administrator made in Strata's own folders (owner Administrators) are given back to the user at every start; best effort, never blocks.
+// Files a run as administrator made in Nostroma's own folders (owner Administrators) are given back to the user at every start; best effort, never blocks.
 if (control && process.platform === 'win32' && !envVar('NO_REPAIR_ACCESS')) void control.repairAccess().catch(() => {});
 /* Which window shows the page (the app window or, when that cannot run, a browser tab) and what only the app window can do: app-ui.mjs. */
 const appUi = createAppUi({ shutdown: () => shutdown() });
@@ -288,7 +288,7 @@ function runtimeState(){
 }
 
 /* No start-up load: the remembered model of the real-engine mode was loaded through a llama.cpp llama-server (0.2.14, also for an imported
-   GGUF nobody had loaded). Models run on the Strata engine, whose own start does not come through here. */
+   GGUF nobody had loaded). Models run on the Nostroma engine, whose own start does not come through here. */
 const backend = await detectBackend({ force: true });
 
 console.log(`strata host  ·  http://${HOST}:${PORT}`);
@@ -460,7 +460,7 @@ function noteSkillUse(selected) {
 const execFileAsync = promisify(execFile);
 
 /* ---------------------------------------------------------------- prompt ---
-   What Strata puts in front of every conversation. Counted so the context
+   What Nostroma puts in front of every conversation. Counted so the context
    breakdown can show where the window actually goes rather than reporting a
    single opaque total. */
 const SYSTEM_PROMPT = `You are Nostroma, a local inference assistant running entirely on this computer.
@@ -835,7 +835,7 @@ async function stopTrial(id) {
 /**
  * Tuning, from the App Host.
  *
- * The job contract is Strata Control's (`nostroma_control/tuning.py`) and is driven through
+ * The job contract is Nostroma Control's (`nostroma_control/tuning.py`) and is driven through
  * `strata tune`. Two things the UI needs and neither is computable here:
  *
  *   * **what a sweep would search, and why the rest was excluded** — that depends on the selected
@@ -1097,7 +1097,7 @@ async function api(req, res, path, method, url) {
    if(picked.cancelled)return json(res,200,{cancelled:true});
    return json(res,200,{path:picked.path,preview:await native.localPreview(picked.path)});}
   if(path==='/api/native/benchmark'&&method==='GET')return json(res,200,native.benchmarkReport());
-  /* The auto-tuner's saved tunings (Strata Control's presets, shared with the Terminal). Starting a tune or a re-check is POST /api/native/operations with kind autotune / recheck. */
+  /* The auto-tuner's saved tunings (Nostroma Control's presets, shared with the Terminal). Starting a tune or a re-check is POST /api/native/operations with kind autotune / recheck. */
   if(path==='/api/native/tune/status'&&method==='GET')return json(res,200,await native.tuneStatus({model:url.searchParams.get('model'),resourceProfile:url.searchParams.get('resourceProfile')||undefined,vision:url.searchParams.get('vision')||undefined}));
   if(path==='/api/native/tune/effective'&&method==='GET')return json(res,200,await native.tuneEffective({model:url.searchParams.get('model'),resourceProfile:url.searchParams.get('resourceProfile')||undefined,vision:url.searchParams.get('vision')||undefined}));
   if(path==='/api/native/tune/off'&&method==='POST'){const body=await readBody(req);return json(res,200,await native.tuneOff({model:body.model,resourceProfile:body.resourceProfile,vision:body.vision}));}
@@ -1181,7 +1181,7 @@ async function api(req, res, path, method, url) {
 
   // ---------------------------------------------------------------- Time-skip
   //
-  // The job lives in Strata Control (`nostroma_control/time_skip.py`) and is driven through its CLI.
+  // The job lives in Nostroma Control (`nostroma_control/time_skip.py`) and is driven through its CLI.
   // These routes only start it, follow it and apply its result; they never compute a status or a
   // score of their own, so the UI cannot show progress the job did not report.
   if (path === '/api/timeskip' && method === 'GET') {
@@ -1351,7 +1351,7 @@ async function api(req, res, path, method, url) {
     });
   }
 
-  // --- Strata Control: what the installed app runs on, and what it will not do ---------------------
+  // --- Nostroma Control: what the installed app runs on, and what it will not do ---------------------
   if (path === '/api/control/status' && method === 'GET') {
     const engine = control ? await control.engine().catch(e => ({ usable: false, notice: e.message })) : null;
     // the first start copies the engine that came with the app (about a minute): say so instead of "no engine"
@@ -1370,7 +1370,7 @@ async function api(req, res, path, method, url) {
     const token = envVar('SHUTDOWN_TOKEN') ?? '';
     return token.length >= 32 && sameSecret(req.headers['x-strata-shutdown'], token);
   };
-  // Which window the person is using: the page shows "Quit Strata" in browser mode only.
+  // Which window the person is using: the page shows "Quit Nostroma" in browser mode only.
   if (path === '/api/app/mode' && method === 'GET') return json(res, 200, appUi.state());
   if (path === '/api/app/quit' && method === 'POST') {
     // A web page cannot send this header without the browser asking the host first, and the host refuses pages that are not local (above).
@@ -1574,7 +1574,7 @@ async function api(req, res, path, method, url) {
         await monitor.setModel(id);engine.markRunning(hw.accelerator.backend);hub.send('engine',await engine.config());
         return json(res,200,runtimeModels.libraryState(models.library()));
       }
-      // Strata's own engine only: 0.2.14 started a llama.cpp llama-server here (an imported GGUF, the starter list) in the real-engine mode
+      // Nostroma's own engine only: 0.2.14 started a llama.cpp llama-server here (an imported GGUF, the starter list) in the real-engine mode
       return error(res,409,'Nostroma runs models only on its own engine, so this model can\'t load here. Open Models and choose a model there, or use "Use a local GGUF…" for a file you already have.');
     }
   }

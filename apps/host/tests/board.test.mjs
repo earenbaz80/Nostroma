@@ -114,7 +114,7 @@ test('a loop that ended is Done, unless 3 runs in a row failed; then it needs at
   assert.equal(bad.reason.kind, 'loop-failed');
   assert.deepEqual([bad.primary, bad.menu], ['open-chat', ['continue', 'dismiss']]);
   const running = chat({ loop: { prompt: 'x', everyMs: MIN, startedAt: NOW - HOUR, state: 'running', answers: 1 } });
-  assert.equal(boardCards(input({ sessions: [running] })).columns.done[0].chip.text, 'Stopped when Strata closed', 'a record that says running with no loop behind it is a loop the window closed on');
+  assert.equal(boardCards(input({ sessions: [running] })).columns.done[0].chip.text, 'Stopped when Nostroma closed', 'a record that says running with no loop behind it is a loop the window closed on');
 });
 
 test('chats show up only with something to do, from the last 7 days', () => {

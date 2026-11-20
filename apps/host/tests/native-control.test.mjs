@@ -41,5 +41,5 @@ test('a model the person pointed at their own GGUF folder keeps that folder for 
  const path=join(f.repo,'strata-iq2_xs.json'),config=JSON.parse(readFileSync(path));config.args=['--native',shard,'--max-context','32768'];writeFileSync(path,JSON.stringify(config));
  await f.control.refresh(true);await f.control.plan({family:'qwen',model:'IQ2_XS',context:131072});
  const call=f.rpcCalls.filter(c=>c.name==='strata_install').pop();assert.equal(call.arguments.gguf_dir,own);assert.equal(call.arguments.data_dir,undefined,'the person\'s folder is not the data folder');
- await f.control.plan({family:'qwen',model:'IQ3_S',context:131072});const other=f.rpcCalls.filter(c=>c.name==='strata_install').pop();assert.equal(other.arguments.gguf_dir,undefined,'a model Strata downloaded itself keeps its normal folders');
+ await f.control.plan({family:'qwen',model:'IQ3_S',context:131072});const other=f.rpcCalls.filter(c=>c.name==='strata_install').pop();assert.equal(other.arguments.gguf_dir,undefined,'a model Nostroma downloaded itself keeps its normal folders');
 }finally{await f.cleanup();}});

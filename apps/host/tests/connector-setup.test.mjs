@@ -31,7 +31,7 @@ async function untilAsked(isAsked){
   }
 }
 
-// The installer first looks for a connector that is already on the computer. The look is pinned to Strata's own empty folder
+// The installer first looks for a connector that is already on the computer. The look is pinned to Nostroma's own empty folder
 // (search:false, an empty environment): a cloudflared installed on the machine that runs the test (PATH, /usr/local/bin, ~/.local/bin)
 // would otherwise be used, nothing would be downloaded, and the test would wait for ever for a request that never comes.
 test('failed concurrent setup shares one download, cleans up and can be retried', {timeout:30000}, async () => {

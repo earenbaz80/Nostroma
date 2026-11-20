@@ -129,8 +129,8 @@ export function ModelsFolderCard({ blocked }: { blocked: boolean }) {
         try {
             const result = await api.post<NativeJob & { done?: boolean; setAside?: string[] }>('/api/native/models-folder/start', { path: plan.picked, choice, stopRunning: true });
             if (result.id) { setJobId(result.id); setOutcome(null); setStage(null); await refreshNative(true); setPlan(prev => prev); return; }
-            setNotice(choice === 'keep' ? tr('Strata now also uses {0}. New downloads go there, and your current models stay where they are.', [plan.shown])
-                : tr('Strata now uses {0}. Your old model files are still in {1}; Strata does not delete them.', [plan.shown, plan.current]));
+            setNotice(choice === 'keep' ? tr('Nostroma now also uses {0}. New downloads go there, and your current models stay where they are.', [plan.shown])
+                : tr('Nostroma now uses {0}. Your old model files are still in {1}; Nostroma does not delete them.', [plan.shown, plan.current]));
             await refreshNative(true);
             leave();
         }
@@ -153,7 +153,7 @@ export function ModelsFolderCard({ blocked }: { blocked: boolean }) {
     return <>
     <section className="storage-directory" aria-labelledby="models-folder-title">
       <div className="storage-directory__heading"><span><Icon name="folder" size={18}/><strong id="models-folder-title">{tr('Models folder')}</strong></span><Btn size="sm" disabled={!folder || blocked || pending || !!moving} onClick={() => void pick()}>{tr(pending && !plan ? 'Waiting for the folder…' : 'Change folder')}</Btn></div>
-      <p className="small muted">{tr('Strata saves the big model files here.')}</p>
+      <p className="small muted">{tr('Nostroma saves the big model files here.')}</p>
       <code className="storage-directory__path">{folder || tr('Reading model directory…')}</code>
       {free !== null ? <div className="models-free"><Bar value={used} label={tr('Disk use')}/><div className="models-free__row small"><span><strong>{tr('{0} free', [gb(free)])}</strong> {tr('on this drive')}</span><span className="muted">{tr('Your models use {0}', [gb(usage)])}</span></div></div> : null}
       {blocked && !moving ? <p className="small muted">{tr('Finish or stop the download to change the folder.')}</p> : null}
@@ -164,7 +164,7 @@ export function ModelsFolderCard({ blocked }: { blocked: boolean }) {
       </form> : null}
       {unfinished && !moving ? <div className="models-notice models-notice--info" role="alert"><Icon name="info" size={18}/><div>
         <strong>{tr('A move was interrupted. Finish it or leave it.')}</strong><br/>
-        {tr('Strata was moving your models from {0} to {1} when it stopped. Nothing is lost.', [unfinished.from, unfinished.to])}
+        {tr('Nostroma was moving your models from {0} to {1} when it stopped. Nothing is lost.', [unfinished.from, unfinished.to])}
         <p className="small muted">{tr('Finishing puts all your models in {1}. Leaving it keeps them in {0} and removes the partial copies from {1}.', [unfinished.from, unfinished.to])}</p>
         <div className="row"><Btn variant="primary" size="sm" disabled={pending || blocked} onClick={() => void finishMove()}>{tr('Finish the move')}</Btn><Btn size="sm" disabled={pending || blocked} onClick={() => void leaveMove()}>{tr('Leave it')}</Btn></div>
       </div></div> : null}
@@ -182,7 +182,7 @@ export function ModelsFolderCard({ blocked }: { blocked: boolean }) {
       actions={<><Btn onClick={leave}>{tr('Cancel')}</Btn><Btn variant="primary" onClick={() => setStage('choose')}>{tr('Continue')}</Btn></>}>
       {plan ? <>
         <div className="models-picked"><span className="small muted">{tr('New folder')}</span><code className="storage-directory__path">{plan.shown}</code><span className="small muted">{tr('{0} free on this drive', [gb(plan.free_bytes)])}</span></div>
-        <div className="models-notice models-notice--info"><Icon name="info" size={18}/><div>{tr('You picked the whole drive {0}. Strata keeps its files in a folder of their own, so your models go in {1}.', [plan.picked, plan.shown])}</div></div>
+        <div className="models-notice models-notice--info"><Icon name="info" size={18}/><div>{tr('You picked the whole drive {0}. Nostroma keeps its files in a folder of their own, so your models go in {1}.', [plan.picked, plan.shown])}</div></div>
         <p className="small muted">{tr('The three choices come next.')}</p>
       </> : null}
     </Dialog>
@@ -195,7 +195,7 @@ export function ModelsFolderCard({ blocked }: { blocked: boolean }) {
     <Dialog className="models-dialog" open={!!moving && !outcome} compact noClose title={tr('Moving your models')} onClose={() => undefined}
       actions={<Btn disabled={stopping} onClick={() => void stop()}>{tr(stopping ? 'Stopping…' : 'Stop moving')}</Btn>}>
       <div className="models-free"><Bar value={percent} label={tr('Progress')}/><div className="models-free__row small"><span><strong>{tr('{0} of {1} GB', [progress ? (progress.done / 1e9 >= 10 ? Math.round(progress.done / 1e9) : (progress.done / 1e9).toFixed(1)) : 0, Math.round((progress?.total ?? 0) / 1e9)])}</strong></span><span className="muted">{progress && !progress.sameDrive ? timeLeft(progress.secondsLeft) : null}</span></div></div>
-      <p className="small">{tr('Keep Strata open. You can keep using other apps. Your models cannot be loaded until the move is done.')}</p>
+      <p className="small">{tr('Keep Nostroma open. You can keep using other apps. Your models cannot be loaded until the move is done.')}</p>
       {progress ? <details className="models-details"><summary>{tr('Details')}</summary><ul>
         <li>{tr('Now copying: {0}, file {1} of {2}', [modelName(progress.group, native) ?? progress.group, progress.index, progress.count])}</li>
         <li>{tr('From {0} to {1}', [savedPlan?.current ?? resumed?.from ?? '', savedPlan?.folder ?? resumed?.to ?? ''])}</li></ul></details> : null}
@@ -210,10 +210,10 @@ function ChooseBody({ plan, choice, setChoice, names, error }: { plan: Plan; cho
     const short = !none && !plan.choices.move.possible;
     const lacking = Math.max(0, plan.needed_bytes - plan.free_bytes);
     const options: { id: Choice; title: string; text: string; need: string }[] = [
-        { id: 'move', title: 'Move my models there', text: none ? 'You have no models to move.' : plan.same_drive ? 'Strata moves your {0} of models to the new folder. This is the same drive, so it takes a moment.' : 'Strata copies your {0} of models to the new folder, checks them, then removes the old copies.',
+        { id: 'move', title: 'Move my models there', text: none ? 'You have no models to move.' : plan.same_drive ? 'Nostroma moves your {0} of models to the new folder. This is the same drive, so it takes a moment.' : 'Nostroma copies your {0} of models to the new folder, checks them, then removes the old copies.',
           need: none ? '' : plan.same_drive ? 'Needs no extra space.' : 'Needs {0} free in the new folder. You have {1}.' },
         { id: 'keep', title: 'Keep them where they are and also use the new folder', text: 'Nothing is copied. Your current models keep working, and new downloads go to the new folder.', need: short ? 'Needs no space now. New downloads must fit in {1}.' : 'Needs no space now.' },
-        { id: 'empty', title: 'Start empty', text: 'Strata uses the new folder from now on and does not list your current models. Your old files are not deleted.', need: 'Needs no space now. Each model you download later needs its own space.' },
+        { id: 'empty', title: 'Start empty', text: 'Nostroma uses the new folder from now on and does not list your current models. Your old files are not deleted.', need: 'Needs no space now. Each model you download later needs its own space.' },
     ];
     const values = [gb(plan.models_bytes), gb(plan.free_bytes)];
     const running = plan.running > 0;
@@ -233,7 +233,7 @@ function ChooseBody({ plan, choice, setChoice, names, error }: { plan: Plan; cho
       {names.length ? <li>{tr('{0} would move.', [list(names.map(m => `${m.label}, ${gb(m.bytes)}`))])}</li> : null}
       {short ? <li>{tr('Free space is measured on the drive that holds {0}.', [plan.shown])}</li> : <>
         <li>{tr('Old folder: {0}', [plan.current])}</li>
-        <li>{tr('Strata copies one file at a time and checks its size before it removes the old one.')}</li>
+        <li>{tr('Nostroma copies one file at a time and checks its size before it removes the old one.')}</li>
         <li>{tr('You can stop at any time; files already moved stay usable.')}</li></>}
     </ul></details>
     </>;

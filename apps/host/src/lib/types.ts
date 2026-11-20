@@ -1,4 +1,4 @@
-/** Shared shapes for the Strata host API. Mirrors server/types.d.ts. */
+/** Shared shapes for the Nostroma host API. Mirrors server/types.d.ts. */
 
 export type CheckState = 'pass' | 'warn' | 'fail';
 export interface SoftwareUpdate {

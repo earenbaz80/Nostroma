@@ -82,7 +82,7 @@ export class LoopScheduler {
     this.loops.set(sessionId, loop);
     this.record(sessionId, loop);
     const limit = loopLimitNote(loop);
-    this.host.note(sessionId, tr('Loop started: "{0}" {1}, while this chat is open. Type /loop stop to stop it. For work that must go on with Strata closed, use the Tasks screen.', [loop.prompt, loopEvery(loop.everyMs)]) + (limit ? ' ' + limit : ''));
+    this.host.note(sessionId, tr('Loop started: "{0}" {1}, while this chat is open. Type /loop stop to stop it. For work that must go on with Nostroma closed, use the Tasks screen.', [loop.prompt, loopEvery(loop.everyMs)]) + (limit ? ' ' + limit : ''));
     await this.run(sessionId);
     return true;
   }

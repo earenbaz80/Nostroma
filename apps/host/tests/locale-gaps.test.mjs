@@ -12,8 +12,9 @@ const { tr, setTranslationLanguage, loadCatalog } = await import(`data:text/java
 for (const l of ['zh', 'ja', 'de', 'es', 'ru', 'pt', 'ko', 'fr']) await loadCatalog(l);  // the non-English catalogs load on first use (src/lib/i18n.ts loadCatalog); load them before the first tr()
 
 test('every tr("...") literal and every command hint has a key in the English catalog, so no language is stuck in English (#3479)', async () => {
+  const brand = (t) => String(t).replace(/\bStrata\b/g, 'Nostroma');   // the catalogues keep upstream's wording; i18n.ts swaps it on the way out
   const known = new Set();
-  for (const name of ['en', 'tune-en', 'tools-en', 'fix-en', 'gh-en', 'ui-en', 'engine-en', 'pick-en', 'df2-en', 'upd-en', 'r3-en', 'pic-en', 'gui-en', 'sav-en']) for (const v of Object.values(await read(name))) known.add(String(v));
+  for (const name of ['en', 'tune-en', 'tools-en', 'fix-en', 'gh-en', 'ui-en', 'engine-en', 'pick-en', 'df2-en', 'upd-en', 'r3-en', 'pic-en', 'gui-en', 'sav-en']) for (const v of Object.values(await read(name))) { known.add(String(v)); known.add(brand(v)); }
   const missing = [];
   const scan = async dir => {
     for (const entry of await readdir(dir, { withFileTypes: true })) {

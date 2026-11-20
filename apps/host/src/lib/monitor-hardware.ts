@@ -32,7 +32,7 @@ export function gpuCapacity(devices:GpuInfo[]) {
 
 /**
  * The cards "All GPUs" covers by default. A small integrated chip (an AMD or Intel adapter on the Windows/Vulkan list with a carve-out under
- * 2 GB) beside a real card is left out: Strata cannot run a model on it (the native engine report marks it unusable), and counting it adds a
+ * 2 GB) beside a real card is left out: Nostroma cannot run a model on it (the native engine report marks it unusable), and counting it adds a
  * second "GPU" and half a gigabyte to every total. It stays in the picker. Alone (a Strix Halo, an iGPU-only PC) it stays the default.
  */
 export function defaultGpuSet(devices:GpuInfo[]):GpuInfo[] {

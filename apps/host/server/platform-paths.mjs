@@ -13,7 +13,7 @@ import { posix } from 'node:path';
 
 const winPath = (...parts) => parts.join('\\');
 
-/** The folder under which Strata keeps per-user state (tuning jobs, Time-skip runs). */
+/** The folder under which Nostroma keeps per-user state (tuning jobs, Time-skip runs). */
 export function stateRoot(env = process.env, platform = process.platform, home = homedir()) {
   if (platform === 'win32') {
     const local = env.LOCALAPPDATA || winPath(env.USERPROFILE || home, 'AppData', 'Local');

@@ -3,7 +3,7 @@
   "productName": "Strata",
   "version": "0.2.15",
   "private": true,
-  "description": "Strata Desktop - local AI, tuned to one model.",
+  "description": "Nostroma Desktop - local AI, tuned to one model.",
   "scripts": {
     "build:ui": "npm --prefix ../host run build",
     "typecheck:ui": "npm --prefix ../host run typecheck",

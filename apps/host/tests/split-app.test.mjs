@@ -4,7 +4,7 @@
  * no --no-split on the plan or the fetch, the MTP draft layer fetched through the existing installer step (gguf_dir, so the model is not fetched again), the split engine's
  * run config saved as the profile, a person's DFlash2 kept, a failed layer fetch ending in a working layer split with one plain note. Nothing here starts an engine.
  */
-import './helpers/isolate-profile.mjs';   // a test run never writes the owner's real Strata profile
+import './helpers/isolate-profile.mjs';   // a test run never writes the owner's real Nostroma profile
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';

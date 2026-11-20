@@ -42,7 +42,7 @@ export function DoneSoundSetting() {
 /** A desktop notification when Manual mode waits for an approval (#3477). */
 export function ApprovalNotifySetting() {
     const on = useStore(s => s.approvalNotify);
-    return <button className="st-toggle" role="switch" aria-checked={on} aria-label={tr("Notify me when Strata needs an answer")}
+    return <button className="st-toggle" role="switch" aria-checked={on} aria-label={tr("Notify me when Nostroma needs an answer")}
         onClick={() => { if (!on) void askNotificationPermission(); setApprovalNotify(!on); }}/>;
 }
 
@@ -51,7 +51,7 @@ export function TraySetting({ shell, save }: { shell: ShellState; save: (patch: 
     return <button className="st-toggle" role="switch" aria-checked={shell.minimizeToTray} aria-label={tr("Minimise to tray")} onClick={() => void save({ tray: !shell.minimizeToTray })}/>;
 }
 
-/** The port the app's window and local address use (#3402). Empty lets Strata choose; the choice applies the next time Strata starts. */
+/** The port the app's window and local address use (#3402). Empty lets Nostroma choose; the choice applies the next time Nostroma starts. */
 export function PortSetting({ shell, save }: { shell: ShellState; save: (patch: { port: number | null }) => Promise<string | null> }) {
     const [text, setText] = useState(shell.pinnedPort ? String(shell.pinnedPort) : ''), [problem, setProblem] = useState('');
     useEffect(() => { setText(shell.pinnedPort ? String(shell.pinnedPort) : ''); }, [shell.pinnedPort]);

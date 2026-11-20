@@ -32,7 +32,7 @@ import { createHttpTransport, hydrateChats, keepLastMomentCopy, WINDOW_ID } from
 import { copyText } from './clipboard';
 import { catalogLoaded, loadCatalog, setTranslationLanguage, tr, validLanguage, type Language } from './i18n';
 /**
- * Strata app store.
+ * Nostroma app store.
  *
  * A single immutable state object + a tiny subscribe/emit pair, consumed through
  * useSyncExternalStore. Data comes from the engine host over /api; live updates
@@ -575,7 +575,7 @@ function rememberShellLanguage(language:Language){api.post('/api/shell/prefs',{l
 async function announcePortNotice(){
   try{
     const shell=await api.get<{portNotice:{wanted:number;used:number}|null}>('/api/shell');
-    if(shell.portNotice)pushToast('warn',tr('Strata could not use its port'),tr('Port {0} is used by another program, so Strata started on port {1}. Chats and settings saved on port {0} are not shown until Strata can use it again. Close the other program and restart Strata.',[shell.portNotice.wanted,shell.portNotice.used]));
+    if(shell.portNotice)pushToast('warn',tr('Nostroma could not use its port'),tr('Port {0} is used by another program, so Nostroma started on port {1}. Chats and settings saved on port {0} are not shown until Nostroma can use it again. Close the other program and restart Nostroma.',[shell.portNotice.wanted,shell.portNotice.used]));
   }catch{/* a browser or an older host has no shell */}
 }
 export function setFontFamily(fontFamily:string){set({fontFamily:fontFamily.trim().slice(0,128).replace(/[\x00-\x1f]/g,'')});savePrefs();}
@@ -756,7 +756,7 @@ export async function addWorkspace(path: string) {
   try {
     const ws = await api.post<Workspace>('/api/workspaces', { path });
     set({ workspaces: [...state.workspaces, ws] });
-    pushToast('success', 'Workspace added', `Strata can now read files in ${ws.name}.`);
+    pushToast('success', 'Workspace added', `Nostroma can now read files in ${ws.name}.`);
   } catch (err) {
     pushToast('error', "Couldn't add that folder", err instanceof Error ? err.message : String(err));
   }
@@ -1261,7 +1261,7 @@ const sessionWriter = createSessionWriter({
     const was = state.sessionSave;
     if (!was || was.reason !== reason || was.failedIds.join() !== failedIds.join()) set({ sessionSave: { failedIds, reason } });
     if (!was && !saveToast) {
-      saveToast = pushToast('error', 'Some chats could not be saved', tr("Strata's chat storage is full, so the newest changes to {0} chat(s) are only in this window. Delete old chats to make room; they then save by themselves.", [failedIds.length]), {
+      saveToast = pushToast('error', 'Some chats could not be saved', tr("Nostroma's chat storage is full, so the newest changes to {0} chat(s) are only in this window. Delete old chats to make room; they then save by themselves.", [failedIds.length]), {
         label: 'Copy unsaved chats',
         run: () => { const text = unsavedSessionsJson(); if (text) void copyText(text, '', { toast: (tone, title, body) => { pushToast(tone, title, body || undefined); } }); },
       });
@@ -1534,7 +1534,7 @@ export function plainTimeSkipError(raw: string | null | undefined): string {
   if (/too big/i.test(body)) return tr('This folder is too big to try a change on a copy. Open a smaller folder for this chat, then try again.');
   if (/folder of your own/i.test(body)) return tr('Time-skip works on a folder of your own. Choose a workspace folder for this chat, then try again.');
   if (/Load a model|model first/i.test(body)) return tr('Load a model first, then try Time-skip again.');
-  if (/needs the Strata app|could not be reached/i.test(body)) return tr('The assistant could not be reached. Try again.');
+  if (/needs the Nostroma app|could not be reached/i.test(body)) return tr('The assistant could not be reached. Try again.');
   return body.length > 300 ? body.slice(0, 299) + '…' : body;
 }
 
@@ -1971,7 +1971,7 @@ export async function sendMessage(text: string, options: { fromLoop?: boolean; g
   // Whatever sent this (the box, a loop, a plan): with no model to answer, say so in plain words and start nothing.
   if (state.connection === 'live' && !reattach) {
     // The first read of the engine's state has not come back yet: do not say "no model" about something not known yet, and do not send.
-    if (!nativeState() && !state.remoteModel && !state.library?.loaded) { pushToast('info', 'Still starting up', 'Strata is still checking your models. Try again in a moment.'); return; }
+    if (!nativeState() && !state.remoteModel && !state.library?.loaded) { pushToast('info', 'Still starting up', 'Nostroma is still checking your models. Try again in a moment.'); return; }
     const why = noModelNotice(nativeState(), { remote: !!state.remoteModel, libraryLoaded: !!state.library?.loaded });
     if (why) { pushToast('info', why.title, why.message); return; }
   }
@@ -2107,7 +2107,7 @@ export async function sendMessage(text: string, options: { fromLoop?: boolean; g
           });
         } else if (type === 'status') {
           applyStatusFrame(sessionId, frame as Record<string, unknown>);
-          // Manual mode waits for the person: a notification when they have opted in and Strata is in the background (#3477), once per question.
+          // Manual mode waits for the person: a notification when they have opted in and Nostroma is in the background (#3477), once per question.
           if (frame.code === 'waiting-approval' && lastApprovalNotice !== `${sessionId}:${String(frame.seq)}`) {
             lastApprovalNotice = `${sessionId}:${String(frame.seq)}`;
             const tool = (frame.args as { tool?: unknown } | undefined)?.tool;

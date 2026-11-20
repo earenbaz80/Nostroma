@@ -1,7 +1,7 @@
 import {localeTag} from '../lib/i18n';
 import { tr } from '../lib/i18n';
 import { scopedMonitor, instanceLabel, deviceLabel } from '../lib/runtime-models';
-/** The original Strata dashboard, adapted to the current shell and device inventory. */
+/** The original Nostroma dashboard, adapted to the current shell and device inventory. */
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { flushSync } from 'react-dom';
 import { SnapshotDialog } from '../components/SnapshotDialog';
@@ -148,7 +148,7 @@ function LegacyMonitorScreen({ native }: {
     const cacheMemory = cacheKnown ? data.expertCache.memoryGb : null;
     const cachePercent = hasReading(cacheMemory) ? percent(cacheMemory, gpuCapacity(defaultDevices)) : cacheKnown ? percent(data.expertCache.used, data.expertCache.total) : null;
     const ramPct = percent(data.hardware.ramUsedGb, data.hardware.ramTotalGb);
-    // The readings strip under the cards: what the GPU used and cost since Strata started, the fan and clock, and the temperatures this PC can give.
+    // The readings strip under the cards: what the GPU used and cost since Nostroma started, the fan and clock, and the temperatures this PC can give.
     const energyWh = data.hardware.energyWh, fan = gpuValue('fanPct', 'max'), clock = gpuValue('clockMhz', 'max');
     const readingsStrip = [
         hasReading(energyWh) ? { label: 'Energy since start', value: energyWh >= 1000 ? `${number(energyWh / 1000, 2)} kWh` : `${number(energyWh, 1)} Wh` } : null,

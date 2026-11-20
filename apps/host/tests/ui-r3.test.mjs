@@ -70,7 +70,7 @@ test('6: the conversation context opens at 128K for every configuration, or the 
 
 test('7 and 8: Model files has no explanatory sentence and holds "Other local models..." beside Storage settings', () => {
   const card = models.slice(models.indexOf('<h2 className="h4">{tr("Model files")}</h2>'), models.indexOf('</aside>'));
-  assert.ok(!/Strata prepares all shards/.test(models), 'the sentence is gone');
+  assert.ok(!/prepares all shards/.test(models), 'the sentence is gone');
   assert.ok(!/<p className="small muted">/.test(card), 'the card holds no paragraph');
   assert.match(card, /<div className="model-files__actions"><Btn[\s\S]*?>\{tr\("Storage settings"\)\}<\/Btn><Btn[^>]*onClick=\{onOtherModels\}[^>]*>\{tr\("Other local models\\u2026"\)\}<\/Btn><\/div><\/section>/, 'inside the card, after Storage settings');
   assert.ok(!/<\/section><Btn[^>]*other-models/.test(models), 'not a separate control under the card');
@@ -87,7 +87,7 @@ test('12: with no subagents the dropdown is one row, "No subagents recorded" and
 test('14: the Board and Schedule help lines sit in the Tasks header after the title, smaller, and wrap rather than being cut', () => {
   const tasks = read('src/screens/Tasks.tsx'), board = read('src/components/TaskBoard.tsx'), css = read('src/styles/annotation-fixes.css');
   assert.match(tasks, /titleDetail=\{currentTask \? undefined : view === 'board' \? <span className="tasks-note"><Icon name="info" size=\{14\}\/>\{tr\('Cards move on their own as things happen\./);
-  assert.match(tasks, /<span className="tasks-note"><Icon name="clock" size=\{14\}\/>[\s\S]*Runs while Strata\u2019s host is open\. Runs saved instructions using the loaded model\./);
+  assert.match(tasks, /<span className="tasks-note"><Icon name="clock" size=\{14\}\/>[\s\S]*Runs while Nostroma\u2019s host is open\. Runs saved instructions using the loaded model\./);
   assert.ok(!/board-note|task-runtime/.test(tasks + board + read('src/styles/board.css') + read('src/styles/app.css')), 'not repeated in the body');
   assert.match(css, /\.main__title-detail:has\(\.tasks-note\) \{ white-space: normal; overflow: visible;/, 'wraps instead of being cut at narrow widths');
   assert.match(css, /\.main__head:has\(\.tasks-note\) \{ height: auto; \}/, 'the header grows to hold it');

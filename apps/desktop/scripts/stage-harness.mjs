@@ -145,7 +145,7 @@ function prune(dir) {
 }
 prune(out);
 
-// Strata's provenance-recorded output-budget correction applies only to this copy.
+// Nostroma's provenance-recorded output-budget correction applies only to this copy.
 const patches = [patchStagedHarnessBudget(out)];
 
 // --- licence: the MIT text and the third-party notices travel with the files ---------------------------------------------

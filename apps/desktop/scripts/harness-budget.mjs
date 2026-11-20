@@ -1,4 +1,4 @@
-/** Strata's output-budget correction for the staged pi-ai copy. */
+/** Nostroma's output-budget correction for the staged pi-ai copy. */
 import { createHash } from 'node:crypto';
 import { lstatSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';

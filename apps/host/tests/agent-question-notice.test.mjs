@@ -1,5 +1,5 @@
 // #5617: a question from the agent (ask_user_question) waited for the person with no notification, although an approval, which waits the same
-// way, notifies when "Notify me when Strata needs an answer" is on. The question now gets that notification: the approval's own title, no body.
+// way, notifies when "Notify me when Nostroma needs an answer" is on. The question now gets that notification: the approval's own title, no body.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -13,7 +13,7 @@ test('the question notice is the approval notice\'s title with no new sentence, 
   assert.deepEqual(A.questionNotice(), { title: 'Nostroma needs your answer', body: '' });
   assert.equal(A.questionNotice().title, A.approvalNotice('x').title);
   assert.equal(await A.questionAsked(false, false), false, 'off unless the person turned it on');
-  assert.equal(await A.questionAsked(true, true), false, 'the person is looking at Strata');
+  assert.equal(await A.questionAsked(true, true), false, 'the person is looking at Nostroma');
 });
 
 test('a new question notifies once; the same question again (a reload, a repeat frame) does not', () => {

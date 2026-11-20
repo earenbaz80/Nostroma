@@ -1,5 +1,5 @@
 /**
- * Strata's context plugin for the Harness (plain ESM, loaded by absolute path from the profile, like strata-gate and strata-models).
+ * Nostroma's context plugin for the Harness (plain ESM, loaded by absolute path from the profile, like strata-gate and strata-models).
  *
  * What it fixes (2026-10-22 hands-on test, Gyro-S at 64K):
  *   1. Compaction decided from the Harness's own price of the conversation, 4 characters a token. Code, logs and JSON are about twice as

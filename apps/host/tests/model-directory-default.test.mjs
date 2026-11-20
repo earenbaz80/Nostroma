@@ -28,7 +28,7 @@ test('new hosts create the default; custom folders and legacy weights remain in 
 });
 
 
-test('a data folder and model library from the Strata days move to their Nostroma names',t=>{
+test('a data folder and model library from the Nostroma days move to their Nostroma names',t=>{
  const root=realpathSync(mkdtempSync(join(tmpdir(),'strata-rename-')));t.after(()=>rmSync(root,{recursive:true,force:true}));
  const home=join(root,'home'),documents=join(root,'documents');
  mkdirSync(join(home,'.strata','data'),{recursive:true});writeFileSync(join(home,'.strata','data','state.json'),'{"version":1}');

@@ -26,7 +26,7 @@ export const OFFLINE_MESSAGE = "No internet connection. Try again when you're on
 /** The app row in this build: this checkout publishes no release feed of its own, so "Check for updates" never offers an app installer. */
 export const APP_UPDATES_OFF = 'App updates are off in this build. Engine updates still work.';
 
-/** { message, details, next } for an error thrown by Control's update calls (or the shell bridge). `subject` is "engine" or "Strata".
+/** { message, details, next } for an error thrown by Control's update calls (or the shell bridge). `subject` is "engine" or "Nostroma".
  * `retry` names the button of a screen that has no Settings page yet (the first-run card's Continue): the next step then says that button. */
 export function plainUpdateError(error, subject = 'engine', retry = undefined) {
   const raw = String(error?.message ?? error ?? '');
@@ -55,7 +55,7 @@ export function plainUpdateError(error, subject = 'engine', retry = undefined) {
     message = 'There is not enough free disk space for the update.';
     next = `Free some disk space, then press ${button} in Settings.`;
   } else if (/could not be moved into place|could not be unpacked|not accepted after the switch/i.test(raw)) {
-    // The files were downloaded and checked; Windows or a virus scanner would not let Strata put them in place (#4853). Not a download problem.
+    // The files were downloaded and checked; Windows or a virus scanner would not let Nostroma put them in place (#4853). Not a download problem.
     const long = /longer than Windows allows|path.*too long/i.test(raw);
     message = long
       ? "The engine's folder is too deep for Windows, so it could not be put in place."

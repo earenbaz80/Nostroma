@@ -90,7 +90,7 @@ def add_installer(folder: Path) -> dict:
 #: `dirname` can fail to start (Ubuntu 26.04's coreutils: "libsystemd.so.0: version LIBSYSTEMD_254 not found"), so it uses shell built-ins
 #: only. The first version called `dirname`; that left the folder empty and "Control stopped" on such a computer.
 LAUNCHER = """#!/bin/sh
-# Strata: this name only starts the real interpreter beside it (the bundle keeps one copy, not one per name). Built-ins only: no dirname.
+# Nostroma: this name only starts the real interpreter beside it (the bundle keeps one copy, not one per name). Built-ins only: no dirname.
 case "$0" in */*) dir=${0%%/*} ;; *) dir=. ;; esac
 here=$(cd "$dir" && pwd)
 exec "$here/%s" "$@"

@@ -2,10 +2,10 @@
  * Inference bridge.
  *
  * Preference order:
- *   1. the Strata engine — the C++ engine behind Strata's own Python API worker. This is the
+ *   1. the Nostroma engine — the C++ engine behind Nostroma's own Python API worker. This is the
  *      product's inference path and is tried first. `STRATA_SERVER_URL` names it explicitly;
- *      otherwise the Strata worker's default loopback address is probed.
- *   2. the engine Strata supervises itself (llama.cpp), when one is configured
+ *      otherwise the Nostroma worker's default loopback address is probed.
+ *   2. the engine Nostroma supervises itself (llama.cpp), when one is configured
  *   3. a *different* OpenAI-compatible server already running on localhost, but only when it
  *      identifies itself as one; a host that merely answers a port is not adopted silently
  *   4. a clearly-labelled demo engine — **development only**. A packaged or `STRATA_REAL_ENGINE=1`
@@ -17,7 +17,7 @@ import { get as getStore } from './store.mjs';
 import { which } from './util.mjs';
 import { envVar } from './env-compat.mjs';
 
-/** Where Strata's own API worker listens by default (`serve/server.py`, `--port 8095`). */
+/** Where Nostroma's own API worker listens by default (`serve/server.py`, `--port 8095`). */
 const STRATA_DEFAULT_URL = 'http://127.0.0.1:8095/v1';
 
 const CANDIDATES = [
@@ -42,7 +42,7 @@ export function requiresRealEngine() {
   return envVar('PACKAGED') === '1';
 }
 
-/** Where the Strata API worker is, if it was named explicitly. */
+/** Where the Nostroma API worker is, if it was named explicitly. */
 function strataUrl() {
   const raw = envVar('SERVER_URL')?.trim();
   if (!raw) return STRATA_DEFAULT_URL;
@@ -50,9 +50,9 @@ function strataUrl() {
 }
 
 /**
- * Probe a loopback endpoint and confirm it really is a Strata worker.
+ * Probe a loopback endpoint and confirm it really is a Nostroma worker.
  *
- * A bare OpenAI-compatible listener is not enough: Strata's worker answers `/v1/status` with its
+ * A bare OpenAI-compatible listener is not enough: Nostroma's worker answers `/v1/status` with its
  * own shape (it carries `service: "strata"` and the reported context). Adopting an unrelated
  * server because it happens to hold the port is exactly the silent substitution the architecture
  * forbids, so the identity check is required.
@@ -83,7 +83,7 @@ async function probeStrata(baseUrl) {
 }
 
 export async function detectBackend({ force = false } = {}) {
-  // 1. Strata's own engine, always first: it is the product's inference path.
+  // 1. Nostroma's own engine, always first: it is the product's inference path.
   const strata = await probeStrata(strataUrl());
   if (strata) {
     backend = strata;
@@ -526,7 +526,7 @@ async function demoCompletion({ message, modelLabel, onFrame, signal, engine, ca
 
 /**
  * The start-up line "inference · ...". The worker that serves a model is only running once a model is loaded, so on a restart nothing answers
- * at the worker's address even though the engine is installed and usable; the line says that instead of "No Strata engine".
+ * at the worker's address even though the engine is installed and usable; the line says that instead of "No Nostroma engine".
  * `engine` is Control's answer (null when there is no Control, as in a source checkout).
  */
 export function inferenceLine({ backend, engine = null, settled = true }) {

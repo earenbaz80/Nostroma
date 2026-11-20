@@ -1,7 +1,7 @@
 /**
  * Time-skip, from the App Host.
  *
- * Strata Control owns the job: checkpointing, isolated candidates, the checks and the decision all
+ * Nostroma Control owns the job: checkpointing, isolated candidates, the checks and the decision all
  * live in `nostroma_control/time_skip.py` and are driven through the `strata timeskip` CLI. This
  * module is only the bridge — it starts that command, streams its output, and reads back the durable
  * `run.json` the job writes.

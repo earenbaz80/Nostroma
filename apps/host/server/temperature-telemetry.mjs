@@ -139,7 +139,7 @@ export function createWindowsSsdReader({ spawnFn = spawn, maxStarts = 2, now = D
   };
 }
 
-/** The real marker file under Strata's state folder. */
+/** The real marker file under Nostroma's state folder. */
 export function fileSentinel(path = sentinelPath()) {
   return {
     exists: () => existsSync(path),

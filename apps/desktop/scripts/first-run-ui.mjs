@@ -87,7 +87,7 @@ try {
   await page.waitForSelector('text=/Let.s get started|Choose a version|Connect your Strata/i', { timeout: 30000 }).catch(() => {});
   await page.screenshot({ path: join(shots, '1-welcome.png') });
   const broken = await page.locator('text=/couldn.t show this screen/i').count();
-  check(broken === 0, 'the first screen renders (not "Strata couldn\'t show this screen")');
+  check(broken === 0, 'the first screen renders (not "Nostroma couldn\'t show this screen")');
   const start = page.getByRole('button', { name: /get started/i });
   check(await start.count() > 0, 'the welcome step offers "Let\'s get started"');
   if (await start.count()) await start.first().click();

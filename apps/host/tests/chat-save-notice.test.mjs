@@ -19,16 +19,17 @@ async function bundle(entry, plugins = []) {
 }
 
 const TITLE = 'Some chats could not be saved';
-const BODY = "Strata's chat storage is full, so the newest changes to {0} chat(s) are only in this window. Delete old chats to make room; they then save by themselves.";
+const BODY = "Nostroma's chat storage is full, so the newest changes to {0} chat(s) are only in this window. Delete old chats to make room; they then save by themselves.";
 const BUTTON = 'Copy unsaved chats';
 
 test('the notice exists in all nine languages, with the placeholder kept', () => {
+  const brand = (t) => String(t).replace(/\bStrata\b/g, 'Nostroma');   // the catalogues keep upstream's wording; i18n.ts swaps it on the way out
   for (const lang of ['en', 'zh', 'ja', 'de', 'es', 'ru', 'pt', 'ko', 'fr']) {
     const file = JSON.parse(readFileSync(here(`../src/locales/sav-${lang}.json`), 'utf8'));
     assert.deepEqual(Object.keys(file), ['sav01', 'sav02', 'sav03'], lang);
     assert.ok(/\{0\}/.test(file.sav02), `${lang} keeps {0}`);
     assert.ok(Object.values(file).every((t) => t.trim().length > 3), lang);
-    if (lang === 'en') assert.deepEqual(Object.values(file), [TITLE, BODY, BUTTON], 'the owner\'s exact wording');
+    if (lang === 'en') assert.deepEqual(Object.values(file).map(brand), [TITLE, BODY, BUTTON].map(brand), 'the owner\'s exact wording');
     else assert.notEqual(file.sav01, TITLE, `${lang} is translated`);
   }
 });

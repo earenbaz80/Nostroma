@@ -9,7 +9,7 @@ const listOf = (names: string[]) => {
 };
 
 /**
- * Update engine with a model loaded (Settings > About). Strata Control does the work (`strata update --stop-model --output jsonl`, through the host); this is the
+ * Update engine with a model loaded (Settings > About). Nostroma Control does the work (`strata update --stop-model --output jsonl`, through the host); this is the
  * conversation around it, in four plain steps:
  *  1. Warn, naming the model, and ask. Nothing happens before the yes. With no model loaded the older dialog of Settings is used instead.
  *  2. Progress in words: the new engine downloads while the model keeps working; then the model stops; then the engine is updated.
@@ -122,7 +122,7 @@ export function EngineUpdateDialog({ open, onClose }: { open: boolean; onClose: 
   // 1: warn and ask.
   return <Dialog open compact title={tr("Update engine?")} onClose={close}
     actions={<><Btn onClick={close}>{tr("Cancel")}</Btn><Btn variant="primary" disabled={!loaded.length} onClick={() => void start()}>{tr("Stop and update")}</Btn></>}>
-    <p>{tr("To update the engine, Strata has to stop the model that is loaded: {0}.", [names])}</p>
+    <p>{tr("To update the engine, Nostroma has to stop the model that is loaded: {0}.", [names])}</p>
     <p className="small muted">{tr("The new engine downloads first while the model keeps answering. Then the model stops (answers in progress finish first), the engine is updated, and you can start the model again with the same settings. Your models and settings are kept.")}</p>
     {error ? <p className="small inline-error" role="alert">{tr(error)}</p> : null}
   </Dialog>;

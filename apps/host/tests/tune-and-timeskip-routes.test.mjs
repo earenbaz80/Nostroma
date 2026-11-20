@@ -2,7 +2,7 @@ import { fileURLToPath } from 'node:url';
 /**
  * The tuning and Time-skip client routes.
  *
- * These are contract tests for the bridge between the App Host and Strata Control. They are
+ * These are contract tests for the bridge between the App Host and Nostroma Control. They are
  * deliberately about the *shapes and the refusals*, not about measurement numbers: the numbers come
  * from the job, and the job has its own tests. What matters here is that the Host does not become a
  * second source of truth.
@@ -85,7 +85,7 @@ test('the tuning plan comes from the engine binary and excludes what it cannot a
   // A stub engine that accepts exactly two of the flags the static table knows about. The plan must
   // offer only those two, and must name each exclusion.
   const dir = await mkdtemp(join(tmpdir(), 'strata-tune-stub-'));
-  // A Python stub, run by Strata Control as [python, stub.py] on every OS (a #! script is WinError 193 on Windows).
+  // A Python stub, run by Nostroma Control as [python, stub.py] on every OS (a #! script is WinError 193 on Windows).
   const engine = join(dir, 'strata-stub.py');
   await writeFile(engine, 'import sys\nfor line in ("usage:", "  --kv KV", "  --ple-io MODE"):\n    print(line, file=sys.stderr)\n');
 

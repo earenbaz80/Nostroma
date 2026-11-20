@@ -23,7 +23,7 @@ test('DL99: the wizard says what setup is doing (its own sentence), not "Downloa
     parts: [model('done', 22.854), reader('waiting', 0), engineDone] };
   const progress = lib.installProgress(checking);
   assert.equal(lib.guidedStatusText(checking, progress), 'Checking that the model files are complete (a few minutes for a big model; nothing is downloaded)');
-  const tokenizer = { running: true, step: '6/7: preparing the model for Strata', phase: 'tokenizer', label: 'Preparing the tokenizer', parts: [engineDone] };
+  const tokenizer = { running: true, step: '6/7: preparing the model for Nostroma', phase: 'tokenizer', label: 'Preparing the tokenizer', parts: [engineDone] };
   assert.equal(lib.guidedStatusText(tokenizer, lib.installProgress(tokenizer)), 'Preparing the tokenizer');
   // no sentence from setup yet: the part being fetched, as before
   const early = { running: true, parts: [model('downloading', 3.1), reader('waiting', 0)] };
@@ -47,7 +47,7 @@ test('DL99: the model check shows its own figure, not a frozen 96%; the counter 
 });
 
 test('DL99: once every file is in, the bar says 100%, not 99% (and never 0.7 / 0.7 GB of the engine alone)', () => {
-  const done = { running: true, step: '6/7: preparing the model for Strata', label: 'Preparing the tokenizer',
+  const done = { running: true, step: '6/7: preparing the model for Nostroma', label: 'Preparing the tokenizer',
     parts: [model('done', 22.854), reader('done', 0.899), engineDone] };
   const p = lib.installProgress(done);
   assert.equal(p.percent, 100);

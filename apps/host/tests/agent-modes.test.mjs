@@ -58,7 +58,7 @@ async function rig(t) {
 
 test('mode mapping: three presets, Manual by default, unknown values fall back to Manual', () => {
   assert.deepEqual(Object.keys(MODE_PRESETS), ['manual', 'plan', 'bypass']);
-  // Manual leaves the sandbox open and asks BEFORE a change through the Strata gate (plugins/strata-gate.mjs).
+  // Manual leaves the sandbox open and asks BEFORE a change through the Nostroma gate (plugins/strata-gate.mjs).
   assert.deepEqual([MODE_PRESETS.manual.sandbox, MODE_PRESETS.manual.approval], ['danger-full-access', 'ask']);
   assert.deepEqual([MODE_PRESETS.plan.sandbox, MODE_PRESETS.plan.approval], ['read-only', 'never']);
   assert.deepEqual([MODE_PRESETS.bypass.sandbox, MODE_PRESETS.bypass.approval], ['danger-full-access', 'never']);

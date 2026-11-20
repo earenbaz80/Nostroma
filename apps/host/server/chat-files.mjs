@@ -88,7 +88,7 @@ export function resolveChatFile(root, rawPath) {
  */
 export function launch(command, args, { recorder = null } = {}) {
   if (envVar('OPENER') === 'record' || recorder) { (recorder ?? launch.recorded).push([command, ...args]); return; }
-  // xdg-open and the browser it starts are the system's programs: they get the environment the AppImage was started from, not Strata's libraries.
+  // xdg-open and the browser it starts are the system's programs: they get the environment the AppImage was started from, not Nostroma's libraries.
   const child = spawn(command, args, { detached: true, stdio: 'ignore', windowsHide: false, env: externalEnvironment() });
   child.on('error', () => {});
   child.unref();

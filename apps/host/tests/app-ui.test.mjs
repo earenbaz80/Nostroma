@@ -52,7 +52,7 @@ test('the shell moves a window host to a browser tab: opens the page, sends the 
   const opened = [], notices = [];
   const ui = createAppUi({ env: { STRATA_UI_MODE: 'window' }, open: async url => { opened.push(url); return true; }, notify: async text => { notices.push(text); } });
   ui.setBridge({ url: 'http://127.0.0.1:6001', token: 'b'.repeat(32) });
-  const out = await ui.switchToBrowser({ url: 'http://127.0.0.1:47831/', notice: 'Strata opened in your browser because the app window couldn\'t start on this computer.' });
+  const out = await ui.switchToBrowser({ url: 'http://127.0.0.1:47831/', notice: 'Nostroma opened in your browser because the app window couldn\'t start on this computer.' });
   assert.deepEqual(out, { mode: 'browser', reason: 'window-failed', opened: true });
   assert.deepEqual(opened, ['http://127.0.0.1:47831/']);
   assert.equal(notices.length, 1);

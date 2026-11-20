@@ -3,7 +3,7 @@
  *
  * - A drive on its own (D:\ or /) is never filled with model files: it becomes D:\Strata (the data folder) and D:\Strata\Models (the
  *   model library), which the person is told.
- * - The data folder is the person's own choice, so it is written into the settings file Strata Control reads (`data_dir`). Control's
+ * - The data folder is the person's own choice, so it is written into the settings file Nostroma Control reads (`data_dir`). Control's
  *   installer accepts a data folder that is that setting, whatever the folder is called; for a folder it has not been told about it wants a
  *   name starting with "Strata" (a rule against an AI tool filling an arbitrary folder, tools/strata_mcp.py check_data_dir).
  * - The link that makes `<data>/models` and `<data>/Models` one folder is only needed where the file system tells them apart; where it cannot be
@@ -16,7 +16,7 @@ import { dirname, join, parse, resolve } from 'node:path';
 
 export const isDriveRoot = path => { const p = resolve(path); return p === parse(p).root; };
 
-/** The data folder for a picked folder: a drive root gets a `Strata` folder of its own. `{ path, note }`. */
+/** The data folder for a picked folder: a drive root gets a `Nostroma` folder of its own. `{ path, note }`. */
 export function dataFolderFromPick(picked) {
   const path = resolve(picked);
   if (!isDriveRoot(path)) return { path, note: null };
@@ -64,7 +64,7 @@ export function readDataFolder(file) {
   return { folder: current.data_dir, at };
 }
 
-/** The settings file the Terminal (command-line Strata) keeps: the same place setup.py and nostroma_control/discovery.py use. */
+/** The settings file the Terminal (command-line Nostroma) keeps: the same place setup.py and nostroma_control/discovery.py use. */
 export function terminalSettingsFile(env = process.env, platform = process.platform) {
   if ((env.NOSTROMA_TERMINAL_SETTINGS_FILE ?? env.STRATA_TERMINAL_SETTINGS_FILE)) return (env.NOSTROMA_TERMINAL_SETTINGS_FILE ?? env.STRATA_TERMINAL_SETTINGS_FILE);
   if (platform === 'win32') return join(env.APPDATA || join(homedir(), 'AppData', 'Roaming'), 'Strata', 'settings.json');

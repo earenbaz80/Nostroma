@@ -1,4 +1,4 @@
-/** Shared helpers for the Strata host. */
+/** Shared helpers for the Nostroma host. */
 import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { isIP } from 'node:net';

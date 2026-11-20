@@ -3,7 +3,7 @@
  *
  * Pure tests (the gate's rules, the preset list, the profile) always run. The rest need a built Harness
  * (STRATA_HARNESS_DIR) and skip loudly without it. The model is scripted (tests/helpers/scripted-worker.mjs): what is real is
- * the Harness, its tool executor, its sandbox, its approval service, the Strata gate plugin and the bridge.
+ * the Harness, its tool executor, its sandbox, its approval service, the Nostroma gate plugin and the bridge.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -272,7 +272,7 @@ test('the output budget is not the old 8192, and the Reasoning menu reaches the 
   const ctk = p => p.chat_template_kwargs ?? {};
   const off = await ask('think-off', 'Off');
   assert.equal(ctk(off).enable_thinking, false); assert.equal(ctk(off).reasoning_effort, undefined);
-  assert.equal(off.enable_thinking, undefined, 'a top-level enable_thinking is the field the Strata server ignores');
+  assert.equal(off.enable_thinking, undefined, 'a top-level enable_thinking is the field the Nostroma server ignores');
   // The profile's budget (19,660 at 64K: what compaction sets aside for a reply) is the header the Harness reads; the request itself may produce half the window (AGENT-LOST).
   assert.ok(off.max_completion_tokens === 32768, `ceiling ${off.max_completion_tokens} (half the window, at most 64K: never the old 8192, and a file written in one call is not cut at the 30 percent compaction reserves)`);
   const high = await ask('think-high', 'High');

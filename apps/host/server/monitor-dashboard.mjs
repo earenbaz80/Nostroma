@@ -7,7 +7,7 @@ export function mergeOwnReading(engine,own) {
   return {...merged,source:engineGave?'engine':own.source};
 }
 
-/** Translate the original Strata /metrics dashboard without inventing missing sensors. */
+/** Translate the original Nostroma /metrics dashboard without inventing missing sensors. */
 export function originalDashboard(raw, hardware, fallback) {
   const live=raw.live,engine=raw.engine,hw=raw.hardware??{},history=raw.history??{},cache=raw.conversation_cache,totals=raw.totals;
   const finite=n=>typeof n==='number'&&Number.isFinite(n);

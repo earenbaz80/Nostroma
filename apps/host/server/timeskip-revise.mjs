@@ -3,7 +3,7 @@ import { envVar } from './env-compat.mjs';
 /**
  * One revision attempt for Time-skip, performed by the app's own assistant.
  *
- * Strata Control runs this as its `--revise-command`, with the candidate folder (an isolated copy of the user's work) as the working
+ * Nostroma Control runs this as its `--revise-command`, with the candidate folder (an isolated copy of the user's work) as the working
  * directory, the request in STRATA_TIMESKIP_PROMPT and the attempt number in STRATA_TIMESKIP_ATTEMPT. It asks the host (which owns the
  * model and the Harness) for one agent turn inside that folder and returns when the turn ends. Exit 0 means "an attempt was made", not
  * "it helped": whether it helped is decided by the checks and, failing those, by the person.

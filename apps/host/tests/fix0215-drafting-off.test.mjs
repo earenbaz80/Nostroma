@@ -5,7 +5,7 @@
  *      no other drafter stands in: when Control's plan names a drafter that runs, the sentence "The model starts without a drafter." would be wrong.
  * The fixture is applin-0214-drafter.test.mjs's (fake Control, fake installer over MCP).
  */
-import './helpers/isolate-profile.mjs';   // a test run never writes the owner's real Strata profile
+import './helpers/isolate-profile.mjs';   // a test run never writes the owner's real Nostroma profile
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';

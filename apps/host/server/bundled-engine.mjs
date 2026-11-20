@@ -1,5 +1,5 @@
 /**
- * The engine that ships inside the installer (<install>/engine-bundle/<package folder>, the same layout Strata Control's
+ * The engine that ships inside the installer (<install>/engine-bundle/<package folder>, the same layout Nostroma Control's
  * packaging/package_engine.py writes: engine-component.json, schema 2, SHA-256 and size for every file).
  *
  * On start, when this PC has no engine package for the bundle's platform and backend, or only an older one, the bundled
@@ -81,7 +81,7 @@ export function windowsPresentVendors({ platform = process.platform, run = execF
 /**
  * The PCI vendor ids (`10de`, `1002`, `8086`) of the Windows display adapters; empty off Windows or when the registry cannot be read.
  * The registry keeps the entry of a card that was taken out (an NVIDIA card swapped for a Radeon, #3892): when NVIDIA and AMD are both
- * listed, only the makes Windows reports as present now count, the same rule Strata Control uses (engine_component.windows_display_adapters).
+ * listed, only the makes Windows reports as present now count, the same rule Nostroma Control uses (engine_component.windows_display_adapters).
  */
 export function windowsDisplayVendors({ platform = process.platform, run = execFileSync, present = windowsPresentVendors } = {}) {
   const found = new Set();

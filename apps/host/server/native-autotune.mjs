@@ -1,5 +1,5 @@
 /**
- * The app's side of the auto-tuner. The tuner itself is Strata Control's (`strata tune auto`, `strata presets`): the same code and the
+ * The app's side of the auto-tuner. The tuner itself is Nostroma Control's (`strata tune auto`, `strata presets`): the same code and the
  * same preset store the Terminal uses, so tuning in one place covers the other. This module only runs those commands, follows the
  * status file the tuner rewrites at every step, and turns the answer into the sentence the app shows. It measures nothing itself.
  */

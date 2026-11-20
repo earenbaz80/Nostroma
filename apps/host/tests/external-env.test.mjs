@@ -1,5 +1,5 @@
 /**
- * Programs that are not Strata's own (zenity, kdialog, xdg-open, the assistant's shell) get the environment the Linux AppImage was
+ * Programs that are not Nostroma's own (zenity, kdialog, xdg-open, the assistant's shell) get the environment the Linux AppImage was
  * started from, not the AppImage's libraries and settings (tester report 2026-10-17: zenity died with
  * "libssl.so.3: version OPENSSL_3.2.0 not found" and the folder picker did nothing).
  */

@@ -37,7 +37,7 @@ test('the page: Control\'s title when it has one (no change for an install witho
   assert.match(page, /\{groups\.length > 1 \? <h3 className="engine-group__title">\{group\.title \? tr\(group\.title\) : engineGroupTitle\(group, native\?\.catalog\?\.families\)\}<\/h3> : null\}/);
 });
 
-test('the Use dialog (owner 11-09): a shape group says "{model} runs on engine {version} from its next start." with the group title; Strata keeps its sentence', () => {
+test('the Use dialog (owner 11-09): a shape group says "{model} runs on engine {version} from its next start." with the group title; Nostroma keeps its sentence', () => {
   const page = read(new URL('../src/components/SettingsEngine.tsx', import.meta.url), 'utf8');
   assert.match(page, /const useGroup = use \? groups\.find\(g => g\.family === use\.family\) : undefined;/);
   assert.match(page, /useGroup\?\.family\.startsWith\('shape:'\) \? tr\("\{0\} runs on engine \{1\} from its next start\. Your models and settings stay as they are\. You can switch back at any time\.", \[engineGroupTitle\(useGroup, native\?\.catalog\?\.families\), use\?\.version \?\? ''\]\) : tr\("Models you start from now on run on engine \{0\}\. Your models and settings stay as they are\. You can switch back at any time\."/);
@@ -50,10 +50,10 @@ test('the Use dialog (owner 11-09): a shape group says "{model} runs on engine {
   for (const lang of ['zh', 'ja', 'de', 'es', 'ru', 'pt', 'ko', 'fr']) {
     const t = JSON.parse(read(new URL(`../src/locales/engine-${lang}.json`, import.meta.url), 'utf8'))[key];
     assert.ok(t && t.includes('{0}') && t.includes('{1}'), lang);
-    // only the first sentence is new: the reassurance is the existing translation of the Strata engine's sentence, word for word
+    // only the first sentence is new: the reassurance is the existing translation of the Nostroma engine's sentence, word for word
     const use = JSON.parse(read(new URL(`../src/locales/engine-${lang}.json`, import.meta.url), 'utf8')).et15;
     const rest = use.slice(use.search(/[。.]\s*/) + use.match(/[。.]\s*/)[0].length);
     assert.ok(rest.length > 5 && t.endsWith(rest), lang + ': ' + t);
   }
-  assert.ok(Object.values(en).includes('Models you start from now on run on engine {0}. Your models and settings stay as they are. You can switch back at any time.'), 'the Strata sentence is unchanged');
+  assert.ok(Object.values(en).includes('Models you start from now on run on engine {0}. Your models and settings stay as they are. You can switch back at any time.'), 'the Nostroma sentence is unchanged');
 });

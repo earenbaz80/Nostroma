@@ -2,7 +2,7 @@ import type { UpdateCheckResult } from './types';
 
 /**
  * The last update check, kept on this computer so Settings can show it without touching the network. A check runs only when the
- * person presses "Check for updates" (or "Update engine" / "Update Strata"). The result is kept together with the versions it was
+ * person presses "Check for updates" (or "Update engine" / "Update Nostroma"). The result is kept together with the versions it was
  * for, and it is ignored once the installed version changes (an update, a roll back), so an old "Update available" never lingers.
  */
 const KEY = 'strata.update-check.v1';

@@ -17,7 +17,7 @@ export function defaultModelDirectory({platform=process.platform,home=homedir(),
   if(value){const expanded=value.replace(/\$\{HOME\}|\$HOME(?=\/|$)/g,home);if(!expanded.includes('$')&&path.isAbsolute(expanded))documents=expanded;}
  }
  if(!documents||!path.isAbsolute(documents))documents=path.join(home,'Documents');
- // The folder is Nostroma's now. A library from the Strata days moves once, so no model has to be downloaded again; if it
+ // The folder is Nostroma's now. A library from the Nostroma days moves once, so no model has to be downloaded again; if it
  // cannot be moved it keeps being read where it is.
  const target=path.join(documents,'Nostroma','Models'),previous=path.join(documents,'Strata','Models');
  try{ if(!existsSync(target)&&existsSync(previous)){mkdirSync(path.dirname(target),{recursive:true});renameSync(previous,target);} }catch{ return previous; }

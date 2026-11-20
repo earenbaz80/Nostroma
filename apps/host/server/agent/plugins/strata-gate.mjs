@@ -1,5 +1,5 @@
 /**
- * The Strata approval gate: a small Harness plugin (plain ESM, no imports, loaded by absolute path from the profile).
+ * The Nostroma approval gate: a small Harness plugin (plain ESM, no imports, loaded by absolute path from the profile).
  *
  * Why it exists. The Harness only asks a person when a tool escalates its sandbox. With the sandbox read-only that
  * produced a blocked attempt first (a card full of sandbox and PowerShell errors) and the real Approve/Deny card

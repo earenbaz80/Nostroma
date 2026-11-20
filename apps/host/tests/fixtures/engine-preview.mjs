@@ -79,7 +79,7 @@ export function createEnginePreview(native) {
         const newer = inUse && inUse.localeCompare(latest, undefined, { numeric: true }) < 0 && !qwen.some(e => e.version === latest);
         return json({
           checkedAt: new Date().toISOString(),
-          strata: { installedVersion: '0.2.9', status: 'current', message: 'Strata is up to date.', canInstall: false },
+          strata: { installedVersion: '0.2.9', status: 'current', message: 'Nostroma is up to date.', canInstall: false },
           engine: newer ? { installedVersion: inUse, latestVersion: latest, status: 'available', message: 'A new engine is available (1,030 MB).', canInstall: true }
             : { installedVersion: inUse, status: 'current', message: 'The engine is up to date.', canInstall: false },
         }), true;

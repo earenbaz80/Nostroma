@@ -23,7 +23,7 @@ test('item 1: downloaded models get a short name, family and quantization', asyn
   assert.equal(nativeShortName('coder-iq1_m'), 'Coder IQ1_M');
   /* The table holds the English source text; every screen passes it through tr(), which is where
      the brand becomes Nostroma (src/lib/i18n.ts). */
-  assert.equal(nativeShortName('nvfp4-nvfp4'), 'NVFP4 (Strata’s version)');
+  assert.equal(nativeShortName('nvfp4-nvfp4'), 'NVFP4 (Nostroma’s version)');
   assert.equal(nativeShortName('nvfp4-nvfp4-nvidia'), 'NVFP4 (NVIDIA’s version)');
   assert.equal(nativeShortName('nvfp4-nvfp4-qad'), 'NVFP4 (NVIDIA, trained for FP4)');
   const storage = await read('components/SettingsStorage.tsx');

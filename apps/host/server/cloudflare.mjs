@@ -64,7 +64,7 @@ export function createCloudflare({ origin, originUrl, hasKey, changed = () => {}
       binary = await locate();
       if (!binary && prepareConnector) binary = await prepareConnector();
       if (!binary) throw new Error('The connector could not be prepared automatically. Retry connector setup.');
-      // Strata's own tunnel (same port or same token) is never doubled up. Other cloudflared processes serve other tunnels and are left alone.
+      // Nostroma's own tunnel (same port or same token) is never doubled up. Other cloudflared processes serve other tunnels and are left alone.
       if ((await lookForOther())?.running) { const { own } = classifyRunning(other, { originUrl, token }); if (own.length) throw new Error(ownTunnelMessage(own)); }
       await origin.start();
       // Tokens never appear in command arguments, logs, saved settings, or API responses.

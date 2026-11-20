@@ -76,7 +76,7 @@ function AppShell() {
       <Dialog open={settingsWanted && !!settingsCode} title={tr("Settings")} className="settings-dialog" onClose={closeSettings}>{settingsCode ? <settingsCode.SettingsScreen /> : null}</Dialog>
       <ShortcutsDialog />
       <FolderPathDialog />
-      {tr(setupShown ? (<div className="setupmodal" role="dialog" aria-modal="true" aria-label={tr("Set up Strata")}>
+      {tr(setupShown ? (<div className="setupmodal" role="dialog" aria-modal="true" aria-label={tr("Set up Nostroma")}>
           <div className="scrim" data-open="true" aria-hidden="true"/>
           <div className="setupmodal__surface" ref={setupRef}>
             {setupCode ? <setupCode.SetupScreen /> : null}
@@ -103,7 +103,7 @@ function ConnectionBar() {
       <span className="connbar__dot"/>
       <span className="connbar__text">
         {tr(offline ? (<>
-            <strong>{tr("Strata isn\u2019t connected to its engine.")}</strong>{tr(" Your conversation and drafts are kept while it reconnects.")}</>) : (<>{tr("Connecting to the local engine\u2026")}</>))}
+            <strong>{tr("Nostroma isn\u2019t connected to its engine.")}</strong>{tr(" Your conversation and drafts are kept while it reconnects.")}</>) : (<>{tr("Connecting to the local engine\u2026")}</>))}
       </span>
       {tr(offline ? (<Btn variant="secondary" size="sm" icon="refresh" disabled={retrying} onClick={() => {
                 setRetrying(true);
@@ -209,7 +209,7 @@ class AppBoundary extends Component<{
     render() {
         if (!this.state.failed)
             return this.props.children;
-        return <div className="app-recovery"><h1 className="h2">{tr("Strata couldn\u2019t show this screen")}</h1><p>{tr("Your saved conversations and settings are still available.")}</p><Btn variant="primary" onClick={() => { void bootstrap().then(() => this.setState({ failed: false })); }}>{tr("Retry")}</Btn></div>;
+        return <div className="app-recovery"><h1 className="h2">{tr("Nostroma couldn\u2019t show this screen")}</h1><p>{tr("Your saved conversations and settings are still available.")}</p><Btn variant="primary" onClick={() => { void bootstrap().then(() => this.setState({ failed: false })); }}>{tr("Retry")}</Btn></div>;
     }
 }
 export function App() { return <AppBoundary><AppShell /></AppBoundary>; }

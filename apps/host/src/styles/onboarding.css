@@ -1,4 +1,4 @@
-/* A small, visual funnel built from Strata's existing type, colour and icon system. */
+/* A small, visual funnel built from Nostroma's existing type, colour and icon system. */
 .setupmodal:has(.guided-onboarding){align-items:center;padding:24px}
 .setupmodal__surface:has(.guided-onboarding){width:min(960px,100%);max-height:calc(100dvh - 48px);border-radius:28px;box-shadow:0 30px 100px #0002;scrollbar-width:thin;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
 .guided-onboarding{color:var(--st-ink)}

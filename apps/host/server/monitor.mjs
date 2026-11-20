@@ -53,7 +53,7 @@ const state = {
   /** Where the context window actually went, so the breakdown can be shown. */
   contextParts: { system: 0, tools: 0, messages: 0 },
   target: { gpuLoad: 3, outputTps: 0, promptTps: 0 },
-  /** Which numbers come from the engine and which Strata has to estimate. */
+  /** Which numbers come from the engine and which Nostroma has to estimate. */
   telemetry: { throughput: 'estimated', thermals: 'estimated', memory: 'estimated', ttftMs: null },
 };
 

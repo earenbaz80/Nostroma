@@ -8,7 +8,7 @@ import { defaultModelDirectory } from './model-directory-default.mjs';
 import { envVar } from './env-compat.mjs';
 
 /**
- * Prefer ~/.nostroma, the way the packaged app stores its data. A folder from the Strata days is moved once so chats and
+ * Prefer ~/.nostroma, the way the packaged app stores its data. A folder from the Nostroma days is moved once so chats and
  * settings survive the rename; when it cannot be moved (another volume, no permission) it is used where it is, and nothing
  * is lost. NOSTROMA_HOME names another folder (the older STRATA_HOME still works), and sandboxes or locked-down accounts
  * that cannot write to the home directory fall back to a folder next to the checkout rather than failing to boot.

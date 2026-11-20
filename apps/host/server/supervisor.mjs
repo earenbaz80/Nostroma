@@ -2,7 +2,7 @@
  * Engine supervisor (what is left of it): the engine status the Monitor and the engine page read, its log ring buffer, the parser of the
  * engine's Prometheus metrics, and the translation of the tuning configuration into flags for the command preview.
  *
- * It starts nothing: the llama.cpp `llama-server` it used to find and start is gone (see start() below). Models run on the Strata engine.
+ * It starts nothing: the llama.cpp `llama-server` it used to find and start is gone (see start() below). Models run on the Nostroma engine.
  */
 import { CONTEXT_TOKENS } from './catalog.mjs';
 
@@ -129,7 +129,7 @@ export function logs(limit = 200) {
 }
 
 /**
- * The app host starts no inference process of its own: models run on the Strata engine (native control). This used to look for a llama.cpp
+ * The app host starts no inference process of its own: models run on the Nostroma engine (native control). This used to look for a llama.cpp
  * `llama-server` (STRATA_LLAMA_SERVER, <models>/../engine, /opt/homebrew/bin, /usr/local/bin, PATH) and start it; a packaged app with
  * STRATA_REAL_ENGINE=1 did so for an imported GGUF, also at start-up (0.2.14). start() now refuses, and nothing in this file spawns a process.
  */
@@ -200,7 +200,7 @@ function parsePrometheus(text) {
   return out;
 }
 
-/** Original Strata serves JSON; llama.cpp serves Prometheus. Preserve the original dashboard facts. */
+/** Original Nostroma serves JSON; llama.cpp serves Prometheus. Preserve the original dashboard facts. */
 export function parseEngineMetrics(text) {
   if(text.trim().startsWith('{')) {
     const dashboard=JSON.parse(text);

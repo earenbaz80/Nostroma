@@ -222,7 +222,7 @@ test('#4798 the three new Serving sentences are translated', async () => {
   const { tr, setTranslationLanguage } = await withI18n('approvals.ts');
   for (const l of languages.slice(1)) {
     setTranslationLanguage(l);
-    for (const text of ['API base URL on this computer', 'Address for other devices', "Other devices use this address. It has its own port, separate from the one Strata's window uses, because only the model's API is shared on the network, not the app."]) assert.notEqual(tr(text), text, `${l}: ${text}`);
+    for (const text of ['API base URL on this computer', 'Address for other devices', "Other devices use this address. It has its own port, separate from the one Nostroma's window uses, because only the model's API is shared on the network, not the app."]) assert.notEqual(tr(text), text, `${l}: ${text}`);
   }
   setTranslationLanguage('en');
 });
@@ -240,7 +240,7 @@ test('#4722 paragraphs, lists and quotes share one measure; tables and code bloc
 });
 
 // ---------------------------------------------------------------------------------------------------------------------- #3723
-test('#3723 a first start opens in the first of the computer\'s languages that Strata has', async () => {
+test('#3723 a first start opens in the first of the computer\'s languages that Nostroma has', async () => {
   const { detectLanguage } = await withI18n('language-detect.ts');
   assert.equal(detectLanguage(['zh-CN', 'en']), 'zh');
   assert.equal(detectLanguage(['zh-TW']), 'zh');

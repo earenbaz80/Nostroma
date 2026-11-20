@@ -1,8 +1,8 @@
 /**
- * The Strata profile for the Harness, generated from what the host knows right now.
+ * The Nostroma profile for the Harness, generated from what the host knows right now.
  *
  * The static profile in `integrations/harness/profile/cordis.patch.yml` names one local route on a
- * fixed port. The app needs more than that: whichever local Strata instances are ready, and one route
+ * fixed port. The app needs more than that: whichever local Nostroma instances are ready, and one route
  * per saved API connection, so that each chat can pick its own model. This module writes the same two
  * Cordis entries (`agent-default-model`, `llm-pi-ai`) for the current set.
  *
@@ -33,7 +33,7 @@ export const ASSUMED_API_CONTEXT = 128_000;
 /**
  * The three chat modes as Harness permission presets (see README, "Modes"). A preset is a
  * sandbox mode plus an approval policy; the Harness switches them with its own `/permission` command.
- *   manual  open sandbox + ask:        the Strata gate (plugins/strata-gate.mjs) asks BEFORE any change runs; nothing is denied first
+ *   manual  open sandbox + ask:        the Nostroma gate (plugins/strata-gate.mjs) asks BEFORE any change runs; nothing is denied first
  *   plan    read-only sandbox + never: nothing can change, and the agent is told not to ask
  *   bypass  danger-full-access + never: the Harness's own full-access, never-ask bundle (its `danger-full-access` preset)
  */
@@ -155,7 +155,7 @@ export function compactionHeadroom(context, outputBudget) {
 }
 
 /**
- * The thinking levels the chat's Reasoning menu offers, as wire values for a local Strata model. `off` sends
+ * The thinking levels the chat's Reasoning menu offers, as wire values for a local Nostroma model. `off` sends
  * chat_template_kwargs.enable_thinking false; the rest send it true plus reasoning_effort (the server maps high and max to its top level).
  */
 export const LOCAL_EFFORTS = Object.freeze({ off: null, low: 'low', medium: 'medium', high: 'high', max: 'high' });
@@ -233,7 +233,7 @@ export function buildProfile({ local = [], connections = [], gate = true, tools 
       // A long prompt read sends only SSE comments, which pi-ai's OpenAI client drops, so its 300 s stream-idle timer would cut the
       // request five minutes in (#3623). 60 minutes is a backstop: serve ends a hung engine and the bridge's watchdog ends a lost turn.
       streamIdleTimeoutMs: 60 * 60_000,
-      // The Strata server reads the thinking level from `chat_template_kwargs` (enable_thinking, reasoning_effort) or from a top-level
+      // The Nostroma server reads the thinking level from `chat_template_kwargs` (enable_thinking, reasoning_effort) or from a top-level
       // reasoning_effort; a top-level `enable_thinking` (pi-ai's `qwen` format) is ignored, so the model went on thinking with the menu on Off.
       compat: THINKING_COMPAT,
       models: [{
@@ -253,15 +253,15 @@ export function buildProfile({ local = [], connections = [], gate = true, tools 
     if (!protocol) return;
     const route = `api-${slug(conn.id).slice(0, 12)}`;
     const keyEnv = `STRATA_API_KEY_${slug(conn.id).replace(/-/g, '_').toUpperCase().slice(0, 12)}`;
-    // A model server on this network that wants no key (llama.cpp, LM Studio, another Strata) still needs some value: the OpenAI-style client
+    // A model server on this network that wants no key (llama.cpp, LM Studio, another Nostroma) still needs some value: the OpenAI-style client
     // refuses to send anything without one, and the person saw "the model rejected the credentials".
     const keyless = !conn.apiKey && protocol === 'openai-completions';
     if (conn.apiKey) env[keyEnv] = conn.apiKey;
     else if (keyless) env[keyEnv] = 'not-needed';
     let baseURL = conn.baseUrl;
     if (protocol === 'anthropic-messages') baseURL = baseURL.replace(/\/v1\/?$/, '');
-    // A model server on this computer or network (another Strata PC, llama.cpp, LM Studio) takes the same thinking vocabulary as a local model:
-    // without it the Reasoning menu did nothing for a connection to another Strata machine.
+    // A model server on this computer or network (another Nostroma PC, llama.cpp, LM Studio) takes the same thinking vocabulary as a local model:
+    // without it the Reasoning menu did nothing for a connection to another Nostroma machine.
     const openRouter = protocol === 'openai-completions' && isOpenRouter(conn);
     const ownServer = protocol === 'openai-completions' && !openRouter && isPrivateHost(baseURL);
     // A model server on this computer or network has a window of its own size like a local model: the reply keeps half of it, so the Harness can compact the conversation
@@ -330,7 +330,7 @@ export function buildProfile({ local = [], connections = [], gate = true, tools 
     ...webRows,
     // The reminder tools would be a second scheduler beside the app's Tasks. The tool groups the person switched off in Settings -> Tools are left out.
     { id: 'preset-standard', name: '@deepseek-ai/dsh-agent-preset', config: standardPreset({ off: tools.off, search: searchOn, skillsDir, compaction }) },
-    // Strata names its chats itself; the Harness's own title request would be an extra model call on
+    // Nostroma names its chats itself; the Harness's own title request would be an extra model call on
     // every first prompt (and, for an API route, an unrequested one).
     { id: 'session-title-llm', disabled: true },
     // Office documents are not previewed in the app (the converter is not shipped): do not try to start it.

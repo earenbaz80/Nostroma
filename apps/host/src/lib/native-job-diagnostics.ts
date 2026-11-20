@@ -35,7 +35,7 @@ export function currentUpdateFailure(jobs: readonly NativeJob[]): NativeJob | un
 }
 
 /**
- * A Strata or engine update that finished after the update check shown was made: that check is out of date (it still says “Update available”,
+ * A Nostroma or engine update that finished after the update check shown was made: that check is out of date (it still says “Update available”,
  * and its cache is keyed to the Control version that runs until a restart). Settings > About then checks again. The job’s id, or undefined.
  */
 export function updateFinishedAfter(jobs: readonly NativeJob[], checkedAt: string | undefined): string | undefined {

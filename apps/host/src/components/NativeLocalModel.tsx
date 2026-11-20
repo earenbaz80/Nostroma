@@ -19,13 +19,13 @@ function problem(issues: string[]): { message: string; next: string } {
     if (has(/incomplete_or_invalid_shard_set/))
         return { message: 'Some parts of this model are missing.', next: 'Put every part of one model (all the -0000N-of-0000M files) in one folder, then check again.' };
     if (has(/unsupported_architecture|unsupported_or_missing_architecture/))
-        return { message: 'This model type isn’t supported by the Strata engine.', next: 'Add it as a Custom model API instead: start it with llama-server, then open Settings > Models > Add model provider > Custom model API.' };
+        return { message: 'This model type isn’t supported by the Nostroma engine.', next: 'Add it as a Custom model API instead: start it with llama-server, then open Settings > Models > Add model provider > Custom model API.' };
     if (has(/unrecognized_or_unsupported_model_variant|expert_quantization|tokenizer/))
-        return { message: 'Strata can’t run these files yet.', next: 'Strata runs the Qwen3.8-Flash-Next models. Download one from Models, or choose a folder with its files.' };
+        return { message: 'Nostroma can’t run these files yet.', next: 'Nostroma runs the Qwen3.8-Flash-Next models. Download one from Models, or choose a folder with its files.' };
     return { message: 'These files could not be checked.', next: 'Check that the folder holds complete GGUF files, then try again. The file named under Details says what is wrong with it.' };
 }
 
-/** "Use a local GGUF": choose the folder of a model you already have, Strata checks it, and prepares and loads it without copying
+/** "Use a local GGUF": choose the folder of a model you already have, Nostroma checks it, and prepares and loads it without copying
  *  or downloading the model files. The same page layout and cards as the optimized models page. */
 export function NativeLocalModel({ onBack }: { onBack: () => void }) {
     const native = useNative();
@@ -52,7 +52,7 @@ export function NativeLocalModel({ onBack }: { onBack: () => void }) {
     }
     /* The first-run page hands over the folder the person chose (#3507): it is checked at once, as if they had pressed Check files. */
     useEffect(() => { const path = parseLocation(window.location.hash).query.get('path'); if (path) { setTyped(path); void check(path); } }, []);
-    /* Files that sit in a Strata data folder (<data>/models/<tag>) with their prepared model data beside them: that folder is used as the data
+    /* Files that sit in a Nostroma data folder (<data>/models/<tag>) with their prepared model data beside them: that folder is used as the data
      * folder, so the prepared data is not made a second time. A folder the installer would not accept as a data folder is not passed. */
     const ownDataFolder = (() => { const d = checked?.preview.already_set_up?.pack ? checked.preview.already_set_up.data_dir : null; return d && /strata/i.test(d.split(/[\\/]/).filter(Boolean).pop() ?? '') ? d : null; })();
     async function prepare() {
@@ -72,7 +72,7 @@ export function NativeLocalModel({ onBack }: { onBack: () => void }) {
   <div className="native-model-layout">
    <div className="stack stack--lg">
     <section className="st-card native-choice"><h2 className="h3">{tr("Use a local GGUF…")}</h2>
-     <p className="small muted">{tr("Already have a supported model on this computer? Choose the folder that holds its files, or one of its .gguf files. Strata checks them, prepares the model and loads it. Nothing is copied or downloaded.")}</p>
+     <p className="small muted">{tr("Already have a supported model on this computer? Choose the folder that holds its files, or one of its .gguf files. Nostroma checks them, prepares the model and loads it. Nothing is copied or downloaded.")}</p>
      <label className="input-field"><span>{tr("Folder with the GGUF files, or one .gguf file")}</span><input className="st-input" value={typed} placeholder={tr("Full path to the folder or the file")} spellCheck={false} onChange={e => setTyped(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && typed.trim()) void check(typed); }}/></label>
      <div className="native-settings-actions"><Btn icon="folder" disabled={pending || !!active} onClick={() => void check('')}>{tr("Choose folder")}</Btn><Btn disabled={pending || !typed.trim() || !!active} onClick={() => void check(typed)}>{tr(pending && !jobId ? 'Checking…' : 'Check files')}</Btn></div>
     </section>

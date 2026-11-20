@@ -14,7 +14,7 @@ export interface FirstRunInfo {
     gpus: { name: string; vramGb: number | null }[];
     driver?: string | null;
     offer?: { version: string; bytes: number; variant: string; backend: string | null };
-    /** A newer Strata Control in the same feed: the Download takes it too (the Arc fix of 0.2.13.1 came this way). */
+    /** A newer Nostroma Control in the same feed: the Download takes it too (the Arc fix of 0.2.13.1 came this way). */
     control?: { version: string; bytes: number } | null;
     message?: string | null;
     reasons?: string[];
@@ -23,8 +23,8 @@ export interface FirstRunInfo {
 }
 
 export const mb = megabytes;
-/** After the size when the download also brings the newer Strata Control (owner-approved wording, 11-09). */
-export const WITH_CONTROL = " (with the Strata setup update)";
+/** After the size when the download also brings the newer Nostroma Control (owner-approved wording, 11-09). */
+export const WITH_CONTROL = " (with the Nostroma setup update)";
 
 /**
  * Whether this PC still needs its engine. Reads only Control's local answer (no network): the engine is missing and the engine that came
@@ -141,24 +141,24 @@ export function EngineFirstRun({ onDone }: { onDone: () => void }) {
     else if (running) {
         body = <><div className="onboard-welcome-copy"><h1 tabIndex={-1} data-initial-focus>{tr("Downloading the engine")}</h1>
             <p>{bytes && job?.result?.install?.download ? `${doneMb} of ${mb(bytes)} MB${eta ? ' · ' + eta : ''}` : tr(job?.summary ?? 'Starting…')}</p></div>
-            <div className="onboard-error" style={{ maxWidth: 520, margin: '0 auto', width: '100%' }}><Bar value={percent} label="Downloading the engine"/><p className="small muted" style={{ textAlign: 'center' }}>{tr("You can close Strata; it continues where it stopped.")}</p></div></>;
+            <div className="onboard-error" style={{ maxWidth: 520, margin: '0 auto', width: '100%' }}><Bar value={percent} label="Downloading the engine"/><p className="small muted" style={{ textAlign: 'center' }}>{tr("You can close Nostroma; it continues where it stopped.")}</p></div></>;
     }
     else if (!info) {
-        body = <div className="onboard-welcome-copy"><h1 tabIndex={-1} data-initial-focus>{tr("Welcome to Strata")}</h1><p role="status">{tr("Looking at your graphics card…")}</p></div>;
+        body = <div className="onboard-welcome-copy"><h1 tabIndex={-1} data-initial-focus>{tr("Welcome to Nostroma")}</h1><p role="status">{tr("Looking at your graphics card…")}</p></div>;
     }
     else {
         const card = gpuLine(info);
-        const found = card ? <p>{tr("Strata found your graphics card:")}<br/><strong>{card}</strong>{cards > 1 ? <><br/><span className="small muted">{tr("{0} cards found. Strata uses the first one for the engine; change it later in Settings.", [cards])}</span></> : null}</p>
-            : <p>{tr("Strata did not recognise a supported graphics card.")}</p>;
+        const found = card ? <p>{tr("Nostroma found your graphics card:")}<br/><strong>{card}</strong>{cards > 1 ? <><br/><span className="small muted">{tr("{0} cards found. Nostroma uses the first one for the engine; change it later in Settings.", [cards])}</span></> : null}</p>
+            : <p>{tr("Nostroma did not recognise a supported graphics card.")}</p>;
         let main, actions;
         if (info.status === 'offer' && info.offer) {
-            main = <>{found}<p>{tr("To run models on it, Strata needs one download:")}<br/><strong>{tr("The engine for this card")}: {mb(info.offer.bytes + (info.control?.bytes ?? 0))} MB{info.control ? tr(WITH_CONTROL) : null}</strong></p>
+            main = <>{found}<p>{tr("To run models on it, Nostroma needs one download:")}<br/><strong>{tr("The engine for this card")}: {mb(info.offer.bytes + (info.control?.bytes ?? 0))} MB{info.control ? tr(WITH_CONTROL) : null}</strong></p>
                 {info.freeBytes !== undefined && info.freeBytes < info.offer.bytes * 2.5 ? <p className="small inline-error">{tr("The engine needs about {0} GB of free space on this drive and only {1} GB is free. Free some space, then continue.", [Math.ceil(info.offer.bytes * 2.5 / 1e9), (info.freeBytes / 1e9).toFixed(1)])}</p> : null}
-                <p className="small muted">{tr("It comes from Strata’s own update server and is checked before it is used. Your models and chats are never touched by it.")}</p></>;
+                <p className="small muted">{tr("It comes from Nostroma’s own update server and is checked before it is used. Your models and chats are never touched by it.")}</p></>;
             actions = <><Btn variant="primary" disabled={busy} onClick={() => void start()}>{tr(failed ? 'Continue' : 'Download the engine')}</Btn>{pick("I already have the file…")}</>;
         }
         else if (info.status === 'offline') {
-            main = <>{found}<p>{tr("Strata could not reach github.com. Check your connection and try again, or download the engine file on another PC and choose it here.")}</p></>;
+            main = <>{found}<p>{tr("Nostroma could not reach github.com. Check your connection and try again, or download the engine file on another PC and choose it here.")}</p></>;
             actions = <><Btn variant="primary" disabled={busy} onClick={look}>{tr("Try again")}</Btn>{pick("Choose a downloaded file…")}</>;
         }
         else if (info.status === 'wrong-make') {
@@ -166,10 +166,10 @@ export function EngineFirstRun({ onDone }: { onDone: () => void }) {
             actions = <><Btn variant="primary" disabled={busy} onClick={look}>{tr("Try again")}</Btn>{pick("Choose a downloaded file…")}</>;
         }
         else {
-            main = <>{found}<p>{tr("Strata can’t pick an engine for this PC from its update list.")}</p>{info.message ? <p className="small muted">{info.message}</p> : null}{(info.reasons ?? []).length ? <ul className="small muted" style={{ textAlign: 'left', display: 'inline-block' }}>{(info.reasons ?? []).map(r => <li key={r}>{r}</li>)}</ul> : null}</>;
+            main = <>{found}<p>{tr("Nostroma can’t pick an engine for this PC from its update list.")}</p>{info.message ? <p className="small muted">{info.message}</p> : null}{(info.reasons ?? []).length ? <ul className="small muted" style={{ textAlign: 'left', display: 'inline-block' }}>{(info.reasons ?? []).map(r => <li key={r}>{r}</li>)}</ul> : null}</>;
             actions = <><Btn variant="primary" disabled={busy} onClick={look}>{tr("Try again")}</Btn>{pick("Choose a downloaded file…")}<button type="button" className="onboard-continue-anyway" onClick={onDone}>{tr("Continue without an engine")}</button></>;
         }
-        body = <><div className="onboard-welcome-copy"><h1 tabIndex={-1} data-initial-focus>{tr("Welcome to Strata")}</h1>{main}</div>
+        body = <><div className="onboard-welcome-copy"><h1 tabIndex={-1} data-initial-focus>{tr("Welcome to Nostroma")}</h1>{main}</div>
             {failed ? <div className="onboard-error" style={{ maxWidth: 560, margin: '0 auto' }}><p role="alert" className="small inline-error">{job?.error ?? job?.summary}</p>
                 {job?.details ? <details className="error-detail"><summary className="small">{tr('Details')}</summary><pre className="small muted">{job.details}</pre></details> : null}
                 <p className="small muted">{percent >= 100 ? tr("The file was downloaded. Continue tries the install again.") : tr("The download stopped. Continue picks it up where it stopped.")}</p></div> : null}

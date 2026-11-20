@@ -2,7 +2,7 @@
  * Settings -> Tools, behind the screen: what is saved, what reaches the agent, web search with no key, and the person's own tools.
  *
  * Pure tests always run. The two that start the real Harness need STRATA_HARNESS_DIR (the model is scripted; what is real is the Harness,
- * its web seam and tool executor, the Strata gate plugin, the bridge and the app's own tool server).
+ * its web seam and tool executor, the Nostroma gate plugin, the bridge and the app's own tool server).
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -202,9 +202,9 @@ test('search: polite by design: one request at a time, spaced out, a minute limi
     now: () => clock, sleep: async ms => { waits.push(ms); clock += ms; },
     fetch: async (url, init) => { calls++; assert.equal(init.method, 'POST'); assert.match(init.headers['user-agent'], /Mozilla/); assert.match(String(url), /duckduckgo\.com/); return new Response(HTML, { status: 200 }); },
   });
-  const a = await provider.search({ query: 'Strata engine', maxResults: 1 });
+  const a = await provider.search({ query: 'Nostroma engine', maxResults: 1 });
   assert.equal(a.sources.length, 1);
-  await provider.search({ query: 'strata ENGINE' });          // same words: from the cache
+  await provider.search({ query: 'NOSTROMA ENGINE' });          // same words: from the cache
   assert.equal(calls, 1);
   await provider.search({ query: 'another one' });
   assert.equal(calls, 2); assert.ok(waits.some(ms => ms >= 1400), 'the second request waited for the gap');
@@ -378,7 +378,7 @@ const browserSkip = process.env.STRATA_TEST_BROWSER !== '1' ? 'starts a real bro
 
 test('real browser: the assistant opens a local page in the person\'s Chrome or Edge and reads it; Manual asks before opening it, Plan refuses', { skip: browserSkip, timeout: 240000 }, async (t) => {
   const http = await import('node:http');
-  const page = http.createServer((req, res) => { res.setHeader('content-type', 'text/html'); res.end('<html><head><title>Strata browser test</title></head><body><h1>Hello from the browser test</h1><button>Press me</button></body></html>'); });
+  const page = http.createServer((req, res) => { res.setHeader('content-type', 'text/html'); res.end('<html><head><title>Nostroma browser test</title></head><body><h1>Hello from the browser test</h1><button>Press me</button></body></html>'); });
   await new Promise(r => page.listen(0, '127.0.0.1', r));
   t.after(() => page.close());
   const url = `http://127.0.0.1:${page.address().port}/`;

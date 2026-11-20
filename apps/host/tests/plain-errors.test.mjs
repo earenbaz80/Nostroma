@@ -10,14 +10,14 @@ const { plainFailure, plainFailureText, setTranslationLanguage, loadCatalog } = 
 for (const l of ['zh', 'ja', 'de', 'es', 'ru', 'pt', 'ko', 'fr']) await loadCatalog(l);  // the non-English catalogs load on first use (src/lib/i18n.ts loadCatalog); load them before the first tr()
 
 const cases = [
-  ['Strata’s tunnel for this address is already running (PID 31), so Strata did not start a second one. Stop it first (or use it as it is), then connect again here.', 'tunnel-own-running', /tunnel for this address is already running/],
+  ['Nostroma’s tunnel for this address is already running (PID 31), so Nostroma did not start a second one. Stop it first (or use it as it is), then connect again here.', 'tunnel-own-running', /tunnel for this address is already running/],
   ['GPU 2 is already used by qwen3.8-flash-next-q2_0, so this model did not fit there. Load it on another GPU, or unload qwen3.8-flash-next-q2_0 first.', 'gpu-shared', /no room for this one/],
   ['This model needs a newer engine: Gyro-S needs engine 0.1.45.1 or newer, and this one is 0.1.45. Update the engine in Settings, then try again.', 'engine-too-old', /needs a newer engine/],
   ['The settings file for this model has a mistake, so the model was not started. Line 4: The settings file is not valid JSON; look near line 4.', 'settings-file', /settings file has a mistake/],
   ['The Cloudflare connector (cloudflared) is not installed here, and the app never downloads it while it runs. Install it from the optional connector component.', 'connector-missing', /could not find Cloudflare’s connector/],
-  ['The cloudflared at /usr/bin/cloudflared is version 2021.3.0, which is too old. Strata needs 2022.1.0 or newer. Update cloudflared, then retry.', 'connector-old', /connector on this computer is too old/],
+  ['The cloudflared at /usr/bin/cloudflared is version 2021.3.0, which is too old. Nostroma needs 2022.1.0 or newer. Update cloudflared, then retry.', 'connector-old', /connector on this computer is too old/],
   ['The file at /x/cloudflared did not run as cloudflared. Reinstall cloudflared, then retry.', 'connector-broken', /did not run/],
-  ['lost host child is still present; retry after it exits', 'previous-session', /last Strata session is still closing down/],
+  ['lost host child is still present; retry after it exits', 'previous-session', /last Nostroma session is still closing down/],
   ['server_exited', 'start-failed', /model stopped while starting\./],
   ['server_exited (exit code 0xC0000135)', 'dll-missing', /program files is missing/],
   ['server_exited (exit code 0xC000007B)', 'dll-bad', /does not fit this computer or is damaged/],
@@ -34,10 +34,10 @@ const cases = [
   ['sha256 mismatch for Qwen3.8-Flash-Next-00001-of-00002.gguf', 'integrity', /safety check/],
   ['The agent component (DeepSeek Harness) is not installed.', 'assistant-missing', /coding assistant isn’t installed/],
   ['component-missing', 'assistant-missing', /coding assistant/],
-  ['Strata Control did not answer within 60 s (models list).', 'control', /couldn’t read its own components/],
+  ['Nostroma Control did not answer within 60 s (models list).', 'control', /couldn’t read its own components/],
   ['Prepare this model’s vision files before enabling picture reading.', 'picture-reading', /Picture reading isn’t available/],
-  ['server_exited (exit code 1): strata generate: GPU 0 (AMD Radeon 760M Graphics, gfx1103) is not an architecture this Strata engine was compiled for (gfx1200,gfx1201); compile it for this card', 'gpu-no-code', /no code for the graphics card/],
-  ['server_exited (exit code 1): [strata] none of this computer\'s graphics cards has code in this Strata engine (it is built for gfx1200,gfx1201). Cards found: AMD Radeon RX 6800 XT (gfx1030).', 'gpu-no-code', /no code for the graphics card/],
+  ['server_exited (exit code 1): strata generate: GPU 0 (AMD Radeon 760M Graphics, gfx1103) is not an architecture this Nostroma engine was compiled for (gfx1200,gfx1201); compile it for this card', 'gpu-no-code', /no code for the graphics card/],
+  ['server_exited (exit code 1): [strata] none of this computer\'s graphics cards has code in this Nostroma engine (it is built for gfx1200,gfx1201). Cards found: AMD Radeon RX 6800 XT (gfx1030).', 'gpu-no-code', /no code for the graphics card/],
   ['Traceback (most recent call last):\n  File "x.py", line 3', 'technical', /Something went wrong/],
 ];
 
@@ -52,8 +52,8 @@ for (const [raw, kind, message] of cases) {
   });
 }
 
-test('a DeepSeek model of an earlier Strata: Control’s own words, the folder and size kept, the next step apart (English only until the owner approves translations)', () => {
-  const d1 = 'DeepSeek-V4.1-Flash ISTA-DAS 2.00 bpw is a DeepSeek model. This version of Strata no longer runs DeepSeek models, so it was not started.';
+test('a DeepSeek model of an earlier Nostroma: Control’s own words, the folder and size kept, the next step apart (English only until the owner approves translations)', () => {
+  const d1 = 'DeepSeek-V4.1-Flash ISTA-DAS 2.00 bpw is a DeepSeek model. This version of Nostroma no longer runs DeepSeek models, so it was not started.';
   const files = ' Its files are still on this computer: 257 GB in /home/me/Strata-data/models/deepseek-v4.1-flash-ist-das-2.00bpw. Nothing was changed or deleted.';
   const next = 'Choose a Qwen model to run instead. If you no longer need the DeepSeek files, you can delete that folder to free the space.';
   for (const message of [d1, d1 + files]) {
@@ -75,7 +75,8 @@ test('an ordinary sentence is left as it is and gets no Details', () => {
 
 test('every plain message and next step is translated in all nine languages', () => {
   const en = catalogs.en;
-  const ids = Object.fromEntries(Object.entries(en).map(([id, text]) => [text, id]));
+  const brand = (t) => String(t).replace(/\bStrata\b/g, 'Nostroma');   // the catalogues keep upstream's wording; i18n.ts swaps it on the way out
+  const ids = Object.fromEntries(Object.entries(en).flatMap(([id, text]) => [[text, id], [brand(text), id]]));
   for (const [raw] of cases) {
     const f = plainFailure(raw);
     for (const text of [f.message, f.next]) {

@@ -11,7 +11,7 @@ function unfitWords(engine: InstalledEngine): string {
   switch (engine.why_code) {
     case 'os': return tr("This engine was made for a different operating system.");
     case 'gpu_make': return tr("This engine was made for a different kind of graphics card than this computer has.");
-    case 'strata': return tr("This engine needs Strata {0} or newer.", [a[0] ?? '']);
+    case 'strata': return tr("This engine needs Nostroma {0} or newer.", [a[0] ?? '']);
     case 'gpu_arch': return tr("This engine doesn't support this computer's graphics card.");
     case 'driver': return tr("This engine needs NVIDIA driver {0} or newer. This computer has {1}.", [a[0] ?? '', a[1] ?? '']);
     case 'files': return tr("Some of this engine's files are missing or changed, so it can't be started.");
@@ -73,7 +73,7 @@ export function SettingsEngine() {
     <section className="st-card engine-list">
       <div className="section-toolbar"><h2 className="h3">{tr("Installed engines")}</h2></div>
       <p className="small muted">{tr("Switch to an older engine to test something, then switch back to the newest. Updating to the latest is in About.")}</p>
-      {list && !list.available ? <p className="small muted">{tr("Engines can be switched and deleted in the installed Strata app.")}</p> : null}
+      {list && !list.available ? <p className="small muted">{tr("Engines can be switched and deleted in the installed Nostroma app.")}</p> : null}
       {failed ? <p className="small inline-error" role="alert">{tr("The installed engines couldn't be read. Try again in a moment.")}</p> : null}
       {list?.available && count === 0 ? <p className="small muted">{tr("No engine is installed on this computer yet. Update in About downloads the right one.")}</p> : null}
       {groups.map(group => <div key={group.family} className="engine-group">
@@ -97,7 +97,7 @@ export function SettingsEngine() {
     <Dialog open={!!del} compact title={tr("Delete engine {0}?", [del?.version ?? ''])} onClose={() => { if (!pending) setDel(null); }}
       actions={<><Btn disabled={pending} onClick={() => setDel(null)}>{tr("Keep engine")}</Btn><Btn variant="danger" disabled={pending} onClick={() => del && void run('remove', del)}>{pending ? tr("Working…") : tr("Delete engine")}</Btn></>}>
       <p>{tr("This frees {0}. Your models and settings are kept.", [engineSize(del?.bytes ?? 0, localeTag())])}</p>
-      <p className="small muted">{del?.newest ? tr("The newest engine can be downloaded again with Update in About.") : tr("Strata can only download the newest engine, so a deleted older engine can't be brought back.")}</p>
+      <p className="small muted">{del?.newest ? tr("The newest engine can be downloaded again with Update in About.") : tr("Nostroma can only download the newest engine, so a deleted older engine can't be brought back.")}</p>
     </Dialog>
   </div>;
 }

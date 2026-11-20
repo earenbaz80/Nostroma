@@ -26,7 +26,7 @@ export async function checkComponentUpdates({ control, appVersion = null }) {
   try {
     report = await control.updateCheck({ appVersion });
   } catch (error) {
-    const plain = plainUpdateError(error, 'Strata');
+    const plain = plainUpdateError(error, 'Nostroma');
     const message = /update server|aren't available|No internet/.test(plain.headline) ? plain.message : `Couldn't check for updates. Try again in a moment.`;
     return { checkedAt, strata: { installedVersion: appVersion ?? control.version ?? null, status: 'error', message, details: plain.details, canInstall: false }, engine: { installedVersion: null, status: 'error', message, details: plain.details, canInstall: false } };
   }
@@ -69,7 +69,7 @@ export async function engineFirstRun({ control, gpus = [] }) {
   try {
     report = await control.updateCheck({});
   } catch (error) {
-    const plain = plainUpdateError(error, 'Strata');
+    const plain = plainUpdateError(error, 'Nostroma');
     return { status: looksOffline(error) || /update server|No internet/.test(plain.headline ?? '') ? 'offline' : 'error', gpus: cards, message: plain.message, details: plain.details };
   }
   const engine = report.engine ?? {};
@@ -78,7 +78,7 @@ export async function engineFirstRun({ control, gpus = [] }) {
   if (engine.installed) return { ...base, status: 'installed', installedVersion: engine.installed.version ?? null };
   if (engine.status === 'wrong-make') return { ...base, status: 'wrong-make', message: engine.note ?? null, reasons: engine.reasons ?? [] };
   if (engine.offered && (engine.status === 'install' || engine.status === 'available')) {
-    // A newer Strata Control in the same feed comes with the engine (an Arc user who has just installed the app needed 0.1.59.1's fix and had to find Settings > Updates; ARCFIX 0213).
+    // A newer Nostroma Control in the same feed comes with the engine (an Arc user who has just installed the app needed 0.1.59.1's fix and had to find Settings > Updates; ARCFIX 0213).
     const ctl = report.control ?? {};
     const control = ctl.status === 'available' && ctl.offered ? { version: ctl.offered, bytes: ctl.download_bytes || 0 } : null;
     return { ...base, status: 'offer', offer: { version: engine.offered.version, bytes: engine.download_bytes || engine.offered.size || 0, variant: engine.offered.variant ?? '', backend: engine.offered.backend ?? null }, control };

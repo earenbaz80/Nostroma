@@ -7,7 +7,7 @@
  *
  *   mode 'window'   the app window shows the page; the window process registers the app updater here (Tauri's signed updater).
  *   mode 'browser'  an ordinary browser tab shows the page. There is no window process, so the app cannot update itself, and
- *                   closing the tab does not stop the engine: the menu has "Quit Strata" (POST /api/app/quit) and the command
+ *                   closing the tab does not stop the engine: the menu has "Quit Nostroma" (POST /api/app/quit) and the command
  *                   line has `--quit`.
  *   mode null       not started by the app (the host run by hand, a test, a source checkout): nothing here applies.
  *
@@ -17,7 +17,7 @@
  *   window controls      none to offer: the browser has its own tab and window; the page never called the shell for them
  *   notifications        the page does not use the shell for them; the host sends the one desktop notification it needs (notify-send)
  *   app updater          NOT available: Tauri's updater lives in the window process. Settings says so in plain words and the
- *                        engine and component updates (Strata Control) still work.
+ *                        engine and component updates (Nostroma Control) still work.
  */
 import { execFile, spawn } from 'node:child_process';
 import { externalEnvironment } from './external-env.mjs';
@@ -90,7 +90,7 @@ export function createAppUi({ env = process.env, shutdown = () => {}, open = ope
       bridge = createUpdater({ env: childEnv({ STRATA_SHELL_BRIDGE: url, STRATA_SHELL_TOKEN: token }) });
       return true;
     },
-    /** Open the page in the default browser without changing the mode (a second start while Strata runs). */
+    /** Open the page in the default browser without changing the mode (a second start while Nostroma runs). */
     openPage: url => open(url),
     /** The shell moves everyone to a browser tab: the window could not start or has stopped. */
     async switchToBrowser({ url, reason: why = 'window-failed', notice = '', openPage = true } = {}) {
@@ -99,7 +99,7 @@ export function createAppUi({ env = process.env, shutdown = () => {}, open = ope
       if (notice) void notify(notice);
       return { mode, reason, opened };
     },
-    /** The "Quit Strata" menu entry: only in browser mode, where closing the tab leaves the engine running. */
+    /** The "Quit Nostroma" menu entry: only in browser mode, where closing the tab leaves the engine running. */
     quit() {
       if (mode !== 'browser') return { ok: false, status: 409, error: 'Close the Nostroma window to quit.' };
       setImmediate(() => void shutdown());

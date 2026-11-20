@@ -10,7 +10,7 @@ import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 /**
- * Strata works without internet. The host is started with every non-loopback fetch failing (and logged), the way a PC with the cable
+ * Nostroma works without internet. The host is started with every non-loopback fetch failing (and logged), the way a PC with the cable
  * pulled behaves. Starting, reading the screens' data, loading a model and the update check make no outside call at all: this
  * build publishes no release feed of its own, so "Check for updates" answers in plain words without reaching anywhere.
  */

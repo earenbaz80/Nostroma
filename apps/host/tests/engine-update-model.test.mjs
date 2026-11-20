@@ -1,4 +1,4 @@
-import './helpers/isolate-profile.mjs';   // a test run never writes the owner's real Strata profile
+import './helpers/isolate-profile.mjs';   // a test run never writes the owner's real Nostroma profile
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync as read, mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
@@ -178,7 +178,7 @@ test('the dialog: warns naming the model, progress in plain words, the offer, th
   const dialog = src('src/components/EngineUpdateDialog.tsx');
   assert.match(dialog, /args: \{ stopModel: true \}/);
   assert.match(dialog, /kind: 'restart-models'/);
-  assert.match(dialog, /To update the engine, Strata has to stop the model that is loaded: \{0\}\./, 'the warning names the model');
+  assert.match(dialog, /To update the engine, Nostroma has to stop the model that is loaded: \{0\}\./, 'the warning names the model');
   for (const words of ['Getting the new engine ready. {0} keeps working until it is ready.', 'Stopping {0}. Answers in progress finish first.', '{0} is stopped. Updating the engine…',
     'The engine is updated. Start {0} again with the same settings?', "The update didn't finish. Your old engine is unchanged and still works. Start {0} again on it?"])
     assert.ok(dialog.includes(words), words);

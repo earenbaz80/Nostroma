@@ -17,8 +17,8 @@ export function OnboardingResources({ profile }: {
    </div><div className="onboard-sharing-base"/>
   </div>
   <div className="onboard-sharing-budget">
-   <div className="onboard-sharing-caption"><Icon name={work ? 'computer' : 'bolt'} size={16}/>{tr(work ? 'Room for your everyday work' : 'Full priority for Strata')}</div>
-   <div className="onboard-sharing-numbers"><div><strong>{tr(share)}<small>%</small></strong><span>{tr("Strata\u2019s budget")}</span></div><div className="onboard-sharing-headroom"><strong>{tr(work ? '20' : '0')}<small>%</small></strong><span>{tr("Extra headroom")}</span></div></div>
+   <div className="onboard-sharing-caption"><Icon name={work ? 'computer' : 'bolt'} size={16}/>{tr(work ? 'Room for your everyday work' : 'Full priority for Nostroma')}</div>
+   <div className="onboard-sharing-numbers"><div><strong>{tr(share)}<small>%</small></strong><span>{tr("Nostroma\u2019s budget")}</span></div><div className="onboard-sharing-headroom"><strong>{tr(work ? '20' : '0')}<small>%</small></strong><span>{tr("Extra headroom")}</span></div></div>
    <div className="onboard-sharing-bar" aria-hidden="true"><span /><i /></div>
    <p>{tr(work ? 'Keep your browser and tools alongside your AI.' : 'Give your AI the available resources for focused work.')}</p>
   </div>

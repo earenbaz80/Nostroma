@@ -1,5 +1,5 @@
 import { userError } from './format';
-/** Thin HTTP client for the Strata host. Zero deps, works in browser and Electron renderer. */
+/** Thin HTTP client for the Nostroma host. Zero deps, works in browser and Electron renderer. */
 
 const BASE = (globalThis as { __STRATA_HOST__?: string }).__STRATA_HOST__ ?? '';
 

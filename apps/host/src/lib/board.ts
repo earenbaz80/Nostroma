@@ -211,7 +211,7 @@ export function boardCards(input: BoardInput): BoardResult {
       if (dismissed(s.ackedAt, when) || now - when > window) continue;
       const common = { ...base, key: `loop:${s.id}`, source: 'loop' as const, at: when, timeKind: 'stopped' as const, everyMs: l.everyMs, title: l.prompt || s.title, line: plainLine(l.lastText) || undefined };
       if (why === 'failures') columns.attention.push({ ...common, column: 'attention', reason: { tone: 'bad', kind: 'loop-failed' }, primary: 'open-chat', menu: ['continue', 'dismiss'] });
-      else columns.done.push({ ...common, column: 'done', chip: why === 'stopped' ? { text: 'Stopped by you', tone: 'plain' } : why === 'closed' ? { text: 'Stopped when Strata closed', tone: 'plain' } : { text: 'Ended on its own', tone: 'plain' }, primary: 'open-chat', menu: ['dismiss'] });
+      else columns.done.push({ ...common, column: 'done', chip: why === 'stopped' ? { text: 'Stopped by you', tone: 'plain' } : why === 'closed' ? { text: 'Stopped when Nostroma closed', tone: 'plain' } : { text: 'Ended on its own', tone: 'plain' }, primary: 'open-chat', menu: ['dismiss'] });
       continue;
     }
 

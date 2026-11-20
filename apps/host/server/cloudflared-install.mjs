@@ -1,4 +1,4 @@
-/** Install the official connector into Strata's own data folder, without sudo. */
+/** Install the official connector into Nostroma's own data folder, without sudo. */
 import { createHash } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { mkdir, mkdtemp, lstat, rename, rm, chmod, writeFile, access } from 'node:fs/promises';
@@ -35,7 +35,7 @@ export function createConnectorInstaller({ directory, componentDirectory = null,
   const name = platform === 'win32' ? 'cloudflared.exe' : 'cloudflared';
   const binary = join(directory, name);
   let installing = null, last = { found: null, skipped: [] };
-  /** Strata's own folder first, then the component folder, PATH and the usual install places (cloudflared-find.mjs). */
+  /** Nostroma's own folder first, then the component folder, PATH and the usual install places (cloudflared-find.mjs). */
   async function look() {
     last = await findConnector({ directory, componentDirectory, platform, env, home, run: runVersion, usable, search });
     return last;

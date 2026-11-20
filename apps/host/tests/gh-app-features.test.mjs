@@ -104,8 +104,8 @@ test('the busy-port notice and the shell notifier come only from the shell', asy
   assert.equal(createShellNotifier({ env: { STRATA_SHELL_BRIDGE: 'http://example.com:1', STRATA_SHELL_TOKEN: 't' } }), null, 'only a loopback bridge');
   const seen = [];
   const notifier = createShellNotifier({ env: { STRATA_SHELL_BRIDGE: 'http://127.0.0.1:5555', STRATA_SHELL_TOKEN: 'secret' }, fetcher: async (url, init) => { seen.push([url, init]); return { ok: true, json: async () => ({ shown: true }) }; } });
-  assert.deepEqual(await notifier.notify({ title: 'Strata needs your answer', body: 'a & b?' }), { shown: true });
-  assert.equal(seen[0][0], 'http://127.0.0.1:5555/shell/notify?title=Strata%20needs%20your%20answer&body=a%20%26%20b%3F');
+  assert.deepEqual(await notifier.notify({ title: 'Nostroma needs your answer', body: 'a & b?' }), { shown: true });
+  assert.equal(seen[0][0], 'http://127.0.0.1:5555/shell/notify?title=Nostroma%20needs%20your%20answer&body=a%20%26%20b%3F');
   assert.equal(seen[0][1].headers.authorization, 'Bearer secret');
   assert.equal(seen[0][1].method, 'POST');
 });
@@ -126,7 +126,7 @@ test('the finished-work sound is opt-in, quiet for quick answers in front, and n
   assert.equal(wav.toString('latin1', 8, 12), 'WAVE');
 });
 
-test('approval notifications: shell first, the page second, nothing when off or when Strata is in front', async () => {
+test('approval notifications: shell first, the page second, nothing when off or when Nostroma is in front', async () => {
   const notice = { title: 'T', body: 'B' };
   const seen = [];
   assert.equal(await A.showNotice(notice, { post: async () => ({ shown: true }), page: () => { seen.push('page'); return true; } }), true);
@@ -135,7 +135,7 @@ test('approval notifications: shell first, the page second, nothing when off or 
   assert.equal(await A.showNotice(notice, { post: async () => { throw new Error('no shell'); }, page: () => { seen.push('page2'); return false; } }), false);
   assert.deepEqual(seen, ['page', 'page2']);
   assert.equal(await A.approvalNeeded(false, 'write_file', false), false);
-  assert.equal(await A.approvalNeeded(true, 'write_file', true), false, 'the person is looking at Strata');
+  assert.equal(await A.approvalNeeded(true, 'write_file', true), false, 'the person is looking at Nostroma');
   A.setTranslationLanguage('de');
   assert.match(A.approvalNotice('write_file').body, /write_file/);
   assert.notEqual(A.approvalNotice('write_file').title, 'Nostroma needs your answer');
@@ -166,7 +166,7 @@ test('every new string exists in all eight languages with the same slots, and do
     assert.equal(A.tr('Energy since start'), gh[l].gh01, l);
     /* The English string is the key, so the call keeps upstream's wording; the app swaps the
        brand on the way out (src/lib/i18n.ts), and the expected text has to be swapped too. */
-    assert.equal(A.tr('Port {0} is used by another program, so Strata started on port {1}. Chats and settings saved on port {0} are not shown until Strata can use it again. Close the other program and restart Strata.', [47831, 51234]),
+    assert.equal(A.tr('Port {0} is used by another program, so Nostroma started on port {1}. Chats and settings saved on port {0} are not shown until Nostroma can use it again. Close the other program and restart Nostroma.', [47831, 51234]),
       gh[l][busyId].replaceAll('{0}', '47831').replaceAll('{1}', '51234').replaceAll('Strata', 'Nostroma'), l);
   }
   A.setTranslationLanguage('en');
@@ -180,13 +180,13 @@ test('the interface size scales the whole page, up to 200 percent, and a saved v
   assert.match(readFileSync(new URL('../src/lib/default-sizes.ts', import.meta.url), 'utf8'), /UI_SCALE_CHOICES = \[0\.9, 1, 1\.1, 1\.25, 1\.5, 1\.75, 2\]/);
   assert.match(store, /savedSizes\(parsed, CONTENT_FS_MIN, CONTENT_FS_MAX\)/, 'a saved value is checked');
   const settings = readFileSync(new URL('../src/screens/Settings.tsx', import.meta.url), 'utf8');
-  assert.match(settings, /Makes all text, buttons and menus in Strata larger or smaller\./);
+  assert.match(settings, /Makes all text, buttons and menus in Nostroma larger or smaller\./);
 });
 
 test('the port, tray, sound and notification rows are in Settings, and only the desktop app shows the port and the tray', () => {
   const settings = readFileSync(new URL('../src/screens/Settings.tsx', import.meta.url), 'utf8');
   assert.match(settings, /label: 'Sound when work finishes'/);
-  assert.match(settings, /label: 'Notify me when Strata needs an answer'/);
+  assert.match(settings, /label: 'Notify me when Nostroma needs an answer'/);
   assert.match(settings, /\.\.\.\(shell\?\.tray \? \[\{ section: 'General', label: 'Minimise to tray'/);
   assert.match(settings, /\.\.\.\(shell\?\.desktop \? \[\{ section: 'General', label: 'App port'/);
   const store = readFileSync(new URL('../src/lib/store.ts', import.meta.url), 'utf8');

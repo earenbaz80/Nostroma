@@ -65,7 +65,7 @@ test('saved roles: parse; the server copy agrees on which are usable', () => {
 });
 
 test('words: the sentence and the one-line summary', () => {
-  assert.equal(R.sentence(V.hw.one), 'Strata will use your RTX 4070 Ti.');
+  assert.equal(R.sentence(V.hw.one), 'Nostroma will use your RTX 4070 Ti.');
   assert.match(R.sentence(V.hw.three), /RTX 4070 Ti is Main: it is faster\./);
   assert.match(R.sentence(V.hw.three), /RTX 2060 starts Off: 8 GB or less\./);
   assert.equal(R.describe({ 0: 'helper', 1: 'main' }, V.hw.two), 'Main: GPU 2 RTX 4070 Ti. Helper: GPU 1 RTX 3060.');

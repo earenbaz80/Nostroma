@@ -46,7 +46,7 @@ test('the generated PowerShell parses without errors', { skip: process.platform 
   const shell = join(process.env.SystemRoot, 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
   const out = execFileSync(shell,
     ['-NoProfile', '-NonInteractive', '-Command', '$e=$null; [void][System.Management.Automation.Language.Parser]::ParseInput($env:SCRIPT,[ref]$null,[ref]$e); $e.Count'],
-    { encoding: 'utf8', env: { ...process.env, SCRIPT: windowsFolderScript('Choose a folder for Strata') }, windowsHide: true }).trim();
+    { encoding: 'utf8', env: { ...process.env, SCRIPT: windowsFolderScript('Choose a folder for Nostroma') }, windowsHide: true }).trim();
   assert.equal(out, '0');
 });
 

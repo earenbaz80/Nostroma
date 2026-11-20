@@ -1,4 +1,4 @@
-import './helpers/isolate-profile.mjs';   // a test run never writes the owner's real Strata profile
+import './helpers/isolate-profile.mjs';   // a test run never writes the owner's real Nostroma profile
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { createNativeControl } from '../server/native-control.mjs';
 import { createControl } from '../server/control-runtime.mjs';
 
-/** The host in the packaged app with a stand-in for Strata Control: the move itself is Control's (tests/terminal/test_models_move.py). */
+/** The host in the packaged app with a stand-in for Nostroma Control: the move itself is Control's (tests/terminal/test_models_move.py). */
 function fixture(t, { plan = {}, move = null, unfinished = null } = {}) {
   const root = realpathSync(mkdtempSync(join(tmpdir(), 'strata-mfolder-')));
   const install = join(root, 'install'), data = join(root, 'host'), oldFolder = join(root, 'old'), newFolder = join(root, 'new');

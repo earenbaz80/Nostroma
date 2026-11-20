@@ -20,7 +20,7 @@ if(process.env.STRATA_ONBOARDING_SCENARIO==='limited'){
 }
 native.repo='/Applications/Strata/engine';
 native.downloadDirectory='/Users/example/Documents/Strata/Models';
-native.installed={models:[],data_folder:'/Models/Strata',engine:{version:native.version}};
+native.installed={models:[],data_folder:'/Models/Nostroma',engine:{version:native.version}};
 native.instances=[];native.jobs=[];native.defaultId=null;native.external=[];
 native.summary='Choose a version to get started';native.error=null;native.capabilities.calibration=true;
 /* UI preview: several installed engines and an engine update, kept in memory (Settings > Engine, About). */
@@ -42,7 +42,7 @@ function stage(name){
  else if(name==='prepared'||name==='ready'){
   const family=native.catalog.families.find(f=>f.family===selected.family),size=family.sizes.find(s=>s.model===selected.model);
   size.installed=true;
-  native.installed.models=[{model:size.id,config:`strata-${size.id}.json`,model_name:family.title,ready:true,context:selected.context,kv:selected.kv,images:selected.vision==='no'?'off':'gpu',lowRamMode:selected.low_ram,dataFolder:'/Models/Strata'}];
+  native.installed.models=[{model:size.id,config:`strata-${size.id}.json`,model_name:family.title,ready:true,context:selected.context,kv:selected.kv,images:selected.vision==='no'?'off':'gpu',lowRamMode:selected.low_ram,dataFolder:'/Models/Nostroma'}];
   if(name==='ready'){native.installed.models[0].visionEnabled=loadVision!=='no';native.instances=[{id:'onboarding-model',apiModelId:size.id,model:size.id,label:family.title,aliases:[],vision:loadVision!=='no',context:selected.context,port:5262,gpus:[0],status:'ready',phase:'idle',loadedAt:new Date().toISOString(),error:null,metrics:null}];}
   if(name==='ready')native.defaultId='onboarding-model';native.summary=name==='ready'?'Model ready':'Model prepared';
   Object.assign(job(),{state:'done',summary:'Model ready',result:{install:{running:false,exit_code:0}}});
@@ -112,7 +112,7 @@ const server=http.createServer(async(req,res)=>{try{
  if(path==='/__fixture/posted'&&req.method==='GET')return json(posted);
  if(/^\/api\/native\/models\/[^/]+\/settings$/.test(path)){const model=path.split('/')[4];if(req.method==='PATCH')modelSettings.set(model,{model,values:body.values??{},mcp:body.mcp??{}});return json(modelSettings.get(model)??{model,values:{sampling:{},args:[],env:{}},mcp:{},restartNeeded:true});}
  if(path==='/api/native/directory'){native.downloadDirectory=body.directory;return json(native);}
- if(path==='/api/local-models/browse')return json({directory:new URL(req.url,'http://fixture').searchParams.get('directory')??'/Models/Strata',parent:'/Models',entries:[{name:'downloads',path:'/Models/Strata/downloads',kind:'folder'},{name:'models',path:'/Models/Strata/models',kind:'folder'}],shortcuts:[],truncated:false});
+ if(path==='/api/local-models/browse')return json({directory:new URL(req.url,'http://fixture').searchParams.get('directory')??'/Models/Nostroma',parent:'/Models',entries:[{name:'downloads',path:'/Models/Strata/downloads',kind:'folder'},{name:'models',path:'/Models/Strata/models',kind:'folder'}],shortcuts:[],truncated:false});
  if(path==='/api/native/plan'){
   const family=native.catalog.families.find(f=>f.family===body.family),size=family.sizes.find(s=>s.model===body.model);
   return json({plan:{title:family.title,download_gb:size.download_gb,disk_short:null}});

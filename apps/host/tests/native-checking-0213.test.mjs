@@ -1,5 +1,5 @@
 /**
- * QAGUI 0213 #2 (second part): while Strata Control starts slowly, /api/native must say "not known yet" (checking), not "engine not
+ * QAGUI 0213 #2 (second part): while Nostroma Control starts slowly, /api/native must say "not known yet" (checking), not "engine not
  * connected, nothing installed", and a read that failed during the start is read again within seconds, not after 45 s.
  */
 import './helpers/isolate-profile.mjs';
@@ -28,7 +28,7 @@ function slowControl({ failFirst }) {
     control: { dir: join(root, 'control'), python: join(root, 'control', 'python', 'python') }, version: '0.2.10',
     async installedModels() {
       asked++;
-      if (asked <= failFirst) throw new Error('Strata Control is still starting');
+      if (asked <= failFirst) throw new Error('Nostroma Control is still starting');
       return { install_dir: install, models: [{ id: 'iq3_s', name: 'm', source_config: configPath, context_tokens: 8192, backend: 'cuda', component_status: 'present', missing: [], issue_codes: [] }] };
     },
     async engine() { return { usable: true, backend: 'cuda', components_dir: join(root, 'c'), engine: { version: '0.1.56', platform: 'linux-x86_64', backend: 'cuda', exe: join(root, 'e', 'strata'), root: join(root, 'e') } }; },

@@ -8,7 +8,7 @@
  * while keeping the host's own module graph unchanged.
  *
  * It intentionally does nothing else: no supervision, no lifecycle, no policy. All of that belongs
- * to the host and to Strata Control.
+ * to the host and to Nostroma Control.
  */
 'use strict';
 

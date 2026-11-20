@@ -162,7 +162,8 @@ test('the engine catalogs: same keys and placeholders in nine languages, none st
     }
   }
   for (const [id, text] of Object.entries(en)) assert.ok(!others.has(text), `already in another catalog: ${id} ${text}`);
-  const known = new Set(Object.values(en));
+  const brand = (t) => String(t).replace(/\bStrata\b/g, 'Nostroma');   // the catalogues keep upstream's wording; i18n.ts swaps it on the way out
+  const known = new Set(Object.values(en).flatMap(v => [v, brand(v)]));
   for (const sentence of [
     'A model is running, so nothing was changed. Unload the model in Models, then try again.',
     'This is the engine in use. Switch to another one first, then delete it.',
@@ -173,7 +174,7 @@ test('the engine catalogs: same keys and placeholders in nine languages, none st
     "The engine wasn't deleted. Nothing else was changed.",
     "The engine wasn't switched. Nothing was changed.",
     'Choose an engine from the list.',
-    'Engines can be switched and deleted in the installed Strata app.',
+    'Engines can be switched and deleted in the installed Nostroma app.',
     'A newer engine is already on this computer. Update switches to it; nothing is downloaded.',
   ]) {
     assert.ok(known.has(sentence), `not in the engine catalog: ${sentence}`);

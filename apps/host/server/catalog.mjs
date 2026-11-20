@@ -1,5 +1,5 @@
 /**
- * The model ladder Strata ships with, and every engine parameter Expert can reach.
+ * The model ladder Nostroma ships with, and every engine parameter Expert can reach.
  *
  * Every variant points at a real GGUF on Hugging Face, so "Choose" performs a
  * real download and "Load" starts a real engine process. Sizes are the real
@@ -52,7 +52,7 @@ export function modelFile(v) {
 /**
  * Memory footprint at a given context: weights + KV cache + runtime overhead.
  * KV grows linearly with context, which is why context length is the first
- * lever Strata offers in Engine tuning.
+ * lever Nostroma offers in Engine tuning.
  */
 export function footprint(v, contextTokens) {
   const kvGb = (v.kvKbPerToken * contextTokens) / 1024 / 1024;

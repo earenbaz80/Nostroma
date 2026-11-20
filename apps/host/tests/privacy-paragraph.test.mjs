@@ -5,7 +5,7 @@ import {resolve} from 'node:path';
 
 const root = resolve(import.meta.dirname, '..');
 const source = readFileSync(resolve(root, 'src/components/PrivacyNotes.tsx'), 'utf8');
-const SENTENCES = ['Strata sends no usage telemetry.', "Conversations stay on this computer, in Strata's data folder.", 'When you choose an API model, that conversation and enabled skill instructions are sent to its provider.', 'The UI request log keeps client, timing and token metadata in memory.', 'Native API monitoring can retain request content in memory when enabled.', 'Connected tools access the resources you configure.'];
+const SENTENCES = ['Nostroma sends no usage telemetry.', "Conversations stay on this computer, in Nostroma's data folder.", 'When you choose an API model, that conversation and enabled skill instructions are sent to its provider.', 'The UI request log keeps client, timing and token metadata in memory.', 'Native API monitoring can retain request content in memory when enabled.', 'Connected tools access the resources you configure.'];
 
 test('Privacy is one compact paragraph with all six sentences, in order', () => {
   const text = source.match(/const NOTES = "([^"]*)";/)?.[1];
@@ -16,7 +16,8 @@ test('Privacy is one compact paragraph with all six sentences, in order', () => 
 test('the paragraph is translated as a whole in all 9 languages', () => {
   const joined = SENTENCES.join(' ');
   const en = JSON.parse(readFileSync(resolve(root, 'src/locales/en.json'), 'utf8'));
-  const id = Object.keys(en).find(k => en[k] === joined);
+  const brand = (t) => String(t).replace(/\bStrata\b/g, 'Nostroma');   // the catalogues keep upstream's wording; i18n.ts swaps it on the way out
+  const id = Object.keys(en).find(k => brand(en[k]) === brand(joined));
   assert.ok(id, 'the English catalog has the whole paragraph');
   for (const lang of ['zh', 'ja', 'de', 'es', 'ru', 'pt', 'ko', 'fr']) {
     const cat = JSON.parse(readFileSync(resolve(root, `src/locales/${lang}.json`), 'utf8'));

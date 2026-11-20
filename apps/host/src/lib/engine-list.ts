@@ -63,7 +63,7 @@ export function versionLess(a: string, b: string): boolean {
 
 /**
  * The installed models that need a newer engine than `version` (the catalog's `engine_min`). A switch to an older engine warns about these and goes on:
- * Strata recommends, it does not force. Only the Qwen family has catalog minimums.
+ * Nostroma recommends, it does not force. Only the Qwen family has catalog minimums.
  */
 export function modelsNeedingNewer(native: NativeState | null | undefined, engine: InstalledEngine): string[] {
   if (!native?.installed?.models.length || !native.catalog || engine.family !== 'qwen') return [];

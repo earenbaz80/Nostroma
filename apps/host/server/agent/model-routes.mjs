@@ -12,10 +12,10 @@
  *   model       the model id the server knows
  *   name        the name the person sees in the model picker
  *   connection  the connection's name ("OpenRouter") or "this computer" for a local model
- *   local       true for a model running in the Strata engine
+ *   local       true for a model running in the Nostroma engine
  */
 
-/** The words people use for the model that runs in Strata on this computer. */
+/** The words people use for the model that runs in Nostroma on this computer. */
 const LOCAL_WORDS = new Set(['local', 'localmodel', 'localstrata', 'thelocalmodel', 'mylocalmodel', 'strata', 'stratalocal', 'stratamodel', 'localstratamodel', 'strataslocalmodel', 'default', 'thismodel', 'samemodel', 'themodel', 'thislocalmodel']);
 
 /** Letters and digits only, lower case: "DeepSeek: V3.2" and "deepseek v3.2" meet. */

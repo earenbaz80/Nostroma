@@ -12,7 +12,7 @@ import { CONTEXT_TOKENS, VARIANTS, downloadUrl, footprint, localModels, refreshL
 /**
  * Design-iteration mode.
  *
- * Strata is being iterated on as a product surface, so by default the model
+ * Nostroma is being iterated on as a product surface, so by default the model
  * library is simulated: downloads animate, loads stage, nothing is fetched and
  * no process is spawned. Set STRATA_REAL_ENGINE=1 to use the real path
  * (Hugging Face download + supervised llama.cpp engine).

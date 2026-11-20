@@ -16,14 +16,14 @@ const React=require('react');
 const {FamilyMenuList}=mod.exports;
 const fam=(family,title,extra={})=>({family,title,about:'',experimental:false,images:true,sizes:[{id:family+'-x'}],...extra});
 test('a model the engine cannot use is a note with its reason; an allowed one shows the reason beside its name',()=>{
- const reason='needs a newer Strata engine: update Strata to use it';
+ const reason='needs a newer Nostroma engine: update Nostroma to use it';
  const shown=[fam('qwen3.8','Qwen3.8-Flash-Next'),fam('qwen4-test','Qwen4 Test',{feed:true,available:false,unavailable_reason:reason})];
- const missing=[fam('later-one','Later One',{sizes:[],feed:true,available:false,unavailable_reason:"this Strata version doesn't know this model yet: update Strata to use it"})];
+ const missing=[fam('later-one','Later One',{sizes:[],feed:true,available:false,unavailable_reason:"this Nostroma version doesn't know this model yet: update Nostroma to use it"})];
  const html=renderToStaticMarkup(React.createElement(FamilyMenuList,{shown,missing,current:shown[0],onPick(){}}));
  assert.equal((html.match(/role="menuitemradio"/g)||[]).length,2);
  assert.equal((html.match(/role="note"/g)||[]).length,1);
  assert(html.includes('Qwen4 Test</strong><small>'+reason+'</small>'));
- assert(html.includes('Later One</strong><small>this Strata version doesn&#x27;t know this model yet: update Strata to use it</small>'));
+ assert(html.includes('Later One</strong><small>this Nostroma version doesn&#x27;t know this model yet: update Nostroma to use it</small>'));
  const plain=renderToStaticMarkup(React.createElement(FamilyMenuList,{shown:[shown[0]],missing:[],current:shown[0],onPick(){}}));
  assert(!plain.includes('<small>'));assert(!plain.includes('role="note"'));
 });

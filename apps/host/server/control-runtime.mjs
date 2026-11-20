@@ -1,5 +1,5 @@
 /**
- * The App Host's bridge to Strata Control, the Python part of the product.
+ * The App Host's bridge to Nostroma Control, the Python part of the product.
  *
  * In the installed app Control ships as a component next to the host (<install>/control): a pinned CPython with
  * hash-locked wheels, nostroma_control, nostroma_cli and the API server. The host never uses the user's Python, never runs
@@ -95,7 +95,7 @@ export function controlEnvironment(control, { env = process.env, components = co
     PYTHONNOUSERSITE: '1', PYTHONUTF8: '1', PYTHONUNBUFFERED: '1', PYTHONIOENCODING: 'utf-8',
     STRATA_NO_ACQUIRE: '1', STRATA_COMPONENTS_DIR: components,
     // The app's own settings file, beside its components: Control and the installer never read or write the file an older
-    // command-line Strata keeps in %APPDATA% / ~/.config (its list of Strata folders), so an old install is never adopted.
+    // command-line Nostroma keeps in %APPDATA% / ~/.config (its list of Nostroma folders), so an old install is never adopted.
     ...(components ? { STRATA_SETTINGS_FILE: (env.NOSTROMA_SETTINGS_FILE ?? env.STRATA_SETTINGS_FILE) || join(dirname(components), 'app-settings.json') } : {}),
     ...(control?.dir ? { STRATA_CONTROL_DIR: control.dir } : {}),
   };
@@ -262,7 +262,7 @@ export function createControl({ control = findControl(), env = process.env, run 
       const result = await call(['models', 'import', path, '--plan', '--output', 'json'], { timeoutMs: 120_000 });
       if (result.json && result.code === 0) return result.json.plan ?? result.json;
       // A set that cannot be used is still a checked set: Control answers (exit 5, ok:false) with the plan and the reasons, and the page says them in
-      // words ("Strata can't run these files yet"). Only a check that could not run at all is a failure.
+      // words ("Nostroma can't run these files yet"). Only a check that could not run at all is a failure.
       if (result.json?.plan && Array.isArray(result.json.plan.issues)) return result.json.plan;
       throw failure(result, 'The files could not be checked.');
     },
@@ -359,7 +359,7 @@ export function createControl({ control = findControl(), env = process.env, run 
       if (result.code !== 0 || !result.json?.ok) throw failure(result, 'The engine did not start.');
       return result.json;
     },
-    /** Give the user back Strata files in their own folders that a run as administrator locked (`strata repair-access`). Never throws. */
+    /** Give the user back Nostroma files in their own folders that a run as administrator locked (`strata repair-access`). Never throws. */
     async repairAccess() {
       try {
         const result = await call(['repair-access', '--output', 'json'], { timeoutMs: 60_000 });
@@ -368,7 +368,7 @@ export function createControl({ control = findControl(), env = process.env, run 
         return { ok: false, error: String(error?.message ?? error) };
       }
     },
-    /** End servers and engines Strata started whose owner is gone (each is re-checked by PID, start time and command line). */
+    /** End servers and engines Nostroma started whose owner is gone (each is re-checked by PID, start time and command line). */
     async cleanup() {
       const result = await call(['runtime', 'cleanup', '--output', 'json'], { timeoutMs: 120_000 });
       return result.json ?? { ok: false, error: result.stderr };

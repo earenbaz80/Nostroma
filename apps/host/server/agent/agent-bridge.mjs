@@ -1,5 +1,5 @@
 /**
- * The agent bridge: Strata chats as Harness sessions.
+ * The agent bridge: Nostroma chats as Harness sessions.
  *
  * What it owns
  *   - the pinned Harness process (one, lazily started, restarted only when a route it needs changed);
@@ -131,7 +131,7 @@ export function createAgentBridge({ dataDir, componentsDir = null, bundledDir = 
   const folderClaims = new FolderClaims();
 
   /**
-   * Where the turn's file tracker must never look (deliverables.mjs): the app, the engine and its components, Strata's own data, AppData
+   * Where the turn's file tracker must never look (deliverables.mjs): the app, the engine and its components, Nostroma's own data, AppData
    * and temp. `forbid` ones also switch tracking off when the chat's folder is one of them or inside one.
    */
   function trackerFolders() {
@@ -339,7 +339,7 @@ export function createAgentBridge({ dataDir, componentsDir = null, bundledDir = 
     } catch (e) {
       throw new AgentUnavailable(`Nostroma could not set this chat to ${MODE_PRESETS[mode].name} mode, so nothing ran. Try again.`, 'mode-unavailable', e.message);
     }
-    // Manual leaves the sandbox open and relies on the Strata gate to ask first. Without the gate it must not start.
+    // Manual leaves the sandbox open and relies on the Nostroma gate to ask first. Without the gate it must not start.
     if (mode === 'manual' && !runtime.gateChecked) {
       try {
         const probe = await runtime.gw.rpc('commands/execute', { agentId: sessionId, line: '/strata-gate', submittedAttachments: [] });
@@ -352,7 +352,7 @@ export function createAgentBridge({ dataDir, componentsDir = null, bundledDir = 
   }
 
   /**
-   * Run one agent turn for a Strata chat and stream it as frames.
+   * Run one agent turn for a Nostroma chat and stream it as frames.
    * `signal` means the client went away: the turn keeps running (that is not Stop).
    */
   async function runTurn(options) {

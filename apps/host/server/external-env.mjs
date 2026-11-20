@@ -1,11 +1,11 @@
 /**
- * The environment for programs that are NOT part of Strata: the folder chooser (zenity, kdialog, gdbus), xdg-open and the browser it
+ * The environment for programs that are NOT part of Nostroma: the folder chooser (zenity, kdialog, gdbus), xdg-open and the browser it
  * starts, and the shell and tools the coding assistant runs for the person.
  *
- * Why: the Linux AppImage starts Strata with its own libraries and settings in the environment (LD_LIBRARY_PATH, GTK_*, GIO_*,
- * GSETTINGS_SCHEMA_DIR, XDG_DATA_DIRS, PYTHONHOME, ...). A system program that inherits them loads Strata's copies of libssl, GTK and
+ * Why: the Linux AppImage starts Nostroma with its own libraries and settings in the environment (LD_LIBRARY_PATH, GTK_*, GIO_*,
+ * GSETTINGS_SCHEMA_DIR, XDG_DATA_DIRS, PYTHONHOME, ...). A system program that inherits them loads Nostroma's copies of libssl, GTK and
  * GLib instead of its own and dies (tester report 2026-10-17: zenity "libssl.so.3: version OPENSSL_3.2.0 not found", so the folder
- * picker did nothing). Programs Strata ships itself (its Python, Node and engine) keep the environment they were built for; everything
+ * picker did nothing). Programs Nostroma ships itself (its Python, Node and engine) keep the environment they were built for; everything
  * else gets the environment the AppImage was started from.
  *
  * The AppImage's launcher records that original environment in STRATA_ORIGINAL_ENV (repack-appimage.sh adds the hook). An older

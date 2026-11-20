@@ -1,4 +1,4 @@
-import './helpers/isolate-profile.mjs';   // a test run never writes the owner's real Strata profile
+import './helpers/isolate-profile.mjs';   // a test run never writes the owner's real Nostroma profile
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
@@ -125,7 +125,7 @@ function packagedFixture({ engineUsable = true, updater = null, repair = false, 
   let statusAnswer = { state: 'ready' }, metricsDown = false, healthDown = false;
   const control = {
     control: { dir: join(root, 'control'), python: join(root, 'control', 'python', 'python.exe') }, version: controlVersion,
-    async installedModels(options) { calls.push(['installedModels', options?.installDir ?? null]); return { install_dir: install, models: configs.map(c => ({ id: c.id, name: `Qwen ${c.id}`, source_config: c.path, component_status: 'present', context_tokens: 32768, backend: 'cuda', ...(/^deepseek/.test(c.id) ? { component_status: 'retired', retired: 'deepseek', name: 'DeepSeek-V4.1-Flash ISTA-DAS 2.00 bpw', retired_line: 'DeepSeek - no longer supported.', refusal: 'DeepSeek-V4.1-Flash ISTA-DAS 2.00 bpw is a DeepSeek model. This version of Strata no longer runs DeepSeek models, so it was not started. Choose a Qwen model to run instead. If you no longer need the DeepSeek files, you can delete that folder to free the space.' } : {}) })) }; },
+    async installedModels(options) { calls.push(['installedModels', options?.installDir ?? null]); return { install_dir: install, models: configs.map(c => ({ id: c.id, name: `Qwen ${c.id}`, source_config: c.path, component_status: 'present', context_tokens: 32768, backend: 'cuda', ...(/^deepseek/.test(c.id) ? { component_status: 'retired', retired: 'deepseek', name: 'DeepSeek-V4.1-Flash ISTA-DAS 2.00 bpw', retired_line: 'DeepSeek - no longer supported.', refusal: 'DeepSeek-V4.1-Flash ISTA-DAS 2.00 bpw is a DeepSeek model. This version of Nostroma no longer runs DeepSeek models, so it was not started. Choose a Qwen model to run instead. If you no longer need the DeepSeek files, you can delete that folder to free the space.' } : {}) })) }; },
     async engine() {
       calls.push(['engine']);
       return engineUsable
@@ -229,7 +229,7 @@ test('packaged: load = saved profile + runtime start under Control; unload = run
   } finally { await f.native.close(); f.cleanup(); }
 });
 
-test('packaged: a DeepSeek model of an earlier Strata (an id with dots) is listed with its one line; its load is refused with Control\'s words and starts nothing', async () => {
+test('packaged: a DeepSeek model of an earlier Nostroma (an id with dots) is listed with its one line; its load is refused with Control\'s words and starts nothing', async () => {
   const id = 'deepseek-v4.1-flash-ist-das-2.00bpw';
   const f = packagedFixture({ ids: [id] });
   try {
@@ -242,7 +242,7 @@ test('packaged: a DeepSeek model of an earlier Strata (an id with dots) is liste
     assert.equal(state.installed.models[0].retired.line, 'DeepSeek - no longer supported.');
     const job = await finish(f.native, f.native.operation('load', { model: id }).id);
     assert.equal(job.state, 'error');
-    assert.match(String(job.error), /^DeepSeek-V4\.1-Flash ISTA-DAS 2\.00 bpw is a DeepSeek model\. This version of Strata no longer runs DeepSeek models, so it was not started\./);
+    assert.match(String(job.error), /^DeepSeek-V4\.1-Flash ISTA-DAS 2\.00 bpw is a DeepSeek model\. This version of Nostroma no longer runs DeepSeek models, so it was not started\./);
     assert.deepEqual(f.calls.filter(c => ['saveProfile', 'start'].includes(c[0])), [], 'nothing is saved or started');
     assert.equal(readFileSync(path, 'utf8'), before, 'its settings file is not written');
     for (const odd of ['a..b', '../x', 'x/y', '.hidden']) assert.equal((await finish(f.native, f.native.operation('load', { model: odd }).id)).state, 'error', odd);
@@ -553,7 +553,7 @@ test('packaged: a model install that fails does not cancel the engine download i
   const report = { engine: { status: 'install', offered: { version: '0.1.46' }, download_bytes: 5e8 } };
   const seen = { finished: false, aborted: null };
   const f = packagedFixture({ engineUsable: false,
-    installPoll: { summary: 'failed', install: { running: false, exit_code: 1, error: 'this engine (99.0.0) does not run Qwen3.6-35B-A3B yet - update Strata' } },
+    installPoll: { summary: 'failed', install: { running: false, exit_code: 1, error: 'this engine (99.0.0) does not run Qwen3.6-35B-A3B yet - update Nostroma' } },
     updater: { report, async update(options) {
       options.onEvent({ event: 'progress', phase: 'download', percent: 40, done: 2e8, total: 5e8 });
       await new Promise(r => setTimeout(r, 2500));          // longer than the install job's first poll (1.5 s), which reads the failure
@@ -691,7 +691,7 @@ test('a GGUF folder Control refuses (exit 5, ok:false) still comes back as a che
   await assert.rejects(() => broken.importPlan('/some/folder'), /boom/);
 });
 
-test("preparing an adopted GGUF folder again never takes the folder's parent for the data folder (it is the person's, not Strata's)", async () => {
+test("preparing an adopted GGUF folder again never takes the folder's parent for the data folder (it is the person's, not Nostroma's)", async () => {
   const f = packagedFixture();
   try {
     // The model is already adopted: its run config points at a GGUF in someone's own ".../models/IQ3_S" folder.
@@ -730,7 +730,7 @@ test("onboarding 'use your own GGUF' (#3507, #3424): the models folder the perso
     const sent = f.rpc.at(-1).arguments;
     assert.equal(sent.gguf_dir, own);
     assert.notEqual(sent.data_dir, own, 'the folder of GGUF files is not the data folder: the packs would be downloaded into it');
-    // a folder of GGUF files named like a data folder's models/<tag> hands its Strata folder to the installer
+    // a folder of GGUF files named like a data folder's models/<tag> hands its Nostroma folder to the installer
     assert.ok(sent.data_dir === undefined || sent.data_dir === join(f.root, 'Strata-data'), `data_dir was ${sent.data_dir}`);
   } finally { await f.native.close(); f.cleanup(); }
 });

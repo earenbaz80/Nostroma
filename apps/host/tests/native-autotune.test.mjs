@@ -109,7 +109,7 @@ test('a tune is refused while a model is generating, and loaded models are unloa
   } finally { await f.cleanup(); }
 });
 
-test('saved tunings: status for the choices, list, and actions go to Strata Control by id', async () => {
+test('saved tunings: status for the choices, list, and actions go to Nostroma Control by id', async () => {
   const log = [];
   const f = nativeFixture({ tuneHandler: handler(log, {}) });
   try {

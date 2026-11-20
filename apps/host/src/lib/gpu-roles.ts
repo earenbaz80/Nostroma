@@ -4,7 +4,7 @@
  *
  *  - Main:   the card that runs the LAST stage of the layer split (the output head, the draft layer and the check of its guesses). Exactly one.
  *  - Helper: holds a share of the model, so more of it fits on graphics cards instead of being read from the drive.
- *  - Off:    Strata does not touch it.
+ *  - Off:    Nostroma does not touch it.
  *
  * The engine takes the cards in stage order (`gpu: [helper, ..., main]`, `gpu_order: "as_given"`), so Main is the LAST one.
  */
@@ -206,7 +206,7 @@ export function warnings(roles: Roles, cards: RoleCard[], opts: { spillGb?: numb
   for (const i of byNumber(roles)) {
     const c = cs.get(i), role = roles[i];
     if (!c || role === 'off') continue;
-    if (!canRun(c)) out.push({ code: 'cannot_run', card: i, text: `${shortName(c)} cannot run Strata.`, fix: { card: i, role: 'off' } });
+    if (!canRun(c)) out.push({ code: 'cannot_run', card: i, text: `${shortName(c)} cannot run Nostroma.`, fix: { card: i, role: 'off' } });
     else if (role === 'main' && shares(c) && cards.some(x => !shares(x) && canRun(x))) {
       const real = cards.filter(x => !shares(x) && canRun(x)).sort((a, b) => speed(b) - speed(a) || mem(b) - mem(a) || a.index - b.index)[0];
       out.push({ code: 'igpu_main', card: i, text: `${shortName(c)} is built-in graphics; it is slow as Main.`, fix: { card: real.index, role: 'main' } });
@@ -238,17 +238,17 @@ export function noteText(code: string | null, cards: RoleCard[]): string {
 /** The one plain line above the cards. */
 export function sentence(cards: RoleCard[] | null | undefined, vendor?: string | null): string {
   const cs = rows(cards, vendor), rec = recommend(cards, vendor);
-  if (rec.main === null) return 'No graphics card that Strata can use was found.';
+  if (rec.main === null) return 'No graphics card that Nostroma can use was found.';
   const byi = new Map(cs.map(c => [c.index, c]));
   const m = byi.get(rec.main)!;
-  if (cs.length === 1) return `Strata will use your ${shortName(m)}.`;
+  if (cs.length === 1) return `Nostroma will use your ${shortName(m)}.`;
   const why = { same: 'the cards are alike', memory: 'it has more memory', faster: 'it is faster', only: 'it is the only card', none: '' }[rec.why];
   let s = `${shortName(m)} is Main: ${why}.`;
   const helpers = byNumber(rec.roles).filter(i => rec.roles[i] === 'helper').map(i => shortName(byi.get(i)!));
   if (helpers.length) s += ` ${helpers.join(' and ')} ${helpers.length > 1 ? 'help' : 'helps'}.`;
   for (const i of byNumber(rec.roles)) if (rec.roles[i] === 'off') {
     const code = rec.reasons[i], c = byi.get(i)!;
-    s += ` ${shortName(c)} starts Off: ${code === 'cannot_run' ? 'Strata cannot run it.' : code === 'igpu' ? 'built-in graphics.' : `${OFF_AT_OR_BELOW_GB} GB or less.`}`;
+    s += ` ${shortName(c)} starts Off: ${code === 'cannot_run' ? 'Nostroma cannot run it.' : code === 'igpu' ? 'built-in graphics.' : `${OFF_AT_OR_BELOW_GB} GB or less.`}`;
   }
   return s;
 }

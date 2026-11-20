@@ -4,7 +4,7 @@
  * exactly where its run config has them, and must never rewrite data_dir in the settings. No internet: the model loads without pictures and says so in one line.
  * Control is a fake that records what the host asked it to do; nothing here starts an engine or reaches a network.
  */
-import './helpers/isolate-profile.mjs';   // a test run never writes the owner's real Strata profile
+import './helpers/isolate-profile.mjs';   // a test run never writes the owner's real Nostroma profile
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
@@ -23,7 +23,7 @@ const listing = root => { const out = {}; const walk = dir => { for (const e of 
 /**
  * layout 'own'      the model's files in their own folder, its pack and draft layer in a data folder that is not the app's models folder (the owner's case)
  * layout 'normal'   everything under <data>/models/<tag>, <data>/packs, <data>/mtp (what the app's own download makes)
- * layout 'local'    a model added with "Use a local GGUF": files in the person's folder, pack and draft layer in a Strata data folder of that day
+ * layout 'local'    a model added with "Use a local GGUF": files in the person's folder, pack and draft layer in a Nostroma data folder of that day
  */
 function fixture({ layout = 'own', vision = null, arch = undefined, onFetch = null, mmprojFile = false, engineRoot = null } = {}) {
   const root = mkdtempSync(join(tmpdir(), 'strata-lp-test-'));
@@ -54,7 +54,7 @@ function fixture({ layout = 'own', vision = null, arch = undefined, onFetch = nu
     async installedModels() {
       const gone = vision && !existsSync(mmproj);
       return { install_dir: install, models: [{ id: 'iq3_s', name: 'qwen3.8-flash-next-iq3_s', source_config: configPath, context_tokens: 8192, backend: 'cuda',
-        component_status: String(arch ?? '').startsWith('deepseek') ? 'retired' : gone ? 'missing_or_invalid' : 'present', ...(String(arch ?? '').startsWith('deepseek') ? { retired: 'deepseek', retired_line: 'DeepSeek - no longer supported.', refusal: 'DeepSeek-V4.1-Flash ISTA-DAS 2.00 bpw is a DeepSeek model. This version of Strata no longer runs DeepSeek models, so it was not started. Choose a Qwen model to run instead. If you no longer need the DeepSeek files, you can delete that folder to free the space.' } : {}), ...(gone ? { missing: [{ part: 'vision/mmproj', file: 'mmproj-Qwen3.8-Flash-Next-BF16.gguf', status: 'missing' }], issue_codes: ['COMPONENT_MISSING'] } : { missing: [], issue_codes: [] }) }] };
+        component_status: String(arch ?? '').startsWith('deepseek') ? 'retired' : gone ? 'missing_or_invalid' : 'present', ...(String(arch ?? '').startsWith('deepseek') ? { retired: 'deepseek', retired_line: 'DeepSeek - no longer supported.', refusal: 'DeepSeek-V4.1-Flash ISTA-DAS 2.00 bpw is a DeepSeek model. This version of Nostroma no longer runs DeepSeek models, so it was not started. Choose a Qwen model to run instead. If you no longer need the DeepSeek files, you can delete that folder to free the space.' } : {}), ...(gone ? { missing: [{ part: 'vision/mmproj', file: 'mmproj-Qwen3.8-Flash-Next-BF16.gguf', status: 'missing' }], issue_codes: ['COMPONENT_MISSING'] } : { missing: [], issue_codes: [] }) }] };
     },
     async engine() { return { usable: true, backend: 'cuda', components_dir: join(root, 'c'), engine: { version: '0.1.55', platform: 'linux-x86_64', backend: 'cuda', exe: join(root, 'engine', 'strata'), root: engineRoot ?? join(root, 'engine') } }; },
     async saveProfile(name, path) { calls.push(['saveProfile', name]); saved.push(JSON.parse(readFileSync(path, 'utf8'))); return {}; },
@@ -248,15 +248,15 @@ test('nothing is downloaded unless the Load asked for pictures, and never for a 
   // prepared, the file is there
   f = fixture({ vision: true, mmprojFile: true });
   try { await f.native.refresh(true); assert.equal((await finish(f.native, loadOp(f, { vision: 'yes' }).id)).state, 'done'); assert.equal(f.fetches().length, 0); assert.ok(f.saved[0].vision); } finally { await f.native.close(); f.cleanup(); }
-  // a DeepSeek model of an earlier Strata (Control: retired): the load stops with Control's own words, fetches nothing and writes nothing
+  // a DeepSeek model of an earlier Nostroma (Control: retired): the load stops with Control's own words, fetches nothing and writes nothing
   f = fixture({ arch: 'deepseek41' });
   try {
     const m = (await f.native.refresh(true)).installed.models[0];
-    assert.deepEqual(m.retired, { line: 'DeepSeek - no longer supported.', refusal: 'DeepSeek-V4.1-Flash ISTA-DAS 2.00 bpw is a DeepSeek model. This version of Strata no longer runs DeepSeek models, so it was not started. Choose a Qwen model to run instead. If you no longer need the DeepSeek files, you can delete that folder to free the space.' });
+    assert.deepEqual(m.retired, { line: 'DeepSeek - no longer supported.', refusal: 'DeepSeek-V4.1-Flash ISTA-DAS 2.00 bpw is a DeepSeek model. This version of Nostroma no longer runs DeepSeek models, so it was not started. Choose a Qwen model to run instead. If you no longer need the DeepSeek files, you can delete that folder to free the space.' });
     assert.equal(m.ready, false);
     const job = await finish(f.native, loadOp(f, { vision: 'yes' }).id);
     assert.equal(job.state, 'error');
-    assert.match(String(job.error), /is a DeepSeek model\. This version of Strata no longer runs DeepSeek models, so it was not started\./);
+    assert.match(String(job.error), /is a DeepSeek model\. This version of Nostroma no longer runs DeepSeek models, so it was not started\./);
     assert.equal(f.fetches().length, 0);
     assert.equal(f.saved.length, 0, 'no profile is saved');
   } finally { await f.native.close(); f.cleanup(); }

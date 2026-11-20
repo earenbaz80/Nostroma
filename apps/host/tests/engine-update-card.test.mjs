@@ -27,7 +27,7 @@ test('the card is on the Models screen once and nowhere else', () => {
   assert.doesNotMatch(src('src/components/GuidedSetup.tsx'), /EngineUpdateCard/);
 });
 
-test('an updated engine is reported as an engine, not as "Strata is updated"', () => {
+test('an updated engine is reported as an engine, not as "Nostroma is updated"', () => {
   const host = src('server/native-control.mjs');
   assert.match(host, /x\.component==='engine'\?'The engine is updated and ready\.'/);
 });

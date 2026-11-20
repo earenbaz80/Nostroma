@@ -18,7 +18,7 @@ export function appVersionFrom({ env = process.env, here }) {
   return 'dev';
 }
 
-/** The version "Strata" means on screen and in the update check: the app's own, not Strata Control's (see src/lib/app-version.ts). */
+/** The version "Nostroma" means on screen and in the update check: the app's own, not Nostroma Control's (see src/lib/app-version.ts). */
 export function appVersionToShow(app, control) {
   const real = value => (typeof value === 'string' && value.trim() && value.trim().toLowerCase() !== 'dev' ? value.trim() : null);
   return real(app) ?? real(control) ?? (typeof app === 'string' && app.trim() ? app.trim() : null);

@@ -12,24 +12,24 @@ const HINT: Record<Role, string> = { main: 'Does the main work', helper: 'Holds 
 /** The one plain line above the cards, built from translated pieces. */
 export function recommendationLine(cards: RoleCard[], vendor?: string | null): string {
   const rec = recommend(cards, vendor);
-  if (rec.main === null) return tr('No graphics card that Strata can use was found.');
+  if (rec.main === null) return tr('No graphics card that Nostroma can use was found.');
   const byi = new Map(cards.map(c => [c.index, c]));
   const m = byi.get(rec.main)!;
-  if (cards.length === 1) return tr('Strata will use your {0}.', [shortName(m)]);
+  if (cards.length === 1) return tr('Nostroma will use your {0}.', [shortName(m)]);
   const why = { same: 'the cards are alike', memory: 'it has more memory', faster: 'it is faster', only: 'it is the only card', none: '' }[rec.why];
   let s = tr('{0} is Main: {1}.', [shortName(m), tr(why)]);
   const helpers = Object.keys(rec.roles).map(Number).filter(i => rec.roles[i] === 'helper').map(i => shortName(byi.get(i)!));
   if (helpers.length) s += ' ' + tr(helpers.length > 1 ? '{0} help.' : '{0} helps.', [helpers.join(', ')]);
   for (const i of Object.keys(rec.roles).map(Number)) if (rec.roles[i] === 'off') {
     const code = rec.reasons[i], c = byi.get(i)!;
-    s += ' ' + tr('{0} starts Off: {1}', [shortName(c), code === 'cannot_run' ? tr('Strata cannot run it.') : code === 'igpu' ? tr('built-in graphics.') : tr('{0} GB or less.', [OFF_AT_OR_BELOW_GB])]);
+    s += ' ' + tr('{0} starts Off: {1}', [shortName(c), code === 'cannot_run' ? tr('Nostroma cannot run it.') : code === 'igpu' ? tr('built-in graphics.') : tr('{0} GB or less.', [OFF_AT_OR_BELOW_GB])]);
   }
   return s;
 }
 
 function warningText(w: RoleWarning, cards: RoleCard[]): string {
   const c = w.card !== null ? cards.find(x => x.index === w.card) : undefined;
-  if (w.code === 'cannot_run') return tr('{0} cannot run Strata.', [c ? shortName(c) : '']);
+  if (w.code === 'cannot_run') return tr('{0} cannot run Nostroma.', [c ? shortName(c) : '']);
   if (w.code === 'igpu_main') return tr('{0} is built-in graphics; it is slow as Main.', [c ? shortName(c) : '']);
   if (w.code === 'cpu_only') return tr(w.text === CPU_ONLY_LINE ? CPU_ONLY_LINE : NO_CARD_LINE);
   return tr('Not enough memory for this setup: about {0} GB is read from the drive.', [w.text.match(/about (\d+) GB/)?.[1] ?? '']);
@@ -53,7 +53,7 @@ export function GpuRoles({ cards, roles, custom, recommendedRoles, vendor, onCha
   roles: Roles;
   /** The person changed a role: "Your choice", and "Back to recommended" is offered. */
   custom: boolean;
-  /** The roles Strata recommends (the tags and "Back to recommended" use them); the pure recommendation when not given. */
+  /** The roles Nostroma recommends (the tags and "Back to recommended" use them); the pure recommendation when not given. */
   recommendedRoles?: Roles;
   vendor?: string | null;
   onChange: (next: Roles) => void;
@@ -95,7 +95,7 @@ export function GpuRoles({ cards, roles, custom, recommendedRoles, vendor, onCha
     </div>
     <div className="gpuroles__reco" data-custom={custom}>
       <Icon name="bolt" size={18}/>
-      <p><strong>{tr(custom ? 'Your choice.' : 'Recommended.')}</strong> {custom ? tr('You changed the roles. Strata will use exactly these.') : recommendationLine(cards, vendor)}</p>
+      <p><strong>{tr(custom ? 'Your choice.' : 'Recommended.')}</strong> {custom ? tr('You changed the roles. Nostroma will use exactly these.') : recommendationLine(cards, vendor)}</p>
     </div>
     <div className="gpuroles__rows" role="list">
       {cards.map(c => {
@@ -126,10 +126,10 @@ export function GpuRoles({ cards, roles, custom, recommendedRoles, vendor, onCha
         <dl>
           <dt>{tr('Main')}</dt><dd>{tr('The card that does the final steps of every answer: it writes the next words, runs the draft-ahead step and checks it, and keeps your conversation. Pick your fastest card with plenty of memory. There is only ever one.')}</dd>
           <dt>{tr('Helper')}</dt><dd>{tr('Holds a share of the model and its fast memory, so more of it fits on graphics cards instead of being read from your drive. Prompts are read about 20% faster.')}</dd>
-          <dt>{tr('Off')}</dt><dd>{tr('Strata does not touch this card. Good for a card you use for something else, such as a game or your screen.')}</dd>
+          <dt>{tr('Off')}</dt><dd>{tr('Nostroma does not touch this card. Good for a card you use for something else, such as a game or your screen.')}</dd>
         </dl>
         {memoryGb ? <div className="gpuroles__fit" data-state={lst.length ? (spillGb >= 1 ? 'bad' : 'ok') : 'bad'}><span className="gpuroles__dot" aria-hidden="true"/><span>{lst.length ? (spillGb >= 1 ? tr('The model needs about {0} GB. These cards and your memory give about {1} GB, so about {2} GB would be read from your drive.', [Math.round(memoryGb), Math.round(have), Math.round(spillGb)]) : tr('The model needs about {0} GB. These cards and your memory give about {1} GB. It fits.', [Math.round(memoryGb), Math.round(have)])) : tr('Only your processor and memory are used.')}</span></div> : null}
-        <div className="gpuroles__expert xs muted">{lst.length ? tr('For experts: the engine starts on cards {0} (Main last).', [lst.join(',')]) : null} {custom ? '' : tr('Not saved while you keep the recommendation: Strata picks again if you add or remove a card.')}</div>
+        <div className="gpuroles__expert xs muted">{lst.length ? tr('For experts: the engine starts on cards {0} (Main last).', [lst.join(',')]) : null} {custom ? '' : tr('Not saved while you keep the recommendation: Nostroma picks again if you add or remove a card.')}</div>
       </div>
     </details>
   </div>;

@@ -1,6 +1,6 @@
 /**
  * Which remembered model the host starts by itself when it comes up (STRATA_REAL_ENGINE=1): the one loaded last, else the current one.
- * A remembered DeepSeek model (Strata 0.2.13 and earlier; nostroma_control/retired.py) is not started: the approved refusal goes to the host
+ * A remembered DeepSeek model (Nostroma 0.2.13 and earlier; nostroma_control/retired.py) is not started: the approved refusal goes to the host
  * log, as every autostart failure does, and nothing is written - the remembered value stays in the settings file exactly as it was.
  */
 export const DEEPSEEK_ID = /deepseek/i;

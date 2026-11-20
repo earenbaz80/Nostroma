@@ -86,7 +86,7 @@ function ReasonText({ reason }: { reason: BoardReason }) {
       break;
     }
     case 'task-stopped': text = tr('This run was stopped before it finished.'); break;
-    case 'task-closed': text = tr('Strata closed while this was running, so it did not finish.'); break;
+    case 'task-closed': text = tr('Nostroma closed while this was running, so it did not finish.'); break;
     case 'task-needs-yes': text = tr('Finished, but wanted to change something and could not ask. Nothing was changed.'); break;
     case 'loop-failed': text = tr('Stopped: {0} runs in a row did not work.', [LOOP_MAX_FAILURES]); break;
     default: text = reason.ask ? askQuestion(reason.ask) : reason.fallback ?? '';

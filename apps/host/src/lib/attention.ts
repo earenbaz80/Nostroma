@@ -1,9 +1,9 @@
 /**
- * Telling the person that Strata needs them or has finished (#3586, #3477). Both are opt-in and off by default.
+ * Telling the person that Nostroma needs them or has finished (#3586, #3477). Both are opt-in and off by default.
  *
  * - A short sound when an answer or task that took a while is finished, or when Nostroma is in the background (public/nostroma-done-sound.wav,
- *   made for Strata from sine waves, no sample).
- * - A desktop notification when Manual mode waits for an approval and Strata is in the background. The desktop app shows it through its own
+ *   made for Nostroma from sine waves, no sample).
+ * - A desktop notification when Manual mode waits for an approval and Nostroma is in the background. The desktop app shows it through its own
  *   shell (the host passes it on, so it also works while the window is hidden in the tray); a browser uses the page's notifications.
  */
 import { api } from './client';
@@ -48,15 +48,15 @@ export interface Notice { title: string; body: string }
 
 /** The sentence of the approval notification, in the person's language. */
 export function approvalNotice(tool: string): Notice {
-  return { title: tr('Strata needs your answer'), body: tr('The assistant wants to use {0}. Open Strata to approve or deny.', [tool || tr('a tool')]) };
+  return { title: tr('Nostroma needs your answer'), body: tr('The assistant wants to use {0}. Open Nostroma to approve or deny.', [tool || tr('a tool')]) };
 }
 
 /** #5617: the agent asked the person a question (ask_user_question): the approval notification's own title, with no body (no new sentence). */
 export function questionNotice(): Notice {
-  return { title: tr('Strata needs your answer'), body: '' };
+  return { title: tr('Nostroma needs your answer'), body: '' };
 }
 
-/** The question notification, under the same opt-in as the approval one ("Notify me when Strata needs an answer") and only when Strata is not in front. */
+/** The question notification, under the same opt-in as the approval one ("Notify me when Nostroma needs an answer") and only when Nostroma is not in front. */
 export function questionAsked(enabled: boolean, focused = windowInFront()): Promise<boolean> {
   if (!enabled || focused) return Promise.resolve(false);
   return showNotice(questionNotice());

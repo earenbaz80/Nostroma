@@ -1,7 +1,7 @@
 /**
- * The desktop shell's own choices, kept in <Strata data folder>/shell-prefs.json (#3402, #3477): the shell reads the file when it starts
- * (the port it asks for, whether closing the window keeps Strata in the tray, the language of the tray menu), before any page exists.
- * The page changes them through the host (POST /api/shell/prefs); a change of the port or the tray applies the next time Strata starts.
+ * The desktop shell's own choices, kept in <Nostroma data folder>/shell-prefs.json (#3402, #3477): the shell reads the file when it starts
+ * (the port it asks for, whether closing the window keeps Nostroma in the tray, the language of the tray menu), before any page exists.
+ * The page changes them through the host (POST /api/shell/prefs); a change of the port or the tray applies the next time Nostroma starts.
  *
  *   { "port": 0 | 1024..65535, "tray": false, "language": "en" }
  *

@@ -2,7 +2,7 @@
  * Locates and runs the pinned DeepSeek Harness (`dsh`) for the web profile.
  *
  * The Harness is a separate component, not part of the host: it is found through `STRATA_HARNESS_DIR`
- * (or `<components>/harness`), checked for the files a run needs, and started with the Strata profile
+ * (or `<components>/harness`), checked for the files a run needs, and started with the Nostroma profile
  * on a loopback port the OS picks. Nothing here downloads or installs anything.
  *
  * One process, one gateway, many sessions: every chat is a Harness session inside it, and cancelling
@@ -26,7 +26,7 @@ const KEEP = /^(PATH|PATHEXT|SYSTEMROOT|WINDIR|COMSPEC|TEMP|TMP|TMPDIR|HOME|USER
 export function agentEnvironment(base = process.env, extra = {}) {
   const out = {};
   // The shell and tools the assistant runs for the person are the person's own programs: they get the environment the AppImage was
-  // started from, never Strata's bundled libraries and GTK/GIO settings (external-env.mjs). Outside an AppImage this is `base`.
+  // started from, never Nostroma's bundled libraries and GTK/GIO settings (external-env.mjs). Outside an AppImage this is `base`.
   for (const [k, v] of Object.entries(externalEnvironment(base))) {
     if (v === undefined || !KEEP.test(k) || SECRET_NAME.test(k)) continue;
     out[k] = v;

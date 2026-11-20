@@ -10,7 +10,7 @@ import { nativeFixture } from './helpers/native-fixture.mjs';
 
 const scratch = t => { const dir = realpathSync(mkdtempSync(join(tmpdir(), 'strata-folder-'))); t.after(() => rmSync(dir, { recursive: true, force: true })); return dir; };
 
-test('a whole drive is not filled with models: it becomes Strata (data) and Strata/Models (library)', () => {
+test('a whole drive is not filled with models: it becomes Nostroma (data) and Strata/Models (library)', () => {
   const root = parse(tmpdir()).root;
   assert.equal(isDriveRoot(root), true);
   assert.equal(isDriveRoot(tmpdir()), false);

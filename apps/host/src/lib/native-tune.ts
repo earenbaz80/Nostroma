@@ -1,6 +1,6 @@
 import { api } from './client';
 
-/** A saved tuning, as Strata Control reports it (the same store the Terminal uses). */
+/** A saved tuning, as Nostroma Control reports it (the same store the Terminal uses). */
 export interface TunePreset {
   id: string;
   name: string;
@@ -97,6 +97,6 @@ export function tuneStartBlock(input: { busy: boolean; otherRunning: boolean; st
 }
 export const TUNE_BLOCK_TEXT: Record<'other' | 'loading' | 'unreadable', string> = {
   other: 'Finish the current operation first.',
-  loading: 'Strata is still checking this model for saved tunings. Start tuning works as soon as that is done.',
-  unreadable: 'Strata could not read the tuning details for this model, so tuning cannot start. Close this window and open it again.',
+  loading: 'Nostroma is still checking this model for saved tunings. Start tuning works as soon as that is done.',
+  unreadable: 'Nostroma could not read the tuning details for this model, so tuning cannot start. Close this window and open it again.',
 };

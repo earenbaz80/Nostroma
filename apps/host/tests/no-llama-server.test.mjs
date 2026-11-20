@@ -1,4 +1,4 @@
-import './helpers/isolate-profile.mjs';   // a test run never writes the owner's real Strata profile
+import './helpers/isolate-profile.mjs';   // a test run never writes the owner's real Nostroma profile
 /**
  * The packaged app (STRATA_PACKAGED=1, STRATA_REAL_ENGINE=1, as the app shell starts the host) never starts a llama.cpp `llama-server`.
  * 0.2.14 did: a GGUF imported through /api/local-models was loaded through a llama-server named by STRATA_LLAMA_SERVER (POST /load), and at

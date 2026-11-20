@@ -26,7 +26,7 @@ test('storage errors expose needed/free space without paths or command flags',()
  assert.equal(onboardingError('Network unavailable').message,'Network unavailable');
 });
 test('default folder labels are readable across platform separators',()=>{
- assert.equal(modelFolderLabel('C:\\Users\\Me\\Documents\\Strata\\Models'),'Documents / Strata / Models');
- assert.equal(modelFolderLabel('/home/me/Documents/Strata/Models'),'Documents / Strata / Models');
+ assert.equal(modelFolderLabel('C:\\Users\\Me\\Documents\\Strata\\Models'),'Documents / Nostroma / Models');
+ assert.equal(modelFolderLabel('/home/me/Documents/Strata/Models'),'Documents / Nostroma / Models');
  assert.equal(modelFolderLabel('/mnt/external/models'),'/mnt/external/models');
 });
