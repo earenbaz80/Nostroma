@@ -46,9 +46,27 @@ jobs:
           node-version: 24
           cache: npm
           cache-dependency-path: apps/host/package-lock.json
+      # The browser build is tied to the Playwright release, so the version from
+      # the lockfile is the cache key: a new playwright-core misses it once and
+      # downloads again, everything else restores the ~260 MB build in seconds.
+      - name: Find the Playwright version
+        id: playwright
+        working-directory: apps/host
+        run: |
+          version=$(node -p "require('./package-lock.json').packages['node_modules/playwright-core'].version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "playwright-core $version"
+
+      - name: Restore the browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+
       # The headless shell is the smaller Chromium build and is all a
       # screenshot needs. It lands in the Playwright cache, which
-      # scripts/browser.mjs reads, so no path has to be pinned here.
+      # scripts/browser.mjs reads, so no path has to be pinned here. With the
+      # cache restored this step only checks what is already there.
       - name: Install the browser
         working-directory: apps/host
         run: |
