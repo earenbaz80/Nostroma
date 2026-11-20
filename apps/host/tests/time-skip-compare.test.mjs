@@ -83,6 +83,11 @@ test('the working view says what is happening, from the host\'s words or the pha
   assert.match(artifacts, /srcDoc={current\.content === undefined \? undefined : htmlPreviewDocument\(current\.content\)}/);
   assert.match(artifacts, /sandbox={HTML_PREVIEW_SANDBOX}/);
   assert.ok(!/allow-same-origin|allow-forms|allow-popups|allow-top-navigation/.test(artifacts));
+  // The note is only for a page that asks the internet for something: an embedded picture or style needs none.
+  assert.match(artifacts, /needsOutsideFiles\(current\.content\)/);
+  assert.equal(cmp.needsOutsideFiles('<style>h1{color:#8f5200}</style><img src="data:image/png;base64,iVBORw0KGgo=">'), false);
+  assert.equal(cmp.needsOutsideFiles('<link rel="stylesheet" href="data:text/css,h1%7Bcolor:red%7D">'), false);
+  assert.equal(cmp.needsOutsideFiles('<img src="https://cdn.example/a.png">'), true);
   assert.equal(cmp.needsOutsideFiles('<script src="https://cdn.example/three.js"></script>'), true);
   assert.equal(cmp.needsOutsideFiles('<script>draw()</script><a href="https://x.example">link</a>'), false);
 });
