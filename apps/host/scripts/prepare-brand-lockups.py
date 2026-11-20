@@ -197,6 +197,40 @@ def instance(weight: int) -> TTFont:
         return TTFont(path)
 
 
+@lru_cache(maxsize=1)
+def weight_range() -> tuple[int, int]:
+    """The wght axis the face really has.
+
+    fontTools clamps an instance outside the axis instead of refusing it, so a
+    weight the face does not have draws the nearest edge and carries the name of
+    the weight that was asked for."""
+    try:
+        axes = TTFont(FONT)["fvar"].axes
+    except KeyError:
+        sys.exit(f"Error: {FONT.name} has no fvar table, so there is no wght axis to draw the name at.")
+    axis = next((a for a in axes if a.axisTag == "wght"), None)
+    if axis is None:
+        sys.exit(f"Error: {FONT.name} has no wght axis, so there is no weight to draw the name at.")
+    return int(axis.minValue), int(axis.maxValue)
+
+
+def in_weight_range(weight: int) -> bool:
+    low, high = weight_range()
+    return low <= weight <= high
+
+
+def check_weights(weights: list[int]) -> None:
+    """Refuse a weight the face does not have, before anything is written."""
+    low, high = weight_range()
+    outside = [str(weight) for weight in weights if not low <= weight <= high]
+    if outside:
+        sys.exit(
+            f"Error: weight(s) {', '.join(outside)} outside {FONT.name}'s wght axis ({low}-{high}).\n"
+            f"fontTools would clamp the outlines to {low} or {high} and still name the file for the\n"
+            "weight asked for, so nothing was written."
+        )
+
+
 def kern(font: TTFont, left: str, right: str) -> int:
     """The font's kern value for one pair, from GPOS lookup type 2."""
     gpos = font["GPOS"].table
@@ -435,8 +469,10 @@ def parse_lockup_name(path: Path) -> tuple[str, int] | None:
     for theme in sorted(THEMES, key=len, reverse=True):
         if rest == theme:
             return theme, DEFAULT_WEIGHT
-        if rest.startswith(theme + "-") and rest[len(theme) + 1 :].isdigit():
-            return theme, int(rest[len(theme) + 1 :])
+        if rest.startswith(theme + "-"):
+            suffix = rest[len(theme) + 1 :]
+            if suffix.isdigit() and in_weight_range(int(suffix)):
+                return theme, int(suffix)
     return None
 
 
@@ -478,7 +514,7 @@ def update_manifest(drawn: list[tuple[Path, str, int]]) -> None:
             kept.append(entry)
             continue
         if parse_lockup_name(path) is None:
-            print(f"stale: {entry['output']} (no theme in its name matches the script); row removed")
+            print(f"stale: {entry['output']} (its name is not a theme and weight the script draws); row removed")
         elif not path.is_file():
             print(f"stale: {entry['output']} (its file is gone); row removed")
         else:
@@ -516,7 +552,13 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 def main(argv: list[str] | None = None) -> None:
     args = parse_args(sys.argv[1:] if argv is None else argv)
     themes = [name.strip() for name in args.themes.split(",") if name.strip()]
-    weights = [int(value) for value in args.weights.split(",") if value.strip()]
+    try:
+        weights = [int(value) for value in args.weights.split(",") if value.strip()]
+    except ValueError:
+        sys.exit(f"Error: --weights takes whole numbers separated by commas, not {args.weights!r}.")
+    if not weights:
+        sys.exit("Error: --weights is empty. Give at least one weight, for example 400,700.")
+    check_weights(weights)
     out_dir = Path(args.out)
     ink_left = INK_LEFT if args.ink_left is None else args.ink_left
 
