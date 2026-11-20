@@ -1,4 +1,4 @@
-"""How Strata's own programs check the certificate of a server they download from (#3722).
+"""How Nostroma's own programs check the certificate of a server they download from (#3722).
 
 Python's OpenSSL checks a server against a list of root certificates it carries (certifi) and does not fetch a missing intermediate
 certificate. Chrome and curl.exe use the operating system's certificate store and its chain building (Windows schannel, macOS Security,
@@ -55,16 +55,16 @@ def is_certificate_error(exc: BaseException | None) -> bool:
 
 
 TRY = ("Things to try, in this order: 1) check that the date and time of this PC are right; 2) in your antivirus or security suite, switch off "
-       "'HTTPS scanning' / 'web shield' for Strata, or add Strata and its Python to its exceptions, then try again; 3) if you use a company "
+       "'HTTPS scanning' / 'web shield' for Strata, or add Nostroma and its Python to its exceptions, then try again; 3) if you use a company "
        "or school network or proxy, ask the person who runs it to trust the download addresses, or try another network (a phone hotspot "
-       "is enough to tell); 4) run Windows Update, which refreshes the certificates the PC trusts. Strata will not skip the check: "
+       "is enough to tell); 4) run Windows Update, which refreshes the certificates the PC trusts. Nostroma will not skip the check: "
        "an unchecked download could be a different file.")
 
 
 def explain(host: str | None = None) -> str:
     """The plain sentence for a certificate failure: no urlopen text, the likely causes, no offer to turn the check off."""
     where = f"the server {host}" if host else "the download server"
-    return (f"Strata could not confirm that it is really talking to {where}: its security certificate was not accepted. "
+    return (f"Nostroma could not confirm that it is really talking to {where}: its security certificate was not accepted. "
             "Something between this PC and the internet is probably intercepting secure (HTTPS) connections, most often antivirus "
             "web scanning or a company or school proxy. " + TRY)
 

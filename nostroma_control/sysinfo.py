@@ -3,7 +3,7 @@
 `platform.system()`, `.machine()`, `.release()`, `.version()`, `.processor()` and `.node()` all go through
 `platform.uname()`. On Windows with Python 3.12 that calls `win32_ver()` and `_get_machine_win32()`, which query WMI
 (`platform._wmi_query`) with no timeout: a stuck `winmgmt` service froze every Control command that resolves the engine
-component ("Strata Control did not answer within 60 s (models list)"), although the interpreter, the environment and the
+component ("Nostroma Control did not answer within 60 s (models list)"), although the interpreter, the environment and the
 registry know the same facts. On Windows these functions read only those. Everywhere else they are the `platform` calls
 (an `os.uname()` there, not a service), looked up at call time so a test can replace them.
 

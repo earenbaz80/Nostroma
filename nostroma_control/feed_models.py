@@ -34,8 +34,8 @@ ENV_OFF = "STRATA_FEED_MODELS"             # "0": setup and the screens do not r
 FETCH_TIMEOUT = 5.0
 
 # ---- the words a person can see (agreed with the coordinator before they ship)
-UNAVAILABLE_ENGINE = "needs a newer Strata engine: update Strata to use it"
-UNAVAILABLE_UNKNOWN = "this Strata version doesn't know this model yet: update Strata to use it"
+UNAVAILABLE_ENGINE = "needs a newer Nostroma engine: update Nostroma to use it"
+UNAVAILABLE_UNKNOWN = "this Nostroma version doesn't know this model yet: update Nostroma to use it"
 
 
 #: What happens to a model whose family the installed engine does not run (the owner decides; a one-line switch):
@@ -226,7 +226,7 @@ def apply(setup, models, engine_families=None) -> Applied:
             continue
         shape = model.shape
         known = model.family in feedmod.MODEL_FAMILIES_INSTALLABLE or shape is not None
-        # a model of its own shape runs on that shape's engine, which setup fetches when the model is chosen (nostroma_control/shape_engine.py): the Strata engine's families do not decide
+        # a model of its own shape runs on that shape's engine, which setup fetches when the model is chosen (nostroma_control/shape_engine.py): the Nostroma engine's families do not decide
         runs = known and (shape is not None or engine_families is None or model.family in engine_families)
         if not runs:
             allowed = known and UNAVAILABLE_POLICY == "warn_allow"
@@ -325,7 +325,7 @@ def _flash_next(setup, model) -> None:
         setup.MODELS[keys[q.name]] = entry
     if model.shape:                                      # its own engine: the run config names it, setup fetches it (nostroma_control/shape_engine.py)
         fam["shape"] = model.shape
-        for key in keys.values():                        # its min_engine is about that engine, which the feed carries: the app must not compare it with the Strata engine
+        for key in keys.values():                        # its min_engine is about that engine, which the feed carries: the app must not compare it with the Nostroma engine
             setup.MODELS[key].pop("engine", None)
     setup.FAMILIES[model.id] = fam
     _mac_entries(model, keys)

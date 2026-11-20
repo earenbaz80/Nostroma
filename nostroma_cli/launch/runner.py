@@ -53,7 +53,7 @@ def install_isolation_words(catalog, data_dir: str | os.PathLike | None = None) 
         inside = False
     if inside:
         return []
-    return [f"Strata is using the earlier install in {main} ({places[0].configs} saved model setting(s) and its engine settings), not a clean one in "
+    return [f"Nostroma is using the earlier install in {main} ({places[0].configs} saved model setting(s) and its engine settings), not a clean one in "
             f"{chosen}: the data folder only says where model files are kept. To test from scratch, use a new user account or remove the earlier install first."]
 
 
@@ -90,7 +90,7 @@ def argparse_failure(lines: list[str]) -> str:
 
 
 def missing_file(failure: str) -> bool:
-    """An import or file error: the install itself is short of a file, which an update of Strata brings back."""
+    """An import or file error: the install itself is short of a file, which an update of Nostroma brings back."""
     return failure.startswith(("ModuleNotFoundError", "ImportError", "FileNotFoundError"))
 
 
@@ -120,17 +120,17 @@ def setup_failure(lines: list[str], err: str, hint: str, details: str | None, ow
     if crashed:
         where = f" The whole setup output is in {details}." if details else ""
         if missing_file(crashed):
-            return LaunchError(f"The model could not be installed. A file that setup needs is missing from this Strata install ({crashed}).",
-                               "Update Strata (`strata update`) and run it again." + where, 6)
+            return LaunchError(f"The model could not be installed. A file that setup needs is missing from this Nostroma install ({crashed}).",
+                               "Update Nostroma (`strata update`) and run it again." + where, 6)
         if crashed.startswith("PermissionError"):
             folder = re.findall(r"'([^']+)'", crashed)
             shown = folder[-1] if folder else None
-            try:                                              # the folder Strata was told to use, not a file inside it
+            try:                                              # the folder Nostroma was told to use, not a file inside it
                 shown = str(Path(shown).parent) if shown and Path(shown).name in ("models", "packs", "mtp") else shown
             except (OSError, ValueError):
                 pass
-            return LaunchError("The model could not be installed. " + (f"Windows would not let Strata write to {shown}" if shown else
-                               "Windows would not let Strata write to a folder") + " (access denied).",
+            return LaunchError("The model could not be installed. " + (f"Windows would not let Nostroma write to {shown}" if shown else
+                               "Windows would not let Nostroma write to a folder") + " (access denied).",
                                "Pick a folder you own for the model files (the Folder step, or --data-dir D:\\Strata-models) and start again. "
                                "Nothing was downloaded." + where, 6)
         return LaunchError(f"The model could not be installed. Setup stopped with an error ({crashed}).", "Run it again." + where, 6)
@@ -169,21 +169,21 @@ class Result:
     reused: bool = False                   # the same choices were already serving: nothing was stopped or started
 
 
-NO_ENGINE_NEXT = ("Update Strata (`strata update`) and run `strata launch` again. Nothing was downloaded, and any model files you already have are kept.")
+NO_ENGINE_NEXT = ("Update Nostroma (`strata update`) and run `strata launch` again. Nothing was downloaded, and any model files you already have are kept.")
 
 STAGES = ("engine", "model", "config", "tune", "start", "access")
 
-NO_ENGINE_STEP = ("run `strata update` to get the newest engines and start again; if this stays, your graphics card is not one Strata supports yet, "
+NO_ENGINE_STEP = ("run `strata update` to get the newest engines and start again; if this stays, your graphics card is not one Nostroma supports yet, "
                   "and the model files stay on this computer for when it is")
 
-#: no graphics card Strata can use at all (an Intel UHD/Iris only, an AMD APU-only laptop, a virtual machine, Windows on ARM)
-NO_GPU_PREFIX = "no graphics card that Strata can use was found"
-NO_GPU_STEP = ("Strata needs an NVIDIA or AMD graphics card, an Intel Arc card or an Apple Silicon Mac, and there is no CPU-only engine for this "
-                "computer. Run Strata on a computer that has one; the model files stay here")
+#: no graphics card Nostroma can use at all (an Intel UHD/Iris only, an AMD APU-only laptop, a virtual machine, Windows on ARM)
+NO_GPU_PREFIX = "no graphics card that Nostroma can use was found"
+NO_GPU_STEP = ("Nostroma needs an NVIDIA or AMD graphics card, an Intel Arc card or an Apple Silicon Mac, and there is no CPU-only engine for this "
+                "computer. Run Nostroma on a computer that has one; the model files stay here")
 
 
 def no_gpu_words(names: list[str] | None = None) -> str:
-    """The plain reason when nothing Strata can run on is in this computer, naming what is there when it is known."""
+    """The plain reason when nothing Nostroma can run on is in this computer, naming what is there when it is known."""
     names = [n for n in (names or []) if n]
     if names:
         return f"{NO_GPU_PREFIX}; this computer has {', '.join(names[:3])}"
@@ -198,17 +198,17 @@ def no_engine_warning(reason: str) -> str:
     """The plain warning shown before a model is downloaded on a computer with no engine to run it."""
     reason = reason.strip().rstrip(".")
     if reason.startswith(NO_GPU_PREFIX):
-        return (f"Strata can't run on this computer: {reason}. The model will download, but it will not run here "
+        return (f"Nostroma can't run on this computer: {reason}. The model will download, but it will not run here "
                 f"(next step: {NO_GPU_STEP}).")
-    return (f"Strata couldn't find an engine for this computer ({reason}). The model will download, but it may not run until you install "
+    return (f"Nostroma couldn't find an engine for this computer ({reason}). The model will download, but it may not run until you install "
             f"the right engine (next step: {NO_ENGINE_STEP}).")
 
 
 def no_engine_final(reason: str, name: str = "") -> str:
     reason = reason.strip().rstrip(".")
     if reason.startswith(NO_GPU_PREFIX):
-        return f"The model is ready, but Strata can't start it on this computer: {reason}. Next step: {NO_GPU_STEP}."
-    return (f"The model is ready, but Strata can't start it yet: it couldn't find an engine for this computer ({reason}). "
+        return f"The model is ready, but Nostroma can't start it on this computer: {reason}. Next step: {NO_GPU_STEP}."
+    return (f"The model is ready, but Nostroma can't start it yet: it couldn't find an engine for this computer ({reason}). "
             f"Next step: {NO_ENGINE_STEP}. The model files stay on this computer.")
 
 
@@ -772,7 +772,7 @@ class Runner:
             why = why or (tail[-1] if tail else "")
             why = capital(why)                         # (joined after a sentence: "the update feed could not be read ..." starts a new one)
             raise LaunchError("The engine could not be installed." + (f" {why}" if why else ""),
-                              "Check your internet connection, or point Strata at an update source with --feed, then try again.", 6)
+                              "Check your internet connection, or point Nostroma at an update source with --feed, then try again.", 6)
         self.emit("engine", "The engine is installed.", 100)
 
     def stale_update_blocked(self, stale: str) -> str | None:
@@ -786,13 +786,13 @@ class Runner:
             models = []
         if models:
             names = ", ".join(m.label for m in models)
-            return (f"{stale} {names} {'is' if len(models) == 1 else 'are'} running, so Strata did not update the engine. "
+            return (f"{stale} {names} {'is' if len(models) == 1 else 'are'} running, so Nostroma did not update the engine. "
                     "Stop it (`strata launch --stop`), run `strata update`, then start again.")
         if self.assume_yes:
             return None
         if self.confirm is not None and self.confirm("Update the engine?", stale + " Update it now? Nothing else is changed; your models are kept."):
             return None
-        return stale + " Strata did not update it. Run `strata update` (or start with --yes) and start again."
+        return stale + " Nostroma did not update it. Run `strata update` (or start with --yes) and start again."
 
     def model_shape(self) -> str | None:
         """The model shape whose own engine runs the chosen model (a feed model of a shape other than Flash-Next's: setup's FAMILIES entry has "shape"), or None."""
@@ -800,7 +800,7 @@ class Runner:
             fam = (getattr(self.catalog.strata.setup_module(), "FAMILIES", None) or {}).get(self.s.family) or {}
             shape = fam.get("shape")
             return shape if isinstance(shape, str) and shape else None
-        except Exception:                                    # noqa: BLE001 - no table, no shape: the Strata engine
+        except Exception:                                    # noqa: BLE001 - no table, no shape: the Nostroma engine
             return None
 
     def model_title(self) -> str | None:
@@ -812,7 +812,7 @@ class Runner:
             return None
 
     def ensure_shape_engine(self, shape: str) -> None:
-        """Step 1 for a model of its own shape: the engine of that shape is installed (and the feed's newer one fetched), next to the Strata engine, which is not touched."""
+        """Step 1 for a model of its own shape: the engine of that shape is installed (and the feed's newer one fetched), next to the Nostroma engine, which is not touched."""
         import argparse
         from nostroma_cli import update_cmd
         from nostroma_control import engine_component as ec, shape_engine
@@ -880,7 +880,7 @@ class Runner:
                     note = str(res.get("note") or "").strip()
         if not note:
             note = str(report.get("notice") or "").strip()
-        if "backend" in report and report["backend"] is None:                    # not even a graphics card Strata knows: say that, not "the feed has nothing"
+        if "backend" in report and report["backend"] is None:                    # not even a graphics card Nostroma knows: say that, not "the feed has nothing"
             names = []
             try:
                 from nostroma_control import engine_component as ec
@@ -1068,7 +1068,7 @@ class Runner:
         try:
             if s.model_path:
                 from nostroma_control import discovery
-                # the folder above the person's own files only when Strata may keep its files there (writable, not a Hugging Face cache);
+                # the folder above the person's own files only when Nostroma may keep its files there (writable, not a Hugging Face cache);
                 # else setup's default data folder (lane NET item 5; beside_refused() says so)
                 found = discovery.writable_beside(self._first_own_gguf())
                 return Path(found) if found else None
@@ -1095,7 +1095,7 @@ class Runner:
             return None
 
     def beside_refused(self) -> Path | None:
-        """The data folder guessed from the person's own files (the folder above a `models` folder) when Strata does not use it for its own files
+        """The data folder guessed from the person's own files (the folder above a `models` folder) when Nostroma does not use it for its own files
         because it cannot write there or it is inside a Hugging Face cache; None when it is used or there is none."""
         s = self.s
         if not s.model_path or s.data_dir:
@@ -1128,7 +1128,7 @@ class Runner:
 
     def other_copy(self) -> Path | None:
         """The data folder of an installed copy of this model that this launch does not use, else None: another --data-dir was given, and the
-        copy is not in a folder setup itself takes model files from (setup.data_folder_for keeps the remembered data folder and Strata's own
+        copy is not in a folder setup itself takes model files from (setup.data_folder_for keeps the remembered data folder and Nostroma's own
         folder as sources and uses complete files there where they are; any other folder it does not look at, so everything is fetched)."""
         s = self.s
         if not (s.family and s.model and s.data_dir) or s.model_path:
@@ -1237,7 +1237,7 @@ class Runner:
             if self.installed_serves_request(path):
                 self.emit("model", f"{s.family} {s.model} is already installed with these choices.", 100)
                 return path
-            self.emit("model", "The model already installed here is somewhere else than the folder you gave, so Strata uses the folder you gave "
+            self.emit("model", "The model already installed here is somewhere else than the folder you gave, so Nostroma uses the folder you gave "
                                "and points this launch at it.", 0)
         title = f"{s.family} {s.model}"
         try:                                                 # the name on screen
@@ -1257,10 +1257,10 @@ class Runner:
         self.emit("model", f"Preparing {title} from your model files…" if s.model_path else
                   f"Getting {title} ready (a download may be large; it continues where it stopped if interrupted)…", 0)
         refused = self.beside_refused()
-        if refused is not None:                              # lane NET item 5 (W9): the files stay, Strata's own go to the data folder
+        if refused is not None:                              # lane NET item 5 (W9): the files stay, Nostroma's own go to the data folder
             from nostroma_control import discovery
-            why = (f"{refused} is a Hugging Face download folder, so Strata" if discovery.in_hf_cache(refused) or discovery.in_hf_cache(refused / "models")
-                   else f"Strata can't write in {refused}, so it")   # (W9 / W9b, owner 11-10)
+            why = (f"{refused} is a Hugging Face download folder, so Nostroma" if discovery.in_hf_cache(refused) or discovery.in_hf_cache(refused / "models")
+                   else f"Nostroma can't write in {refused}, so it")   # (W9 / W9b, owner 11-10)
             note = (f"Your model files are used where they are. {why} keeps its own files (the prepared data and "
                     f"the picture reader) in {cat.data_dir()}.")
             self.notices.append(note)
@@ -1381,7 +1381,7 @@ class Runner:
 
     def intel_chosen(self) -> bool:
         """The engine for this launch is the Intel Arc one (chosen with --backend intel, saved, or the only make here), and the model is one
-        the built-in downloader sets up for NVIDIA and AMD only: Strata prepares the model files itself instead (adopt_prepared_files)."""
+        the built-in downloader sets up for NVIDIA and AMD only: Nostroma prepares the model files itself instead (adopt_prepared_files)."""
         if sys.platform == "darwin" or WINDOWS:
             return False
         try:
@@ -1421,7 +1421,7 @@ class Runner:
                 lines[:] = lines[-400:]
         if p.wait() != 0:
             err = next((ln.strip()[3:].strip() for ln in reversed(lines) if ln.strip().startswith("[X]")), "")
-            raise LaunchError("Strata could not prepare the model files for this graphics card" + (f": {err}" if err else "."),
+            raise LaunchError("Nostroma could not prepare the model files for this graphics card" + (f": {err}" if err else "."),
                               "The last lines of the preparation are in " + (self.keep_setup_output(lines) or "the launch log")
                               + ". If it says the helper could not be downloaded, check the internet connection (proxy: set HTTPS_PROXY) and try again.", 5)
 
@@ -1455,15 +1455,15 @@ class Runner:
                                    vram_gb=float(cat.computer().main_vram_gb or 0), notes=self.notices, pack_name=tag.lower())
         if cfg is None:
             if backend == "sycl":
-                raise LaunchError("Strata cannot start this model on the Intel Arc card yet: " + "; ".join(problems) + ".",
-                                  "Give the folder that holds the model's .gguf files with --model-path (Strata prepares them itself). "
+                raise LaunchError("Nostroma cannot start this model on the Intel Arc card yet: " + "; ".join(problems) + ".",
+                                  "Give the folder that holds the model's .gguf files with --model-path (Nostroma prepares them itself). "
                                   "Intel cards do not download models yet; see docs/INTEL_ARC.md.", 5)
-            raise LaunchError("The installer cannot set up this graphics card yet, and the files Strata would need to write the settings itself are not all there: "
+            raise LaunchError("The installer cannot set up this graphics card yet, and the files Nostroma would need to write the settings itself are not all there: "
                               + "; ".join(problems) + ".",
                               "Use model files that were prepared on this computer already (folder + pack): for an Intel Arc card the steps are in docs/INTEL_ARC.md (the Terminal carries tools/iq_pack.py for the pack). Or install on a computer with an NVIDIA or AMD card.", 5)
         path = cat.root / f"strata-{tag}.json"
         adopt.write(path, cfg)
-        self.notices.append("The downloader built into this Terminal sets up NVIDIA and AMD cards only (Intel Arc cards have a separate installer), so Strata wrote the "
+        self.notices.append("The downloader built into this Terminal sets up NVIDIA and AMD cards only (Intel Arc cards have a separate installer), so Nostroma wrote the "
                             f"run settings itself from the prepared model files already on this computer ({path.name}). No model files were downloaded.")
         self.emit("model", f"Used your prepared model files and wrote the run settings ({path.name}); this card is not one the built-in downloader sets up.", 100, level="warn")
         return path
@@ -1512,7 +1512,7 @@ class Runner:
         sel = plan.get("candidate_selection") or {}
         fam, model = sel.get("family"), sel.get("model")
         if not (fam and model) or plan.get("issues"):
-            issues = models.problem_words(plan.get("issues") or [], missing=plan.get("missing_shards")) or "they are not a model Strata knows"
+            issues = models.problem_words(plan.get("issues") or [], missing=plan.get("missing_shards")) or "they are not a model Nostroma knows"
             more = " " + next((m for m in plan.get("messages") or [] if "holds" in m), "")
             raise LaunchError(f"These files cannot be used as they are ({issues}).{more.rstrip()}",
                               "Choose the matching model in the list, or check that every shard is in the folder.", 5)
@@ -1799,7 +1799,7 @@ class Runner:
         name = self.profile
         parallel = self.s.parallel if self.s.parallel else (getattr(self, "four_card_parallel", None) or self.catalog_parallel())
         if parallel and not self.s.parallel and self.one_request_for_dflash2(config):
-            parallel = None                                  # the slots Strata fills in by itself would keep the MTP: DFlash2 answers one request at a time
+            parallel = None                                  # the slots Nostroma fills in by itself would keep the MTP: DFlash2 answers one request at a time
         if parallel and self.run_config_owns_slots(config):
             parallel = None                                  # the all-cards split engine's run config carries its lanes (--batch N, from --parallel N or its default): a profile override would only collide with them
         sets = [f"host={acc.host_for(self.s.access)}", f"port={int(self.s.port)}"] + ([f"parallel={parallel}"] if parallel else [])
@@ -2346,12 +2346,12 @@ class Runner:
                 text += " To skip the DFlash2 drafter, add --drafting mtp."
         if not engine and here:
             # B03: an engine IS installed, but this plan cannot use it (its signature cannot be checked here, or it is for another card): not "missing"
-            text += (f" An engine ({', '.join(here[:3])}) is installed, but it did not pass Strata's check on this computer, so Strata looks for a working one "
+            text += (f" An engine ({', '.join(here[:3])}) is installed, but it did not pass Nostroma's check on this computer, so Nostroma looks for a working one "
                      "first. `strata components engine` says why.")
         elif not engine:
             text += " The engine for your graphics card is downloaded first (from the update source; its size is shown when it starts)."
         if intel:
-            text += (" For the Intel card Strata builds the model's pack from your files itself (once, a few minutes); the first time it fetches "
+            text += (" For the Intel card Nostroma builds the model's pack from your files itself (once, a few minutes); the first time it fetches "
                      "a small helper (llama.cpp's gguf-py) from GitHub. No draft layer or picture reader is used on Intel cards yet.")
         return {"gb": gb, "parts": parts, "engine_missing": not engine and not here, "engine_usable": engine, "own_files": st.own_files, "text": text}
 
@@ -2387,7 +2387,7 @@ class Runner:
             if report.get("usable"):
                 stale = self.stale_engine(report["engine"].get("version"))
                 if stale:
-                    out.append(stale + " Strata will ask before updating it (`strata update` does it now).")
+                    out.append(stale + " Nostroma will ask before updating it (`strata update` does it now).")
         except Exception:                                    # noqa: BLE001
             pass
         try:
@@ -2578,7 +2578,7 @@ class Runner:
             tunnel = self.open_access()
             urls = acc.urls_for(self.s, tunnel_url=tunnel)
             res = Result(self.profile, urls, self.s.api_key, self.tune_word, self.notices, str(cfg), tunnel)
-            self.emit("done", "Strata is serving.", 100, urls=urls)
+            self.emit("done", "Nostroma is serving.", 100, urls=urls)
             return res
         except Cancelled:
             self._stop_children()
@@ -2612,7 +2612,7 @@ CAUSE_LINE = re.compile(r"error|exception|failed|cannot|can't|could not|no devic
 HSA_START = re.compile(r"hsa_exception|HSA_STATUS_ERROR", re.I)
 HSA_START_NEXT = ("The graphics card was not ready yet; wait a few seconds and run it again. If it keeps happening, restart the PC "
                   "and report the log.")
-VRAM_STOP_NEXT = ("A graphics card is too full for this start, even after Strata moved what it could to the processor and the RAM. Close other programs that use the "
+VRAM_STOP_NEXT = ("A graphics card is too full for this start, even after Nostroma moved what it could to the processor and the RAM. Close other programs that use the "
                   "cards, or start on fewer cards (--gpu), or turn pictures off (--vision off); the context and the number of requests were not changed.")
 KNOWN_CAUSES = (
     (re.compile(r"cannot run the expert kernel|needs AVX-?512", re.I),
@@ -2792,7 +2792,7 @@ PROFILE_BUSY = re.compile(r"already has a live managed runtime", re.I)
 
 def _log_hint(config: Path | None, error: object = None) -> str:
     if PROFILE_BUSY.search(str(error or "")):
-        return ("Another Strata server for this preset is still running or starting, or one that stopped has not been cleared, so this start never began "
+        return ("Another Nostroma server for this preset is still running or starting, or one that stopped has not been cleared, so this start never began "
                 "and there is no engine log for it. Run `strata launch --stop`, then start again without --retune: a tuning that finished is kept and is not measured again.")
     log = None
     if config:

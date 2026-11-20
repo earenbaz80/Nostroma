@@ -356,7 +356,7 @@ def run(a) -> int:
                 _print_check(report)
             return 0
         if not machine:
-            print(f"Strata update ({ctx.source})")
+            print(f"Nostroma update ({ctx.source})")
         from nostroma_control import engine_update
         out = engine_update.update_with_models(ctx, _gate_for(a, ctx, machine), show=None if machine else _show_results,
                                                engine=not a.no_engine, control=not a.no_control, app=a.app)
@@ -480,7 +480,7 @@ def _maybe_wait(a, ctx, machine: bool) -> None:
         return
     names = ", ".join(item.get("profile", "an engine") for item in serving)
     if any(str(item.get("profile", "")).startswith("launch-") for item in serving):
-        return                                   # Strata's own launch: run_update says the one next step (stop the model first) instead of asking
+        return                                   # Nostroma's own launch: run_update says the one next step (stop the model first) instead of asking
     if machine or not sys.stdin.isatty():
         return                                   # run_update raises Busy (exit 7) with the same names
     answer = input(f"{names} is serving. Wait for it to stop and then update? [y/N] ").strip().lower()

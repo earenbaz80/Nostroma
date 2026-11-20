@@ -1,6 +1,6 @@
 """Rich, read-only overview for the interactive monitor.
 
-The layout follows YASD's one-screen dashboard idea while using Strata's
+The layout follows YASD's one-screen dashboard idea while using Nostroma's
 bounded telemetry contract and theme. No server text is treated as markup.
 """
 
@@ -775,14 +775,14 @@ def render_dashboard(snapshot: dict, *, width: int, height: int, history: Monito
 
     if connection_state in ("connecting", "disconnected", "auth_required", "incompatible"):
         title, message, action = {
-            "connecting": ("CONNECTING", "Waiting for the first Strata telemetry snapshot.",
+            "connecting": ("CONNECTING", "Waiting for the first Nostroma telemetry snapshot.",
                            "The monitor will update automatically."),
-            "disconnected": ("CONNECTION LOST", "The Strata server is not responding.",
+            "disconnected": ("CONNECTION LOST", "The Nostroma server is not responding.",
                              "Retrying automatically; press r to retry now."),
             "auth_required": ("AUTHORIZATION REQUIRED", "The telemetry credential was rejected.",
                               "Update the saved monitor connection, then press r."),
             "incompatible": ("INCOMPATIBLE SERVER", "This telemetry schema is unsupported.",
-                             "Connect to a compatible Strata server, then press r."),
+                             "Connect to a compatible Nostroma server, then press r."),
         }[connection_state]
         age = _age(snapshot)
         last_seen = (f"Last snapshot {number(age, 's', 1)} ago" if age is not None and age >= 0 else

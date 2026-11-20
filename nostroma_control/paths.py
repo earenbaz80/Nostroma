@@ -11,7 +11,7 @@ from pathlib import Path
 
 
 def state_base(environ=None, *, windows: bool | None = None, home: Path | None = None) -> Path:
-    """The folder that holds Strata's per-user state: runtime/, tuning/, time-skip/."""
+    """The folder that holds Nostroma's per-user state: runtime/, tuning/, time-skip/."""
     environ = os.environ if environ is None else environ
     windows = os.name == "nt" if windows is None else windows
     home = Path.home() if home is None else home

@@ -315,7 +315,7 @@ class TimeSkipRun:
 
     The runner is injected so this module never has to know how an agent is driven: the App Host
     passes a callable that performs one bounded revision attempt. That keeps the ownership boundary
-    (Harness owns the loop) while Strata Control owns the job and its evidence.
+    (Harness owns the loop) while Nostroma Control owns the job and its evidence.
     """
 
     def __init__(self, root: Path, workspace: Path, prompt: str,

@@ -487,9 +487,9 @@ def read_bytes_repairing(path: str | os.PathLike) -> bytes:
         return target.read_bytes()
 
 
-ACCESS_MESSAGE = ("Strata is not allowed to open one of its own files. Run `strata repair-access` (or press Repair in the app); "
-                "these files were probably made while Strata ran as administrator, so run it as your normal user from now on.")
-IN_USE_MESSAGE = ("A file Strata needs is in use by another program (usually antivirus, a backup or a sync tool). "
+ACCESS_MESSAGE = ("Nostroma is not allowed to open one of its own files. Run `strata repair-access` (or press Repair in the app); "
+                "these files were probably made while Nostroma ran as administrator, so run it as your normal user from now on.")
+IN_USE_MESSAGE = ("A file Nostroma needs is in use by another program (usually antivirus, a backup or a sync tool). "
                   "Wait a moment and run the same command again.")
 
 
@@ -507,7 +507,7 @@ _SKIP_SUFFIXES = (".gguf", ".part", ".bin", ".safetensors", ".zip", ".exe", ".dl
 
 
 def known_roots() -> list[Path]:
-    """Strata's per-user data folders: APPDATA/Strata, LOCALAPPDATA/Strata and ~/.strata (plus the STRATA_* overrides)."""
+    """Nostroma's per-user data folders: APPDATA/Strata, LOCALAPPDATA/Strata and ~/.strata (plus the STRATA_* overrides)."""
     roots: list[Path] = []
     for key, sub in (("APPDATA", "Strata"), ("LOCALAPPDATA", "Strata")):
         value = os.environ.get(key)
@@ -528,9 +528,9 @@ def known_roots() -> list[Path]:
 
 
 def repair_known_roots(*, limit: int = 20000) -> dict:
-    """Walk Strata's own per-user folders and repair every entry the user cannot open (Windows).
+    """Walk Nostroma's own per-user folders and repair every entry the user cannot open (Windows).
 
-    Meant to run when Strata starts: files and folders an elevated run created (owner Administrators, a rule that names
+    Meant to run when Nostroma starts: files and folders an elevated run created (owner Administrators, a rule that names
     only SYSTEM, Administrators and OWNER RIGHTS) are given back to the user. A normal session can only repair what its
     own token may change; an elevated start repairs everything. Never raises; returns what it did.
     """

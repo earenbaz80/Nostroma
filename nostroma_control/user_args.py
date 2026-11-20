@@ -9,7 +9,7 @@ The run config now keeps what the person set apart from what was generated:
   person's value wins.  The person can edit this list by hand; the app's settings window writes the options it shows here.
 * ``"args_written"``: the whole ``"args"`` as setup or the app last wrote it.  An option in ``"args"`` that is not in this
   copy was added or changed by hand since: ``capture`` moves it into ``"user_args"``.  A config without the copy (one an
-  older Strata wrote) has nothing to compare with: setup then keeps the options of the old file that its new arguments do not
+  older Nostroma wrote) has nothing to compare with: setup then keeps the options of the old file that its new arguments do not
   have (see ``dropped_by_setup``).
 
 Writers that change ``"args"`` themselves (setup, the app's resource profile, a tuning run) call ``stamp`` after they have

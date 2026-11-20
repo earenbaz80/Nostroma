@@ -201,7 +201,7 @@ def hardware_support(backend: str | None, archs: Any = None, model_name: str | N
 # person's own computer, into the engine's runtime file (a Q4_0 pack, 522,458,112 bytes; the repository publishes only the bf16 file and we host nothing).
 # The sizes and hashes are the repository's own for that revision: a download is refused if either differs. The pack itself is checked too: the same
 # bytes come out on x86 Windows, x86 Linux and aarch64 Linux (numpy 2.3.3 and 2.5.3), so its size and SHA-256 are pinned and a pack that differs is deleted.
-# A Q8 pack (760,353,792 bytes) made by an earlier Strata keeps working and is never fetched again; Q4_0 and Q8 ran the same speed (-0.3%, RESULTS-DRAFT.md).
+# A Q8 pack (760,353,792 bytes) made by an earlier Nostroma keeps working and is never fetched again; Q4_0 and Q8 ran the same speed (-0.3%, RESULTS-DRAFT.md).
 
 REPO = "incoai/Qwen3.8-Flash-Next-DFlash2"
 REVISION = "a22a1744e85c17364dcc54a6a420af7135d4c7f6"
@@ -225,11 +225,11 @@ CONVERTED_NAME = "qwen3.8-flash-next-dflash2.q4_0-selq4.pack"
 CONVERTED_BYTES = 339694592
 CONVERTED_SHA256 = "4a42b98220ea7880664002c8edda1563aecbae754b762a2e2f31b2b91ee93ecd"
 _MARK_SELQ4 = b"selector codebooks: Q4_0 rows"      # text of an engine that reads such a pack (src/core/dflash2.cpp)
-# The tuned drafter (round 0216, DF-SHIP; phaseA-tests/round0215/RESULTS-DF2WS.md sections 15-20): the published weights, fine-tuned by Strata on the 4-bit targets' own
+# The tuned drafter (round 0216, DF-SHIP; phaseA-tests/round0215/RESULTS-DF2WS.md sections 15-20): the published weights, fine-tuned by Nostroma on the 4-bit targets' own
 # outputs and packed as the Q4_0 + Q4_0-selector pack (the same format and size as CONVERTED_NAME, so no engine change). +11.4% accepted drafts on UD-Q4_K_XL and UD-IQ4_XS-v31;
 # on Metal +4.5% / +3.4% output tokens per second against the stock pack at 0.5, greedy identity 120 of 120 per set, WITH --draft-conf 0.7 (at 0.5 it is a wash, and the
-# stock pack is 5% worse at 0.7: the setting belongs to the pack). It is a file Strata hosts (the repository publishes only the bf16 file).
-# Apache-2.0, modified by Strata: data/dflash2-tuned/ (LICENSE, NOTICE.md) ships with Strata and is copied beside the file when it is fetched.
+# stock pack is 5% worse at 0.7: the setting belongs to the pack). It is a file Nostroma hosts (the repository publishes only the bf16 file).
+# Apache-2.0, modified by Nostroma: data/dflash2-tuned/ (LICENSE, NOTICE.md) ships with Nostroma and is copied beside the file when it is fetched.
 TUNED_NAME = "qwen3.8-flash-next-dflash2.strata1.q4_0-selq4.pack"
 TUNED_BYTES = 339694592
 TUNED_SHA256 = "4df2e5ab2b47c064afbe662e16e4f06569877125c2d0e2123a4ac755266c664c"
@@ -250,7 +250,7 @@ TUNED_BACKEND = "metal"                          # the engine family the feed en
 TUNED_URL_ENV = "STRATA_DFLASH2_TUNED_URL"       # tests and mirrors: a direct address (https, file:) of the same pinned bytes, instead of the feed
 TUNED_LICENCE_FOLDER = "data/dflash2-tuned"        # LICENSE (Apache-2.0) and NOTICE.md, shipped in data/ with the draft vocabularies
 TUNED_BASE = "incoai/Qwen3.8-Flash-Next-DFlash2 revision a22a1744e85c17364dcc54a6a420af7135d4c7f6"
-LEGACY_PACK_NAME = "qwen3.8-flash-next-dflash2.q8.pack"      # what Strata 0.2.9 test builds packed: still used when it is the one on disk
+LEGACY_PACK_NAME = "qwen3.8-flash-next-dflash2.q8.pack"      # what Nostroma 0.2.9 test builds packed: still used when it is the one on disk
 VRAM_GB = DRAFTER_GB["dflash2"]   # graphics memory with the MTP layer not loaded and the bf16-selector pack: 890 MiB (RESULTS-DF2MEM.md); vram_gb() has the true figure for this computer
 FOLDER = "dflash2"           # under the model data folder, next to ``mtp``
 SPEC_WINDOW = 6              # --spec with DFlash2: the widest window of drafted words per round (measured best on Blackwell; the engine caps it per card)
@@ -305,7 +305,7 @@ def tuned_pack(variant: str | None = None) -> TunedPack:
 
 @dataclass(frozen=True)
 class SetDefault:
-    """What Auto does for one model set on one engine family. ``drafter``: ``dflash2`` or ``mtp``. ``tuned``: DFlash2 starts with Strata's tuned pack (TUNED_NAME) where the pack is here and
+    """What Auto does for one model set on one engine family. ``drafter``: ``dflash2`` or ``mtp``. ``tuned``: DFlash2 starts with Nostroma's tuned pack (TUNED_NAME) where the pack is here and
     ``where`` holds. ``tuned_conf``: the ``--draft-conf`` that goes with the tuned pack, or None = the backend's OWN conf stays (CONF_STEPS / BACKEND_CONF: only the pack changes). ``where``:
     "" always (Metal); "resident" CUDA with every expert resident = the card the first CONF_STEPS step (conf 0.35) is for, or a shared-memory chip (sm_121, the Spark class); "gfx1151" Strix Halo;
     "arc_a" Intel Arc A-series (the class the A750 stands for). ``pack``: which tuned file (tuned_pack): ``selq4`` or, for the SYCL engine, ``bf16sel``."""
@@ -708,7 +708,7 @@ def engine_reads_selector_q4(exe: str | os.PathLike[str] | None) -> bool:
 
 def uses_selector_q4(data_dir: str | Path | None, engine: str | os.PathLike[str] | None = None) -> bool:
     """Is this computer's DFlash2 start the one with the Q4_0 selector (the converted pack, 175 MiB less)? True when the installed engine reads such a pack and the drafter is
-    (or will be, at setup / Load) the Q4_0 pack it is made from; a Q8 pack an earlier Strata made is never converted. An engine that is not known: False (the larger figure)."""
+    (or will be, at setup / Load) the Q4_0 pack it is made from; a Q8 pack an earlier Nostroma made is never converted. An engine that is not known: False (the larger figure)."""
     if not engine or not engine_reads_selector_q4(engine):
         return False
     if data_dir and not _here(Path(data_dir) / FOLDER / PACK_NAME) and _here(Path(data_dir) / FOLDER / LEGACY_PACK_NAME):
@@ -743,7 +743,7 @@ def installed_engine_exe() -> Path | None:
 
 def pack_path(data_dir: str | Path, engine: str | os.PathLike[str] | None = None, *, model_name: str | None = None, backend: str | None = None, tuned: bool | None = None) -> Path:
     """The pack the engine is started with: the converted pack (Q4_0 selector) when it is here, verified, and `engine` is a program that reads it; else the Q4_0 pack, else
-    a Q8 pack an earlier Strata made (no download for it), else where the Q4_0 pack will be. The tuned pack comes first where this set has one (SET_DEFAULTS), it is here and
+    a Q8 pack an earlier Nostroma made (no download for it), else where the Q4_0 pack will be. The tuned pack comes first where this set has one (SET_DEFAULTS), it is here and
     verified, and `engine` reads the Q4_0 selector (it is that format): the stock pack stays the fallback. `tuned`: whether this card qualifies (tuned_applies; None = the entry alone)."""
     if tuned is None:
         tuned = uses_tuned(backend, model_name)
@@ -1082,14 +1082,14 @@ def mtp_ready(args: list[Any]) -> bool | None:
 VOCAB_NAME = "draft_vocab.bin"
 
 
-#: The subsets a person can choose in setup (``--draft-vocab``), by name: the files Strata ships in data/ (setup.DRAFT_VOCABS names the same ones).
+#: The subsets a person can choose in setup (``--draft-vocab``), by name: the files Nostroma ships in data/ (setup.DRAFT_VOCABS names the same ones).
 VOCAB_FILES = {"cjk": VOCAB_NAME, "en": "draft_vocab_en.bin", "cyrillic": "draft_vocab_cyrillic.bin", "fr": "draft_vocab_fr.bin", "latin": "draft_vocab_latin.bin"}
 #: The sha256 of the 27-Han-token subset up to 0.1.26 (setup.OLD_DRAFT_VOCABS): a copy that is any shipped subset may be replaced by the person's later choice, a made-by-hand one never.
 OLD_VOCAB_SHA256 = {"369151522226a5edaa5f12cfd1e2ae7db8f4fbdbd222f3dcf327dced9597fb25"}
 
 
 def shipped_vocab(choice: str | None = None) -> Path:
-    """The draft vocabulary Strata ships with (``data/draft_vocab.bin``, also in the packaged Control), or the shipped subset named ``choice`` (cjk, en, cyrillic, fr)."""
+    """The draft vocabulary Nostroma ships with (``data/draft_vocab.bin``, also in the packaged Control), or the shipped subset named ``choice`` (cjk, en, cyrillic, fr)."""
     return Path(__file__).resolve().parents[1] / "data" / VOCAB_FILES.get(choice or "cjk", VOCAB_NAME)
 
 
@@ -1323,7 +1323,7 @@ def refresh_vocab(data_dir: str | Path | None, choice: str = "cjk") -> Path | No
 
 
 def provide_vocab(data_dir: str | Path | None, choice: str | None = None) -> Path | None:
-    """Make sure the DFlash2 folder holds the draft vocabulary (a local copy of the file Strata ships; no network). Called by the drafter's fetch and by
+    """Make sure the DFlash2 folder holds the draft vocabulary (a local copy of the file Nostroma ships; no network). Called by the drafter's fetch and by
     setup's DFlash2 step, so a fresh install that selected only DFlash2 has everything the engine needs. None when it cannot be had.
     Without ``choice`` a copy that is there is never touched (the fetch must not undo the person's setup choice); with it (setup) see refresh_vocab."""
     if not data_dir:
@@ -1348,7 +1348,7 @@ def provide_vocab(data_dir: str | Path | None, choice: str | None = None) -> Pat
 
 def vocab_path(args: list[Any], data_dir: str | Path | None = None) -> Path | None:
     """The draft vocabulary DFlash2 reads its draft head from: the person's own ``--mtp-draft-vocab``, else the one in the model's MTP folder (the subset the
-    person chose in setup), else the copy the DFlash2 install keeps, else the default subset Strata ships. None when none of them is on this computer."""
+    person chose in setup), else the copy the DFlash2 install keeps, else the default subset Nostroma ships. None when none of them is on this computer."""
     given = _flag_value(args, "--mtp-draft-vocab")
     if given and Path(given).is_file():
         return Path(given)
@@ -1425,7 +1425,7 @@ def decide(mode: Any, *, klass: str = "other", model_name: str | None = None, fa
     return Decision(asked, "off", NONE_HERE)
 
 
-ONE_REQUEST_NOTE = "DFlash2 answers one request at a time, so Strata set this model to one request at a time."
+ONE_REQUEST_NOTE = "DFlash2 answers one request at a time, so Nostroma set this model to one request at a time."
 #: setup could not fetch the MTP layer because the computer is offline (tools/mtp_fetch.py OFFLINE) and the start has no other drafter (owner, 11-15).
 #: The app shows the same words (apps/host/server/native-control.mjs installMtpLayer).
 MTP_OFFLINE_NOTE = "There is no internet connection, so the draft layer can't be downloaded now. The model starts without a drafter."
@@ -1434,7 +1434,7 @@ MTP_OFFLINE_NOTE = "There is no internet connection, so the draft layer can't be
 def wants_one_request(mode: Any, *, klass: str = "other", model_name: str | None = None, family: str | None = None, backend: str | None = None,
                       archs: Any = None, args: list[Any] | None = None, vram_mib: float | None = None, **_ignored: Any) -> bool:
     """The choice means DFlash2 on this model and computer (named, or Auto where the engine has it): the model then starts with one request at a time, because the
-    engine's request slots (``--batch``, which Strata fills in by itself on a card with room) are not filled in beside it. A number of requests the person chose stays as
+    engine's request slots (``--batch``, which Nostroma fills in by itself on a card with room) are not filled in beside it. A number of requests the person chose stays as
     they chose it: with DFlash2 named the start runs DFlash2 with that many (a drafter per request), with Auto it loads the MTP and says so; the callers check that."""
     return choice_of(mode, model_name=model_name, family=family, backend=backend, archs=archs, args=args, vram_mib=vram_mib) == "dflash2"
 

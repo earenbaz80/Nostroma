@@ -1,4 +1,4 @@
-"""Explicit measure, review and apply steps around Strata's existing calibration.
+"""Explicit measure, review and apply steps around Nostroma's existing calibration.
 
 The current suite measures decode speed. It is not a four-GPU serving benchmark.
 Its report binds a candidate to the run config, engine binary and observed local
@@ -39,7 +39,7 @@ ALLOWED_SETTINGS = {"--pcie-frac", "--spec-min-p", "--pool-workers",
 
 
 def _full_folder(name: str):
-    """`setup` and `tools.calibrate` belong to a full Strata folder; the Terminal archive carries neither (it never
+    """`setup` and `tools.calibrate` belong to a full Nostroma folder; the Terminal archive carries neither (it never
     installs or builds). Use them when they are importable, or when STRATA_INSTALL_DIR names a folder that has both;
     otherwise refuse in words instead of a traceback."""
     import importlib
@@ -59,7 +59,7 @@ def _full_folder(name: str):
             except ImportError:
                 pass
     raise ProfileError(
-        "engine calibrate needs a full Strata folder (setup.py and tools/calibrate.py); this terminal archive has "
+        "engine calibrate needs a full Nostroma folder (setup.py and tools/calibrate.py); this terminal archive has "
         "neither. Set STRATA_INSTALL_DIR to such a folder, or use `strata tune run --mode api` to tune from the "
         "archive", 5) from None
 
@@ -222,7 +222,7 @@ def _managed_exclusive():
     try:
         active = runtime.active_managed_instances()
         if active:
-            raise ProfileError("stop managed Strata runtime instances before calibration: " +
+            raise ProfileError("stop managed Nostroma runtime instances before calibration: " +
                                ", ".join(item["profile"] for item in active), 6)
         yield
     finally:

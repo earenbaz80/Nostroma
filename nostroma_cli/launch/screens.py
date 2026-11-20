@@ -305,7 +305,7 @@ class StartScreen(Base):
     def explain(self) -> Text:
         c = self.ctx.computer
         return Text(f"This computer: {c.line()}.  " + ("Preset: model, context, parallel requests, tuned settings, access. "
-                    "Shared with the Strata app." if self.presets else "Choose how to begin."), style=MUTE)
+                    "Shared with the Nostroma app." if self.presets else "Choose how to begin."), style=MUTE)
 
     def head_text(self) -> Text:
         out = Text(no_wrap=True, overflow="crop")
@@ -571,7 +571,7 @@ class ModelScreen(Base):
             self.menu().select((sel["family"], sel["model"]))
             self.paint()
         else:
-            why = models.problem_words(plan.get("issues") or [], missing=plan.get("missing_shards")) or "they are not a model Strata knows"
+            why = models.problem_words(plan.get("issues") or [], missing=plan.get("missing_shards")) or "they are not a model Nostroma knows"
             holds = next((m for m in plan.get("messages") or [] if "holds" in m), "")
             self.say(f"These files cannot be used as they are ({why}). " + (holds + " " if holds else "") +
                      "Check that every shard is in the folder, or pick a model from the list.", True)
@@ -729,7 +729,7 @@ class CardsScreen(Base):
         if self.detail:
             for word, text in (("Main", "does the last steps of every answer and keeps the conversation. Only one."),
                                ("Helper", "holds a share of the model, so more of it fits on graphics cards."),
-                               ("Off", "Strata does not touch the card.")):
+                               ("Off", "Nostroma does not touch the card.")):
                 lines.append(f"  {word}: {text}\n", style=MUTE)
         for g in gpu_fit.for_vendor(c.gpus, c.engine_vendor)[1]:
             lines.append(f"  Not used: {g.get('name')} (another make of card than this engine drives).\n", style=MUTE)
@@ -739,7 +739,7 @@ class CardsScreen(Base):
             pass
 
     def explain(self) -> Text:
-        return Text("Strata recommends the roles shown. A Helper holds part of the model; Off leaves a card alone (for a game or the screen). "
+        return Text("Nostroma recommends the roles shown. A Helper holds part of the model; Off leaves a card alone (for a game or the screen). "
                     "Any card is one key away; the choice is yours.", style=MUTE)
 
     def commit(self) -> None:
@@ -757,7 +757,7 @@ class CardsScreen(Base):
 class FolderScreen(Base):
     step_id = "folder"
     hints = "Type to change the folder   Enter next   Esc back   ? help"
-    help_text = "Models are big. Pick a drive with free space. The default is where Strata keeps its data."
+    help_text = "Models are big. Pick a drive with free space. The default is where Nostroma keeps its data."
 
     BINDINGS = [b for b in Base.BINDINGS if b.key not in ("q", "up", "down")] + [Binding("down", "noop", show=False)]
 
@@ -802,7 +802,7 @@ class FolderScreen(Base):
         out = Text()
         if s.model_path:
             out.append(f"Your model files stay where they are: {s.model_path}\n", style=FG)
-            out.append("Strata only writes its prepared data here (packs, a small draft layer).\n", style=MUTE)
+            out.append("Nostroma only writes its prepared data here (packs, a small draft layer).\n", style=MUTE)
         out.append(st.headline(), style=FG)
         out.append("\n")
         if st.installed and st.folder is not None:
@@ -819,7 +819,7 @@ class FolderScreen(Base):
             out.append("The free space of that folder could not be read.", style=MUTE)
         moving = self.models_that_would_move(value)
         if moving:
-            out.append(f"\nModel files Strata already keeps in {moving} stay there and keep working. This folder is used for new downloads. "
+            out.append(f"\nModel files Nostroma already keeps in {moving} stay there and keep working. This folder is used for new downloads. "
                        "To move them here, use: strata models move.", style=MUTE)
         self.query_one("#folderinfo", Static).update(out)
 
@@ -841,7 +841,7 @@ class FolderScreen(Base):
         if self.state().installed:
             return Text("This model is already on this computer, so the folder starts where it is. Press Enter to keep it. "
                         "Another folder only matters for files that still have to be downloaded.", style=MUTE)
-        return Text("Models are large files. Strata keeps them in one folder; the default is Strata's own data folder. "
+        return Text("Models are large files. Nostroma keeps them in one folder; the default is Nostroma's own data folder. "
                     "Press Enter to keep it, or type another folder (it is created if it does not exist). Models you already have stay where "
                     "they are and stay usable; the new folder is for new downloads.", style=MUTE)
 
@@ -1135,10 +1135,10 @@ class ParallelScreen(Base):
 
     def explain(self) -> Text:
         vram = self.ctx.computer.main_vram_gb
-        return Text(f"Your card has {vram:.0f} GB of graphics memory, which fits {self.fit} at once by Strata's rule "
+        return Text(f"Your card has {vram:.0f} GB of graphics memory, which fits {self.fit} at once by Nostroma's rule "
                     "(12 GB: 1, 20 GB: 2, 24 GB: 3, 32 GB or more: 4). One person: pick 1. A team or several coding agents: more. "
                     "More than fits still starts, only slower." if vram else
-                    "No graphics card was found, so Strata cannot say how many fit. 1 is the safe choice.", style=MUTE)
+                    "No graphics card was found, so Nostroma cannot say how many fit. 1 is the safe choice.", style=MUTE)
 
     def commit(self) -> None:
         self.ctx.settings.parallel = self.menu().current.key
@@ -1176,7 +1176,7 @@ class TuningScreen(Base):
             f"\n  [{'x' if on else ' '}] Allow settings that change answers very slightly (same quality)   press a to change", style=MUTE))
 
     def explain(self) -> Text:
-        return Text("Tuning is optional: it keeps only real gains, and the result is a preset the Strata app can use too. Close other heavy "
+        return Text("Tuning is optional: it keeps only real gains, and the result is a preset the Nostroma app can use too. Close other heavy "
                     "programs while it measures. The command line skips tuning unless you add --tune.", style=MUTE)
 
     def action_allow(self) -> None:
@@ -1409,7 +1409,7 @@ class AdvancedScreen(Base):
 class AccessScreen(Base):
     step_id = "access"
     hints = "↑↓ choose   Enter next   p port   k new key   t key on/off   Esc back   ? help"
-    help_text = ("Who can use the model. 'This computer only' is the safe default and never needs a key. Beyond it Strata makes an API key "
+    help_text = ("Who can use the model. 'This computer only' is the safe default and never needs a key. Beyond it Nostroma makes an API key "
                  "for you (recommended); press t if you would rather have no key: it still starts, but anyone who can reach it can use it. "
                  "To see the key later: strata launch --show-key. To use a key of your own: strata launch --api-key YOUR-KEY (or --api-key-env NAME).")
 
@@ -1645,11 +1645,11 @@ class SaveScreen(Base):
         if st.remaining_gb < 0.05:
             fetch = "Nothing needs to be downloaded."
         elif st.only_helpers:
-            fetch = "The model is already downloaded; Strata fetches " + st._names() + "."        # noqa: SLF001
+            fetch = "The model is already downloaded; Nostroma fetches " + st._names() + "."        # noqa: SLF001
         else:
-            fetch = f"Strata downloads about {st.remaining_gb:.0f} GB first."
+            fetch = f"Nostroma downloads about {st.remaining_gb:.0f} GB first."
         tune = " It tunes first." if self.ctx.settings.tune != "skip" else ""
-        return Text(f"Press Enter on the first choice to save and start. {fetch}{tune} The Strata monitor opens in this window when it is serving; "
+        return Text(f"Press Enter on the first choice to save and start. {fetch}{tune} The Nostroma monitor opens in this window when it is serving; "
                     "no web page opens by itself.", style=MUTE)
 
     def action_rename(self) -> None:
@@ -1794,7 +1794,7 @@ class RunScreen(Base):
         return t
 
     def explain(self) -> Text:
-        return Text("Strata is getting everything ready. This can take a while the first time (the model is large). "
+        return Text("Nostroma is getting everything ready. This can take a while the first time (the model is large). "
                     "Stopping is safe: files already downloaded are kept and a download continues where it stopped.", style=MUTE)
 
     def action_stop_run(self) -> None:

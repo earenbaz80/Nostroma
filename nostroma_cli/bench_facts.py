@@ -49,7 +49,7 @@ def usable_key(value) -> str | None:
 
 
 def redactor(key: str = ""):
-    """text -> text with this machine's home folders, user and host names, the Strata folder, private IP addresses and the API key replaced.
+    """text -> text with this machine's home folders, user and host names, the Nostroma folder, private IP addresses and the API key replaced.
     The key is replaced only where it stands as a whole token and in its own case (#4483): a short key is also a common word or a part of a hash. A hyphen
     next to it does not make it part of a longer word (`pack-<key>`, `<key>-1`: the key was a leak there); letters, digits and the underscore do.
     The names (user, host) are not touched inside a label this function wrote: redacting a text twice gives the same text (a user called "user" gave `<<user>>`)."""

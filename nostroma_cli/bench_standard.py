@@ -1,6 +1,6 @@
 """`strata bench run` for the standard benchmark protocol (docs/BENCHMARK_PROTOCOL.md).
 
-The runner sends the frozen requests of bench/prompts/standard-v1 to a Strata server through streaming chat completions, in the
+The runner sends the frozen requests of bench/prompts/standard-v1 to a Nostroma server through streaming chat completions, in the
 protocol's order, and writes a `strata-standard-benchmark` result that other people's results can be compared with:
 
     warm-up (1, excluded)  ->  performance (short, prompt-4k, prompt-16k, three times)  ->  sanity (I1-I4, R1-R4, T1-T4)
@@ -840,7 +840,7 @@ def run(target: Target, out: Path | None, *, out_root: Path | None = None, optio
         raise ProfileError("benchmark needs an output directory", 2)
     health = target.get("/health", timeout=10)
     if not health or health.get("service") != "strata":
-        raise ProfileError("no Strata server answers at that address", 5)
+        raise ProfileError("no Nostroma server answers at that address", 5)
     if health.get("loaded") is not True:
         raise ProfileError("the server has no model loaded; the benchmark needs a loaded model", 5)
     props = target.get("/props", timeout=15)
@@ -860,7 +860,7 @@ def run(target: Target, out: Path | None, *, out_root: Path | None = None, optio
     static = machine.get("hardware_static") or {}
     served_gpu = ((status.get("machine") or {}).get("gpu") or {}).get("name") or static.get("gpu_name")
     engine_version = ((machine.get("engine") or {}).get("version") or status.get("engine")
-                      or (str(props.get("build_info", "")).replace("Strata ", "") or None))
+                      or (str(props.get("build_info", "")).replace("Nostroma ", "") or None))
 
     plan = plan or {}
     options = facts.parse_options(plan["engine_argv"]) if plan.get("engine_argv") else None
@@ -883,7 +883,7 @@ def run(target: Target, out: Path | None, *, out_root: Path | None = None, optio
         sampling={"sampling": SAMPLING, "chat_template_kwargs": TEMPLATE_KWARGS}, template_ref=template_ref)
 
     if software_block["strata_commit"] is None:
-        reasons_nonconforming.append("the Strata commit is unknown (not a git checkout and no COMMIT file)")
+        reasons_nonconforming.append("the Nostroma commit is unknown (not a git checkout and no COMMIT file)")
     if not model_block["files"]:
         reasons_nonconforming.append("no model file could be hashed")
     if template_ref is None:
@@ -1187,7 +1187,7 @@ def format_plain(doc: dict) -> str:
     counts = doc["request_counts"]
     done = sum(counts[p]["completed"] + counts[p]["truncated"] for p in ("performance", "sanity"))
     quality = doc["quality"]
-    lines = [f"Strata standard benchmark ({doc['protocol']['id']})",
+    lines = [f"Nostroma standard benchmark ({doc['protocol']['id']})",
              f"Status: {run_block['status']}. {done} of 21 required requests finished, "
              f"{sum(counts[p]['failed'] for p in PHASES)} failed, {sum(counts[p]['skipped'] for p in PHASES)} skipped. "
              f"Time after the model loaded: {_minutes(run_block['required_duration_s'])}.",
@@ -1230,7 +1230,7 @@ def report_markdown(doc: dict, redact=lambda text: text) -> str:
     drivers = ", ".join("%s %s" % (d["name"], d["version"]) for d in sw["drivers"]) if sw["drivers"] else nm
     runtime = ", ".join("%s %s" % (d["name"], d["version"]) for d in sw["runtime"]) if sw["runtime"] else nm
     lines = [
-        "# Strata standard benchmark: %s" % (", ".join(g["name"] for g in hw["gpus"]) or "unknown GPU"), "",
+        "# Nostroma standard benchmark: %s" % (", ".join(g["name"] for g in hw["gpus"]) or "unknown GPU"), "",
         "Protocol `%s` (draft), run `%s`, started %s. **Status: %s.**" % (doc["protocol"]["id"], run_block["id"],
                                                                          run_block["started_at"], run_block["status"]), "",
         "Written by `strata bench run`. The machine-readable result is [results.json](results.json); every request, its raw usage "
@@ -1244,7 +1244,7 @@ def report_markdown(doc: dict, redact=lambda text: text) -> str:
         "- CPU: %s; RAM: %s" % (hw["cpu"] or nm, ram),
         "- Storage of the model files: " + storage,
         "- OS: %s %s; drivers: %s; runtime: %s" % (sw["os"]["name"], sw["os"]["version"], drivers, runtime),
-        "- Strata commit: `%s`; engine %s; %s build" % (sw["strata_commit"] or nm, sw["engine_version"] or nm, sw["build_kind"]),
+        "- Nostroma commit: `%s`; engine %s; %s build" % (sw["strata_commit"] or nm, sw["engine_version"] or nm, sw["build_kind"]),
         "- Background work: " + ("; ".join(hw["background_workloads"]) if hw["background_workloads"] else nm), "",
         "## Model and configuration", "",
         f"- Model: {model['id'] or nm}; quantization {model['quantization'] or nm}; revision {model['revision'] or nm}; "

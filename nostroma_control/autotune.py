@@ -261,7 +261,7 @@ class Tuner:
     def _machine_busy(self) -> str | None:
         eng = tune_machine.other_engines()
         if eng:
-            return "another Strata engine is running"
+            return "another Nostroma engine is running"
         busy = tune_machine.cpu_busy_percent(1.0)
         if busy is not None and busy > self.o.busy_pct:
             return f"the CPU is {busy:.0f}% busy"

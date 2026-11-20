@@ -5,10 +5,10 @@ engine (nostroma_control/updater.py), so a person can go back to an older engine
 
 The Qwen engine (every model): packages in ``<components>/engine/<version>-<platform>-<backend>[-<variant>]/``. What a start runs is the pinned
 package (``.updates/state.json`` engine.pinned), else the newest that fits this PC (engine_component.resolve).  The engine of a model shape has the
-same mechanism in its own folder.  (DeepSeek's engine-dsv41/ folder, from Strata 0.2.13 and earlier, is not listed and never touched here.)
+same mechanism in its own folder.  (DeepSeek's engine-dsv41/ folder, from Nostroma 0.2.13 and earlier, is not listed and never touched here.)
 
 A switch warns, it does not refuse, wherever the engine can run at all. What cannot be switched to is a package this computer cannot run (another
-operating system or make of graphics card, a driver that is too old, damaged files, a Strata that is too old for it). The engine in use cannot be
+operating system or make of graphics card, a driver that is too old, damaged files, a Nostroma that is too old for it). The engine in use cannot be
 deleted, nor one a running program uses.
 """
 from __future__ import annotations
@@ -73,7 +73,7 @@ def _unfit(item: ec.EngineComponent, *, wanted: str | None, target: str, runtime
     if not ok or (wanted and item.backend != wanted and item.backend not in other_makes):
         return ("It was made for a different kind of graphics card than this computer has.", "gpu_make", [])
     if item.min_runtime and runtime and ec._version_key(runtime) < ec._version_key(item.min_runtime):
-        return (f"It needs Strata {item.min_runtime} or newer; this is {runtime}.", "strata", [item.min_runtime, runtime])
+        return (f"It needs Nostroma {item.min_runtime} or newer; this is {runtime}.", "strata", [item.min_runtime, runtime])
     if item.cuda_archs and cuda_here and not ec.arch_covers(item.cuda_archs, cuda_here):
         return ("It does not include support for this computer's graphics card.", "gpu_arch", [])
     if item.hip_archs and hip_here and not set(item.hip_archs) & set(hip_here):
@@ -339,7 +339,7 @@ def delete_engine(ctx: "updater.Context", family: str, folder: str, root: str | 
             os.replace(longpath.long_path(target), longpath.long_path(aside))
         except OSError as exc:
             raise updater.UpdateError(f"the engine could not be removed because something is using it ({longpath.describe_oserror(exc)}). "
-                                      "Close programs that use Strata and try again; nothing was changed.", 6) from None
+                                      "Close programs that use Nostroma and try again; nothing was changed.", 6) from None
         shutil.rmtree(longpath.long_path(aside), ignore_errors=True)      # a file that is held stays in .deleting-*; the next delete sweeps it
         _sweep(target.parent)
         if family == QWEN:

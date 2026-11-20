@@ -4,7 +4,7 @@ This is **runtime configuration optimization**, not model training. It searches 
 launch settings, measures each candidate, and produces a *recommendation* — never an automatic
 change.
 
-Why Strata owns this rather than delegating wholesale to HyperCore-Tune
+Why Nostroma owns this rather than delegating wholesale to HyperCore-Tune
 -----------------------------------------------------------------------
 
 HyperCore-Tune was evaluated as the preferred adapter and is **not sufficient as the optimizer** for
@@ -17,14 +17,14 @@ every backend. The evidence, gathered from the pinned checkout and this machine'
   (``strata --help`` on the Metal build lists neither). On Metal their "measurements" could only be
   an engine refusal, so a HyperCore sweep there would produce ``FAIL_BOOT`` rows rather than
   evidence.
-* It resolves the engine by walking up from its own directory looking for a Strata checkout, and it
+* It resolves the engine by walking up from its own directory looking for a Nostroma checkout, and it
   writes its deliverables next to that root. Neither is acceptable for a packaged application: the
   component registry must name an exact engine build, and the active profile must not be mutated by
   a search.
 * Its README states Linux and Windows support and its tests use stub engines. That is a claim about
   the harness, not a qualification of any GPU.
 
-So the decision, recorded here rather than in a design document alone: **Strata owns the job, the
+So the decision, recorded here rather than in a design document alone: **Nostroma owns the job, the
 lease, the evidence and the apply step; HyperCore-Tune remains a candidate optimizer behind that
 job for the backends whose flags it actually targets.** The dimension table below is the mechanism
 that makes this safe — a dimension whose flag the selected backend cannot accept is *excluded with a
@@ -40,7 +40,7 @@ What this module deliberately does not do
   *baseline* at the end so drift is visible in the report.
 * It never promises a speed-up. The report says what was measured, on what, and how many times.
 
-Stdlib only, like the rest of Strata Control: the tuner is optional and its absence must leave
+Stdlib only, like the rest of Nostroma Control: the tuner is optional and its absence must leave
 serving untouched.
 """
 
@@ -207,7 +207,7 @@ def engine_env(engine: Path | str) -> dict[str, str] | None:
 def engine_flag_inventory(engine: Path) -> list[str] | None:
     """Read the flags an engine binary documents, or None when it cannot be run here.
 
-    Both output streams are read. The Strata engine writes its usage to **stderr**, which is easy to
+    Both output streams are read. The Nostroma engine writes its usage to **stderr**, which is easy to
     miss: a stdout-only read reports "no flags" for a perfectly good engine, and because every
     dimension is then excluded the sweep silently searches nothing. That failure is safe but
     useless, so the parser reads stderr too and only reports None when the binary could not be run

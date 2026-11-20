@@ -1,6 +1,6 @@
-"""Which processes Strata started, and how to tell one of them from a stranger.
+"""Which processes Nostroma started, and how to tell one of them from a stranger.
 
-Every engine, image encoder and server that Strata starts leaves a small private record: its PID, the time it
+Every engine, image encoder and server that Nostroma starts leaves a small private record: its PID, the time it
 started, its command line, and the same two things for the process that started it. When that parent is gone and
 the child is still running, the child is a leftover. A leftover is ended only when ALL of these still hold at the
 moment of the signal:
@@ -13,7 +13,7 @@ moment of the signal:
 A PID that is only a number is never signalled. If the identity of a process cannot be read (no command line on
 this platform and no psutil), it is left alone and reported.
 
-Also here: the one-time check for engines left by earlier Strata versions, which wrote no record: an orphan of
+Also here: the one-time check for engines left by earlier Nostroma versions, which wrote no record: an orphan of
 exactly the engine executable that is about to be started, running ``--serve`` with no live parent.
 """
 
@@ -36,7 +36,7 @@ WINDOWS = os.name == "nt"
 SCHEMA = 1
 INIT_NAMES = {"systemd", "init", "launchd", "upstart"}     # parents that adopt orphans
 
-try:  # psutil ships in every Strata runtime (requirements.txt, the Control lock files)
+try:  # psutil ships in every Nostroma runtime (requirements.txt, the Control lock files)
     import psutil
 except ImportError:  # pragma: no cover - the Linux /proc fallback below still identifies processes
     psutil = None
@@ -404,7 +404,7 @@ def _engine_candidates(engine_exe: str):
 def orphans_of(engine_exe: str) -> list[Ident]:
     """Processes that are exactly this engine executable, running ``--serve``, whose parent no longer exists.
 
-    Earlier Strata versions wrote no record. Such an engine is not a service anybody started on purpose: the
+    Earlier Nostroma versions wrote no record. Such an engine is not a service anybody started on purpose: the
     server that owned it is gone, and it holds the GPU. Only the executable that is about to be started is
     matched, never another installation's, and a process whose parent is alive is never an orphan."""
     if psutil is None or not engine_exe:

@@ -4,7 +4,7 @@ A Windows PC with "long paths" off (the default on a fresh install) refuses any 
 The AMD engine packages hold paths up to 149 characters (hipBLASLt tensile libraries), so under a long user name the unpacked
 engine can go past the limit. Two defences, neither of which needs a setting from the user:
 
-* every file Strata itself touches inside a component folder goes through `long_path`, which turns the path into the
+* every file Nostroma itself touches inside a component folder goes through `long_path`, which turns the path into the
   extended-length form (``\\\\?\\C:\\...``) that Windows accepts at any length (up to 32,767 characters);
 * when a folder is still too deep for the engine's *own* file loading (the GPU math libraries open their files with ordinary
   paths), `warning_for` gives one plain sentence with the fix; the install continues (recommend, never refuse).
@@ -88,9 +88,9 @@ def warning_for(folder: Path, longest_inside: int) -> str | None:
     if os.name != "nt" or not too_long(Path(folder) / ("x" * (longest_inside + 1))):
         return None
     reach = len(plain(folder)) + 1 + longest_inside
-    return (f"Strata's folder is deep: some engine files will have paths of about {reach} characters, and Windows stops at 259 unless "
+    return (f"Nostroma's folder is deep: some engine files will have paths of about {reach} characters, and Windows stops at 259 unless "
             f"long paths are turned on. The install carries on, but the engine's graphics libraries may fail to load those files. "
-            f"To fix it, turn on Windows long paths (Group Policy: Enable Win32 long paths) or put Strata in a shorter folder "
+            f"To fix it, turn on Windows long paths (Group Policy: Enable Win32 long paths) or put Nostroma in a shorter folder "
             f"(for example set STRATA_COMPONENTS_DIR to C:\\Strata) and update again.")
 
 
@@ -102,14 +102,14 @@ def describe_oserror(exc: BaseException) -> str:
         shown = plain(os.fsdecode(name))
         if too_long(shown):
             return (f"a file path is longer than Windows allows ({len(os.path.abspath(shown))} characters, the limit is {PLAIN_LIMIT}): "
-                    f"{shown}. Windows long paths are off on this PC. Put Strata in a shorter folder (set STRATA_COMPONENTS_DIR "
+                    f"{shown}. Windows long paths are off on this PC. Put Nostroma in a shorter folder (set STRATA_COMPONENTS_DIR "
                     f"to something short like C:\\Strata) or turn on Windows long paths, then try again ({kind})")
         if isinstance(exc, FileNotFoundError):
-            return f"Strata could not find or create {shown} ({kind})"
+            return f"Nostroma could not find or create {shown} ({kind})"
         if isinstance(exc, PermissionError):
-            return f"Windows or another program would not let Strata use {shown} ({kind})"
+            return f"Windows or another program would not let Nostroma use {shown} ({kind})"
         reason = getattr(exc, "strerror", None)
-        return f"Strata could not use {shown}" + (f": {reason}" if reason else "") + f" ({kind})"
+        return f"Nostroma could not use {shown}" + (f": {reason}" if reason else "") + f" ({kind})"
     return f"a file operation failed ({kind})"
 
 

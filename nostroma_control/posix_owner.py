@@ -1,6 +1,6 @@
 """POSIX 'owner-only' checks that repair what is ours and explain what is not.
 
-Strata keeps its private state in folders (0700) and files (0600) of the user. The checks used to refuse as soon as a mode had drifted
+Nostroma keeps its private state in folders (0700) and files (0600) of the user. The checks used to refuse as soon as a mode had drifted
 (a `chmod -R`, an rsync, a restored backup) or the owner was not the current user (one `sudo strata ...` leaves root-owned folders behind).
 Now:
 
@@ -50,7 +50,7 @@ def owner_only_wrong(path: str | os.PathLike, details: os.stat_result) -> bool:
     if folder not in _NOTED:
         _NOTED.add(folder)
         print(f"strata: {folder} is on a drive that cannot keep files private to your account (a Windows drive seen from Linux, "
-              "a USB stick or a network share). Strata goes on; keep your data on the Linux disk to make it private.", file=sys.stderr)
+              "a USB stick or a network share). Nostroma goes on; keep your data on the Linux disk to make it private.", file=sys.stderr)
     return False
 
 
@@ -96,5 +96,5 @@ def owner_only_text(text: str, path: str | os.PathLike) -> str:
         return text
     subject = text.split(" must ")[0].split(" is not ")[0].strip()
     target = fix_target(path)
-    return (f"{subject} belongs to {_owner_name(owner)}, not to you (usually from running Strata once with sudo). "
+    return (f"{subject} belongs to {_owner_name(owner)}, not to you (usually from running Nostroma once with sudo). "
             f"Run this once, then try again: sudo chown -R \"$USER\" {target}")

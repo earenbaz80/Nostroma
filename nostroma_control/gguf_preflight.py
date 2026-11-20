@@ -88,7 +88,7 @@ class _Reader:
 
 def real_model_file(path: Path) -> Path:
     """The regular file a model path stands for. A model file the person picked can be a link (a Hugging Face cache snapshot, an
-    Ollama blob, a shortcut to a bigger drive): it is followed here, once, and the target is what gets opened. Strata's own state files
+    Ollama blob, a shortcut to a bigger drive): it is followed here, once, and the target is what gets opened. Nostroma's own state files
     (run configs, profiles, runtime records) keep the strict no-link rule in their readers."""
     try:
         target = Path(os.path.realpath(path))
@@ -116,7 +116,7 @@ def inspect_metadata(path: Path) -> dict:
                 raise ProfileError("file does not begin with a GGUF header", 5)
             version, tensors, keys = reader.u32(), reader.u64(), reader.u64()
             if version != 3:
-                raise ProfileError("Strata metadata preflight requires GGUF v3", 5)
+                raise ProfileError("Nostroma metadata preflight requires GGUF v3", 5)
             # tensors == 0 is a real file: a split set made with llama.cpp's gguf-split (Unsloth's) keeps only the metadata in its first shard
             if not 0 <= tensors <= MAX_TENSORS or keys > MAX_METADATA_KEYS:
                 raise ProfileError("GGUF tensor or metadata count exceeds the inspection limit", 5)

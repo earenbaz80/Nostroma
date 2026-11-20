@@ -468,7 +468,7 @@ def render_view(snapshot: dict, view: str, width: int = 80, height: int = 24,
         title, message, action = {
             "connecting": ("CONNECTING", "Waiting for the first telemetry snapshot.",
                            "The monitor will update automatically."),
-            "disconnected": ("CONNECTION LOST", "Strata is not responding.",
+            "disconnected": ("CONNECTION LOST", "Nostroma is not responding.",
                              "Retrying automatically; press r now."),
             "auth_required": ("AUTHORIZATION REQUIRED", "The telemetry credential was rejected.",
                               "Update the saved connection; press r."),

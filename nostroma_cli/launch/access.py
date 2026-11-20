@@ -1,7 +1,7 @@
 """Who can reach the server: this computer, the local network, a Cloudflare quick tunnel, Tailscale.
 
-Strata starts the server; this module only works out the addresses, checks that the helper programs exist (and says in plain
-words how to install them when they do not), and runs/stops the one helper Strata starts itself: the cloudflared quick tunnel.
+Nostroma starts the server; this module only works out the addresses, checks that the helper programs exist (and says in plain
+words how to install them when they do not), and runs/stops the one helper Nostroma starts itself: the cloudflared quick tunnel.
 Nothing here changes a firewall, a router or a Tailscale setting. The cloudflared output is filtered: only the public address
 is ever kept or shown (a login or certificate line is dropped, never printed).
 """
@@ -63,7 +63,7 @@ def _is_private(address: str) -> bool:
     return a == 10 or (a == 172 and 16 <= b <= 31) or (a == 192 and b == 168) or (a == 100 and 64 <= b <= 127)
 
 
-CLOUDFLARED_MIN = (2022, 1, 0)   # the quick-tunnel flags and the "Registered tunnel connection" line Strata waits for
+CLOUDFLARED_MIN = (2022, 1, 0)   # the quick-tunnel flags and the "Registered tunnel connection" line Nostroma waits for
 _cf_seen: dict[tuple[str, float], str | None] = {}
 
 
@@ -122,7 +122,7 @@ def _cf_new_enough(version: str) -> bool:
 
 
 def cloudflared_info() -> dict | None:
-    """The cloudflared Strata would use: {'path', 'version'}, found on PATH or in the usual places and new enough."""
+    """The cloudflared Nostroma would use: {'path', 'version'}, found on PATH or in the usual places and new enough."""
     for place in _cloudflared_places():
         if not os.path.isfile(place) or (not WINDOWS and not os.access(place, os.X_OK)):
             continue
@@ -299,7 +299,7 @@ def urls_for(s: LaunchSettings, *, tunnel_url: str | None = None) -> list[str]:
 def firewall_note(kind: str) -> str | None:
     """Windows asks the first time a program listens for other computers: say so before it happens, in plain words."""
     if WINDOWS and kind in ("lan", "tailscale"):
-        return ("Windows may ask whether to allow Strata (python.exe) on your network: choose Allow for private networks. "
+        return ("Windows may ask whether to allow Nostroma (python.exe) on your network: choose Allow for private networks. "
                 "If you choose Cancel, the model still works on this computer.")
     return None
 
@@ -390,7 +390,7 @@ def start_tunnel(name: str, port: int, *, wait: float = 45.0) -> tuple[str | Non
     running = cloudflared_procs(exclude=(int(existing["pid"]),) if existing else ())
     own = own_tunnel_pids(running, port)
     if own:
-        return None, (f"Strata’s tunnel for this address is already running (PID {', '.join(map(str, own))}), so Strata did not start a "
+        return None, (f"Nostroma’s tunnel for this address is already running (PID {', '.join(map(str, own))}), so Nostroma did not start a "
                       "second one. Stop it first (or use it as it is), then connect again here.")
     note = other_tunnel_note([pid for pid, _ in running]) if running else ""
     stop_tunnel(name)
@@ -438,7 +438,7 @@ def tunnel_info(name: str) -> dict | None:
 
 
 def stop_tunnel(name: str) -> bool:
-    """End this launch's tunnel, only if the recorded process is still exactly the one Strata started."""
+    """End this launch's tunnel, only if the recorded process is still exactly the one Nostroma started."""
     state = tunnel_info(name)
     ok = False
     if state:

@@ -132,7 +132,7 @@ class EngineComponent:
     variant: str = ""                                     # optional tag when one backend has several builds (cuda13, cuda12)
     signature: dict | None = None                         # S6: {"alg", "key_id", "value"} over signing_payload()
     raw: dict = field(default_factory=dict, repr=False)   # the manifest as read, for the signature check
-    shape: str = ""                                       # the engine of one model shape (nostroma_control/shape_engine.py): its compiled geometry's name; "" for the Strata engine
+    shape: str = ""                                       # the engine of one model shape (nostroma_control/shape_engine.py): its compiled geometry's name; "" for the Nostroma engine
 
     @property
     def exe(self) -> Path:
@@ -276,7 +276,7 @@ def _plain_relative(path: str) -> str:
 
 
 def read_manifest(folder: Path, component_id: str = COMPONENT_ID) -> EngineComponent:
-    """The manifest of the package in `folder`. `component_id` is the component the caller expects: the Strata engine (``strata-engine``) or the engine of
+    """The manifest of the package in `folder`. `component_id` is the component the caller expects: the Nostroma engine (``strata-engine``) or the engine of
     one model shape (``strata-q4-lite``, nostroma_control/shape_engine.py). A package of one kind is never read as the other: the id and the ``shape`` member
     must agree with it, so an older Control (which only knows ``strata-engine``) refuses a shape engine that was put into its engine folder by hand."""
     path = folder / MANIFEST
@@ -294,7 +294,7 @@ def read_manifest(folder: Path, component_id: str = COMPONENT_ID) -> EngineCompo
     shape = ""
     if component_id == COMPONENT_ID:
         if data.get("shape"):
-            raise ComponentProblem(f"{MANIFEST} is the engine of a model shape, not the Strata engine")
+            raise ComponentProblem(f"{MANIFEST} is the engine of a model shape, not the Nostroma engine")
     else:
         from nostroma_control import shape_engine
         shape = str(data.get("shape") or "")
@@ -348,7 +348,7 @@ def read_manifest(folder: Path, component_id: str = COMPONENT_ID) -> EngineCompo
 
 
 def read_manifest_any(folder: Path) -> EngineComponent:
-    """The manifest of a package of either kind: the Strata engine, or the engine of a model shape (its id names the shape's component). For the release tools, which
+    """The manifest of a package of either kind: the Nostroma engine, or the engine of a model shape (its id names the shape's component). For the release tools, which
     handle both; the start path asks for the one it wants (read_manifest with the component's id)."""
     try:
         raw_id = json.loads((folder / MANIFEST).read_text(encoding="utf-8-sig")).get("id")
@@ -575,7 +575,7 @@ def detect_backend(environ=None) -> tuple[str | None, str]:
 
 
 def _first_make(makes) -> str:
-    """The make Strata uses when a PC has cards of several: NVIDIA, then AMD, then Intel (the order of every probe)."""
+    """The make Nostroma uses when a PC has cards of several: NVIDIA, then AMD, then Intel (the order of every probe)."""
     return next(m for m in ("cuda", "hip", "sycl") if m in makes)
 
 
@@ -629,7 +629,7 @@ def wsl_amd_note(backend: str | None, dev_root: str = "/dev", wsl: bool | None =
     if not wsl or not Path(dev_root, "dxg").exists() or Path(dev_root, "kfd").exists():
         return None
     return ("The AMD engines do not run under WSL yet: the driver layer WSL uses for the card never finishes a GPU command, so the engine "
-            "would hang at its first step. Use the Strata app or Terminal for Windows, which run the AMD engine directly.")
+            "would hang at its first step. Use the Nostroma app or Terminal for Windows, which run the AMD engine directly.")
 
 
 #: The most own memory an integrated GPU reports: its BIOS carve-out (a Raphael iGPU reported 512 MiB, #4971). A card below this is not the one this
@@ -677,7 +677,7 @@ def _drm_vendor_backend(root: str = "/sys/class/drm") -> str | None:
 
 
 #: Windows AMD cards by PCI device id (VEN_1002), the same table as setup.py's _WIN_AMD_DID (tests/terminal/test_engine_component.py
-#: keeps the two equal): the architecture Strata runs the card as. Integrated Radeons are not in it (the one APU that is supported,
+#: keeps the two equal): the architecture Nostroma runs the card as. Integrated Radeons are not in it (the one APU that is supported,
 #: Strix Halo, 0x1586, is in WIN_AMD_UMA_IDS), so an integrated Radeon beside a card never counts as "the GPU".
 WIN_AMD_DEVICE_ARCH = {0x744C: "gfx1100", 0x7448: "gfx1100", 0x745E: "gfx1100", 0x747E: "gfx1101", 0x7480: "gfx1102",
                        0x7590: "gfx1200", 0x7550: "gfx1201", 0x7551: "gfx1201",
@@ -689,7 +689,7 @@ _WIN_DISPLAY_CLASS = r"SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11c
 
 def gfx_from_name(name: str) -> str:
     """The AMD architecture a card's marketing name implies ("" when the name says nothing): the fallback when the PCI device id is
-    not in the table. Only names Strata knows a gfx for; an integrated Radeon with no supported build still maps (it then simply
+    not in the table. Only names Nostroma knows a gfx for; an integrated Radeon with no supported build still maps (it then simply
     fits no package)."""
     text = re.sub(r"\s+", " ", str(name or "")).upper()
     if "AMD" not in text and "RADEON" not in text and "RYZEN" not in text:
@@ -824,7 +824,7 @@ def _windows_display_adapters_registry() -> list[dict]:
 
 
 def windows_amd_cards(adapters: list[dict] | None = None) -> list[dict]:
-    """The AMD graphics cards (not an integrated Radeon) among the Windows display adapters, each with the architecture Strata
+    """The AMD graphics cards (not an integrated Radeon) among the Windows display adapters, each with the architecture Nostroma
     runs it as ("" when the id is not in the table but the adapter has 3 GB or more of its own memory, so it is no APU)."""
     cards = []
     for adapter in (windows_display_adapters() if adapters is None else adapters):
@@ -1021,7 +1021,7 @@ def driver_notice(have: str | None, need: str) -> str:
     how = ("download it from nvidia.com/drivers" if os.name == "nt" else
            "on Ubuntu open Software & Updates > Additional Drivers, or run: sudo ubuntu-drivers install")
     return (f"Your NVIDIA graphics driver ({have}) is too old for Strata. Install driver {major} or newer ({how}), "
-            "restart the computer and open Strata again.")
+            "restart the computer and open Nostroma again.")
 
 
 #: The AMD card families a person knows by the box they bought, for the one plain line when a build is for another family.
@@ -1037,7 +1037,7 @@ def hip_family(arch: str) -> str:
 #: its own package (Linux `rx6000`, Windows `rdna2`; built, not tested on a real RX 6000 card). The mechanism stays for the next card family
 #: that has none: a family in this table gets the plain "no ready-made engine" line instead of "Ask for the X build".
 NO_PACKAGE_HIP: dict[str, str] = {}
-NO_PACKAGE_SENTENCE = ("This release has no ready-made Strata engine for the AMD {0} series. Strata can only run on it with an engine built for "
+NO_PACKAGE_SENTENCE = ("This release has no ready-made Nostroma engine for the AMD {0} series. Nostroma can only run on it with an engine built for "
                        "that card (docs/AMD_HIP.md, \"RDNA2\").")
 
 
@@ -1062,7 +1062,7 @@ def arch_notice(built: tuple[str, ...], here: list[str]) -> str:
     built_for = sorted({hip_family(a) for a in built})
     have = sorted({hip_family(a) for a in here})
     make = lambda names: " and ".join(names)  # noqa: E731
-    return (f"This build of Strata is for AMD {make(built_for)} cards. This computer has an AMD {make(have)} card ({', '.join(sorted(set(here)))}). "
+    return (f"This build of Nostroma is for AMD {make(built_for)} cards. This computer has an AMD {make(have)} card ({', '.join(sorted(set(here)))}). "
             f"Ask for the {make(have)} build.")
 
 
@@ -1075,7 +1075,7 @@ def wrong_make_notice(built: str, archs: tuple[str, ...], here: str) -> str:
     families = sorted({hip_family(a) for a in archs if any(a in group for _, group in HIP_FAMILIES)})
     built_for = f"AMD {' and '.join(families)}" if built == "hip" and families else MAKE_NAMES.get(built, built)
     make = MAKE_NAMES.get(here, here)
-    return f"This Strata is for {built_for} cards. Your PC has an {make} card: download the {make} version from {RELEASES_URL}"
+    return f"This Nostroma is for {built_for} cards. Your PC has an {make} card: download the {make} version from {RELEASES_URL}"
 
 
 def resolve(root: Path | None = None, *, backend: str | None = None, target: str | None = None,
@@ -1188,7 +1188,7 @@ def expand(value: str, cfg: dict | None = None, *, root: Path | None = None, ful
         shape = shape_engine.shape_of_component(name)
         if shape is None:
             raise EngineMissing(f"the run config names an unknown component {name!r}", root or components_dir())
-        try:                                              # the engine of a model shape: its own folder, never the Strata engine's
+        try:                                              # the engine of a model shape: its own folder, never the Nostroma engine's
             return str(resolve(shape_engine.root(shape, root), backend=backend if backend in BACKEND_MATRIX else None, full=full, component_id=name).exe)
         except EngineIntegrityError:
             raise

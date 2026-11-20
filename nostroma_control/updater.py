@@ -74,7 +74,7 @@ class Busy(UpdateError):
 
     def __init__(self, serving: list[dict]):
         if any(str(item.get("profile", "")).startswith("launch-") for item in serving):
-            super().__init__("Strata's own launch is using the graphics card. " + LAUNCH_NEXT_STEP, 7)
+            super().__init__("Nostroma's own launch is using the graphics card. " + LAUNCH_NEXT_STEP, 7)
             self.serving = serving
             return
         names = ", ".join(item.get("profile", "an engine") for item in serving) or "an engine"
@@ -111,7 +111,7 @@ class TestStartFailed(UpdateError):
             cause = "The engine program did not run on this computer."
         elif "no installed model" in low:
             cause = "There is no installed model to test the engine with."
-        elif low.startswith("it "):                      # Strata's own plain sentences ("it was still loading the model after 10 minutes")
+        elif low.startswith("it "):                      # Nostroma's own plain sentences ("it was still loading the model after 10 minutes")
             cause = reason[:1].upper() + reason[1:].rstrip(".") + "."
         elif busy:
             cause = "The graphics card or memory was in use."
@@ -352,7 +352,7 @@ def serving_now() -> list[dict]:
         descriptor = runtime.acquire_activity_lease(shared=False)
     except profiles.ProfileError as exc:
         if "lease" in str(exc):
-            return [{"profile": "a running Strata server", "state": "serving"}]
+            return [{"profile": "a running Nostroma server", "state": "serving"}]
         return []
     except OSError:
         return []
@@ -764,7 +764,7 @@ def new_stage(root: Path, prefix: str = "") -> Path:
 
 def stage_engine(ctx: Context, feed: feedmod.Feed, pkg: feedmod.EnginePackage, archive: Path, *, component_id: str = ec.COMPONENT_ID) -> tuple[Path, ec.EngineComponent]:
     """Unpack and check a downloaded engine package in a staging component folder. Returns (staging root, component). `component_id`: the engine of a model shape
-    (nostroma_control/shape_engine.py) is read and checked as its own component, never as the Strata engine."""
+    (nostroma_control/shape_engine.py) is read and checked as its own component, never as the Nostroma engine."""
     stage_root = new_stage(ctx.components)
     folder = stage_root / "engine" / folder_name(pkg)
     ctx.say("verify", f"Unpacking {pkg.label}", component="engine")
@@ -810,7 +810,7 @@ def stage_engine(ctx: Context, feed: feedmod.Feed, pkg: feedmod.EnginePackage, a
 
 def discover_run_config(environ=None) -> Path | None:
     """A saved model's run config for the test start: the one a saved profile uses if its files are all present, otherwise any
-    installed model whose files are present. DeepSeek models are left out (nostroma_control/retired.py: this Strata does not run them).
+    installed model whose files are present. DeepSeek models are left out (nostroma_control/retired.py: this Nostroma does not run them).
     None when no model can be used (the first run)."""
     from nostroma_control import models, profiles, retired
     try:
@@ -979,7 +979,7 @@ def _keep_records(sandbox: Path, component: ec.EngineComponent, ctx: Context) ->
 
 def _warn_if_deep(ctx: Context, folder: Path, longest_inside: int) -> None:
     """Tell the person, in plain words, when the engine will sit too deep for Windows' ordinary path limit and long paths are
-    off. The install continues: Strata's own file work uses extended paths; only the engine's own loading may not."""
+    off. The install continues: Nostroma's own file work uses extended paths; only the engine's own loading may not."""
     if getattr(ctx, "_deep_warned", False):
         return
     words = longpath.warning_for(folder, longest_inside)
@@ -995,7 +995,7 @@ def _test_progress(ctx: Context, component: ec.EngineComponent):
     seen = {"phase": None, "at": 0.0}
     words = {"loading": "is loading the model",
              "verifying_generation": "has loaded the model; waiting for it to answer one token",
-             "ready_file_not_matched": "says it is ready; checking that it is the engine Strata started"}
+             "ready_file_not_matched": "says it is ready; checking that it is the engine Nostroma started"}
 
     def progress(status: dict) -> None:
         phase = status.get("phase") if status.get("state") == "starting" else None
@@ -1021,7 +1021,7 @@ def _test_start_failure(component: ec.EngineComponent, started: dict, ctx: Conte
             return TestStartFailed(component.version, f"it loaded the model but did not answer one token within {minutes} minutes",
                                    busy=False, hint="Nothing was changed. Run `strata update` again; if it happens again, report it with the log." + kept)
         if phase == "ready_file_not_matched":
-            return TestStartFailed(component.version, f"it reported that it was ready, but Strata could not match it to the engine process it "
+            return TestStartFailed(component.version, f"it reported that it was ready, but Nostroma could not match it to the engine process it "
                                    f"started", busy=False,
                                    hint="This looks like a problem in Strata, not in your engine or card. Nothing was changed; report it with the log." + kept)
         return TestStartFailed(component.version, f"it was still loading the model after {minutes} minutes", busy=True,
@@ -1242,7 +1242,7 @@ def _switch_to_installed(ctx: Context, state: State, folder: str, result: dict) 
 def _finish_engine_install(ctx: Context, state: State, pkg: feedmod.EnginePackage, stage_root: Path, staged: ec.EngineComponent,
                            archive: Path, result: dict, *, delete_archive: bool) -> dict:
     """The part of an engine install both ways share (a download from the feed, a file the person chose): test-start the staged engine,
-    switch to it, keep the previous one, remove the staging folder. ``archive`` is only deleted when Strata downloaded it."""
+    switch to it, keep the previous one, remove the staging folder. ``archive`` is only deleted when Nostroma downloaded it."""
     root = ctx.components
     before_installed, _ = installed_engine(root, ctx.hardware)
     before_identity = preset_marks.identity_of(before_installed, _manifest_sha(before_installed.root)) if before_installed else None
@@ -1252,7 +1252,7 @@ def _finish_engine_install(ctx: Context, state: State, pkg: feedmod.EnginePackag
         try:
             smoke = runner(stage_root, staged, ctx)
         except TestStartFailed as exc:
-            try:                                             # a model of Strata's own launch holds the card: one next step, not the engine's words
+            try:                                             # a model of Nostroma's own launch holds the card: one next step, not the engine's words
                 own = [s for s in ctx.serving() if str(s.get("profile", "")).startswith("launch-")]
             except Exception:                                # noqa: BLE001
                 own = []
@@ -1329,7 +1329,7 @@ def _archive_format(archive: Path) -> str:
     for suffix, fmt in ((".tar.gz", "tar.gz"), (".tgz", "tar.gz"), (".tar.xz", "tar.xz"), (".zip", "zip")):
         if name.endswith(suffix):
             return fmt
-    raise UpdateError("this is not a Strata engine package (it should be a .tar.gz or .zip file from the release page)", 5)
+    raise UpdateError("this is not a Nostroma engine package (it should be a .tar.gz or .zip file from the release page)", 5)
 
 
 def install_engine_file(ctx: Context, archive: Path) -> dict:
@@ -1358,7 +1358,7 @@ def install_engine_file(ctx: Context, archive: Path) -> dict:
             try:
                 component = ec.read_manifest(folder)
             except ec.ComponentProblem as exc:
-                raise UpdateError(f"this file is not a Strata engine package: {exc}", 5) from None
+                raise UpdateError(f"this file is not a Nostroma engine package: {exc}", 5) from None
             ctx.say("verify", "Checking the package signature and every file", component="engine")
             outer = ec._verifier
             signing.install_component_verifier(ctx.trusted)
@@ -1376,7 +1376,7 @@ def install_engine_file(ctx: Context, archive: Path) -> dict:
                 manifest_sha256=transfer.sha256_file(folder / ec.MANIFEST), installed_bytes=total)
             why = feedmod.engine_fit_reasons(pkg, ctx.hardware)
             if why:
-                raise UpdateError("this file is not a Strata engine for this PC: " + "; ".join(why), 5)
+                raise UpdateError("this file is not a Nostroma engine for this PC: " + "; ".join(why), 5)
             # the staged folder gets the name an installed package has
             final_stage = stage_root / "engine" / folder_name(pkg)
             if final_stage != folder:
@@ -1643,7 +1643,7 @@ def update_app(ctx: Context, feed: feedmod.Feed) -> dict:
         raise UpdateError("this build has no app update key (update_keys.json app_minisign_public); the app installer cannot be verified, so it was not downloaded", 5)
     root = ctx.components
     _free_space_check(root, entry["size"], ctx, entry["sha256"], "app")
-    archive = _download(ctx, "app", entry["url"], entry["size"], entry["sha256"], f"Strata app {feed.app.version}", feed)
+    archive = _download(ctx, "app", entry["url"], entry["size"], entry["sha256"], f"Nostroma app {feed.app.version}", feed)
 
     def chunks():
         with archive.open("rb") as stream:
@@ -1711,7 +1711,7 @@ def _model_check(ctx: Context, feed: feedmod.Feed, state: State, *, engine: bool
 
 
 def _shape_steps(ctx: Context, feed: feedmod.Feed, engine: bool) -> list:
-    """One step for each model-shape engine installed here (nostroma_control/shape_engine.py): the explicit update brings it up to the feed's, beside the older one; the Strata engine is
+    """One step for each model-shape engine installed here (nostroma_control/shape_engine.py): the explicit update brings it up to the feed's, beside the older one; the Nostroma engine is
     not touched. A PC that never installed one has no such step."""
     if not engine:
         return []

@@ -1,4 +1,4 @@
-"""The Strata Monitor as `strata launch` opens it: the same monitor plus a Connect view and a quit question.
+"""The Nostroma Monitor as `strata launch` opens it: the same monitor plus a Connect view and a quit question.
 
 Everything about the monitor itself (the views, colours, polling, key hints) is `nostroma_cli.monitor.MonitorApp`, unchanged.
 This subclass adds
@@ -309,7 +309,7 @@ class LaunchMonitor(MonitorApp):
     @staticmethod
     def vendor_tested(h: harness.Harness) -> str:
         """What the app's maker's version was tested with (fixed history, nothing to do with this server)."""
-        return "built into Strata" if h.built_in else (h.tested or "not tested")
+        return "built into Nostroma" if h.built_in else (h.tested or "not tested")
 
     def server_state(self, h: harness.Harness) -> tuple[str, str]:
         """(words, kind) for THIS server and this app: Not checked / Checking / Passed (n/n) / Failed (n/n); kind is none | run | ok | bad."""
@@ -391,7 +391,7 @@ class LaunchMonitor(MonitorApp):
         if room < 5:                                         # no room for the app's setup text: the list and the keys are what matter here
             return t
         t.append("\n")
-        paths = ", ".join(f["path"] for f in out["files"]) or ("built into the Strata app" if h.built_in else "")
+        paths = ", ".join(f["path"] for f in out["files"]) or ("built into the Nostroma app" if h.built_in else "")
         t.append(f"{h.title} setup", style=bold_accent)
         t.append(self.fit(f"   {paths}", width - len(h.title) - 6) + "\n", style=mute)
         room -= 2

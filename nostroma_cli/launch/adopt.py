@@ -22,7 +22,8 @@ UNSUPPORTED = ("no nvidia gpu found", "no amd gpu", "nvidia gpu", "not supported
 
 def setup_cannot_handle_this_card(message: str) -> bool:
     low = (message or "").lower()
-    return ("no nvidia gpu found" in low or "no amd gpu strata can use" in low or "nvidia-smi did not answer" in low
+    return ("no nvidia gpu found" in low or "no amd gpu strata can use" in low or "no amd gpu nostroma can use" in low
+            or "nvidia-smi did not answer" in low
             or "no mac model installer" in low)
 
 
@@ -74,7 +75,7 @@ def plan(*, family: str, model: str, model_dir: Path, data_dir: Path, src: Path,
     feed = bool((family_def or {}).get("feed"))     # a model of the signed feed (Qwen4 day): the Unsloth layout, its own shape's engine when it has one
     if family not in FAMILIES and not feed:
         # no full stop: the caller joins the problems with "; " and ends the sentence (a "gyro.." came out of the old text, round 8, N11)
-        return None, [f"Strata can write the settings itself only for the Qwen3.8-Flash-Next, Swift, Coder and Gyro files, not for {family}"]
+        return None, [f"Nostroma can write the settings itself only for the Qwen3.8-Flash-Next, Swift, Coder and Gyro files, not for {family}"]
     shards = model_files(model_dir, family, family_def)
     if not shards:
         problems.append(f"the model file is not in {model_dir}" if family == "gyro" else
@@ -133,7 +134,7 @@ def plan(*, family: str, model: str, model_dir: Path, data_dir: Path, src: Path,
     exe = "component:strata-engine"
     if feed and family_def.get("shape"):
         from nostroma_control import shape_engine
-        exe = shape_engine.reference(family_def["shape"])          # the engine of the model's shape (nostroma_control/shape_engine.py), installed beside the Strata engine
+        exe = shape_engine.reference(family_def["shape"])          # the engine of the model's shape (nostroma_control/shape_engine.py), installed beside the Nostroma engine
     cfg = {"exe": exe, "args": args, "cwd": str(src), "tokenizer": str(tokenizer), "model_name": model_name,
            "log": str(log), "lib_dirs": [], "port": 8080}
     if backend == "metal":

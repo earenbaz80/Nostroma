@@ -396,7 +396,7 @@ def export_preset(ref: str) -> dict[str, Any]:
 
 def import_preset(data: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(data, dict) or data.get("schema") != SCHEMA:
-        raise PresetError("that file is not a Strata preset")
+        raise PresetError("that file is not a Nostroma preset")
     # (a value only outside the tuner's tested range is kept, #3844; the never list still refuses)
     problems, _outside = tune_knobs.check_setting_parts((data.get("settings") or {}).get("args") or {},
                                                         (data.get("settings") or {}).get("env") or {},

@@ -1,4 +1,4 @@
-"""Bounded, read-only transport and normalization for Strata telemetry."""
+"""Bounded, read-only transport and normalization for Nostroma telemetry."""
 
 from __future__ import annotations
 
@@ -122,7 +122,7 @@ class Endpoint:
                                   http_status=e.code) from e
             raise ClientError(f"telemetry request failed: HTTP {e.code}", http_status=e.code) from e
         except (urllib.error.URLError, TimeoutError, socket.timeout, OSError) as e:
-            raise ClientError(f"cannot reach Strata server: {type(e).__name__}") from e
+            raise ClientError(f"cannot reach Nostroma server: {type(e).__name__}") from e
         try:
             data = json.loads(body)
         except (ValueError, UnicodeDecodeError, RecursionError) as e:

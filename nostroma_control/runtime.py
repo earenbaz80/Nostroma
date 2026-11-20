@@ -1,4 +1,4 @@
-"""Local owner-controlled supervisor for one saved Strata serving profile.
+"""Local owner-controlled supervisor for one saved Nostroma serving profile.
 
 The supervisor holds the Popen handle for the server it started. A client never
 sends a signal to a PID found in a ready file. The control channel and token live
@@ -151,7 +151,7 @@ def _warn_no_acls(base: Path) -> None:
     if str(base) not in _NO_ACL_WARNED:
         _NO_ACL_WARNED.add(str(base))
         print(f"[strata] {base} is on a drive that has no file permissions (FAT or exFAT), so other accounts on this PC could "
-              f"read what Strata keeps there. Use a drive formatted as NTFS if that matters.", file=sys.stderr, flush=True)
+              f"read what Nostroma keeps there. Use a drive formatted as NTFS if that matters.", file=sys.stderr, flush=True)
 
 
 def _not_private_message(base: Path) -> str:
@@ -162,11 +162,11 @@ def _not_private_message(base: Path) -> str:
         except OSError:
             names, readable = [], False
         if not readable:
-            return (f"Strata cannot read the permissions of {base}, the folder where it keeps its running state. Run Strata once as "
-                    f"yourself (not as administrator), or delete that folder: Strata makes a private one again.")
+            return (f"Nostroma cannot read the permissions of {base}, the folder where it keeps its running state. Run Nostroma once as "
+                    f"yourself (not as administrator), or delete that folder: Nostroma makes a private one again.")
         who = ", ".join(names) if names else "other accounts"
-        return (f"Strata keeps its running state in {base}, and {who} can open that folder. Strata could not change that. "
-                f"Right-click the folder, choose Properties > Security, and remove those accounts (or delete the folder: Strata "
+        return (f"Nostroma keeps its running state in {base}, and {who} can open that folder. Nostroma could not change that. "
+                f"Right-click the folder, choose Properties > Security, and remove those accounts (or delete the folder: Nostroma "
                 f"makes a private one again).")
     return "runtime directory must be owner-only (mode 0700)"
 
@@ -270,7 +270,7 @@ _MARKER_SLACK = 2.0   # seconds: the child starts before its marker is written; 
 def _child_present(child: dict, written: float | None = None) -> bool:
     """Whether the child recorded in an owner marker is still there. A marker without a creation time (Windows could not
     read it when the child started) cannot tell the recorded server from a later process that reused the number, so
-    a live process that is not a Python or Strata executable is a reused number: the child is gone (#3488).
+    a live process that is not a Python or Nostroma executable is a reused number: the child is gone (#3488).
 
     `written` is when the marker was written (its file time). The child was started before that, so a process that was created
     AFTER it cannot be the child, whatever its image: the number was reused. This is what clears a marker left by a force-killed app
@@ -536,7 +536,7 @@ def _check_start_candidate(name: str, expected_profile_revision: str | None,
 
 
 def _repair_config_paths(name: str) -> tuple[str | None, str | None]:
-    """Before a start: every path of the saved run configs that names a version folder of Strata's own that an update removed (the Control bundle
+    """Before a start: every path of the saved run configs that names a version folder of Nostroma's own that an update removed (the Control bundle
     that ran setup: cwd, --expert-profile; an engine package: the picture reader, library folders) is pointed at the current
     version and written once (nostroma_control/cfg_paths.py; the same resolver the config reader applies in memory).  One line of what it did goes to
     the profile's host log.  Returns (the profile's own run config digest before, after) when it changed that file, for a caller that planned the
@@ -617,7 +617,7 @@ def start(name: str, *, wait: float = 300, shutdown_timeout: float = 30,
     _refuse_deepseek(name)                             # before anything is written or started (nostroma_control/retired.py)
     changed_from, changed_to = _repair_config_paths(name)
     if changed_from is not None and expected_source_sha256 == changed_from:
-        expected_source_sha256 = changed_to              # (the caller planned on the file as it was; Strata rewrote it, the caller did not)
+        expected_source_sha256 = changed_to              # (the caller planned on the file as it was; Nostroma rewrote it, the caller did not)
     plan, _ = _check_start_candidate(name, expected_profile_revision, expected_source_sha256)
     on_status = _progress(on_status, {"ok": True, "profile": name, "state": "starting", "phase": "checking_engine"})
     _engine_preflight(plan)                # hashes every engine file (1.4 GB or more): minutes on a slow disk, no owner exists yet
@@ -785,8 +785,8 @@ def _stop_lost(name: str) -> dict | None:
 
 
 def cleanup(profile: str | None = None) -> dict:
-    """End the servers and engines Strata started whose owner is gone (`strata runtime cleanup`). Owned instances
-    that are running are not touched, and neither is any process that is not exactly what Strata recorded."""
+    """End the servers and engines Nostroma started whose owner is gone (`strata runtime cleanup`). Owned instances
+    that are running are not touched, and neither is any process that is not exactly what Nostroma recorded."""
     if profile is not None:
         profile = _name(profile)
     outcome = procs.end_leftovers(profile=profile)

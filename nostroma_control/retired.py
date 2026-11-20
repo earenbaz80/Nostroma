@@ -1,7 +1,7 @@
-"""DeepSeek models that this Strata no longer runs: how a saved config, a folder, a file or a typed name is recognised, and the words
+"""DeepSeek models that this Nostroma no longer runs: how a saved config, a folder, a file or a typed name is recognised, and the words
 a person sees.
 
-Strata ran DeepSeek-V4.1-Flash up to 0.2.13 on an engine of its own (strata-dsv41).  This version does not: a DeepSeek config is
+Nostroma ran DeepSeek-V4.1-Flash up to 0.2.13 on an engine of its own (strata-dsv41).  This version does not: a DeepSeek config is
 refused before anything starts and before any file of it is written, its model files are never touched, and the words name where
 they are and how large, so the person can decide.  Every check here is local and bounded (config fields, a file name, the first
 bytes of one GGUF, the sizes of the files directly in one or two folders): it answers at once, also offline, and never raises.
@@ -32,7 +32,7 @@ _GGUF_HEAD = 1 << 20          # bytes of a GGUF read to find general.architectur
 
 # Every sentence below is the owner's approved wording of 11-11 (par/OWNER-WORDING-1111.md): change none without him.
 #: D1: a start of a saved DeepSeek model (the app, `strata start`, a saved launch)
-REFUSED = "{name} is a DeepSeek model. This version of Strata no longer runs DeepSeek models, so it was not started."
+REFUSED = "{name} is a DeepSeek model. This version of Nostroma no longer runs DeepSeek models, so it was not started."
 FILES_STAY = "Its files are still on this computer: {size} in {folder}. Nothing was changed or deleted."
 NEXT = ("Choose a Qwen model to run instead. If you no longer need the DeepSeek files, you can delete that folder "
         "to free the space.")
@@ -40,17 +40,17 @@ NEXT = ("Choose a Qwen model to run instead. If you no longer need the DeepSeek 
 ROW = "DeepSeek - no longer supported."
 ROW_FILES = "DeepSeek - no longer supported. {size} in {folder}."
 #: D3: DeepSeek asked for by name (`strata launch --model`, `--family deepseek41`, setup, a DeepSeek-only flag)
-NOT_OFFERED = "Strata no longer offers DeepSeek models. Run `strata launch` to choose one of the Qwen models."
+NOT_OFFERED = "Nostroma no longer offers DeepSeek models. Run `strata launch` to choose one of the Qwen models."
 #: D4: the person's own DeepSeek files (`strata launch --model-path`, the own-files screen, `strata models import`)
-OWN_FILES = ("These are DeepSeek model files ({size} in {folder}). This version of Strata no longer runs DeepSeek models; "
+OWN_FILES = ("These are DeepSeek model files ({size} in {folder}). This version of Nostroma no longer runs DeepSeek models; "
              "nothing in the folder was changed. Choose a Qwen model instead.")
-OWN_FILES_NOSIZE = ("These are DeepSeek model files (in {folder}). This version of Strata no longer runs DeepSeek models; "
+OWN_FILES_NOSIZE = ("These are DeepSeek model files (in {folder}). This version of Nostroma no longer runs DeepSeek models; "
                     "nothing in the folder was changed. Choose a Qwen model instead.")
 #: D5: the server started directly with a DeepSeek config or tokenizer
-SERVER = ("[strata] this config runs a DeepSeek model ({why}). This version of Strata no longer runs DeepSeek models, so the "
+SERVER = ("[strata] this config runs a DeepSeek model ({why}). This version of Nostroma no longer runs DeepSeek models, so the "
           "server stops here. The model files were not changed.")
 #: D6: setup's update and its list of installed models
-LEFT_AS_IS = "{name}: a DeepSeek model, left as it is (this version of Strata no longer runs DeepSeek models)."
+LEFT_AS_IS = "{name}: a DeepSeek model, left as it is (this version of Nostroma no longer runs DeepSeek models)."
 
 WHY = {"arch": "arch deepseek41", "engine": "engine strata-dsv41", "tokenizer": "DeepSeek tokenizer", "gguf": "DeepSeek model file",
        "name": "DeepSeek model name"}

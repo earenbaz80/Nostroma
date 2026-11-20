@@ -5,7 +5,7 @@ exception, because the tuner must still run on a machine whose sensors it cannot
 A guard that cannot read its input says so in the report ("the free graphics memory could not be read"); it does not
 pretend the memory was free.
 
-Stdlib only, like the rest of Strata Control.
+Stdlib only, like the rest of Nostroma Control.
 """
 
 from __future__ import annotations
@@ -230,7 +230,7 @@ def cpu_busy_percent(sample_s: float = 1.0) -> float | None:
 
 
 def other_engines(own_pids: set[int] | None = None) -> list[str]:
-    """Command lines of Strata engines that this tune did not start (a second engine changes every number)."""
+    """Command lines of Nostroma engines that this tune did not start (a second engine changes every number)."""
     own = own_pids or set()
     found: list[str] = []
     try:

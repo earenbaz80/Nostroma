@@ -4,7 +4,7 @@ The setup installer writes strata-*.json beside setup.py. A configured model is
 not automatically a compatible or loadable model: component presence and native
 engine compatibility are reported separately.
 
-Finding an existing install: a terminal archive is a new folder with no run configs in it. The places where Strata
+Finding an existing install: a terminal archive is a new folder with no run configs in it. The places where Nostroma
 installs keep run configs (the Terminal's own folder, the folders earlier installs remembered in the user's settings file,
 and the desktop app's install folder, which the Terminal shares) are searched read-only by nostroma_control/discovery.py,
 the same function the launch screens use; the first place that has any is the main one. Nothing is copied or moved:
@@ -45,14 +45,14 @@ SUPPORTED_SELECTIONS = frozenset({"qwen/Q2_0", "qwen/IQ2_XS", "qwen/IQ3_XXS", "q
 
 
 def settings_path() -> Path:
-    """The user's Strata settings file: the same place setup.py writes it (%APPDATA%/Strata/settings.json, or
+    """The user's Nostroma settings file: the same place setup.py writes it (%APPDATA%/Strata/settings.json, or
     $XDG_CONFIG_HOME/strata/settings.json). The desktop app sets STRATA_SETTINGS_FILE to a file of its own (in its data folder), so it
-    never reads an older command-line install's list of Strata folders."""
+    never reads an older command-line install's list of Nostroma folders."""
     return discovery.own_settings_file()
 
 
 def remembered_installs() -> list[Path]:
-    """Earlier Strata folders recorded in the settings file, newest first. Read-only; a missing or unreadable file
+    """Earlier Nostroma folders recorded in the settings file, newest first. Read-only; a missing or unreadable file
     is an empty list."""
     return discovery._installs_in(discovery._read_json(settings_path()))        # noqa: SLF001
 
@@ -327,7 +327,7 @@ def known_set_by_header(first_shard: Any) -> str | None:
         experts: set[str] = set()
         for number, item in enumerate(shards):
             inspected = inspect_metadata(item)
-            # the first shard names the architecture; a later shard of a split set (llama.cpp's gguf-split, Strata's own IQ3_S) carries tensors only: no architecture is no objection, another one is
+            # the first shard names the architecture; a later shard of a split set (llama.cpp's gguf-split, Nostroma's own IQ3_S) carries tensors only: no architecture is no objection, another one is
             if inspected["architecture"] != "qwen4exp" and (number == 0 or inspected["architecture"] is not None):
                 return None
             experts.update(inspected["expert_tensor_types"])
@@ -340,8 +340,8 @@ def known_set_by_header(first_shard: Any) -> str | None:
 
 
 def _candidate_by_layout(shards: list[Path], tensors: int, payload: int, experts: set[str]) -> dict | None:
-    """A qwen4exp file set that is no build Strata has tested (a fine-tune, a K-quant mix from another maker) but has the layout of one
-    (#3651 #3777): the closest row by expert formats, then by size. Strata uses the files as that model and says so; it never refuses a
+    """A qwen4exp file set that is no build Nostroma has tested (a fine-tune, a K-quant mix from another maker) but has the layout of one
+    (#3651 #3777): the closest row by expert formats, then by size. Nostroma uses the files as that model and says so; it never refuses a
     working file for not being on the list (recommend, never force)."""
     try:
         catalog = json.loads((ROOT / "data" / "gguf_fingerprints.json").read_text(encoding="utf-8"))
@@ -368,7 +368,7 @@ def _candidate_by_layout(shards: list[Path], tensors: int, payload: int, experts
 
 def _already_set_up(shards: list[Path], candidate: dict | None) -> dict | None:
     """Is this model already installed (a run config of any known install names the file) and what was prepared beside it (pack, draft
-    layer, picture reader)? Read-only; None when the file set is not one Strata knows."""
+    layer, picture reader)? Read-only; None when the file set is not one Nostroma knows."""
     if not shards or candidate is None:
         return None
     first = shards[0]
@@ -382,10 +382,10 @@ def _already_set_up(shards: list[Path], candidate: dict | None) -> dict | None:
 ISSUE_WORDS = {
     "multiple_model_groups": "the folder holds more than one model",
     "incomplete_or_invalid_shard_set": "some parts of the model are missing",
-    "unrecognized_or_unsupported_model_variant": "this is not a model size Strata knows",
-    "unsupported_or_missing_architecture": "this model type is not supported by the Strata engine (add it as a Custom model API with llama-server instead)",
+    "unrecognized_or_unsupported_model_variant": "this is not a model size Nostroma knows",
+    "unsupported_or_missing_architecture": "this model type is not supported by the Nostroma engine (add it as a Custom model API with llama-server instead)",
     "unsupported_or_incomplete_tokenizer_metadata": "the file has no usable tokenizer",
-    "missing_or_unexpected_expert_quantization": "its quantization is not one Strata knows",
+    "missing_or_unexpected_expert_quantization": "its quantization is not one Nostroma knows",
 }
 # the checker's own sentences about one file, in words
 _REASON_WORDS = (
@@ -395,17 +395,17 @@ _REASON_WORDS = (
     ("is missing", "the file is not there"),
     ("link to a file that is not there", "this is a shortcut to a file that is not there any more"),
     ("does not begin with a gguf header", "this is not a GGUF model file"),
-    ("header version", "this GGUF is from a format Strata does not read"),
-    ("requires gguf v3", "this GGUF is in an old format (version 2); Strata reads version 3"),
+    ("header version", "this GGUF is from a format Nostroma does not read"),
+    ("requires gguf v3", "this GGUF is in an old format (version 2); Nostroma reads version 3"),
     ("metadata is truncated", "the file is cut short (a download or copy that did not finish)"),
     ("payload is shorter", "the file is shorter than its own header says (a download or copy that did not finish)"),
-    ("exceeds the bounded inspection limit", "its header is larger than Strata reads"),
-    ("too large to inspect", "its header is larger than Strata reads"),
-    ("unsupported encoding or shape", "it stores weights in a format Strata does not read"),
-    ("unsupported array type", "its header uses a type Strata does not read"),
-    ("unsupported value type", "its header uses a type Strata does not read"),
+    ("exceeds the bounded inspection limit", "its header is larger than Nostroma reads"),
+    ("too large to inspect", "its header is larger than Nostroma reads"),
+    ("unsupported encoding or shape", "it stores weights in a format Nostroma does not read"),
+    ("unsupported array type", "its header uses a type Nostroma does not read"),
+    ("unsupported value type", "its header uses a type Nostroma does not read"),
     ("byte ranges overlap", "its header is damaged"),
-    ("unsupported_architecture", "this model type is not supported by the Strata engine (add it as a Custom model API with llama-server instead)"),
+    ("unsupported_architecture", "this model type is not supported by the Nostroma engine (add it as a Custom model API with llama-server instead)"),
     ("symlink", "this is a shortcut (symbolic link) that cannot be followed"),
 )
 
@@ -439,7 +439,7 @@ def missing_words(missing: list | None) -> str:
 def problem_words(issues: list, limit: int = 3, missing: list | None = None) -> str:
     """The problems of a file set as ONE sentence part, each said once: the same reason for several files names the files together
     ("a.gguf and b.gguf: the file is cut short"), a reason that was already given is not given again, and a long list is cut with a count.
-    A folder that holds several models does not also say "not a size Strata knows"."""
+    A folder that holds several models does not also say "not a size Nostroma knows"."""
     codes = [str(x) for x in issues or []]
     named = missing_words(missing)
     if named:                                                # the generic "some parts are missing" is replaced by the files
@@ -467,9 +467,9 @@ def problem_words(issues: list, limit: int = 3, missing: list | None = None) -> 
     return "; ".join(parts)
 
 
-UNSUPPORTED_MODEL_TYPE = ("This model type isn't supported by the Strata engine. "
+UNSUPPORTED_MODEL_TYPE = ("This model type isn't supported by the Nostroma engine. "
                           "Add it as a Custom model API (llama-server) instead.")
-# The picture readers Strata ships a pinned copy of (setup downloads and checks one of these next to the model).
+# The picture readers Nostroma ships a pinned copy of (setup downloads and checks one of these next to the model).
 # (name, size in bytes) as setup.py pins them: setup would delete a file of that name with another size, so only an exact
 # match is called "the official one".
 PINNED_PROJECTORS = {"mmproj-qwen3.8-flash-next-bf16.gguf": 907543008, "mmproj-f16.gguf": 899283584}
@@ -495,14 +495,14 @@ def _assess_projector(path: Path) -> dict:
     elif info.get("projector_type") not in OUR_PROJECTOR_TYPES:
         row["status"] = "unsupported"
         row["plain"] = (f"{path.name} reads pictures for a different kind of model. "
-                        "Strata cannot use it; add that model as a Custom model API (llama-server) instead.")
+                        "Nostroma cannot use it; add that model as a Custom model API (llama-server) instead.")
     elif row["pinned"]:
         row["status"] = "ok"
-        row["plain"] = f"{path.name} is the picture reader Strata uses for this model family; pictures will work."
+        row["plain"] = f"{path.name} is the picture reader Nostroma uses for this model family; pictures will work."
     else:
         row["status"] = "other_name"
-        row["plain"] = (f"{path.name} is a picture reader of the right kind but not the file Strata checks; "
-                        "Strata uses the official one (mmproj-Qwen3.8-Flash-Next-BF16.gguf) and "
+        row["plain"] = (f"{path.name} is a picture reader of the right kind but not the file Nostroma checks; "
+                        "Nostroma uses the official one (mmproj-Qwen3.8-Flash-Next-BF16.gguf) and "
                         "downloads it when it is not in the folder.")
     return row
 
@@ -539,7 +539,7 @@ def _list_gguf(folder: Path) -> tuple[list[Path], list[str], bool]:
                     readers.append(entry.name)
                     continue
                 if DRAFT_LAYER.fullmatch(low):
-                    continue                          # Strata's own draft layer (mtp-q2_0.gguf) is not a second model (#4693)
+                    continue                          # Nostroma's own draft layer (mtp-q2_0.gguf) is not a second model (#4693)
                 if len(shards) >= MAX_LISTED:
                     cut = True
                     break
@@ -550,7 +550,7 @@ def _list_gguf(folder: Path) -> tuple[list[Path], list[str], bool]:
 
 
 def _folders_with_models(root: Path) -> list[Path]:
-    """The folders under `root` (a Strata data folder, a whole Hugging Face repository, a drive's model folder) that hold model files,
+    """The folders under `root` (a Nostroma data folder, a whole Hugging Face repository, a drive's model folder) that hold model files,
     breadth first, `TREE_DEPTH` levels deep. A folder with models is not searched further."""
     found: list[Path] = []
     seen: set[str] = set()
@@ -656,9 +656,9 @@ def own_path_problem(picked: str) -> tuple[str, str] | None:
 def plan_import(raw_path: str) -> dict:
     """Inspect a local candidate without copying, parsing tensors or adopting it.
 
-    The picked path can be a .gguf file (any shard of a split set), the folder with the files, or a folder above it (a Strata data
+    The picked path can be a .gguf file (any shard of a split set), the folder with the files, or a folder above it (a Nostroma data
     folder, a whole Hugging Face repository): the folder with the model is looked for, and when a folder holds several models
-    the one Strata knows is used if it is the only one; with two it says which and asks for the file. The result's `model_dir`
+    the one Nostroma knows is used if it is the only one; with two it says which and asks for the file. The result's `model_dir`
     is the folder to hand to setup (--gguf-dir). Links to files and folders are followed."""
     path = Path(raw_path).expanduser()
     if not path.is_absolute():
@@ -704,7 +704,7 @@ def plan_import(raw_path: str) -> dict:
             pass
         if path.name.lower().startswith("mmproj"):
             raise ProfileError("this is a picture reader (mmproj), not a model. Choose the model's own "
-                               ".gguf file; Strata finds the reader next to it", 5)
+                               ".gguf file; Nostroma finds the reader next to it", 5)
         match = SHARD.fullmatch(path.name)
         if match:
             total = int(match.group(3))
@@ -723,12 +723,12 @@ def plan_import(raw_path: str) -> dict:
     if len(groups) != 1 and "multiple_model_groups" not in issues:
         known_sets = [key for key, members in groups.items() if _known(members)]
         if len(known_sets) == 1:
-            # one set in the folder is a model Strata knows: use it and say what else is there
+            # one set in the folder is a model Nostroma knows: use it and say what else is there
             keep = known_sets[0]
             others = sorted(sorted(m, key=lambda x: x.name)[0].name for k, m in groups.items() if k != keep)
             shards = sorted(groups[keep], key=lambda item: item.name)
             notes.append("The folder also holds " + ", ".join(others[:6]) + (" and more" if len(others) > 6 else "") +
-                         f"; Strata uses {shards[0].name} and leaves the others alone.")
+                         f"; Nostroma uses {shards[0].name} and leaves the others alone.")
             groups = {keep: shards}
         else:
             issues.append("multiple_model_groups")
@@ -792,8 +792,8 @@ def plan_import(raw_path: str) -> dict:
         if candidate is None:
             candidate = _candidate_by_layout(shards, observed_tensor_count, observed_payload, observed_experts)
             if candidate is not None:
-                messages.append(f"These files are not exactly a build Strata has tested; they have the layout of {candidate['family']} "
-                                f"{candidate['model']}, so Strata uses them as that model. Check a few answers before you rely on them.")
+                messages.append(f"These files are not exactly a build Nostroma has tested; they have the layout of {candidate['family']} "
+                                f"{candidate['model']}, so Nostroma uses them as that model. Check a few answers before you rely on them.")
     if "multiple_model_groups" in issues:
         candidate = None                                  # nothing is chosen for the person
     if candidate is None and not {"multiple_model_groups", "incomplete_or_invalid_shard_set"} & set(issues):

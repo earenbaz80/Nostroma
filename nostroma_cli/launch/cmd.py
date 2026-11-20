@@ -24,7 +24,7 @@ examples:
                                                    change one advanced setting for this start
   strata launch --plan --model q2_0                show what would happen, change nothing
   strata launch --list-presets | --delete-preset NAME | --status | --stop [--preset NAME]
-  strata connect                                   list the apps Strata can be connected to
+  strata connect                                   list the apps Nostroma can be connected to
   strata connect opencode --write                  write OpenCode's config for the running server (keeps a backup)
 """
 
@@ -77,14 +77,14 @@ def add_parsers(sp: argparse._SubParsersAction) -> list[argparse.ArgumentParser]
         description="Set up a model, tune it, start serving and watch it, in one place. With no flags it opens the guided screens: "
                     "start from a saved preset or set up from the beginning, one decision per screen. With flags it does the same "
                     "without asking, and opens the monitor (or, with --no-tui, prints the address and returns). "
-                    "Presets are shared with the Strata app's profiles and tuning presets.")
+                    "Presets are shared with the Nostroma app's profiles and tuning presets.")
     g = p.add_argument_group("what to run")
     g.add_argument("--preset", metavar="NAME", help="start a saved preset (other flags change it for this start)")
     g.add_argument("--model", metavar="NAME", help="the model size, e.g. iq3_xxs, q2_0, ud-q4_k_xl (any case)")
     g.add_argument("--family", metavar="NAME", help="the model family when a size is offered by several (qwen, swift, coder, ...)")
     g.add_argument("--dsv41-package", metavar="FILE", help=argparse.SUPPRESS)        # DeepSeek (no longer run): accepted, answered in plain words
     g.add_argument("--model-path", metavar="PATH", help="use model files you already have: a folder of shards or one .gguf file")
-    g.add_argument("--data-dir", metavar="DIR", help="where downloaded model files are stored (default: Strata's data folder)")
+    g.add_argument("--data-dir", metavar="DIR", help="where downloaded model files are stored (default: Nostroma's data folder)")
     g.add_argument("--move-data", action="store_true",
                    help="with --data-dir: move the models you already have into the new folder. Without it nothing is moved: your models stay "
                         "where they are and stay usable, and the new folder gets the new downloads")
@@ -125,7 +125,7 @@ def add_parsers(sp: argparse._SubParsersAction) -> list[argparse.ArgumentParser]
                         "lscpu show). The default is one worker per physical core, which the engine's start line names; "
                         "two entries on one core are kept with a warning")
     a = p.add_argument_group("who can use it")
-    a.add_argument("--access", type=_choice("a way to share Strata", S.ACCESS_KINDS), metavar="local|lan|cloudflare|tailscale",
+    a.add_argument("--access", type=_choice("a way to share Nostroma", S.ACCESS_KINDS), metavar="local|lan|cloudflare|tailscale",
                    help="local: this computer only; lan: your network; cloudflare: a quick tunnel; tailscale: your tailnet")
     a.add_argument("--port", type=_port, metavar="N", help=f"port (default {S.DEFAULT_PORT})")
     a.add_argument("--api-key", metavar="KEY", help="the key clients must send (made for you when you share beyond this computer)")
@@ -157,7 +157,7 @@ def add_parsers(sp: argparse._SubParsersAction) -> list[argparse.ArgumentParser]
     c = sp.add_parser(
         "connect", help="print (or write) the setup for an app that uses the running server", epilog=EXAMPLES,
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        description="Shows the settings file and environment an app needs to talk to the Strata server that `strata launch` started. "
+        description="Shows the settings file and environment an app needs to talk to the Nostroma server that `strata launch` started. "
                     "Without a name it lists the apps. With --write it writes the file after asking, keeping a backup of any file it replaces.")
     c.add_argument("harness", nargs="?", help="opencode, codex, claude-code, omp, pi, hermes, openclaw, deepseek-harness")
     c.add_argument("--url", metavar="URL", help="the server address (default: the running launch, else http://127.0.0.1:8080)")
@@ -331,9 +331,9 @@ def apply_defaults(s: S.LaunchSettings, catalog) -> tuple[S.LaunchSettings, list
         rec = catalog.recommendation(hw)
         if rec.get("model"):
             s.family, s.model = rec["family"], rec["model"]
-            notices.append(S.Notice("warn", f"No model was named, so Strata picked {rec['title']} for this computer ({rec['why']}).", ""))
+            notices.append(S.Notice("warn", f"No model was named, so Nostroma picked {rec['title']} for this computer ({rec['why']}).", ""))
         else:
-            notices.append(S.Notice("error", "No model fits this computer by Strata's rules, and none was chosen.",
+            notices.append(S.Notice("error", "No model fits this computer by Nostroma's rules, and none was chosen.",
                                     "Name one with --model (strata launch --help lists them); a bigger one will run slowly."))
     try:
         from nostroma_control import engine_component as _ec
@@ -434,16 +434,16 @@ def gpu_notices(s: S.LaunchSettings, comp) -> list[S.Notice]:
             make = gpu_fit.VENDOR_NAME.get(vendor, vendor)
             if other is not None:
                 omake = gpu_fit.VENDOR_NAME.get(str(other.get("vendor")), str(other.get("vendor")))
-                out.append(S.Notice("error", f"Card {idx} is an {omake} card ({other.get('name')}), and this build of Strata drives {make} cards only. "
+                out.append(S.Notice("error", f"Card {idx} is an {omake} card ({other.get('name')}), and this build of Nostroma drives {make} cards only. "
                                     f"A model cannot be split across {make} and {omake} cards. {gpu_fit.SECOND_MODEL_SENTENCE}",
                                     f"Name a {make} card (" + ", ".join(str(g.get("index")) for g in comp.usable_gpus) + f"), or install the {omake} "
-                                    "build of Strata to use that card."))
+                                    "build of Nostroma to use that card."))
     if s.gpu_roles and vendor:
         from nostroma_control import gpu_roles
         have = {int(c.get("index", -1)): c for c in gpu_roles.rows(comp.gpus, vendor)}
         for k in s.gpu_roles:
             if int(k) not in have:
-                out.append(S.Notice("error", f"There is no card {k} that this build of Strata can use.",
+                out.append(S.Notice("error", f"There is no card {k} that this build of Nostroma can use.",
                                     "Cards: " + (", ".join(str(i) for i in sorted(have)) or "none") + "."))
         if not any(r != "off" for r in s.gpu_roles.values()) and not out:
             out.append(S.Notice("warn", gpu_roles.NO_CARD_LINE, ""))
@@ -780,7 +780,7 @@ def run_launch(a: argparse.Namespace) -> int:
             else:
                 family = _ec.clean_backend_name(word)
                 if not family:
-                    return fail(f"'{a.backend}' is not a make of graphics card Strata knows. Use nvidia, amd, intel or auto.", 2)
+                    return fail(f"'{a.backend}' is not a make of graphics card Nostroma knows. Use nvidia, amd, intel or auto.", 2)
                 os.environ[_ec.ENV_BACKEND] = family          # this launch and everything it starts
                 made = _ec.MAKE_NAMES[family]
                 if a.plan:
@@ -807,7 +807,7 @@ def run_launch(a: argparse.Namespace) -> int:
         if interactive and _screens_missing():
             no_screens_package = _screens_missing()
             interactive = False
-            _say(f"The screens need a Python package this install does not have yet ({no_screens_package}), so Strata goes on in plain lines. "
+            _say(f"The screens need a Python package this install does not have yet ({no_screens_package}), so Nostroma goes on in plain lines. "
                  "Run setup again (START-HERE / ./setup.sh) to get the screens.")
         if not have_choices and not interactive and not a.plan:
             if machine or a.no_tui or catalog is None or not _can_ask():     # --no-tui never asks (round 8, M)
@@ -816,7 +816,7 @@ def run_launch(a: argparse.Namespace) -> int:
             # Git Bash, mintty and some editor panels cannot show the screens although a person is typing: go on in plain lines, and ask first
             plain_questions = True
             if no_screens_package is None:
-                _say("This window cannot show Strata's screens (Git Bash and similar windows do not pass the keyboard through). "
+                _say("This window cannot show Nostroma's screens (Git Bash and similar windows do not pass the keyboard through). "
                      "For the screens, open Windows Terminal, PowerShell or cmd, or run `winpty strata launch`. Going on with plain questions.")
         if interactive and not have_choices:
             if catalog is None:
@@ -930,7 +930,7 @@ def run_launch(a: argparse.Namespace) -> int:
                               "notices": result.notices + [n.line() for n in notes] + ([runner.key_written_notice] if runner.key_written_notice and runner.key_written else [])}))
             return 0
         _say("")
-        _say("Already serving these choices; nothing was restarted." if result.reused else "Strata is serving.")
+        _say("Already serving these choices; nothing was restarted." if result.reused else "Nostroma is serving.")
         for u in result.urls:
             label = ("This computer" if "127.0.0.1" in u else "Cloudflare" if "trycloudflare" in u else
                      "Tailscale" if ("ts.net" in u or u.split("//")[1].startswith("100.")) else "Network")
@@ -1025,7 +1025,7 @@ def run_connect(a: argparse.Namespace) -> int:
         return 0 if passed else 1
     _say(f"{h.title}  ({h.speaks}; {h.status})")
     if not info.get("running") and not a.url:
-        _say("[!] No running Strata server was found, so this uses the default address. Start one with: strata launch")
+        _say("[!] No running Nostroma server was found, so this uses the default address. Start one with: strata launch")
     for f in out["files"]:
         _say("")
         _say(f"File: {f['path']}" + ("   (merged with the file if it exists)" if f["merge"] else ""))

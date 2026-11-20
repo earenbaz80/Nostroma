@@ -22,7 +22,7 @@ def add_parser(sp) -> None:
     for name, text in (("plan", "say what fetching would download; nothing is changed"),
                        ("fetch", "download the drafter (pinned, checked) and pack it for the engine")):
         one = d_sp.add_parser(name, help=text)
-        one.add_argument("--data-dir", metavar="DIR", help="the model data folder (default: the one Strata uses)")
+        one.add_argument("--data-dir", metavar="DIR", help="the model data folder (default: the one Nostroma uses)")
         one.add_argument("--config", metavar="FILE", help="a model's run config: its data folder, model and drafting choice decide what is needed")
         one.add_argument("--family", metavar="NAME", help="the model family when there is no run config yet (qwen, gyro, coder, ...)")
         one.add_argument("--model", metavar="NAME", help="the model (size) when there is no run config yet, with --family: so the plan names the drafter this model will really use and its size")

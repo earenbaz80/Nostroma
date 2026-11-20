@@ -1,11 +1,11 @@
-"""Where Strata's existing installs and model files are: ONE place that the launch screens, `strata models list`, the own-files import
+"""Where Nostroma's existing installs and model files are: ONE place that the launch screens, `strata models list`, the own-files import
 and `strata launch` all ask.
 
 Three kinds of place hold a model's run config (`strata-<tag>.json`), looked at in this order, the first that has any is the main one:
 
 * explicit   STRATA_INSTALL_DIR or an --install-dir argument (it is the only place looked at);
 * here       the Terminal's own folder, when it has run configs (a source checkout that ran setup);
-* remembered the folders earlier Strata installs wrote into the user's settings file (``installs``);
+* remembered the folders earlier Nostroma installs wrote into the user's settings file (``installs``);
 * app        the desktop app's install folder, which the Terminal shares: ``<components>/../install`` (Windows
              ``%LOCALAPPDATA%\\Strata\\install``, Linux and Mac ``$XDG_DATA_HOME/strata/install``, default ``~/.local/share/strata/install``).
              The app's own settings file (``app-settings.json`` beside it) names its data folder and installs.
@@ -101,7 +101,7 @@ def _read_json(path: Path) -> dict:
 
 
 def in_trash(path: str | os.PathLike) -> bool:
-    """#3410: True when ``path`` is inside a Trash / Recycle Bin folder (a Strata folder that was deleted with the file manager
+    """#3410: True when ``path`` is inside a Trash / Recycle Bin folder (a Nostroma folder that was deleted with the file manager
     is still a folder there, and was remembered as an install): ~/.local/share/Trash/files/.., /.Trash-1000/.., ~/.Trash/..,
     $RECYCLE.BIN\\.."""
     parts = [x.lower() for p in Path(path).parts for x in str(p).split("\\")]   # a Windows-shaped path read on Linux has no separators for Path
@@ -125,7 +125,7 @@ def _installs_in(settings: dict) -> list[Path]:
 
 
 def own_settings_file(environ=None, *, windows: bool | None = None, home: Path | None = None) -> Path:
-    """The settings file this process uses: the app's (STRATA_SETTINGS_FILE), else the command-line Strata's (%APPDATA% / ~/.config)."""
+    """The settings file this process uses: the app's (STRATA_SETTINGS_FILE), else the command-line Nostroma's (%APPDATA% / ~/.config)."""
     environ = os.environ if environ is None else environ
     if environ.get("NOSTROMA_SETTINGS_FILE", environ.get("STRATA_SETTINGS_FILE")):
         return Path(environ.get("NOSTROMA_SETTINGS_FILE", environ["STRATA_SETTINGS_FILE"]))
@@ -412,7 +412,7 @@ def mtp_layer_in(*folders: "str | os.PathLike[str] | None") -> Path | None:
 
 def in_hf_cache(path: str | os.PathLike[str], environ=None) -> bool:
     """Whether `path` is inside a Hugging Face cache (a `models--<org>--<name>` folder with its snapshots/ and blobs/, or the cache folder
-    itself: HF_HUB_CACHE, HF_HOME/hub, ~/.cache/huggingface). Strata never writes there: the cache is the hub library's, and a
+    itself: HF_HUB_CACHE, HF_HOME/hub, ~/.cache/huggingface). Nostroma never writes there: the cache is the hub library's, and a
     file added beside a snapshot's links confuses it."""
     environ = os.environ if environ is None else environ
     p = Path(path).expanduser()
@@ -441,7 +441,7 @@ def in_hf_cache(path: str | os.PathLike[str], environ=None) -> bool:
 
 def writable_beside(gguf: Path | None) -> Path | None:
     """The data folder guessed from where the person's own model file sits (`prepared_beside`'s "data_dir": the folder above a `models`
-    folder), only when Strata may keep its own files there: it can write to it and neither it nor its models/ is inside a Hugging Face
+    folder), only when Nostroma may keep its own files there: it can write to it and neither it nor its models/ is inside a Hugging Face
     cache. None: use the data folder every command agrees on instead (the model files are still used where they are)."""
     if gguf is None:
         return None

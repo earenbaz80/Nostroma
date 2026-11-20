@@ -36,13 +36,13 @@ def _round1(x: float) -> float:
 
 
 # ---- one engine, one vendor -----------------------------------------------------------------------------------------------
-# Every Strata engine package drives the cards of ONE vendor (CUDA: NVIDIA, HIP: AMD, SYCL: Intel, Metal: Apple). A model is never split
+# Every Nostroma engine package drives the cards of ONE vendor (CUDA: NVIDIA, HIP: AMD, SYCL: Intel, Metal: Apple). A model is never split
 # across vendors, and two models at once, one per vendor, is not supported yet. So the cards offered for running and splitting are the
 # ones the engine can drive; a better card of the other vendor is mentioned in one plain line (recommend, never force).
 BACKEND_VENDOR = {"cuda": "nvidia", "hip": "amd", "sycl": "intel", "metal": "apple"}
 VENDOR_NAME = {"nvidia": "NVIDIA", "amd": "AMD", "intel": "Intel", "apple": "Apple"}
 SECOND_MODEL_SENTENCE = ("Running two models at the same time, one on each make of graphics card, is not supported yet. "
-                         "Strata runs one model at a time on the cards of one make.")
+                         "Nostroma runs one model at a time on the cards of one make.")
 
 
 def vendor_of_backend(backend: str | None) -> str | None:
@@ -112,7 +112,7 @@ def strix_q4_stall_note(model, cards) -> str | None:
 
 def other_vendor_note(cards: list[dict], vendor: str | None) -> str | None:
     """One plain line when the other make's best card is bigger than the best card the engine can use, else None:
-    "This computer also has an AMD R9700 (32 GB). The AMD build of Strata can use it - it fits bigger models." """
+    "This computer also has an AMD R9700 (32 GB). The AMD build of Nostroma can use it - it fits bigger models." """
     if not vendor:
         return None
     mine, others = for_vendor(usable_cards(cards)[0], vendor)
@@ -125,11 +125,11 @@ def other_vendor_note(cards: list[dict], vendor: str | None) -> str | None:
         total = sum(float(c.get("vram_gb") or 0) for c in intel)
         cards = (f"{len(intel)} Intel Arc cards ({total:.0f} GB together)" if len(intel) > 1
                  else f"an {_short_name(intel[0], 'intel')} ({total:.0f} GB)")
-        return (f"This computer also has {cards}. Strata uses the {VENDOR_NAME.get(vendor, vendor)} card; to use the Intel card"
+        return (f"This computer also has {cards}. Nostroma uses the {VENDOR_NAME.get(vendor, vendor)} card; to use the Intel card"
                 f"{'s' if len(intel) > 1 else ''} instead, add --backend intel (it is remembered; --backend auto goes back).")
     if vendor == "intel":
         names = ", ".join(sorted({_short_name(c, _vendor(c)) for c in others}))
-        return (f"This computer also has {names}. Strata uses the Intel cards; --backend auto goes back to the PC's own choice "
+        return (f"This computer also has {names}. Nostroma uses the Intel cards; --backend auto goes back to the PC's own choice "
                 "(NVIDIA first).")
     best = max(others, key=lambda c: float(c.get("vram_gb") or 0))
     mine_best = max((float(c.get("vram_gb") or 0) for c in mine), default=0.0)
@@ -137,7 +137,7 @@ def other_vendor_note(cards: list[dict], vendor: str | None) -> str | None:
         return None
     other = _vendor(best)
     return (f"This computer also has an {_short_name(best, other)} ({float(best.get('vram_gb') or 0):.0f} GB). "
-            f"The {VENDOR_NAME.get(other, other.title())} build of Strata can use it — it fits bigger models.")
+            f"The {VENDOR_NAME.get(other, other.title())} build of Nostroma can use it — it fits bigger models.")
 
 
 def memory_needed(variant: dict) -> float:
@@ -190,7 +190,7 @@ def usable_cards(cards: list[dict]) -> tuple[list[dict], list[dict]]:
         vram = float(c.get("vram_gb") or 0)
         why = None
         if c.get("usable") is False:
-            why = c.get("problem") or "Strata cannot use this card"
+            why = c.get("problem") or "Nostroma cannot use this card"
         elif _shares_memory(c):
             if has_real:
                 why = "it shares the system memory (an integrated graphics chip), so it adds nothing"

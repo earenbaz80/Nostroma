@@ -1,7 +1,7 @@
 """Running one engine configuration and measuring it, for the tuner.
 
 A *session* is what the tuner needs from the outside world: start an engine with these arguments and environment, run the
-fixed request set, report numbers, stop. The real session (`WorkerSession`) starts Strata's own worker (``serve.server``)
+fixed request set, report numbers, stop. The real session (`WorkerSession`) starts Nostroma's own worker (``serve.server``)
 on a **copy** of the user's run configuration and talks to it over HTTP, so the engine, the queueing and the prompt
 handling are exactly the ones the user gets. The numbers come from the engine's own clock (the ``timings`` block of the
 reply), not from this process's stopwatch. The stub session in the tests implements the same two methods.

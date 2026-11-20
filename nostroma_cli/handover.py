@@ -166,7 +166,7 @@ def maybe_hand_over(argv, environ=None, root=None, running=None, execv=None, run
 #: What a Terminal older than 0.1.46.2 cannot do: its strata.py has no hand-over, so a Control it installs is never used. Its updater
 #: (which cannot be changed any more) test-starts the new Control with `--version` and prints the first 120 characters of the answer
 #: when that fails, so this is the sentence it shows. No quote marks in it: the old updater prints it as a Python string.
-OLD_LAUNCHER_TEXT = "This Terminal cannot switch to the new Control by itself. Run the Strata install command once more to update it."
+OLD_LAUNCHER_TEXT = "This Terminal cannot switch to the new Control by itself. Run the Nostroma install command once more to update it."
 OLD_LAUNCHER_EXIT = 7
 _STAGE_FOLDER = ".s"                                 # nostroma_control.updater.STAGE_DIR: the folder a Control is test-started from
 

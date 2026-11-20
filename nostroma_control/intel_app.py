@@ -1,4 +1,4 @@
-"""The Intel Arc card in the desktop app (the model setup of Strata Control, tools/strata_mcp.py and setup.py in their CONTROL mode).
+"""The Intel Arc card in the desktop app (the model setup of Nostroma Control, tools/strata_mcp.py and setup.py in their CONTROL mode).
 
 The Terminal (`strata launch`) sets an Arc up in two steps (nostroma_cli/launch/runner.py adopt_prepared_files): `setup.py --prepare-pack` makes the pack
 from the model's GGUF files, and nostroma_cli/launch/adopt.py writes the run config, with the engine named as the component (`component:strata-engine`).
@@ -7,7 +7,7 @@ path, which stops with "no NVIDIA GPU found (nvidia-smi did not answer)" (0.2.13
 
 This module is the part both tools/strata_mcp.py (which engine the install is for; the card list) and setup.py (`--backend sycl` in CONTROL mode)
 share. NVIDIA and AMD are never touched: an Arc is added to the card list only when this PC has no usable NVIDIA or AMD card, and the engine
-Strata Control itself would pick (nostroma_control/engine_component.py detect_backend) is the Intel one.
+Nostroma Control itself would pick (nostroma_control/engine_component.py detect_backend) is the Intel one.
 """
 
 from __future__ import annotations
@@ -16,8 +16,8 @@ import sys
 
 #: What the install says when an Arc card is chosen and the model's files are not on the computer (the Terminal's own sentence, "Intel cards do not
 #: download models yet", in the app's words: the picker's entry is "Use your own GGUF…").
-NO_DOWNLOAD = ("Strata can't download models for an Intel Arc card yet. Choose \"Use your own GGUF…\" and pick the folder that holds the model's "
-               ".gguf files; Strata prepares them for this card.")
+NO_DOWNLOAD = ("Nostroma can't download models for an Intel Arc card yet. Choose \"Use your own GGUF…\" and pick the folder that holds the model's "
+               ".gguf files; Nostroma prepares them for this card.")
 
 #: The families the run config can be written for (nostroma_cli/launch/adopt.py FAMILIES): the Qwen3.8-Flash-Next sizes, Swift, Coder, Gyro and Unsloth's sets.
 def families() -> tuple:
@@ -53,7 +53,7 @@ def arc_cards(root: str = "/sys/class/drm") -> list[dict]:
 
 
 def engine_is_intel() -> bool:
-    """Is the engine this computer's Strata Control would use the Intel one (SYCL)? The same decision the engine download makes (nostroma_control/
+    """Is the engine this computer's Nostroma Control would use the Intel one (SYCL)? The same decision the engine download makes (nostroma_control/
     engine_component.py detect_backend: STRATA_ENGINE_BACKEND, the saved choice, then the cards)."""
     from nostroma_control import engine_component as ec
     return ec.detect_backend()[0] == "sycl"

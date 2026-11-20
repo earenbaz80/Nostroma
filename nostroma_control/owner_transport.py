@@ -1,4 +1,4 @@
-"""Owner transport: the private channel between a Strata Control owner and its clients.
+"""Owner transport: the private channel between a Nostroma Control owner and its clients.
 
 There is exactly one owner per installation. Clients attach to it over a channel that must be
 reachable only by the same user, and the design differs per platform for a concrete reason:

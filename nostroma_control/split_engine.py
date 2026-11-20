@@ -17,7 +17,7 @@ has actually been run:
   - AMD gfx1201 is automatic like NVIDIA (the owner's decision: default on for two or more cards, off with `--split-engine off`); AUTO_SPLIT_AMD_ARCHS is the
     one constant that says which AMD architectures start it by themselves, every other AMD architecture keeps the layer split silently;
   - the GGUF is a set the engine reads (checked from the file's tensor types, not its name), the Qwen3.8-Flash-Next shapes (48 layers,
-    512 experts): routed experts Q4_K/Q5_K/Q5_1/Q8_0/Q4_0 (UD-Q4_K_XL, Q8_0) or the i-quants IQ2_S/IQ3_XXS/IQ3_S/IQ4_XS/IQ4_NL and Strata's
+    512 experts): routed experts Q4_K/Q5_K/Q5_1/Q8_0/Q4_0 (UD-Q4_K_XL, Q8_0) or the i-quants IQ2_S/IQ3_XXS/IQ3_S/IQ4_XS/IQ4_NL and Nostroma's
     Q2_0 (UD-IQ4_XS, the IQ3_S set); token embeddings, shared expert, output head Q8_0, or, in a set with i-quant or Q2_0 experts,
     any type the loader converts to Q8_0/F32 when it reads the file (src/split/src/tensor_convert.hpp);
   - ALL routed experts fit in the cards' memory (the expert cache is off: with it the engine keeps a 74 GiB pinned copy of the
@@ -62,7 +62,7 @@ MAX_CARDS = 4
 LAYERS, EXPERTS = 48, 512          # Qwen3.8-Flash-Next
 EXPERT_TYPES = {"Q4_K", "Q5_K", "Q5_1", "Q8_0", "Q4_0",           # the routed-expert kernels (decode and prompt)
                 "IQ2_S", "IQ3_XXS", "IQ3_S", "IQ4_XS", "IQ4_NL",  # ggml's i-quant vec_dots; prompt tiles in src/moe_mma_iq.cuh
-                "Q2_0"}                                           # Strata's 2-bit type: the loader repacks it to Q4_0 blocks (twice the bytes)
+                "Q2_0"}                                           # Nostroma's 2-bit type: the loader repacks it to Q4_0 blocks (twice the bytes)
 # the loader (Gguf::convert_small_tensors) converts the dense tensors to Q8_0/F32 only when the file has one of these routed types
 CONVERT_TRIGGERS = {"IQ2_S", "IQ3_XXS", "IQ3_S", "Q2_0"}
 # and can read these types to do it

@@ -86,7 +86,7 @@ WORDS = {
     "checksum": "The downloaded picture files did not pass the safety check, so they were deleted.",
     "unsupported": "This model's picture files are not downloaded by this step.",
     "no_reader": "This engine has no picture reader.",
-    "no_folder": "Strata could not tell which folder this model's files are in.",
+    "no_folder": "Nostroma could not tell which folder this model's files are in.",
     "no_config": "The model's settings file could not be read.",
 }
 

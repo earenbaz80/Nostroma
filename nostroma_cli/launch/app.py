@@ -1,6 +1,6 @@
 """The `strata launch` application: the screens in order, the run, and the hand-over to the monitor.
 
-`run_tui` opens the screens (or, with settings already chosen, goes straight to the run), then the Strata Monitor with the
+`run_tui` opens the screens (or, with settings already chosen, goes straight to the run), then the Nostroma Monitor with the
 launch-aware extras: a Connect view (key 7) and a quit question (keep serving in the background, or stop).
 """
 
@@ -120,7 +120,7 @@ class Ctx:
                 from nostroma_control import discovery
                 p = Path(s.model_path).expanduser()
                 first = p if p.is_file() else next(iter(sorted(p.glob("*.gguf"))), None)
-                found = discovery.writable_beside(first) if first else None     # not a folder Strata cannot write to, nor a Hugging Face cache
+                found = discovery.writable_beside(first) if first else None     # not a folder Nostroma cannot write to, nor a Hugging Face cache
                 if found:
                     return Path(found)
             except OSError:
@@ -291,7 +291,7 @@ class LaunchApp(App):
 
             asker = getattr(self.runner, "download_question", None)
             title, text = asker() if asker else (f"Download about {gb:.0f} GB?",
-                                                 f"This model is not on this computer yet. Strata will download about {gb:.0f} GB now; "
+                                                 f"This model is not on this computer yet. Nostroma will download about {gb:.0f} GB now; "
                                                  "an interrupted download continues where it stopped.")
             self.push_screen(ConfirmScreen(title, text + room + warn, [("go", "Download and start"), ("no", "Not now")]), done)
             return

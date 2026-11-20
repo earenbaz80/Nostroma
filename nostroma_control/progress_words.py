@@ -3,7 +3,7 @@ tools/strata_mcp.py `install_progress`) and by the Terminal (`strata launch`, no
 
 Setup prints its work in seven steps and the tools it runs print their command lines (`> python tools/strata_pack.py build ...`)
 and progress lines (`name: 1.20 / 5.04 GB (24%)`). Those titles are for people who read the setup log ("writing the start script",
-"preparing the model for Strata"), and the name in a progress line is a file name or an internal label ("MTP draft layer",
+"preparing the model for Nostroma"), and the name in a progress line is a file name or an internal label ("MTP draft layer",
 "llama.cpp source"). This turns what setup last printed into one plain sentence that says what is really happening now.
 The sentences are English; the app translates them like its other texts.
 
@@ -116,7 +116,7 @@ def describe(step: int | None, lines: list[str], download: dict | None = None) -
             return Words("pack", "Preparing the model data for the engine (one time)")
         if "nvfp4_local_pack.py" in low:
             return Words("pack", "Converting NVIDIA's FP4 checkpoint on this PC (20 to 40 minutes, one time)")
-        return Words("pack", "Preparing your model for Strata (one time)")
+        return Words("pack", "Preparing your model for Nostroma (one time)")
     return Words("settings", "Saving the model's settings")
 
 

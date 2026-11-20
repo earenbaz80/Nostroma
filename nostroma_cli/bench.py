@@ -757,7 +757,7 @@ def run(endpoint: Endpoint, telemetry: Endpoint, out: Path, *, suite: str = "ser
     before = telemetry.snapshot()
     instance = (before.get("instance") or {}).get("id")
     if not instance or (before.get("model") or {}).get("loaded") is not True:
-        raise ProfileError("benchmark needs a loaded Strata instance with versioned telemetry", 5)
+        raise ProfileError("benchmark needs a loaded Nostroma instance with versioned telemetry", 5)
     managed_before = None
     if require_managed_match:
         managed_before = _managed_match(profile_identity or {}, endpoint.root, before)
@@ -1186,7 +1186,7 @@ def markdown_report(report: dict) -> str:
                   compact["completed_phase_count"] < compact["planned_phase_count"])
     result_label = ("Cancelled" if compact["cancelled"] else "Passed" if compact["successful"]
                     else "Incomplete" if incomplete else "Failed")
-    rows = ["# Strata serving benchmark", "",
+    rows = ["# Nostroma serving benchmark", "",
             "This report summarizes client-observed requests and server-reported telemetry. "
             "It is not a hardware or model-quality qualification.", "",
             "| Run | Value |", "| --- | --- |",
@@ -1257,7 +1257,7 @@ def markdown_report(report: dict) -> str:
 
 def markdown_comparison(comparison: dict) -> str:
     """Render the workload-checked comparison with provisional status visible."""
-    rows = ["# Strata serving benchmark comparison", "",
+    rows = ["# Nostroma serving benchmark comparison", "",
             "**Provisional comparison.** The saved runs passed workload checks; environment "
             "and monitor attachment still need independent qualification.", "",
             "| Run | Baseline | Candidate |", "| --- | --- | --- |",

@@ -1,4 +1,4 @@
-"""Is this a folder Strata can keep model files in? Said in plain words before anything is downloaded (the Folder step, --data-dir, setup).
+"""Is this a folder Nostroma can keep model files in? Said in plain words before anything is downloaded (the Folder step, --data-dir, setup).
 
 `problem(path)` returns (what is wrong, what to do) or None. Nothing is created and nothing is left behind: a missing folder is judged by the
 nearest folder above it that exists (can a file be made there, so the folder could be created), and "can be written" is tried by creating and
@@ -90,14 +90,14 @@ def problem(raw: str | os.PathLike | None) -> tuple[str, str] | None:
                 if os.name == "nt" else "Type the whole path, starting with /, like /data/strata-models. Nothing was downloaded or changed.")
     full = os.path.abspath(path)
     if _is_system(full):
-        return (f"{full} is a system folder, and Strata should not keep model files there.", _next())
+        return (f"{full} is a system folder, and Nostroma should not keep model files there.", _next())
     try:
         if path.exists():
             if not path.is_dir():
                 return (f"{full} is a file, not a folder.", _next())
             if not _can_write(path):
-                return (f"Strata cannot write to {full}: Windows or the folder's owner does not allow it." if os.name == "nt"
-                        else f"Strata cannot write to {full}: you do not have permission.", _next())
+                return (f"Nostroma cannot write to {full}: Windows or the folder's owner does not allow it." if os.name == "nt"
+                        else f"Nostroma cannot write to {full}: you do not have permission.", _next())
             return None
         above = path
         while not above.exists():
@@ -107,9 +107,9 @@ def problem(raw: str | os.PathLike | None) -> tuple[str, str] | None:
         if not above.is_dir():
             return (f"{above} is a file, so {full} cannot be created inside it.", _next())
         if not _can_write(above):
-            return (f"{full} does not exist yet and cannot be created: Strata cannot write to {above}.", _next())
+            return (f"{full} does not exist yet and cannot be created: Nostroma cannot write to {above}.", _next())
     except OSError as e:
-        return (f"Strata cannot look at {full} ({type(e).__name__}).", _next())
+        return (f"Nostroma cannot look at {full} ({type(e).__name__}).", _next())
     return None
 
 

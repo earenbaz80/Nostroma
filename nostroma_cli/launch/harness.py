@@ -1,6 +1,6 @@
-"""`strata connect <harness>`: the setup for an app that talks to a running Strata server.
+"""`strata connect <harness>`: the setup for an app that talks to a running Nostroma server.
 
-Every entry below comes from a config that was tested for real against a Strata server at 32K context (one simple prompt with the
+Every entry below comes from a config that was tested for real against a Nostroma server at 32K context (one simple prompt with the
 answer text checked and one tool call with its arguments checked, plus streaming, thinking and compaction at about 15K): the files in
 phaseA-tests/split/harness-configs/<harness>.md, one per app, with the versions tested. The generators here fill in the real address,
 key, model name and context of the running server; the "limits" are those files' gotchas in plain words.
@@ -87,7 +87,7 @@ class Harness:
     @property
     def status(self) -> str:
         if self.built_in:
-            return "built into the Strata app (tested)"
+            return "built into the Nostroma app (tested)"
         return f"tested ({self.tested})" if self.tested else "not tested yet"
 
 
@@ -102,7 +102,7 @@ def opencode_file(t: Target) -> str:
                "autoupdate": False,
                "compaction": {"auto": True, "buffer": max(1024, t.input_limit - compact_at(t))},
                "share": "disabled",
-               "provider": {"strata": {"npm": "@ai-sdk/openai-compatible", "name": "Strata (local)",
+               "provider": {"strata": {"npm": "@ai-sdk/openai-compatible", "name": "Nostroma (local)",
                                        "options": {"baseURL": t.base, "apiKey": t.key},
                                        "models": {t.model: {"name": "Qwen3.8-Flash-Next (local)", "tool_call": True, "reasoning": True,
                                                             "limit": {"context": t.context, "input": t.input_limit, "output": t.output_cap}}}}}})
@@ -112,7 +112,7 @@ def codex_file(t: Target) -> str:
     return (f'model = "{t.model}"\nmodel_provider = "strata"\nmodel_context_window = {t.context}\n'
             f"model_auto_compact_token_limit = {compact_at(t)}\nmodel_reasoning_summary = \"auto\"\napproval_policy = \"never\"\n"
             'sandbox_mode = "workspace-write"\ncheck_for_update_on_startup = false\n\n[model_providers.strata]\n'
-            f'name = "Strata (local)"\nbase_url = "{t.base}"\nwire_api = "responses"\nenv_key = "STRATA_API_KEY"\n'
+            f'name = "Nostroma (local)"\nbase_url = "{t.base}"\nwire_api = "responses"\nenv_key = "STRATA_API_KEY"\n'
             "stream_idle_timeout_ms = 600000\n")
 
 
@@ -223,7 +223,7 @@ def _limits_openclaw(t: Target) -> list[str]:
 
 
 def _limits_dsh(t: Target) -> list[str]:
-    return ["DeepSeek Harness is Strata's own coding harness inside the Strata app: nothing to write here.",
+    return ["DeepSeek Harness is Nostroma's own coding harness inside the Nostroma app: nothing to write here.",
             "Its package default compaction headroom (64K) is larger than a 32K window; the app's bridge sets it for you."]
 
 
@@ -251,7 +251,7 @@ HARNESSES: list[Harness] = [
     Harness("openclaw", "OpenClaw", "chat + tools", tested="OpenClaw 2026.10.4",
             files=[FileSpec("~/.openclaw/openclaw.json", "json", openclaw_file, merge=True)], limits=_limits_openclaw,
             run='openclaw agent --local --agent main --session-id demo --thinking low -m "your task"', install="npm install -g openclaw (Node 24.16+)"),
-    Harness("deepseek-harness", "DeepSeek Harness", "the Strata app", tested="DSH 0.2.1-alpha.3", built_in=True,
+    Harness("deepseek-harness", "DeepSeek Harness", "the Nostroma app", tested="DSH 0.2.1-alpha.3", built_in=True,
             limits=_limits_dsh, aliases=("deepseek", "dsh")),
 ]
 
@@ -323,7 +323,7 @@ def write_file(spec: dict, *, backup: bool = True) -> dict:
 
 def _keep_output_cap(old, merged) -> None:
     """The output cap in a config being rewritten (in place on `merged`): a value the person set stays, so does a larger one from a newer Strata. The value
-    older Strata versions wrote on every window (OUTPUT_CAP, 4,096) is the generated default and is replaced, or the files written before #5006 would keep
+    older Nostroma versions wrote on every window (OUTPUT_CAP, 4,096) is the generated default and is replaced, or the files written before #5006 would keep
     the cap that breaks compaction for ever. OpenCode's limit.output and Claude Code's CLAUDE_CODE_MAX_OUTPUT_TOKENS."""
     if not (isinstance(old, dict) and isinstance(merged, dict)):
         return

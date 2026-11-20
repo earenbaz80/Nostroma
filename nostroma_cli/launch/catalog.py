@@ -138,12 +138,12 @@ class Computer:
 
     @property
     def new_card_note(self) -> tuple[str, str] | None:
-        """(what, what to do) when a usable card is an Intel Arc B-series (Battlemage): allowed, but new to Strata and untested by the maintainers."""
+        """(what, what to do) when a usable card is an Intel Arc B-series (Battlemage): allowed, but new to Nostroma and untested by the maintainers."""
         import re
         from nostroma_control import gpu_fit
         for c in gpu_fit.usable_cards(gpu_fit.for_vendor(self.gpus, self.engine_vendor)[0])[0]:
             if c.get("vendor") == "intel" and re.search(r"Arc (?:Pro )?B\d", str(c.get("name", ""))):
-                return (f"The {str(c['name']).replace('Intel ', '')} is a B-series Arc card. It is new to Strata and we have not tested it ourselves, so pictures or long answers may fail on it.",
+                return (f"The {str(c['name']).replace('Intel ', '')} is a B-series Arc card. It is new to Nostroma and we have not tested it ourselves, so pictures or long answers may fail on it.",
                         "If something fails, start again with --vision off to turn pictures off, and tell us at https://github.com/Niko1221/Strata/issues (say it is a B-series card and attach the engine log).")
         return None
 
@@ -244,7 +244,7 @@ def intel_arc_cards(root: str = "/sys/class/drm") -> list[dict]:
 
 
 class Catalog:
-    """setup.py's tables through strata_mcp's `Strata` object (the app's own catalog code)."""
+    """setup.py's tables through strata_mcp's `Nostroma` object (the app's own catalog code)."""
 
     def __init__(self, src: str | os.PathLike | None = None, root: str | os.PathLike | None = None,
                  hardware: dict | None = None):
@@ -255,7 +255,7 @@ class Catalog:
         if not mcp.is_file() or not (self.src / "setup.py").is_file():
             raise CatalogUnavailable(
                 "This Terminal does not carry the model list. Install it again with the one-line installer, "
-                "or run `strata launch` from a full Strata folder (the folder with setup.py).")
+                "or run `strata launch` from a full Nostroma folder (the folder with setup.py).")
         self.root.mkdir(parents=True, exist_ok=True)
         name = "strata_mcp_for_launch"
         mod = sys.modules.get(name)

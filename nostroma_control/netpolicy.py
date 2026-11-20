@@ -1,6 +1,6 @@
 """One rule for every network call on the install -> update -> launch path (lane NET, owner rules: offline users, no silent waits).
 
-Many people run Strata fully local or behind a network that drops packets without refusing them (a firewall, a black-holed route, a
+Many people run Nostroma fully local or behind a network that drops packets without refusing them (a firewall, a black-holed route, a
 broken proxy). There a plain ``urlopen(timeout=60)`` waits a minute per try and setup tried five times per file: 320 s with nothing on
 the screen. The rule here:
 
@@ -16,7 +16,7 @@ the screen. The rule here:
    a new run always tries afresh). The next file from it fails at once with the same message.
 4b. A host that REFUSED the connection (connection refused: a proxy that is set but not running, a firewall that resets) is the one
    exception kept across runs: Windows needs about 2 s to report a refusal, and a launch reads the feed on every start. Its host:port
-   and the time are written to a small note in Strata's own state folder (RefusalNote, REFUSED_NOTE_S = 6 hours; nothing
+   and the time are written to a small note in Nostroma's own state folder (RefusalNote, REFUSED_NOTE_S = 6 hours; nothing
    else is written). Only automatic reads (open_url(..., automatic=True): the launch's check for a newer engine of a model's own
    shape while one is installed) read it and fail at once with the "offline" words. Every read the person asked for by name
    (strata update, setup, a download) ignores it and tries. The first success from that host removes it. A damaged or unreadable
@@ -72,10 +72,10 @@ WORDS = {
     "stalled": "No data arrived for {minutes} minutes, so the download of {what} stopped at {percent}%.",
     "stalled_next": "Run the same command again: it continues where it stopped.",
     "update_no_answer": ("{host} did not answer within {seconds} seconds, so the update check could not run. Check that this computer can open "
-                         "https://{host}, then try again. Strata keeps working with what is installed."),
+                         "https://{host}, then try again. Nostroma keeps working with what is installed."),
     # (W7's two companions, owner 11-10)
-    "update_offline": "this computer could not connect to {host} (it looks offline), so the update check could not run. Strata keeps working with what is installed.",
-    "update_again": "{host} did not answer a moment ago, so the update check was not tried again. Strata keeps working with what is installed.",
+    "update_offline": "this computer could not connect to {host} (it looks offline), so the update check could not run. Nostroma keeps working with what is installed.",
+    "update_again": "{host} did not answer a moment ago, so the update check was not tried again. Nostroma keeps working with what is installed.",
 }
 
 #: the waiting line as setup prints it ("  Waiting for github.com to answer (15 s so far) ..."), for the progress readers
@@ -204,7 +204,7 @@ def refused(exc: BaseException | None) -> bool:
 
 class RefusalNote:
     """Rule 4b: the hosts that refused a connection, on disk (host:port -> the time, seconds since the epoch), kept for REFUSED_NOTE_S.
-    The note lives in Strata's own state folder (nostroma_control/paths.state_base, read when it is used, so a test HOME redirects it).
+    The note lives in Nostroma's own state folder (nostroma_control/paths.state_base, read when it is used, so a test HOME redirects it).
     Every failure to read or write it is silent: a damaged note is no note, an unwritable one is simply not kept."""
 
     def __init__(self, path: Path | None = None, clock: Callable[[], float] = time.time, keep: float | None = None):

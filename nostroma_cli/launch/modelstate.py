@@ -49,7 +49,7 @@ class ModelState:
         if self.own_files:
             if not self.parts:
                 return "Your model files are used where they are. Nothing needs to be downloaded."
-            return f"Your model files are used where they are. Strata still needs to fetch {self._names()}."
+            return f"Your model files are used where they are. Nostroma still needs to fetch {self._names()}."
         if self.installed and not self.parts:
             return f"Already downloaded ({self.total_gb:.0f} GB on this computer). Nothing more to download."
         if self.installed and self.only_helpers:
@@ -70,10 +70,10 @@ class ModelState:
         gb = self.remaining_gb
         if self.only_helpers:
             return (f"Download {self._names()}?",
-                    "The model itself is already on this computer and is not downloaded again. Strata needs this extra file to start "
+                    "The model itself is already on this computer and is not downloaded again. Nostroma needs this extra file to start "
                     "with the choices you made; an interrupted download continues where it stopped.")
         return (f"Download about {gb:.0f} GB?",
-                f"This model is not on this computer yet. Strata will download about {gb:.0f} GB now; "
+                f"This model is not on this computer yet. Nostroma will download about {gb:.0f} GB now; "
                 "an interrupted download continues where it stopped.")
 
 

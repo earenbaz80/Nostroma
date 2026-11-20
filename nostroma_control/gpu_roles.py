@@ -3,7 +3,7 @@
 A card has one of three roles:
 * Main   - the card that runs the LAST stage of the layer split: the output head, the draft layer and the check of its guesses. Exactly one.
 * Helper - holds a share of the model, so more of it fits on graphics cards instead of being read from the drive.
-* Off    - Strata does not touch it.
+* Off    - Nostroma does not touch it.
 
 The engine takes the cards in stage order (`"gpu": [helper, ..., main]` with `"gpu_order": "as_given"`), so the Main card is the LAST one. This
 module turns roles into that list (and back), recommends roles, and words the few warnings a person could not work out alone.
@@ -368,10 +368,10 @@ def sentence(cards: list[dict], vendor: str | None = None) -> str:
     rec = recommend(cards, vendor)
     byi = {_idx(c): c for c in cs}
     if rec["main"] is None:
-        return "No graphics card that Strata can use was found."
+        return "No graphics card that Nostroma can use was found."
     m = byi[rec["main"]]
     if len(cs) == 1:
-        return f"Strata will use your {short_name(m)}."
+        return f"Nostroma will use your {short_name(m)}."
     helpers = [byi[i] for i, r in rec["roles"].items() if r == "helper"]
     why = {"same": "the cards are alike", "memory": "it has more memory", "faster": "it is faster", "only": "it is the only card"}[rec["why"]]
     s = f"{short_name(m)} is Main: {why}."
@@ -381,7 +381,7 @@ def sentence(cards: list[dict], vendor: str | None = None) -> str:
         if r == "off":
             code = rec["reasons"][i]
             c = byi[i]
-            s += f" {short_name(c)} starts Off: " + ("Strata cannot run it." if code == "cannot_run" else "built-in graphics." if code == "igpu" else f"{OFF_AT_OR_BELOW_GB:.0f} GB or less.")
+            s += f" {short_name(c)} starts Off: " + ("Nostroma cannot run it." if code == "cannot_run" else "built-in graphics." if code == "igpu" else f"{OFF_AT_OR_BELOW_GB:.0f} GB or less.")
     return s
 
 

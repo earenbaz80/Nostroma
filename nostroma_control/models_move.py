@@ -64,7 +64,7 @@ def _item_dirs(data: Path) -> list[Path]:
 
 
 def inventory(data: Path) -> list[Entry]:
-    """Every file Strata keeps in a data folder: nothing else is touched. Unfinished downloads (``.part``) are left where they are."""
+    """Every file Nostroma keeps in a data folder: nothing else is touched. Unfinished downloads (``.part``) are left where they are."""
     found: list[Entry] = []
     for top in _item_dirs(data):
         for root, _dirs, files in os.walk(top):
@@ -155,18 +155,18 @@ def plan(old: Path, new: Path, *, free=None, write_test: bool = True) -> dict:
 
     if _same(old, new):
         result["same"] = True
-        return refuse("same", "That is the folder Strata already uses.")
+        return refuse("same", "That is the folder Nostroma already uses.")
     if _inside(new, old) or _inside(old, new):
         return refuse("inside", "Pick a folder outside the current one.")
     if not new.exists():
         # a folder that will be made is fine when its parent is there; a drive that is not plugged in is not
         drive = Path(new.anchor) if new.anchor else None
         if drive is not None and not drive.exists():
-            return refuse("not_found", f"Strata can't find {new}.", f"{drive} does not exist")
+            return refuse("not_found", f"Nostroma can't find {new}.", f"{drive} does not exist")
     if write_test:
         raw = _write_test(new)
         if raw:
-            return refuse("not_writable", f"Strata can't save files in {new}.", raw)
+            return refuse("not_writable", f"Nostroma can't save files in {new}.", raw)
     result["same_drive"] = same_drive(old, new)
     try:
         result["free_bytes"] = int(free(_near(new)))
@@ -252,7 +252,7 @@ def _copy_verified(src: Path, dst: Path, size: int, stop: Callable[[], bool], ti
         _quiet_remove(part)
         if _disk_full(e):
             raise MoveError("disk_full", "The drive ran out of space.", f"{errno.errorcode.get(e.errno, e.errno)}: {e.strerror}, {e.filename or dst}") from e
-        raise MoveError("io", f"Strata could not copy {src.name}.", f"{type(e).__name__}: {e}") from e
+        raise MoveError("io", f"Nostroma could not copy {src.name}.", f"{type(e).__name__}: {e}") from e
     except BaseException:
         _quiet_remove(part)
         raise
@@ -455,7 +455,7 @@ def move(old: Path, new: Path, *, on_progress: Callable[[dict], None] | None = N
                             os.remove(dst)
                         os.replace(src, dst)
                     except OSError as err:
-                        raise MoveError("io", f"Strata could not move {src.name}.", f"{type(err).__name__}: {err}") from err
+                        raise MoveError("io", f"Nostroma could not move {src.name}.", f"{type(err).__name__}: {err}") from err
                     done_bytes += e.size
                 else:
                     ino = None
@@ -497,7 +497,7 @@ def move(old: Path, new: Path, *, on_progress: Callable[[dict], None] | None = N
                     try:
                         os.remove(src)
                     except OSError as err:
-                        raise MoveError("io", f"Strata copied {src.name} but could not remove the old copy.", f"{type(err).__name__}: {err}") from err
+                        raise MoveError("io", f"Nostroma copied {src.name} but could not remove the old copy.", f"{type(err).__name__}: {err}") from err
                 _prune(src.parent, old)
                 files_moved += 1
                 left[e.group] -= 1
@@ -562,7 +562,7 @@ def leave(old: Path, new: Path, *, configs: list[Path] | None = None) -> dict:
                     os.remove(dst)
                 restored += 1
         except OSError as e:
-            raise MoveError("io", f"Strata could not clean up {dst.name}.", f"{type(e).__name__}: {e}") from e
+            raise MoveError("io", f"Nostroma could not clean up {dst.name}.", f"{type(e).__name__}: {e}") from e
         _prune(dst.parent, new)
     for cfg in (configs or []):
         try:

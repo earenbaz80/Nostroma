@@ -1,4 +1,4 @@
-"""Is a program of one of Strata's own folders running (an engine package, a Control bundle, a shape engine)?  Local only.
+"""Is a program of one of Nostroma's own folders running (an engine package, a Control bundle, a shape engine)?  Local only.
 
 A folder in use is never removed: on Windows the removal would take its libraries from under the running engine.  (This was
 dsv41_paths.in_use; it never depended on DeepSeek's engine, and every package folder kind uses it.)

@@ -1,7 +1,7 @@
 """Typed, owner-editable local operation recipes for saved serving profiles.
 
 Recipes contain no executable command text. Each kind routes to an existing
-Strata operation. This is a source-run store; Desktop must later use the same
+Nostroma operation. This is a source-run store; Desktop must later use the same
 schema and operation authority rather than add a separate implementation.
 """
 

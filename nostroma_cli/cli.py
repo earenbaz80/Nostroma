@@ -42,7 +42,7 @@ def parser() -> argparse.ArgumentParser:
     ap.add_argument("--version", action=_VersionAction, nargs=0,
                     help="print the version and the interpreter this terminal runs on")
     sp = ap.add_subparsers(dest="command", required=True)
-    serve = sp.add_parser("serve", help="start the existing Strata inference server in the foreground")
+    serve = sp.add_parser("serve", help="start the existing Nostroma inference server in the foreground")
     serve.add_argument("--profile", "--config", dest="config", required=True, metavar="CONFIG.json")
     serve.add_argument("--engine", choices=("strata", "mock"), default="strata",
                        help="strata: the engine in the run config (default); mock: a scripted engine for client tests, "
@@ -103,7 +103,7 @@ def parser() -> argparse.ArgumentParser:
     profile_rollback.add_argument("--to", required=True, metavar="REVISION")
     profile_rollback.add_argument("--output", choices=("human", "json"), default="human")
 
-    repair = sp.add_parser("repair-access", help="give you back Strata files that a run as administrator locked (Windows)")
+    repair = sp.add_parser("repair-access", help="give you back Nostroma files that a run as administrator locked (Windows)")
     repair.add_argument("--output", choices=("human", "json"), default="human")
     doctor = sp.add_parser("doctor", help="read-only check of installed engine components")
     doctor.add_argument("--profile", help="saved profile name or run config JSON path")
@@ -143,15 +143,15 @@ def parser() -> argparse.ArgumentParser:
     models_scope = models_list.add_mutually_exclusive_group()
     models_scope.add_argument("--installed", action="store_true", help="limit discovery to local setup run configs")
     models_scope.add_argument("--served", action="store_true", help="inspect the currently served model")
-    models_list.add_argument("--install-dir", help="absolute path to a Strata installation")
-    models_list.add_argument("--url", help="Strata server root; remote connections require HTTPS")
+    models_list.add_argument("--install-dir", help="absolute path to a Nostroma installation")
+    models_list.add_argument("--url", help="Nostroma server root; remote connections require HTTPS")
     models_list.add_argument("--connection", help="saved read-only connection")
     models_list.add_argument("--credential-env", help="environment variable containing the server credential")
     models_list.add_argument("--timeout", type=float, help="bounded request timeout in seconds")
     models_list.add_argument("--output", choices=("human", "json"), default="human")
     models_inspect = models_sp.add_parser("inspect", help="inspect a local model run config and its components")
     models_inspect.add_argument("model_id")
-    models_inspect.add_argument("--install-dir", help="absolute path to a Strata installation")
+    models_inspect.add_argument("--install-dir", help="absolute path to a Nostroma installation")
     models_inspect.add_argument("--output", choices=("human", "json"), default="human")
     models_import = models_sp.add_parser("import", help="preview an existing GGUF file set without adopting it")
     models_import.add_argument("path", metavar="PATH")
@@ -164,7 +164,7 @@ def parser() -> argparse.ArgumentParser:
     models_move.add_argument("--leave", action="store_true", help="give up an interrupted move: keep the old folder and remove the partial copies")
     models_move.add_argument("--status", action="store_true", help="say whether a move was interrupted (changes nothing)")
     models_move.add_argument("--from", dest="source", metavar="OLD_FOLDER", help="the folder the models are in now (default: the data folder in use)")
-    models_move.add_argument("--install-dir", help="absolute path to a Strata installation whose run configs should follow the files")
+    models_move.add_argument("--install-dir", help="absolute path to a Nostroma installation whose run configs should follow the files")
     models_move.add_argument("--plan", action="store_true", help="say what would happen and change nothing")
     models_move.add_argument("--cancel-file", metavar="PATH", help="stop (safely) when this file appears")
     models_move.add_argument("--output", choices=("human", "json", "jsonl"), default="human")
@@ -196,7 +196,7 @@ def parser() -> argparse.ArgumentParser:
     install.add_argument("setup_args", nargs=argparse.REMAINDER,
                          help="options passed to setup.py, e.g. --family qwen --model Q2_0 --yes")
     runtime = sp.add_parser(
-        "runtime", help="manage an owned local Strata server instance",
+        "runtime", help="manage an owned local Nostroma server instance",
         description="`runtime start` starts a background service: the engine keeps serving after this terminal "
                     "closes and until `runtime stop` (or the process named by --die-with-pid ends). "
                     "`strata serve` is the foreground form: it ends with this terminal.")
@@ -232,7 +232,7 @@ def parser() -> argparse.ArgumentParser:
     runtime_stop.add_argument("--if-instance-id", help="require the instance ID from --plan")
     runtime_stop.add_argument("--output", choices=("human", "json"), default="human")
     runtime_cleanup = runtime_sp.add_parser(
-        "cleanup", help="end servers and engines Strata started whose owner is gone (each is checked by PID, "
+        "cleanup", help="end servers and engines Nostroma started whose owner is gone (each is checked by PID, "
                         "start time and command line first; a running instance is never touched)")
     runtime_cleanup.add_argument("--profile", help="only this profile's leftovers")
     runtime_cleanup.add_argument("--output", choices=("human", "json"), default="human")
@@ -711,7 +711,7 @@ def _import_words(plan: dict) -> str:
     cand = plan.get("candidate_selection") or {}
     lines = [f"{plan['file_count']} GGUF file(s): {plan['file_set_status']}"]
     if cand.get("family"):
-        lines.append(f"These files are Strata's {cand['family']} {cand['model']}.")
+        lines.append(f"These files are Nostroma's {cand['family']} {cand['model']}.")
     done = plan.get("already_set_up")
     if done:
         have = [name for key, name in (("pack", "prepared model data"), ("mtp", "draft layer"), ("mmproj", "picture reader")) if done.get(key)]
@@ -2072,13 +2072,13 @@ def _components_backends(a: argparse.Namespace) -> int:
 
 
 def _install(a: argparse.Namespace) -> int:
-    """The one place the terminal acquires anything: it hands over to the installer (setup.py) of a full Strata
+    """The one place the terminal acquires anything: it hands over to the installer (setup.py) of a full Nostroma
     folder, which is where pip, the engine and the models are fetched. A folder without it (the terminal archive)
     says so and names what to do instead."""
     installer = Path(os.environ.get("NOSTROMA_INSTALL_DIR", os.environ.get("STRATA_INSTALL_DIR")) or ROOT) / "setup.py"
     if not installer.is_file():
         return _error("this folder has no installer (setup.py). Engines, models and updates are installed from a "
-                      "full Strata folder with SETUP.bat / ./setup.sh and UPDATE.bat / ./update.sh; "
+                      "full Nostroma folder with SETUP.bat / ./setup.sh and UPDATE.bat / ./update.sh; "
                       "set STRATA_INSTALL_DIR to that folder to run it from here. To update the engine and Control "
                       "from the signed update feed, run `strata update`", 5)
     extra = [x for x in a.setup_args if x != "--"]
@@ -2093,7 +2093,7 @@ def _install(a: argparse.Namespace) -> int:
 
 
 def _access_retry(a: argparse.Namespace, error: BaseException) -> int | None:
-    """A file in Strata's own per-user folders that this user cannot open (a run as administrator made it) is repaired once
+    """A file in Nostroma's own per-user folders that this user cannot open (a run as administrator made it) is repaired once
     and the command runs again; if that does not help the person gets one plain sentence, with the technical text after it."""
     try:
         from nostroma_control import private_files
@@ -2245,7 +2245,7 @@ def _install_argv(argv: list[str]) -> list[str]:
 def main(argv: list[str] | None = None) -> int:
     try:
         from nostroma_control.childenv import quiet_crash_env
-        quiet_crash_env()                        # every program Strata starts inherits it: ggml never starts gdb on a user's machine
+        quiet_crash_env()                        # every program Nostroma starts inherits it: ggml never starts gdb on a user's machine
     except ImportError:                          # a thin bundle ships without nostroma_control
         pass
     try:

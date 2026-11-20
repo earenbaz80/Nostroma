@@ -4,7 +4,7 @@ When ggml aborts (a failed GGML_ASSERT, an uncaught C++ exception in a program t
 `gdb --batch -ex attach <pid>` (then lldb, then backtrace_symbols), on macOS it prints frames and three WARNING lines, on Windows nothing.  A
 debugger that attaches to a process the server is about to end writes its own errors into the log ("Couldn't get registers: No such process")
 and, because it inherits the reader's stdout, into the pipe the server reads the reader's READY line from.  `GGML_NO_BACKTRACE` (any value)
-switches it all off.  Every child Strata starts gets it, unless a developer asks for the backtrace with STRATA_BACKTRACE=1 (then nothing is
+switches it all off.  Every child Nostroma starts gets it, unless a developer asks for the backtrace with STRATA_BACKTRACE=1 (then nothing is
 set here, and the environment is left as the developer made it).
 """
 from __future__ import annotations

@@ -6,7 +6,7 @@
 Only an explicit command reaches the network (nostroma_control/acquisition.py): a start never downloads. The drafter is
 incoai/Qwen3.8-Flash-Next-DFlash2 at one revision (nostroma_control/drafting.py has the revision, the file sizes and hashes). The 1.2 GB
 safetensors file is packed (tools/dflash2_pack.py --q4_0, numpy only) into the engine's 0.52 GB runtime file, which is checked against its pinned size and
-SHA-256, and the download is then removed. A Q8 pack from an earlier Strata is used as it is.
+SHA-256, and the download is then removed. A Q8 pack from an earlier Nostroma is used as it is.
 """
 
 from __future__ import annotations
@@ -48,7 +48,7 @@ def plan(data_dir: str | Path, engine: str | os.PathLike[str] | None = None, *, 
     if ready:
         text = "The DFlash2 drafter is already on this computer."
     elif tuned:
-        text = (f"The DFlash2 drafter is {pin.gb:.2f} GB to download, from Strata's signed update feed, Apache-2.0 (a copy of {drafting.REPO} that Strata tuned). "
+        text = (f"The DFlash2 drafter is {pin.gb:.2f} GB to download, from Nostroma's signed update feed, Apache-2.0 (a copy of {drafting.REPO} that Nostroma tuned). "
                 f"It needs about {drafting.vram_gb(data_dir, engine):.1f} GB of graphics memory, less than the MTP's layer, which is not loaded beside it.")
     else:
         text = (f"The DFlash2 drafter is {drafting.DOWNLOAD_GB:.1f} GB to download (it is packed to {drafting.PACK_GB:.2f} GB for the engine and the "
@@ -199,7 +199,7 @@ def _accepted_sequence(components: str | Path | None = None) -> tuple[int | None
 def tuned_from_feed(*, feed: str | None = None, backend: str | None = None, size: int | None = None, sha256: str | None = None, name: str | None = None,
                     variant: str | None = None, components: str | Path | None = None) -> tuple[str, int, str] | None:
     """(address, size, sha256) of the tuned drafter as the signed feed lists it (member ``drafters``), or None: the feed cannot be read (offline, the host is down: silent), has no
-    such entry for this engine family, or lists other bytes than the ones this Strata was measured with (pinned size and SHA-256: then it is another drafter, not ours).
+    such entry for this engine family, or lists other bytes than the ones this Nostroma was measured with (pinned size and SHA-256: then it is another drafter, not ours).
     A feed that does not verify is DraftingError: a bad signature, an expired feed, or a feed older than the one `strata update` already accepted on this computer
     (the update's own rule, updater.open_feed: a replayed older feed could name a drafter file the newer one no longer lists). Only the update moves the
     accepted sequence; this lookup reads it. A build that trusts no key (a source checkout from before the keys) is silent."""
@@ -233,7 +233,7 @@ def _reachable(location: str) -> bool:
 
 
 def provide_licence(data_dir: str | Path) -> bool:
-    """Copy the Apache-2.0 text and the 'modified by Strata' notice (data/dflash2-tuned/) next to the tuned drafter file. False when Strata's copy is missing."""
+    """Copy the Apache-2.0 text and the 'modified by Nostroma' notice (data/dflash2-tuned/) next to the tuned drafter file. False when Nostroma's copy is missing."""
     source = Path(__file__).resolve().parents[1] / drafting.TUNED_LICENCE_FOLDER
     target = Path(data_dir) / drafting.FOLDER
     try:

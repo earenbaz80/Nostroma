@@ -1,10 +1,10 @@
-"""Paths in a saved run config that name a version folder of Strata's own components, and what to do when an update has removed that folder.
+"""Paths in a saved run config that name a version folder of Nostroma's own components, and what to do when an update has removed that folder.
 
 Setup writes absolute paths into the run config: ``cwd`` and ``--expert-profile`` into the Control bundle that ran it
 (``<components>/control/<version>/...``), the picture reader and library folders into an engine package
 (``<components>/engine/<version>-<platform>-<backend>/...``).  An update puts the new version
 beside the old one and removes the versions older than the one before, so the second update after a model was set up deleted the folders its config
-names: the model showed as "not installed" and a start failed (#4891; "Qwen breaks each time Strata is updated").
+names: the model showed as "not installed" and a start failed (#4891; "Qwen breaks each time Nostroma is updated").
 
 One resolver, used by both sides:
 
@@ -13,7 +13,7 @@ One resolver, used by both sides:
 * ``repair(configs)`` (runtime.start calls it for the profile being started and every saved profile): the same, written once into the file, one plain
   line for each file it changed.
 
-Only paths in Strata's own folders are touched (``components/control``, ``components/engine``), and only when the version folder they
+Only paths in Nostroma's own folders are touched (``components/control``, ``components/engine``), and only when the version folder they
 name is GONE; a path the person typed themselves, a model or pack folder, or a version folder that still exists is left exactly as it is.  A path whose
 file is nowhere in the current version either is not guessed: ``unresolved`` names it.
 """
@@ -65,7 +65,7 @@ def _components() -> Path:
 
 
 def resolve_path(value: str) -> tuple[str, bool] | None:
-    """For a string that names a file in a version folder of Strata's own that is gone: (the same file in the current version, True) when it is there,
+    """For a string that names a file in a version folder of Nostroma's own that is gone: (the same file in the current version, True) when it is there,
     (value, False) when it is nowhere; None when the string is not such a path or its version folder still exists (nothing to do)."""
     if not isinstance(value, str) or len(value) < 8 or "\n" in value:
         return None
@@ -143,7 +143,7 @@ def repair(configs) -> tuple[list[str], list[str]]:
             continue
         from nostroma_control import retired
         if retired.config_reason(cfg) or retired.config_file_reason(c):
-            continue                                     # a DeepSeek config is never written: this Strata does not run it (retired.py)
+            continue                                     # a DeepSeek config is never written: this Nostroma does not run it (retired.py)
         new, found, lost = resolve_config(cfg)
         for old, _ in lost:
             problems.append(f"{c.name}: {old} was removed by an update and no file of that name is in the current version; run setup again for this model")
@@ -154,6 +154,6 @@ def repair(configs) -> tuple[list[str], list[str]]:
             profiles._atomic(c, json.dumps(new, indent=2).encode("utf-8"))
         except (OSError, ValueError):
             continue
-        notes.append(f"{c.name}: {len(found)} path{'s' if len(found) != 1 else ''} named folders of an earlier Strata version that an update removed ("
+        notes.append(f"{c.name}: {len(found)} path{'s' if len(found) != 1 else ''} named folders of an earlier Nostroma version that an update removed ("
                      + ", ".join(sorted({Path(o).name or o for o, _ in found})[:3]) + "); they now name the current version.")
     return notes, problems

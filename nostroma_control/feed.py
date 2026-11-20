@@ -128,7 +128,7 @@ class EnginePackage:
 
 @dataclass(frozen=True)
 class DrafterPackage:
-    """A DFlash2 drafter file Strata hosts (feed member ``drafters``): one pinned file, not an archive. ``backends`` are the engine families it was measured on
+    """A DFlash2 drafter file Nostroma hosts (feed member ``drafters``): one pinned file, not an archive. ``backends`` are the engine families it was measured on
     (``metal``); ``url`` is relative to the feed (flat release assets) or an https address; ``size`` and ``sha256`` are the file's. The code that fetches it
     pins the same size and SHA-256 (nostroma_control/drafting.py), so the feed can move the file but never swap its bytes."""
     name: str
@@ -199,7 +199,7 @@ class ModelQuant:
 
 @dataclass(frozen=True)
 class FeedModel:
-    """A model Strata lists after the built-in ones (feed member ``models``). Everything setup needs to install it is here and signed: the repository and the pinned revision,
+    """A model Nostroma lists after the built-in ones (feed member ``models``). Everything setup needs to install it is here and signed: the repository and the pinned revision,
     each file's exact size and SHA-256 (setup checks them after the download, and a wrong file is kept as ``.bad``, exactly as for a built-in model), the engine family,
     the licence and the first engine version that reads it."""
     id: str
@@ -227,7 +227,7 @@ class FeedModel:
 
     @property
     def shape(self) -> str | None:
-        """The model shape whose own engine runs it (``q4_lite``), or None: it runs on the Strata engine."""
+        """The model shape whose own engine runs it (``q4_lite``), or None: it runs on the Nostroma engine."""
         return shape_engine.shape_of_family(self.family)
 
     def to_dict(self) -> dict:
@@ -289,7 +289,7 @@ class Feed:
     skipped: tuple[str, ...] = ()
     #: the DFlash2 drafter files (feed member ``drafters``, DrafterPackage): fetched by setup, `strata drafting fetch` and Load for a set that has one. Older Controls ignore the member.
     drafters: tuple[DrafterPackage, ...] = ()
-    #: the models Strata lists after the built-in ones (feed member ``models``, FeedModel). An entry that is malformed is left out of this tuple with one plain line in
+    #: the models Nostroma lists after the built-in ones (feed member ``models``, FeedModel). An entry that is malformed is left out of this tuple with one plain line in
     #: ``models_dropped`` (and the log); the rest of the feed, and the other models, work. Older Controls ignore the member.
     models: tuple[FeedModel, ...] = ()
     models_dropped: tuple[str, ...] = ()
@@ -316,7 +316,7 @@ def _time(value, what: str) -> dt.datetime:
 def _skipping(skipped: list | None, what: str, reason: str) -> None:
     if skipped is None:                                  # a caller that wants the strict reading
         raise FeedError(f"the update feed lists {what}, {reason}")
-    skipped.append(f"The update feed lists {what}, {reason}: skipped (a newer Strata may use it).")
+    skipped.append(f"The update feed lists {what}, {reason}: skipped (a newer Nostroma may use it).")
 
 
 def _engine_package(item: dict, skipped: list | None = None) -> EnginePackage | None:
@@ -329,10 +329,10 @@ def _engine_package(item: dict, skipped: list | None = None) -> EnginePackage | 
     backend = _need(item, "backend", str, where)
     label = f"{version} {platform}-{backend}" + (f"-{item['variant']}" if item.get("variant") else "")
     if platform not in PLATFORMS:
-        _skipping(skipped, f"engine {label}", f"for a platform this Strata does not know ({platform})")
+        _skipping(skipped, f"engine {label}", f"for a platform this Nostroma does not know ({platform})")
         return None
     if backend not in BACKEND_MATRIX:
-        _skipping(skipped, f"engine {label}", f"for a backend this Strata does not know ({backend})")
+        _skipping(skipped, f"engine {label}", f"for a backend this Nostroma does not know ({backend})")
         return None
     archs = item.get("archs")
     if not isinstance(archs, list) or not all(isinstance(a, str) and a for a in archs) or (backend != "cpu" and not archs):
@@ -342,7 +342,7 @@ def _engine_package(item: dict, skipped: list | None = None) -> EnginePackage | 
         raise FeedError(f"the feed's {where} has an invalid min_driver")
     fmt = _need(item, "format", str, where)
     if fmt not in FORMATS:
-        _skipping(skipped, f"engine {label}", f"in an archive format this Strata does not know ({fmt})")
+        _skipping(skipped, f"engine {label}", f"in an archive format this Nostroma does not know ({fmt})")
         return None
     size = _need(item, "size", int, where)
     installed = _need(item, "installed_bytes", int, where)
@@ -361,12 +361,12 @@ def _engine_package(item: dict, skipped: list | None = None) -> EnginePackage | 
 
 def _shape_engine_package(item: dict, skipped: list | None = None) -> EnginePackage | None:
     """An entry of ``shape_engines``: an engine entry that names its model shape. An entry whose shape is not a name this Control accepts is left out like any entry of a kind it
-    does not know (a newer Strata may use it)."""
+    does not know (a newer Nostroma may use it)."""
     if not isinstance(item, dict):
         raise FeedError("a shape engine entry in the feed is not an object")
     shape = item.get("shape")
     if not shape_engine.valid(shape):
-        _skipping(skipped, f"an engine for the model shape {shape!r}", "a shape name this Strata does not accept")
+        _skipping(skipped, f"an engine for the model shape {shape!r}", "a shape name this Nostroma does not accept")
         return None
     pkg = _engine_package(item, skipped)
     return dataclasses.replace(pkg, shape=shape) if pkg is not None else None
@@ -376,11 +376,11 @@ def _control_package(item: dict, version: str, skipped: list | None = None) -> C
     where = "control entry"
     platform = _need(item, "platform", str, where)
     if platform not in PLATFORMS:
-        _skipping(skipped, f"Control {version} {platform}", "for a platform this Strata does not know")
+        _skipping(skipped, f"Control {version} {platform}", "for a platform this Nostroma does not know")
         return None
     fmt = _need(item, "format", str, where)
     if fmt not in FORMATS:
-        _skipping(skipped, f"Control {version} {platform}", f"in an archive format this Strata does not know ({fmt})")
+        _skipping(skipped, f"Control {version} {platform}", f"in an archive format this Nostroma does not know ({fmt})")
         return None
     size, installed = _need(item, "size", int, where), _need(item, "installed_bytes", int, where)
     if size <= 0 or installed <= 0:
@@ -577,7 +577,7 @@ def parse(payload: bytes, *, source: str, key_id: str) -> Feed:
         for target, entry in platforms.items():
             plat = by_tauri.get(str(target).split("-nsis")[0].split("-msi")[0])
             if plat is None:
-                _skipping(skipped, f"the app for {target}", "a platform this Strata does not know")
+                _skipping(skipped, f"the app for {target}", "a platform this Nostroma does not know")
                 continue
             if not isinstance(entry, dict):
                 raise FeedError(f"the feed's app entry for {target!r} is not an object")
@@ -607,7 +607,7 @@ def parse(payload: bytes, *, source: str, key_id: str) -> Feed:
             if ident in seen:
                 raise FeedError(f"the feed lists engine {pkg.label} twice")
             seen.add(ident)
-    # (the member "dsv41", the DeepSeek-V4.1 engine packages of Strata 0.2.13 and earlier, may still be in the feed for those versions, frozen;
+    # (the member "dsv41", the DeepSeek-V4.1 engine packages of Nostroma 0.2.13 and earlier, may still be in the feed for those versions, frozen;
     # this Control runs no DeepSeek model and does not read it)
     shapes = []
     raw_shapes = data.get("shape_engines")
@@ -809,7 +809,7 @@ def _settle_hip_variants(fitting: list, hardware: dict, reasons: list[str]) -> l
         chosen = [p for p in hip if p.variant == hardware["installed_variant"]]
         why = f"the installed {hardware['installed_variant']} build is kept, this PC's AMD card could not be identified"
     if not chosen:
-        reasons.append("Strata cannot tell which AMD build this PC needs (" + ", ".join(sorted(_hip_variants(hip))) +
+        reasons.append("Nostroma cannot tell which AMD build this PC needs (" + ", ".join(sorted(_hip_variants(hip))) +
                        "); the card was not recognised, so nothing was chosen. Name the build with STRATA_ENGINE_BACKEND=hip-<build>")
         return [p for p in fitting if p.backend != "hip"]
     reasons.append(f"several AMD builds fit; chose {chosen[0].variant}: {why}")

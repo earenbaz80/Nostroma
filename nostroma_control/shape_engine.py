@@ -1,16 +1,16 @@
 """The engine of one Qwen4 model shape, as its own component (feed member ``shape_engines``), picked by the model.
 
-An engine is compiled for ONE model geometry (``-DSTRATA_GEOMETRY=...``, cmake/strata_geometry.cmake) and refuses a GGUF of another one at load. The Strata engine is
-built for Flash-Next. A Qwen4 model of a different shape therefore ships with its own engine package, and that package never replaces the Strata engine:
+An engine is compiled for ONE model geometry (``-DSTRATA_GEOMETRY=...``, cmake/strata_geometry.cmake) and refuses a GGUF of another one at load. The Nostroma engine is
+built for Flash-Next. A Qwen4 model of a different shape therefore ships with its own engine package, and that package never replaces the Nostroma engine:
 
 * name: the shape is the compiled geometry's name (``q4_lite``); its component is ``strata-q4-lite``; a feed model of that shape has the family ``qwen4exp_q4_lite``;
-* place: ``<components>/shapes/<shape>/engine/<version>-<platform>-<backend>[-<variant>]/``, beside the Strata engine's ``<components>/engine/`` and never inside it. The
-  manifest's id is the shape's component (``strata-q4-lite``) and it carries ``"shape"``, so the Strata engine's scan never reads it and an older Control (which reads only
+* place: ``<components>/shapes/<shape>/engine/<version>-<platform>-<backend>[-<variant>]/``, beside the Nostroma engine's ``<components>/engine/`` and never inside it. The
+  manifest's id is the shape's component (``strata-q4-lite``) and it carries ``"shape"``, so the Nostroma engine's scan never reads it and an older Control (which reads only
   ``strata-engine``) refuses one that was copied into its engine folder;
 * feed: member ``shape_engines`` (the same entry as ``engine``, plus ``shape``). A Control from before this member ignores it, and ignores the models of those shapes too (their
   family is one it does not know);
 * use: the run config of a model of that shape says ``"exe": "component:strata-q4-lite"``. Every start asks ``engine_component.expand``, which resolves it in the shape's folder
-  (checks every file's SHA-256 and the signature, as for the Strata engine). The Strata engine and every model that runs on it are not touched;
+  (checks every file's SHA-256 and the signature, as for the Nostroma engine). The Nostroma engine and every model that runs on it are not touched;
 * fetch: setup (the app's Download and the Terminal's launch) fetches the shape's engine through the signed feed when the model is chosen, as it does for DeepSeek's. An explicit
   `strata update` brings an installed shape engine up to date. Starting a model never downloads anything.
 
@@ -42,12 +42,12 @@ USE_TITLE = True
 # Detail (reasons lists, platform-backend, folders) is in the result rows, the JSON and the log, never in these lines.
 WORDS = {
     "checking": "Checking the engine for {model}\u2026",
-    "fetching": "{model} needs its own engine. It downloads separately, and the Strata engine stays as it is.",
+    "fetching": "{model} needs its own engine. It downloads separately, and the Nostroma engine stays as it is.",
     "installed": "Engine for {model} {version} ({backend}) is installed.",
     "ready": "Engine for {model} {version} ({backend}) is installed.",
     "updated": "Engine for {model} updated from {old} to {new}.",
     "not_in_feed": "The update feed has no engine for {model} for this computer.",
-    "start_failed": "The engine for {model} {version} was not installed because it did not start correctly ({why}). The Strata engine is unchanged.",
+    "start_failed": "The engine for {model} {version} was not installed because it did not start correctly ({why}). The Nostroma engine is unchanged.",
     "fetch_failed": "The engine for {model} could not be downloaded: {why}",
     "newer_failed": "A newer engine for {model} is available but could not be installed ({why}). Still using {have}.",
     "missing": ("{model} needs its own engine, which is not installed or does not fit this PC: {reason}. Run `strata launch` again, or Download / repair in the app, "
@@ -124,7 +124,7 @@ def shapes_dir(components: Path | None = None) -> Path:
 
 
 def root(shape: str, components: Path | None = None) -> Path:
-    """The component folder of a shape (it holds ``engine/<package>/``, as the Strata engine's component folder does)."""
+    """The component folder of a shape (it holds ``engine/<package>/``, as the Nostroma engine's component folder does)."""
     if not valid(shape):
         raise ValueError(f"{shape!r} is not a model shape name")
     return shapes_dir(components) / shape
@@ -220,7 +220,7 @@ def _test_start(exe: Path, timeout: float = 120.0, shape: str | None = None) -> 
 
 def check_geometry(exe: Path, shape: str, env: dict | None = None, timeout: float = 60.0) -> tuple[bool, str]:
     """Does ``strata --geometry`` name `shape`? (True, "") when it does; (False, plain reason) when it names another, or names none: every engine of a model shape is built
-    after the flag existed (0.2.13, and the Intel engine since 0.2.14), so one that cannot say its shape is refused (owner, 11-09). The Strata engine is never asked."""
+    after the flag existed (0.2.13, and the Intel engine since 0.2.14), so one that cannot say its shape is refused (owner, 11-09). The Nostroma engine is never asked."""
     import subprocess
     try:
         done = subprocess.run([str(exe), "--geometry"], capture_output=True, text=True, errors="replace", timeout=timeout, cwd=str(Path(exe).parent), env=env)
@@ -259,7 +259,7 @@ def _prune(shape_root: Path, shape: str, keep_name: str) -> list[str]:
 
 def update_one(ctx, feed, shape: str, *, install_missing: bool = True, title: str | None = None) -> dict:
     """Bring the engine of `shape` up to the feed's: fetch the newest package that fits this PC (resumable download, archive SHA-256, the manifest hash the signed feed names,
-    the package signature, every file's hash, the shape named in the manifest), put it NEXT TO the older ones, start it once (`--version`) and only then keep it. The Strata engine is
+    the package signature, every file's hash, the shape named in the manifest), put it NEXT TO the older ones, start it once (`--version`) and only then keep it. The Nostroma engine is
     never touched. `install_missing` False: nothing is done for a shape that has no engine installed yet (an explicit `strata update` only updates what is there).
     Returns the result row (``status``: installed, updated, current, none-installed, none-for-this-pc)."""
     from nostroma_control import feed as feedmod, longpath, updater

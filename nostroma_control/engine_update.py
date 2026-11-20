@@ -147,7 +147,7 @@ class RunningModel:
     name: str
     state: str = "ready"
     port: int | None = None
-    kind: str = "launch"                 # launch (strata launch), profile (the app's or a saved profile), server (a Strata server nobody here started)
+    kind: str = "launch"                 # launch (strata launch), profile (the app's or a saved profile), server (a Nostroma server nobody here started)
     can_stop: bool = True
     choices: dict | None = field(default=None, repr=False)
 
@@ -185,8 +185,8 @@ def running_models(serving: list[dict] | None = None) -> list[RunningModel]:
     for item in items:
         pid = str(item.get("profile", ""))
         state = str(item.get("state", "ready"))
-        if not profiles.PROFILE_ID.fullmatch(pid):       # "a running Strata server": the shared lease, held by a process that is not Strata's own launch
-            out.append(RunningModel(pid or "a running Strata server", pid or "A Strata server", state, None, "server", can_stop=False))
+        if not profiles.PROFILE_ID.fullmatch(pid):       # "a running Nostroma server": the shared lease, held by a process that is not Nostroma's own launch
+            out.append(RunningModel(pid or "a running Nostroma server", pid or "A Nostroma server", state, None, "server", can_stop=False))
             continue
         name, port = pid[7:] if pid.startswith("launch-") else pid, None
         try:
@@ -301,7 +301,7 @@ class ModelGate:
         loose = [m for m in models if not m.can_stop]
         if loose:
             raise updater.UpdateError(
-                f"{_names(loose)} is serving, and Strata did not start it from here (a service, `strata serve` or another program), so it cannot be "
+                f"{_names(loose)} is serving, and Nostroma did not start it from here (a service, `strata serve` or another program), so it cannot be "
                 f"stopped for you. Stop it yourself, then run {NEXT_STEP} again. Nothing was changed.", EXIT_BUSY)
         names = _names(models)
         self.emit({"event": "models", "phase": "consent", "models": [m.to_dict() for m in models], "message": f"{names} is running"})
@@ -355,7 +355,7 @@ class ModelGate:
 
     def _settle(self, serving_now: Callable[[], list[dict]]) -> None:
         """A stopped engine lets go of the card and of the shared lease a moment later (a big DeepSeek model takes a while to unload): wait for that,
-        up to ``settle_s``, before the update goes on. Found by the real DeepSeek flow, where the very next check still saw "a running Strata server"."""
+        up to ``settle_s``, before the update goes on. Found by the real DeepSeek flow, where the very next check still saw "a running Nostroma server"."""
         import time
         deadline = time.monotonic() + self.settle_s
         while serving_now():

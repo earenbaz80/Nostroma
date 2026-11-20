@@ -18,7 +18,7 @@ from nostroma_cli import connections
 
 
 def _connection(p: argparse.ArgumentParser) -> None:
-    p.add_argument("--url", help="Strata server root; remote connections require HTTPS")
+    p.add_argument("--url", help="Nostroma server root; remote connections require HTTPS")
     p.add_argument("--connection", metavar="NAME", help="saved read-only connection")
     p.add_argument("--credential-env", metavar="NAME",
                    help="environment variable containing the server credential")
