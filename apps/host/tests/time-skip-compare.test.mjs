@@ -76,7 +76,13 @@ test('the working view says what is happening, from the host\'s words or the pha
   assert.match(panel, /sandbox={HTML_PREVIEW_SANDBOX}/);
   assert.ok(!/allow-same-origin|allow-forms|allow-popups|allow-top-navigation/.test(panel + cmp.HTML_PREVIEW_SANDBOX));
   const policy = cmp.htmlPreviewDocument('<p>x</p>');
-  assert.match(policy, /script-src 'unsafe-inline'/); assert.ok(!/connect-src|https?:\/\//.test(policy.split('<body>')[0]), 'nothing may be fetched');
+  assert.match(policy, /script-src 'unsafe-inline'/); assert.match(policy, /connect-src 'none'/); assert.match(policy, /img-src data:/); assert.match(policy, /style-src 'unsafe-inline'/);
+  assert.ok(!/https?:\/\//.test(policy.split('<body>')[0]), 'nothing may be fetched');
+  // An artifact's website preview is the same frame: the same document, the same policy, no second copy to drift.
+  const artifacts = await readFile(new URL('../src/components/ArtifactPanel.tsx', import.meta.url), 'utf8');
+  assert.match(artifacts, /srcDoc={current\.content === undefined \? undefined : htmlPreviewDocument\(current\.content\)}/);
+  assert.match(artifacts, /sandbox={HTML_PREVIEW_SANDBOX}/);
+  assert.ok(!/allow-same-origin|allow-forms|allow-popups|allow-top-navigation/.test(artifacts));
   assert.equal(cmp.needsOutsideFiles('<script src="https://cdn.example/three.js"></script>'), true);
   assert.equal(cmp.needsOutsideFiles('<script>draw()</script><a href="https://x.example">link</a>'), false);
 });

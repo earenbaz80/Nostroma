@@ -119,11 +119,13 @@ export const diffStats = (rows: DiffRow[]) => ({ added: rows.filter(r => r.t ===
 /**
  * A page for the preview frame. The frame is sandboxed without a same-origin right, forms, navigation or pop-ups; it may run the page's own
  * scripts, because most pages people ask for (a 3D scene, a game, a chart) draw themselves with a script and would show as an empty dark
- * page without one. The content policy still blocks every request to the internet: only what was written is shown.
+ * page without one. The content policy still blocks every request to the internet: only what was written is shown, and an embedded picture or
+ * style keeps working. Both the Time-skip comparison and an artifact's website preview go through this function, so neither frame can reach the
+ * network.
  */
 export const HTML_PREVIEW_SANDBOX = 'allow-scripts';
 export function htmlPreviewDocument(html: string): string {
-  const policy = '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; script-src \'unsafe-inline\' \'unsafe-eval\'; img-src data: blob:; style-src \'unsafe-inline\'; font-src data:; media-src data: blob:">';
+  const policy = '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; connect-src \'none\'; script-src \'unsafe-inline\' \'unsafe-eval\'; img-src data: blob:; style-src \'unsafe-inline\'; font-src data:; media-src data: blob:">';
   const base = '<base target="_blank">';
   const head = /<head[^>]*>/i.exec(html);
   if (head) return html.slice(0, head.index + head[0].length) + policy + base + html.slice(head.index + head[0].length);
