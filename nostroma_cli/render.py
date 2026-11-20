@@ -13,6 +13,11 @@ from nostroma_cli.client import complete_slots
 
 VIEWS = ("overview", "serving", "requests", "engine", "hardware", "logs")
 
+# The columns a view's header keeps for itself before the connection's address: the name, the view's title and the
+# state marker, with the spaces around them and the room the longest marker needs ("[FROZEN/NO METRICS]"). Every
+# column of terminal past this one goes to the address, so a longer name has to move this number with it.
+HEADER_ROOM = 44
+
 
 def activity_continuity_notice(snapshot: dict) -> str | None:
     """Label missing transitions observed by this monitor, separate from server events."""
@@ -457,7 +462,7 @@ def render_view(snapshot: dict, view: str, width: int = 80, height: int = 24,
             marker = f"[FROZEN/{short}]" if short else "[FROZEN]"
         else:
             marker = f"[{labels[state]}]"
-    lines = [f"NOSTROMA  {view.title():<10} {safe(connection, max(0, width - 44))} {marker}"]
+    lines = [f"NOSTROMA  {view.title():<10} {safe(connection, max(0, width - HEADER_ROOM))} {marker}"]
     if tiny:       # a small window: the tabs (names kept, the selected one marked) and, under them, the keys that matter
         lines += [nav.plain(VIEWS.index(view), width, connect), f"{nav.keys(connect)} views  q quit  ? help"[:width]]
     else:
