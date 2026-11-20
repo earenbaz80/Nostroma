@@ -174,13 +174,13 @@ VIAddVersionKey "ProductVersion" "${VERSION}"
 !define MUI_TEXTCOLOR "171B1E"
 !define MUI_INSTFILESPAGE_PROGRESSBAR "smooth"
 !define MUI_WELCOMEPAGE_TITLE "State of the art. At home."
-!define MUI_WELCOMEPAGE_TEXT "Strata runs AI on your own computer.$\r$\n$\r$\nThis takes about a minute and needs no administrator. You choose your first model inside Strata."
-!define MUI_FINISHPAGE_TITLE "Strata is ready."
-!define MUI_FINISHPAGE_TEXT "Open it to pick your first model. Strata downloads it for you and gets it ready."
-!define MUI_FINISHPAGE_RUN_TEXT "Open Strata"
-!define MUI_PAGE_HEADER_TEXT "Installing Strata"
+!define MUI_WELCOMEPAGE_TEXT "Nostroma runs AI on your own computer.$\r$\n$\r$\nThis takes about a minute and needs no administrator. You choose your first model inside Nostroma."
+!define MUI_FINISHPAGE_TITLE "Nostroma is ready."
+!define MUI_FINISHPAGE_TEXT "Open it to pick your first model. Nostroma downloads it for you and gets it ready."
+!define MUI_FINISHPAGE_RUN_TEXT "Open Nostroma"
+!define MUI_PAGE_HEADER_TEXT "Installing Nostroma"
 !define MUI_PAGE_HEADER_SUBTEXT "Copying the app. You can keep working meanwhile."
-BrandingText "Strata"
+BrandingText "Nostroma"
 ShowInstDetails nevershow
 
 ; Installer pages, must be ordered as they appear
@@ -416,7 +416,7 @@ Function PageLeaveReinstall
 
     ; Uninstall means uninstall: do not go on to the install pages.
     ${If} $UninstallOnly = 1
-      MessageBox MB_OK|MB_ICONINFORMATION "Strata was uninstalled."
+      MessageBox MB_OK|MB_ICONINFORMATION "Nostroma was uninstalled."
       Quit
     ${EndIf}
   reinst_done:
@@ -431,9 +431,9 @@ FunctionEnd
 !ifdef MUI_PAGE_HEADER_SUBTEXT
   !undef MUI_PAGE_HEADER_SUBTEXT
 !endif
-!define MUI_PAGE_HEADER_TEXT "Choose where to install Strata"
+!define MUI_PAGE_HEADER_TEXT "Choose where to install Nostroma"
 !define MUI_PAGE_HEADER_SUBTEXT "Pick another drive if C: is short on space."
-!define MUI_DIRECTORYPAGE_TEXT_TOP "Strata is installed into this folder, for your user only (no administrator needed). Models and chats are stored separately, in the data folder you choose inside Strata."
+!define MUI_DIRECTORYPAGE_TEXT_TOP "Nostroma is installed into this folder, for your user only (no administrator needed). Models and chats are stored separately, in the data folder you choose inside Nostroma."
 !define MUI_PAGE_CUSTOMFUNCTION_PRE SkipIfPassive
 !insertmacro MUI_PAGE_DIRECTORY
 
@@ -454,7 +454,7 @@ Var AppStartMenuFolder
 !ifdef MUI_PAGE_HEADER_SUBTEXT
   !undef MUI_PAGE_HEADER_SUBTEXT
 !endif
-!define MUI_PAGE_HEADER_TEXT "Installing Strata"
+!define MUI_PAGE_HEADER_TEXT "Installing Nostroma"
 !define MUI_PAGE_HEADER_SUBTEXT "Copying the app. You can keep working meanwhile."
 !insertmacro MUI_PAGE_INSTFILES
 
@@ -492,13 +492,13 @@ Function un.DataPage
   ${OrIf} $UpdateMode = 1
     Abort
   ${EndIf}
-  !insertmacro MUI_HEADER_TEXT "Remove your Strata data too?" "Your models, chats and settings stay on this PC unless you tick the box."
+  !insertmacro MUI_HEADER_TEXT "Remove your Nostroma data too?" "Your models, chats and settings stay on this PC unless you tick the box."
   nsDialogs::Create 1018
   Pop $0
   ${IfThen} $(^RTL) = 1 ${|} nsDialogs::SetRTL $(^RTL) ${|}
-  ${NSD_CreateCheckBox} 0 0 100% 12u "Also remove my Strata data (models, chats, settings)"
+  ${NSD_CreateCheckBox} 0 0 100% 12u "Also remove my Nostroma data (models, chats, settings)"
   Pop $DeleteAppDataCheckbox
-  ${NSD_CreateLabel} 12u 18u -12u 96u "If you tick it, these folders are deleted, and nothing else:$\r$\n$\r$\n$LOCALAPPDATA\Strata   (engine, installed copy, tunings)$\r$\n$APPDATA\Strata   (settings)$\r$\n$PROFILE\.strata   (your chats, app settings)$\r$\n$DOCUMENTS\Strata\Models   (models Strata downloaded into its own folder)$\r$\n$\r$\nA model folder you chose yourself is never deleted."
+  ${NSD_CreateLabel} 12u 18u -12u 96u "If you tick it, these folders are deleted, and nothing else:$\r$\n$\r$\n$LOCALAPPDATA\Strata   (engine, installed copy, tunings)$\r$\n$APPDATA\Strata   (settings)$\r$\n$PROFILE\.strata   (your chats, app settings)$\r$\n$DOCUMENTS\Strata\Models   (models Nostroma downloaded into its own folder)$\r$\n$\r$\nA model folder you chose yourself is never deleted."
   Pop $0
   ${NSD_SetFocus} $DeleteAppDataCheckbox
   nsDialogs::Show

@@ -59,7 +59,7 @@ The script refuses an archive whose SHA-256 differs from the digest recorded for
 cd apps/desktop
 ./scripts/fetch-node.sh                                                      # the sidecar (once)
 npm install --prefix ../host && npm --prefix ../host run build                # the UI
-cargo tauri build --bundles app                                              # macOS: Strata.app
+cargo tauri build --bundles app                                              # macOS: Nostroma.app
 ./scripts/make-dmg.sh                                                        # macOS DMG (headless; Tauri's default step needs a Finder session)
 cargo tauri build --bundles nsis                                             # Windows, on Windows: per-user NSIS installer
 cargo tauri build --bundles appimage deb                                     # Linux, on Linux

@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Strata",
+  "productName": "Nostroma",
   "identifier": "ai.strata.desktop",
   "build": {
     "frontendDist": "../../host/dist"
@@ -28,7 +28,7 @@
     ],
     "category": "DeveloperTool",
     "shortDescription": "Local AI, tuned to one model.",
-    "longDescription": "Strata runs one local model, tuned to your machine. Desktop and Terminal share the same model inventory, profiles, runtime and agent sessions.",
+    "longDescription": "Nostroma runs one local model, tuned to your machine. Desktop and Terminal share the same model inventory, profiles, runtime and agent sessions.",
     "resources": {
       "../../host/dist": "host/dist",
       "../../host/server": "host/server",

@@ -600,7 +600,7 @@ fn packaged_resource_dir(exe: &Path) -> Option<PathBuf> {
     let mut candidates = vec![dir.to_path_buf()];
     if let Some(up) = dir.parent() {
         candidates.push(up.join("Resources"));
-        candidates.push(up.join("lib").join("Strata"));
+        candidates.push(up.join("lib").join("Nostroma"));
         candidates.push(up.join("lib").join("strata-desktop"));
     }
     candidates
@@ -842,7 +842,7 @@ fn write_self_test_report(path: &str, steps: Vec<(String, bool, String)>, error:
 fn main() {
     // ------------------------------------------------------------------ self-test
     //
-    // `Strata.app/Contents/MacOS/strata-desktop --self-test[=path]` starts the App Host from the
+    // `Nostroma.app/Contents/MacOS/strata-desktop --self-test[=path]` starts the App Host from the
     // *packaged resources*, waits for it to answer, checks that it serves the supplied UI, writes a
     // JSON report and exits 0/1. This is what makes the shipped artifact verifiable without a human
     // at the screen — the lesson from the Electron attempt, where a packaged app that never started
@@ -1355,7 +1355,7 @@ mod tests {
             plain_path(PathBuf::from(r"\\?\UNC\srv\share\x")),
             PathBuf::from(r"\\srv\share\x")
         );
-        assert_eq!(plain_path(PathBuf::from("/usr/lib/Strata")), PathBuf::from("/usr/lib/Strata"));
+        assert_eq!(plain_path(PathBuf::from("/usr/lib/Nostroma")), PathBuf::from("/usr/lib/Nostroma"));
     }
 
     #[test]
@@ -1425,7 +1425,7 @@ mod tests {
         for (exe_rel, res_rel) in [
             ("Contents/MacOS/strata-desktop", "Contents/Resources"),
             ("install/strata-desktop.exe", "install"),
-            ("usr/bin/strata-desktop", "usr/lib/Strata"),
+            ("usr/bin/strata-desktop", "usr/lib/Nostroma"),
         ] {
             let exe = root.join(exe_rel);
             let res = root.join(res_rel);

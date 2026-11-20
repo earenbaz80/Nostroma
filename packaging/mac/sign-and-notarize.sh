@@ -2,7 +2,7 @@
 # Sign the Strata Mac app (dmg or .app) and, optionally, the Mac Terminal archive with the owner's Developer ID, then notarise
 # them with Apple, so macOS opens them without the "damaged" / "unidentified developer" warning.
 #
-#   bash sign-and-notarize.sh <Strata-tester-mac.dmg | Strata.app> [--terminal <Strata-Terminal-Mac.zip>] [--engine <engine-folder.tar.gz>] [--updater-archive] [--out DIR] [--dry-run]
+#   bash sign-and-notarize.sh <Strata-tester-mac.dmg | Nostroma.app> [--terminal <Strata-Terminal-Mac.zip>] [--engine <engine-folder.tar.gz>] [--updater-archive] [--out DIR] [--dry-run]
 #   bash sign-and-notarize.sh --terminal <Strata-Terminal-Mac.zip>            # the Terminal archive alone
 #   bash sign-and-notarize.sh --terminal <Terminal.tar.gz> --engine <strata-...-unsigned-folder.tar.gz>   # both in one run
 #
@@ -36,10 +36,10 @@
 #      writes the signed files' SHA-256 and size into engine-component.json, codesign --verify --strict on each, checks that the signed
 #      program starts, notarises a zip of the folder, and packs it again as <component>-<version>-<platform>-<backend>-folder.tar.gz (modes
 #      kept). Sign the folder with the feed key AFTER this step, on the PC: signing changes the program, so the manifest changes with it.
-#   8. --updater-archive (opt-in, needs the app input): packs the signed, notarised, stapled .app into Strata.app.tar.gz, the file Tauri's in-app
-#      updater downloads on a Mac (Strata.app at the root of the archive), and checks it by unpacking it again. The archive is NOT signed with the
+#   8. --updater-archive (opt-in, needs the app input): packs the signed, notarised, stapled .app into Nostroma.app.tar.gz, the file Tauri's in-app
+#      updater downloads on a Mac (Nostroma.app at the root of the archive), and checks it by unpacking it again. The archive is NOT signed with the
 #      Tauri updater key here: this script never touches that key. Sign it on the PC (npx tauri signer sign) and put it in the update file with
-#      packaging/feed_tool.py set-app-platform (see packaging/UPDATES.md). Any Strata.app.tar.gz / .sig that `tauri build` made earlier holds the
+#      packaging/feed_tool.py set-app-platform (see packaging/UPDATES.md). Any Nostroma.app.tar.gz / .sig that `tauri build` made earlier holds the
 #      UNSIGNED app and must not be published.
 set -u
 set -o pipefail
@@ -196,7 +196,7 @@ WORK="$(mktemp -d "$TMPBASE/strata-sign.XXXXXX")" || { echo "cannot make a work 
 LOG="$OUT/sign-and-notarize.log"
 : >"$LOG"
 : >"$OUT/SHA256SUMS.txt"
-say "Strata sign-and-notarize, $(date '+%Y-%m-%d %H:%M:%S')"
+say "Nostroma sign-and-notarize, $(date '+%Y-%m-%d %H:%M:%S')"
 say "  identity : $SIGN_ID"
 if [ "$DRY" -eq 1 ]; then say "  mode     : DRY RUN (ad-hoc, no notarisation)"; else say "  profile  : $NOTARY_PROFILE"; fi
 say "  work     : $WORK"
@@ -494,7 +494,7 @@ process_app() {
     app_src="${INPUT%/}"
     ditto --norsrc --noextattr --noqtn "$app_src" "$appdir/$(basename "$app_src")" || fail "copy the app" "ditto failed"
     app="$appdir/$(basename "$app_src")"
-    dmg_name="Strata.dmg"
+    dmg_name="Nostroma.dmg"
     rec OK "copy the app" "from $INPUT"
   elif [ -f "$INPUT" ] && [[ "$INPUT" == *.dmg ]]; then
     mnt="$WORK/mnt-in"; mkdir -p "$mnt"
@@ -540,7 +540,7 @@ process_app() {
   fi
 
   # the dmg, same layout as apps/desktop/scripts/make-dmg.sh: the app, an Applications link, the volume icon, no Finder arrangement
-  vol="Strata ${version:-app}"
+  vol="Nostroma ${version:-app}"
   mkdir -p "$WORK/final"
   out_dmg="$WORK/final/$dmg_name"
   build_dmg "$bundle_real" "$out_dmg" "$vol" || fail "build the dmg" "hdiutil failed (see the log)"
@@ -609,7 +609,7 @@ build_dmg() {   # app out.dmg volname
   MOUNTS+=("$mnt")
   ditto --norsrc --noextattr --noqtn "$app" "$mnt/$(basename "$app")" || return 1
   ln -s /Applications "$mnt/Applications"
-  icon="$app/Contents/Resources/Strata.icns"
+  icon="$app/Contents/Resources/Nostroma.icns"
   if [ -f "$icon" ] && command -v SetFile >/dev/null 2>&1; then cp "$icon" "$mnt/.VolumeIcon.icns" && SetFile -a C "$mnt" 2>/dev/null; fi
   sync
   until hdiutil detach "$mnt" >/dev/null 2>&1; do

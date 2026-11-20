@@ -41,7 +41,7 @@ sys.path.insert(0, str(ROOT))                         # strata_control.shape_eng
 # artifact names in a release upload folder (phaseA-tests/rel0211/PUBLISH-PLAN.md, scripts/relfinal/expect_rc1.py)
 ENGINE_RE = re.compile(r"^strata-engine-(?P<v>\d[\d.]*)-(?P<plat>.+?)\.(?:tar\.gz|zip)$")
 CONTROL_RE = re.compile(r"^strata-control-(?P<v>\d[\d.]*)-(?P<plat>.+?)\.(?:tar\.gz|zip)$")
-APP_RE = re.compile(r"^(Strata-\d[\d.]*-(windows-x64-setup\.exe|linux-x86_64\.AppImage|macos-arm64\.dmg)(\.sig)?|Strata\.app\.tar\.gz(\.sig)?)$")
+APP_RE = re.compile(r"^(Nostroma-\d[\d.]*-(windows-x64-setup\.exe|linux-x86_64\.AppImage|macos-arm64\.dmg)(\.sig)?|Nostroma\.app\.tar\.gz(\.sig)?)$")
 FEED_NAMES = ["strata-feed.json", "strata-feed.json.sig", "strata-feed-linux-aarch64.json", "strata-feed-linux-aarch64.json.sig"]
 SMALL_NAMES = ["SHA256SUMS.txt", "latest.json", "install.sh", "install.ps1", "install-manifest.txt"]
 
@@ -170,7 +170,7 @@ def plan(report: dict, set_index: int, a, prev: dict) -> dict:
     n += 1
     if with_app:
         for e in prev["app"]:
-            nm = re.sub(r"Strata-\d[\d.]*-", "Strata-%s-" % a.app_version, e["name"])
+            nm = re.sub(r"Nostroma-\d[\d.]*-", "Nostroma-%s-" % a.app_version, e["name"])
             changed.append({"name": nm, "size": e["size"], "est": True, "why": "app rebuilt with the Models page text"})
         step("%d" % n, "App text for the model (Models page) and the app bundles", "owner PC (Windows installer), a Linux box (AppImage), m1002 (Mac, unsigned; the owner signs)", 40,
              ["# edit apps/host/src (the model's name and one line), then the 0.2.11 app recipe: scripts/relwin/win_installer_rc1.ps1, the AppImage and Mac scripts",
@@ -183,8 +183,8 @@ def plan(report: dict, set_index: int, a, prev: dict) -> dict:
     if with_app:
         mac_extra = ""
         step("%d" % n, "Mac: the owner signs and notarises the unsigned Mac files on his Mac", "the owner's Mac, about 45 min of his time", 45,
-             ["bash sign-and-notarize.sh Strata-%s-macos-arm64.dmg%s --updater-archive --out signed" % (a.app_version, mac_extra)],
-             ["the signed folder (dmg, Strata.app.tar.gz and its .sig)"], owner=True)
+             ["bash sign-and-notarize.sh Nostroma-%s-macos-arm64.dmg%s --updater-archive --out signed" % (a.app_version, mac_extra)],
+             ["the signed folder (dmg, Nostroma.app.tar.gz and its .sig)"], owner=True)
         n += 1
     feed_cmd = ("python packaging/feed_tool.py build-feed --out <RELEASE> --key <FEED-KEY> --sequence %d --engine <engine-entries> --carry-dsv41 <the last strata-feed.json> --carry-dsv41-base https://github.com/Niko1221/Strata/releases/download/<DSV41-TAG>/ "
                 "--drafters <drafter-entries> --models <models-folder> --control <control-entries>%s%s   # OWNER'S KEY; `--models` is Q4-PREP-B's change"
