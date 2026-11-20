@@ -258,7 +258,7 @@ class MockedInstall(unittest.TestCase):
         self.assertNotIn("--embd-gguf", a)                  # its dense GGUF holds the token embedding
         self.assertTrue(self.flag(a, "--mtp").endswith(base + "/mtp/rt"))   # NVIDIA's own draft layer, not Qwen's
         self.assertIn("NVIDIA Open Model Agreement", out)
-        self.assertIn("turned into a Strata pack on this PC", out)
+        self.assertIn("turned into a Nostroma pack on this PC", out)
 
     def test_qad_reads_pictures_with_its_prepared_dense_gguf(self):
         code, out, cfg, _ = self.run_install("128GB-1x24GB", "NVFP4-QAD", extra_argv=["--vision", "gpu"])

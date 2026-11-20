@@ -3,7 +3,7 @@
 The rule (setup.ALT_READERS, setup.accepted_alt_reader, setup.resolve_reader; the plan asks the same function through modelstate.reader_present):
   * only a file named mmproj-F16.gguf with the pinned size AND SHA-256, in a place where setup already looks for the pinned reader;
   * only when no pinned BF16 file is found anywhere (the pinned file always wins); anything else with that name is ignored, as before;
-  * never downloaded, never deleted, never given a mark beside it: the SHA-256 is remembered in Strata's marks/ (keyed by real path, size,
+  * never downloaded, never deleted, never given a mark beside it: the SHA-256 is remembered in Nostroma's marks/ (keyed by real path, size,
     modification time and change time, so a replaced file is hashed again, also one rewritten in place with size and time kept);
   * the plan hashes without writing a mark and says nothing.
 The tests use a small stand-in file and patch the pin; one test holds the real pin."""
@@ -47,7 +47,7 @@ class Base(unittest.TestCase):
             self.addCleanup(p.stop)
         self.own = self.base / "mine" / "IQ3_XXS"               # a person's own folder of shards
         self.own.mkdir(parents=True)
-        self.models = self.base / "data" / "models"             # Strata's own models folder (the pinned file would be here)
+        self.models = self.base / "data" / "models"             # Nostroma's own models folder (the pinned file would be here)
         self.models.mkdir(parents=True)
 
     def start(self, gguf_dir="own"):
@@ -103,7 +103,7 @@ class Accepted(Base):
         kind, path, said = self.start()
         self.assertEqual((kind, path), ("alt", self.own / ALT))
         self.assertEqual(said, f"  checking {ALT} (SHA-256, 0.0 GB) ...\n")
-        self.assertEqual(len(self.marks()), 1, "one mark in Strata's own folder")
+        self.assertEqual(len(self.marks()), 1, "one mark in Nostroma's own folder")
         self.assertEqual(sorted(p.name for p in self.own.iterdir()), [ALT], "nothing was written beside the person's file")
         before = len(hashed)
         kind, _path, said = self.start()                         # the next run: the mark answers
@@ -164,7 +164,7 @@ class NotAccepted(Base):
         self.assertEqual(hashed, [], "the alternative is not even hashed")
         self.assertTrue(self.plan()[0])
         pinned.unlink()
-        (self.models / self.pinned).write_bytes(b"y")            # Strata's own models folder
+        (self.models / self.pinned).write_bytes(b"y")            # Nostroma's own models folder
         kind, path, said = self.start()
         self.assertEqual((kind, path, said), ("fetch", self.models / self.pinned, ""), "the pinned file is used (and verified later by setup)")
         self.assertTrue(self.plan()[0])

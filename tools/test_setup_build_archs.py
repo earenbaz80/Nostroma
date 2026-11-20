@@ -1,4 +1,4 @@
-"""#4662: a compiled engine gets code for every card Strata can use in the PC, not only the card setup picked.
+"""#4662: a compiled engine gets code for every card Nostroma can use in the PC, not only the card setup picked.
 
     python -m unittest tools.test_setup_build_archs
 """

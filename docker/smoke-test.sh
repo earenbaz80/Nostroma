@@ -1,5 +1,5 @@
 #!/bin/bash
-# Smoke test of one Strata image on a real card (docs/DOCKER.md, "Build it yourself"). Run it under your own GPU lock if the box is shared.
+# Smoke test of one Nostroma image on a real card (docs/DOCKER.md, "Build it yourself"). Run it under your own GPU lock if the box is shared.
 #
 #   IMAGE=strata:0.1.45-sycl NAME=strata-t PORT=18080 BASE=http://127.0.0.1:18080 \
 #   RUN_FLAGS="--device /dev/dri -p 18080:8080" ENVS="-e MODEL=IQ3_S -e MODEL_PATH=/models -e API_KEY=..." VOLS="-v $HOME/dt/data:/data -v /m:/models:ro" \

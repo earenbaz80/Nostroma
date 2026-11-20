@@ -1,4 +1,4 @@
-"""tools/image/sdcpp_dit/apply.py - put Strata's own DiT matrix products (src/image/dit/dit_gemm.cu: our weight decoders,
+"""tools/image/sdcpp_dit/apply.py - put Nostroma's own DiT matrix products (src/image/dit/dit_gemm.cu: our weight decoders,
 f16 activations, cuBLAS / hipBLAS GemmEx with f32 accumulation) into the native Qwen-Image-2.1 runner of a
 stable-diffusion.cpp checkout at the pinned commit.  Step 4, piece D1: TEST BUILDS ONLY for now (build_variant.py
 --dit); setup does not apply it, so no user build changes.
@@ -352,6 +352,6 @@ def apply(sd: Path) -> None:
 if __name__ == "__main__":
     if len(sys.argv) == 2 and not sys.argv[1].startswith("-"):
         apply(Path(sys.argv[1]))
-        print("Strata DiT GEMMs applied (native runner, --model-args strata_dit_gemm=1)")
+        print("Nostroma DiT GEMMs applied (native runner, --model-args strata_dit_gemm=1)")
     else:
         raise SystemExit(__doc__)

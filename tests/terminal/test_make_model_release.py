@@ -1,5 +1,5 @@
 """packaging/make_model_release.py: the model-release plan is a dry run, case A leaves the engines alone, case B ships the engine of the new shape as its own
-component (the Strata engine, the Controls and the app are not rebuilt), and the steps that need the release key only print a placeholder.
+component (the Nostroma engine, the Controls and the app are not rebuilt), and the steps that need the release key only print a placeholder.
 
     python -m unittest tests.terminal.test_make_model_release
 """
@@ -109,7 +109,7 @@ class Plan(unittest.TestCase):
         names = {c["name"] for c in p["changed"]}
         self.assertIn("strata-q4-lite-0.1.58-linux-x86_64-sycl.tar.gz", names)
         self.assertIn("strata-q4-lite-0.1.58-windows-x86_64-cuda-cuda13.zip", names)
-        self.assertFalse(any(n.startswith(("strata-engine-", "strata-control-", "strata-dsv41-")) for n in names), "the Strata engine and the Controls are not rebuilt")
+        self.assertFalse(any(n.startswith(("strata-engine-", "strata-control-", "strata-dsv41-")) for n in names), "the Nostroma engine and the Controls are not rebuilt")
         self.assertFalse(any("0.1.57" in n for n in names))
         kept = {k["name"] for k in p["kept"]}
         self.assertTrue({n for n in PREV if n.startswith(("strata-engine-", "strata-control-", "Nostroma-"))} <= kept)

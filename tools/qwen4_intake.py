@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Intake for a new model: read GGUF headers (never the weights) and say what Strata would have to do to run them.
+"""Intake for a new model: read GGUF headers (never the weights) and say what Nostroma would have to do to run them.
 
     python tools/qwen4_intake.py PATH [PATH ...]                 a folder, or one or more .gguf files (any shard of a set)
     python tools/qwen4_intake.py --hf REPO [--rev REV] [--dir D]  Hugging Face: HTTP range reads of each shard's header only
@@ -8,7 +8,7 @@
 
 For each set of files (a split model is one set) it prints, and writes as JSON:
 
-  * the architecture and every geometry key, against both families Strata runs (qwen4exp = include/strata/core/geometry.hpp's
+  * the architecture and every geometry key, against both families Nostroma runs (qwen4exp = include/strata/core/geometry.hpp's
     kCompiledGeometry; qwen35moe = the run-time shapes of src/qwen35 with its fixed limits);
   * the tensor layout against the layout tables of include/strata/core/family_layout.hpp: missing, reshaped and unknown tensors;
   * every quant type against what each backend (CUDA, HIP, SYCL, Metal) has kernels for, by tensor role;
@@ -111,7 +111,7 @@ FAMILY_TITLE = {"qwen4exp": "Qwen3.8-Flash-Next", "qwen35moe": "Qwen3.6-35B-A3B"
 # model_family_runs() is true for qwen4exp only; qwen35moe has the src/qwen35 path the CUDA and HIP builds switch to.  The SYCL
 # build refuses it (model_family_not_supported); Metal has no such path (docs: "Metal and Intel Arc have no such path").
 FAMILY_BACKENDS = {"qwen4exp": ["cuda", "hip", "sycl", "metal"], "qwen35moe": ["cuda", "hip"]}
-# Other architectures Strata runs with an engine of its own: never a Qwen4 path.
+# Other architectures Nostroma runs with an engine of its own: never a Qwen4 path.
 OTHER_ENGINES = {"deepseek41": "strata-dsv41 (setup.py MULTI_FILE_FAMILIES): a separate engine, not the Qwen3.8 / Qwen3.6 paths"}
 
 # read_geometry() (gguf_reader.hpp): key -> (field, required), under "<arch>."
@@ -862,7 +862,7 @@ def verdict(rep: dict, arch: str | None) -> dict:
     shape_fields = rep["shape_differences"]
     if fam is not None:
         if arch not in FAMILY_ARCH and (rep["geometry_problems"] or (rep["layout"] is not None and not rep["layout"]["ok"])):
-            blockers.append("architecture '%s' is not a name Strata knows, and it does not fit %s either" % (arch, FAMILY_TITLE[fam]))
+            blockers.append("architecture '%s' is not a name Nostroma knows, and it does not fit %s either" % (arch, FAMILY_TITLE[fam]))
         if rep["geometry_problems"]:
             blockers += ["geometry: " + p for p in rep["geometry_problems"][:8]]
         lay = rep["layout"]
@@ -876,7 +876,7 @@ def verdict(rep: dict, arch: str | None) -> dict:
                 blockers.append("%d tensors have another shape than the %s layout (first: %s is %s, wants %s)"
                                 % (len(lay["reshaped"]), FAMILY_TITLE[fam], r["name"], r["got"], r["want"]))
     elif arch is not None and arch not in OTHER_ENGINES:
-        blockers.append("architecture '%s' is not a family Strata knows and no key set fits qwen4exp or qwen35moe" % arch)
+        blockers.append("architecture '%s' is not a family Nostroma knows and no key set fits qwen4exp or qwen35moe" % arch)
     # ---- dense / expert-less models
     md_experts = rep["geometry"]["n_expert"] if rep["geometry"] else None
     if rep["quant"]["roles"].get("routed_gate") is None and rep["tensor_count"] and fam is not None:

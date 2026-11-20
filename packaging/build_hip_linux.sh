@@ -6,7 +6,7 @@
 #
 #   VARIANT=rx9070     rx9070 (gfx1200 gfx1201) | rx7900 (gfx1100 gfx1101 gfx1102) | rx6000 (gfx1030 gfx1031) | halo (gfx1151) | igpu (gfx1103 gfx1150) | a name + ARCHS=
 #   ARCHS="gfx1200;gfx1201"          the code objects (default: the variant's)
-#   SRC=<this checkout>              the Strata source (default: the checkout this script is in)
+#   SRC=<this checkout>              the Nostroma source (default: the checkout this script is in)
 #   LLAMA=<llama.cpp checkout>       optional override (kept for two releases): ggml (and strata-vision) come from that checkout instead of the vendored third_party/
 #   HP=<ROCm devel root>  CORE=<ROCm core root>  LIBW=<ROCm libraries root>   (TheRock: _rocm_sdk_devel, _rocm_sdk_core, _rocm_sdk_libraries_*)
 #   OUT=<work folder>  PKGVER=0.1.60  COMMIT=<source commit for the build id>  JOBS=16

@@ -9,7 +9,7 @@ from nostroma_cli.launch import runner
 from nostroma_cli.launch.runner import LaunchError, Runner, missing_file, python_failure, setup_failure
 
 TRACEBACK = [
-    "  [..] Tuning Strata for this PC",
+    "  [..] Tuning Nostroma for this PC",
     "Traceback (most recent call last):",
     '  File "C:\\Strata\\setup.py", line 6414, in calibrate_config',
     "    import calibrate as CAL",
@@ -44,7 +44,7 @@ class SetupFailureWords(unittest.TestCase):
         error = setup_failure(TRACEBACK, "", "", r"C:\Users\x\launch\a.setup.log", False)
         self.assertIsInstance(error, LaunchError)
         self.assertIn("The model could not be installed.", error.text)
-        self.assertIn("missing from this Strata install", error.text)
+        self.assertIn("missing from this Nostroma install", error.text)
         self.assertIn("No module named 'calibrate'", error.text)
         self.assertIn("strata update", error.next)
         self.assertIn(r"C:\Users\x\launch\a.setup.log", error.next)
@@ -83,7 +83,7 @@ class SetupFailureWords(unittest.TestCase):
 
 
     def test_a_message_that_ends_with_a_full_stop_does_not_get_a_second_one(self):
-        error = setup_failure(TRACEBACK, "Strata can't reach GitHub to download the DeepSeek engine.", "Check the internet connection.", "/tmp/a.setup.log", False)
+        error = setup_failure(TRACEBACK, "Nostroma can't reach GitHub to download the DeepSeek engine.", "Check the internet connection.", "/tmp/a.setup.log", False)
         self.assertIn("DeepSeek engine. Check", error.text + " " + error.next)
         self.assertNotIn("engine..", error.text)
 

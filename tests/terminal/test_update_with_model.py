@@ -248,7 +248,7 @@ class WithAModel(ModelCase):
     # ---- a server nobody here started (a service)
     def test_a_server_that_strata_did_not_start_is_never_stopped_even_with_stop_model(self):
         with self.assertRaises(updater.UpdateError) as caught:
-            self.update(self.gate(nobody=True, allow_stop=True), serving=lambda: [{"profile": "a running Strata server", "state": "serving"}])
+            self.update(self.gate(nobody=True, allow_stop=True), serving=lambda: [{"profile": "a running Nostroma server", "state": "serving"}])
         self.assertEqual(caught.exception.exit_code, 7)
         self.assertIn("did not start it from here", str(caught.exception))
         self.assertIn("Stop it yourself", str(caught.exception))
@@ -501,7 +501,7 @@ class TheCommand(ModelCase):
 
 
 class AfterTheStop(unittest.TestCase):
-    """Found by the real DeepSeek flow: right after a big model was stopped, the next look still saw 'a running Strata server' (its engine had not let
+    """Found by the real DeepSeek flow: right after a big model was stopped, the next look still saw 'a running Nostroma server' (its engine had not let
     go of the shared lease yet) and the update was refused half way."""
 
     def gate(self, **kw):
@@ -515,7 +515,7 @@ class AfterTheStop(unittest.TestCase):
 
     def test_the_update_waits_until_the_stopped_engine_has_let_go(self):
         gate, _ = self.gate(settle_s=30)
-        answers = [[{"profile": "launch-x"}], [{"profile": "a running Strata server"}], [{"profile": "a running Strata server"}], []]
+        answers = [[{"profile": "launch-x"}], [{"profile": "a running Nostroma server"}], [{"profile": "a running Nostroma server"}], []]
         with mock.patch("time.sleep"):
             gate.release(lambda: answers.pop(0) if answers else [])
         self.assertEqual(len(gate.stops), 1)
@@ -527,7 +527,7 @@ class AfterTheStop(unittest.TestCase):
 
         def serving():
             calls["n"] += 1
-            return [{"profile": "launch-x"}] if calls["n"] == 1 else [{"profile": "a running Strata server"}]
+            return [{"profile": "launch-x"}] if calls["n"] == 1 else [{"profile": "a running Nostroma server"}]
         with self.assertRaises(updater.UpdateError) as caught:
             gate.release(serving)
         self.assertEqual(caught.exception.exit_code, 7)

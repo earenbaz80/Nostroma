@@ -3,7 +3,7 @@
 The same stub packages the updater tests use (real schema-2 packages, a real test start). Proves: an update keeps every older engine; the list shows
 size, the engine in use and the newest; a switch to an older engine and back to the newest holds across a fresh read (a restart); the newest is
 selected without a pin; the engine in use and an engine a program uses cannot be deleted; a running model stops a switch with one plain answer;
-a package this computer cannot run is shown with its reason and cannot be switched to; a DeepSeek engine folder of Strata 0.2.13 is neither listed nor
+a package this computer cannot run is shown with its reason and cannot be switched to; a DeepSeek engine folder of Nostroma 0.2.13 is neither listed nor
 touched, and the deepseek family is answered in plain words (nostroma_control/retired.py)."""
 import json
 import os
@@ -226,7 +226,7 @@ class Cli(UpdaterCase):
 
 
 class DeepSeekFolder(UpdaterCase):
-    """Strata 0.2.13 and earlier put the DeepSeek engine in engine-dsv41/; this Strata runs no DeepSeek model."""
+    """Nostroma 0.2.13 and earlier put the DeepSeek engine in engine-dsv41/; this Nostroma runs no DeepSeek model."""
 
     def setUp(self):
         super().setUp()

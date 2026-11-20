@@ -1,4 +1,4 @@
-"""tools/test_qi21_glue.py - the steps between Strata's image parts (src/image/pipeline/qi21_glue.cpp) give the bytes
+"""tools/test_qi21_glue.py - the steps between Nostroma's image parts (src/image/pipeline/qi21_glue.cpp) give the bytes
 stable-diffusion.cpp 2988060's code gives: the starting latent (DiscreteFlowDenoiser::noise_scaling on a zero latent),
 the condition (apply_token_weights + the system rows dropped) and the decoder output to 0..1 (scale_tensor_to_0_1).
 The expectations are those operations written out with numpy float32 (and a sequential float64 sum for sd.cpp's

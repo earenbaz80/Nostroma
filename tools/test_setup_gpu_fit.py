@@ -84,11 +84,11 @@ class SetupFitRule(unittest.TestCase):
         argv = ["--family", "qwen", "--no-start", "--model", "IQ3_XXS", "--context", "32768"]
         code, out, cfg, asked = install(62.0, found, argv, answers={"Which cards?": "1"}, extra=patches)
         self.assertEqual(code, 0, out)
-        self.assertIn("This PC has NVIDIA and AMD cards Strata can use", out)
+        self.assertIn("This PC has NVIDIA and AMD cards Nostroma can use", out)
         self.assertIn("never split across NVIDIA and AMD cards", out)
         self.assertIn("two models at the same", out)
         self.assertIn("not supported yet", out)
-        self.assertIn("This computer also has an AMD AI PRO R9700 (32 GB). The AMD build of Strata can use it", out)
+        self.assertIn("This computer also has an AMD AI PRO R9700 (32 GB). The AMD build of Nostroma can use it", out)
         self.assertNotIn("Which GPUs?", " ".join(asked))              # one NVIDIA card: no split question
         self.assertEqual(cfg.get("gpu", 0), 0)
 

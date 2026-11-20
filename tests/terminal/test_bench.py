@@ -380,7 +380,7 @@ class BenchTests(unittest.TestCase):
         out = self.root / "unloaded"
         unloaded = mock.Mock()
         unloaded.snapshot.return_value = {"instance": {"id": "one"}, "model": {"loaded": False}}
-        with self.assertRaisesRegex(ProfileError, "loaded Strata instance"):
+        with self.assertRaisesRegex(ProfileError, "loaded Nostroma instance"):
             bench.run(self.inference, unloaded, out)
         self.assertFalse(out.exists())
 

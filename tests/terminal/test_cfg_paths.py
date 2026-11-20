@@ -1,4 +1,4 @@
-"""#4891 ("Qwen breaks each time Strata is updated"): a saved run config names folders of one version of Strata's own components (the Control bundle that
+"""#4891 ("Qwen breaks each time Nostroma is updated"): a saved run config names folders of one version of Nostroma's own components (the Control bundle that
 ran setup: cwd, --expert-profile; an engine package: the picture reader, library folders).  The update keeps the new Control and
 the one before it, so the SECOND update after setup removes the folder the config names; the model then showed as "not installed" and a start failed.
 
@@ -120,7 +120,7 @@ class StaleConfigPaths(UpdaterCase):
         return path
 
     def deepseek_config(self, name):
-        """A DeepSeek config of Strata 0.2.13: its engine in engine-dsv41/, its cwd in the Control that ran setup."""
+        """A DeepSeek config of Nostroma 0.2.13: its engine in engine-dsv41/, its cwd in the Control that ran setup."""
         old_ds = self.root / "data" / "engine-dsv41" / f"0.1.49-{self.engine_kind}"
         exe = old_ds / "strata-dsv41"
         cfg = {"exe": str(exe), "arch": "deepseek41", "backend": "cuda", "tokenizer": self.tokenizer, "cwd": str(self.control / "0.1.44"),
@@ -182,7 +182,7 @@ class StaleConfigPaths(UpdaterCase):
         cfg = profiles.read_run_config(path)
         args = cfg["args"]
         self.assertEqual(args[args.index("--pack") + 1], str(self.root / "packs" / "iq3_s"))
-        self.assertEqual(args[args.index("--lookup-file") + 1], str(self.mine))      # (typed, outside Strata's folders, does not exist: not touched)
+        self.assertEqual(args[args.index("--lookup-file") + 1], str(self.mine))      # (typed, outside Nostroma's folders, does not exist: not touched)
         self.assertEqual(args[args.index("--mtp") + 1], "2")
         self.assertEqual(args[args.index("--expert-profile-save") + 1], str(self.control / "0.1.44" / "data" / "learned.bin"),
                          "a path the engine writes is not a file to look for")
@@ -211,7 +211,7 @@ class StaleConfigPaths(UpdaterCase):
         self.assertEqual(cfg["exe"], str(self.engine_exe(new_engine)))
         self.assertNotIn("0.1.44", self.without_output_path(path))
         self.assertEqual(len(self.host_log_lines("term")), 1, self.host_log_lines("term"))
-        self.assertIn("earlier Strata version", self.host_log_lines("term")[0])
+        self.assertIn("earlier Nostroma version", self.host_log_lines("term")[0])
         runtime.stop("term", timeout=12)
         again = runtime.start("term", wait=60)
         self.assertTrue(again["ok"], again)
@@ -242,15 +242,15 @@ class StaleConfigPaths(UpdaterCase):
         self.assertNotIn("0.1.44", self.without_output_path(b), "the Models page reads the other profiles' configs too")
 
     def test_a_deepseek_config_is_left_exactly_as_it_was(self):
-        """This Strata runs no DeepSeek model (nostroma_control/retired.py): neither the repair nor a start writes its config, which may still
-        serve the Strata it came from; the start says why it stops."""
+        """This Nostroma runs no DeepSeek model (nostroma_control/retired.py): neither the repair nor a start writes its config, which may still
+        serve the Nostroma it came from; the start says why it stops."""
         path = self.deepseek_config("ds")
         self.two_updates()
         before = Path(path).read_bytes()
         self.assertEqual(cfg_paths.repair([path]), ([], []))
         with self.assertRaises(profiles.ProfileError) as caught:
             runtime.start("ds", wait=1, die_with_pid=os.getpid())
-        self.assertIn("is a DeepSeek model. This version of Strata no longer runs DeepSeek models, so it was not started.", str(caught.exception))
+        self.assertIn("is a DeepSeek model. This version of Nostroma no longer runs DeepSeek models, so it was not started.", str(caught.exception))
         self.assertEqual(Path(path).read_bytes(), before)
 
     # ------------------------------------------------------------------ a file that is nowhere

@@ -66,7 +66,7 @@ class ChatTemplate:
                                     **kwargs)
 
     def _detect_caps(self) -> dict[str, bool]:
-        """llama.cpp's capability names, checked at load time against this template and Strata's tool-call format.
+        """llama.cpp's capability names, checked at load time against this template and Nostroma's tool-call format.
         These are rendering hints, not a guarantee that the model will follow a request."""
         def render(messages, tools=None):
             try:
@@ -2081,7 +2081,7 @@ class JsonOutputParser(OutputParser):
 
 def parser_for_template(source: str | None):
     """The OutputParser class for a chat template's text, by the tool-call form the template documents (serve/toolformat.py):
-    the JSON form gets JsonOutputParser; the XML form every Strata model ships with, templates without tools, and forms nothing
+    the JSON form gets JsonOutputParser; the XML form every Nostroma model ships with, templates without tools, and forms nothing
     here reads keep OutputParser (the same class as before this existed)."""
     from serve import toolformat
     return JsonOutputParser if toolformat.tool_format(source or "") == "json" else OutputParser

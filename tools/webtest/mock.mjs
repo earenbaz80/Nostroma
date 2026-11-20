@@ -1,4 +1,4 @@
-// A stand-in for the Strata server for tests of the served web page (serve/web): it serves the page's own files and
+// A stand-in for the Nostroma server for tests of the served web page (serve/web): it serves the page's own files and
 // answers the few calls the page makes with scripted text. No model, no GPU, no Python. Used by browser_test.mjs and shots.mjs.
 //
 //   import { startMock } from "./mock.mjs";

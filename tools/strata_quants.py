@@ -1,11 +1,11 @@
-"""tools/strata_quants.py - Strata's own numpy dequantizers and the few quantizers the pack tools need (replaces gguf-py's `quants`).
+"""tools/strata_quants.py - Nostroma's own numpy dequantizers and the few quantizers the pack tools need (replaces gguf-py's `quants`).
 
     dequantize(data, qtype) -> float32     data: uint8 array whose last axis holds whole rows of blocks (gguf-py's byte shape);
                                            F32 / F16 / BF16 are views and conversions of the raw values
     quantize(values, qtype) -> uint8       values: float array whose last axis is a multiple of the block size
 
 Dequantize covers every type a GGUF file of ours can carry: BF16, Q4_0, Q4_1, Q5_0, Q5_1, Q8_0, Q2_K, Q3_K, Q4_K, Q5_K, Q6_K, TQ1_0, TQ2_0, MXFP4,
-NVFP4, IQ1_S, IQ1_M, IQ2_XXS, IQ2_XS, IQ2_S, IQ3_XXS, IQ3_S, IQ4_NL, IQ4_XS and Q2_0 (Strata's own 2-bit type). Quantize covers BF16, Q8_0, Q4_0,
+NVFP4, IQ1_S, IQ1_M, IQ2_XXS, IQ2_XS, IQ2_S, IQ3_XXS, IQ3_S, IQ4_NL, IQ4_XS and Q2_0 (Nostroma's own 2-bit type). Quantize covers BF16, Q8_0, Q4_0,
 Q4_1, Q5_0, Q5_1 (what the tools and tests use); anything else raises NotImplementedError.
 
 The results are bit-identical to llama.cpp's gguf-py (the pin vendored in third_party/strata-gguf-py): every float32 operation is done in

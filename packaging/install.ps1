@@ -1,4 +1,4 @@
-# Strata Terminal: one-line installer for Windows (PowerShell 5.1 or newer).
+# Nostroma Terminal: one-line installer for Windows (PowerShell 5.1 or newer).
 #
 #     irm -TimeoutSec 120 https://github.com/Niko1221/Strata/releases/latest/download/install.ps1 | iex
 #
@@ -71,16 +71,16 @@ function Fetch([string]$url, [string]$out) {
     }
 }
 if (-not $feed) {
-    Die 'this installer does not know where the Strata release folder is. Set $env:STRATA_FEED to its address and run it again, for example: $env:STRATA_FEED=''https://example.org/strata'''
+    Die 'this installer does not know where the Nostroma release folder is. Set $env:STRATA_FEED to its address and run it again, for example: $env:STRATA_FEED=''https://example.org/strata'''
 }
 if ([Environment]::OSVersion.Platform -ne 'Win32NT') { Die 'this is the Windows installer; on Linux or macOS use install.sh.' }
 $arch = $env:PROCESSOR_ARCHITEW6432; if (-not $arch) { $arch = $env:PROCESSOR_ARCHITECTURE }
-if ($arch -ne 'AMD64') { Die "this computer ($arch) is a Windows on ARM PC. Strata needs an NVIDIA or AMD graphics card and has no engine for ARM processors, so it could not run a model here. Run this installer on a Windows PC with an Intel or AMD processor (x64) and one of those cards." }
+if ($arch -ne 'AMD64') { Die "this computer ($arch) is a Windows on ARM PC. Nostroma needs an NVIDIA or AMD graphics card and has no engine for ARM processors, so it could not run a model here. Run this installer on a Windows PC with an Intel or AMD processor (x64) and one of those cards." }
 $platform = 'windows-x86_64'
 $gpu = ''
 # a discrete card is named before a built-in one (a Ryzen's "AMD Radeon(TM) Graphics" is listed first on many PCs); this line is only for the person to read
 try { $cards = @(Get-CimInstance Win32_VideoController | Where-Object { $_.Name -notmatch 'Basic|Remote' }); $gpu = ($cards | Sort-Object @{ Expression = { if ($_.Name -match 'NVIDIA|GeForce|RTX|GTX|Quadro|Radeon (RX|PRO|AI)|Arc|Instinct') { 0 } else { 1 } } } | Select-Object -First 1 -ExpandProperty Name) } catch { }
-Write-Host 'Strata Terminal installer'
+Write-Host 'Nostroma Terminal installer'
 Write-Host "  This computer: Windows $arch ($platform)$(if ($gpu) { ", graphics: $gpu" })"
 Write-Host "  Release folder: $feed"
 
@@ -145,7 +145,7 @@ try {
     # the archive of a release folder is rooted at the bundle itself (control package) or in one folder (terminal archive)
     if (-not (Test-Path (Join-Path $incoming 'bin\strata.cmd'))) {
         $inner = Get-ChildItem $incoming -Directory | Where-Object { Test-Path (Join-Path $_.FullName 'bin\strata.cmd') } | Select-Object -First 1
-        if (-not $inner) { Remove-Item -Recurse -Force $incoming; Die 'the archive does not look like a Strata Terminal.' }
+        if (-not $inner) { Remove-Item -Recurse -Force $incoming; Die 'the archive does not look like a Nostroma Terminal.' }
         $moved = "$dest.moved"; Move-Item $inner.FullName $moved; Remove-Item -Recurse -Force $incoming; Move-Item $moved $incoming
     }
 
@@ -169,7 +169,7 @@ try {
 
     if (Test-Path $dest) {
         try { Remove-Item -Recurse -Force $dest }
-        catch { Remove-Item -Recurse -Force $incoming -ErrorAction SilentlyContinue; Die "Strata $version is already installed and a program is using it (a Strata window or server is running). Close it (run: strata launch --stop), then run this again. Nothing was changed." }
+        catch { Remove-Item -Recurse -Force $incoming -ErrorAction SilentlyContinue; Die "Nostroma $version is already installed and a program is using it (a Nostroma window or server is running). Close it (run: strata launch --stop), then run this again. Nothing was changed." }
     }
     Move-Item $incoming $dest
     $current = Join-Path $data 'terminal\current'
@@ -184,7 +184,7 @@ try {
             Set-Content -Encoding Ascii -Path (Join-Path $current 'current.txt') -Value $dest
             Write-Host '  (this drive could not make a link, so a small launcher was used instead)'
         }
-        catch { Die "Strata was unpacked but its start command could not be set up ($($_.Exception.Message)). Run it directly: $dest\bin\strata.cmd" }
+        catch { Die "Nostroma was unpacked but its start command could not be set up ($($_.Exception.Message)). Run it directly: $dest\bin\strata.cmd" }
     }
     $bin = Join-Path $current 'bin'
     if ($env:STRATA_NO_PATH -ne '1') {

@@ -281,7 +281,7 @@ async def soak(seconds: float, interval: float, *, exercise_ui: bool = False) ->
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Headless synthetic Strata Monitor soak")
+    parser = argparse.ArgumentParser(description="Headless synthetic Nostroma Monitor soak")
     parser.add_argument("--seconds", type=float, default=1800)
     parser.add_argument("--interval", type=float, default=0.5)
     parser.add_argument("--exercise-ui", action="store_true",

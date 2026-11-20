@@ -1,7 +1,7 @@
 // tools/trellis/tqenc.hpp - tail-biting Viterbi ENCODER for the trellis expert formats (TQ2_T, TQK6, TQK7 of the
 // agentionai llama.cpp fork, ggml types 144-146) and two experimental lower-rate versions (TQK5X, TQK4X, and the table-based TQK5T, TQK4T).
 //
-// Standalone (no ggml, no Strata engine): it only needs third_party/ggml/ggml-common-tq.h (the 2048-point codebook).
+// Standalone (no ggml, no Nostroma engine): it only needs third_party/ggml/ggml-common-tq.h (the 2048-point codebook).
 // The decoders it must match are src/kernels/cpu/tq_states.hpp / tq_cpu.cpp (tools/trellis/tqenc_test.cpp checks
 // bit for bit against them, and the scalar / AVX2 / AVX-512 kernels against the encoder's own reconstruction).
 //
@@ -37,7 +37,7 @@ inline constexpr int kBlock = 128;
 inline constexpr int kStates = 1 << 15;
 inline constexpr int kExperimentalVersion = 2;
 
-// ggml type ids of the fork (decoders exist) and the experimental ones (encoder + Strata CPU decoder only)
+// ggml type ids of the fork (decoders exist) and the experimental ones (encoder + Nostroma CPU decoder only)
 enum Type : int {
     TQ2_T = 144, TQK6 = 145, TQK7 = 146,    // the fork's types (hashed point table)
     TQK5X = 224, TQK4X = 225,               // experimental version 2: K = 5 / 4 with the computed (LUT-free) codebook, tq_computed.hpp

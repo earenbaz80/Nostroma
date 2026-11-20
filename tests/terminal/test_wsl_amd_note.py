@@ -58,7 +58,7 @@ class WslAmdNote(unittest.TestCase):
         text = (Path(__file__).resolve().parents[2] / "setup.py").read_text(encoding="utf-8")
         i = text.index("wsl_amd_note(\"hip\", wsl=is_wsl())")
         self.assertIn("warn(wsl_note)", text[i:i + 200])
-        self.assertLess(i, text.index("no AMD GPU Strata can use"))
+        self.assertLess(i, text.index("no AMD GPU Nostroma can use"))
 
 
 if __name__ == "__main__":

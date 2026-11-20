@@ -1,4 +1,4 @@
-// strata_noise.hpp - Strata's own Philox noise generator: it reproduces stable-diffusion.cpp 2988060's default
+// strata_noise.hpp - Nostroma's own Philox noise generator: it reproduces stable-diffusion.cpp 2988060's default
 // noise (--rng cuda, src/core/rng_philox.hpp) as its Linux x86 GCC build produces it, on every operating system and
 // CPU, using integer arithmetic only: no maths-library call and nothing an FMA contraction can change.
 // tools/image/sdcpp_noise/apply.py copies this file into a stable-diffusion.cpp checkout (src/core/) and writes the

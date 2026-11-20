@@ -1,4 +1,4 @@
-# tools/vision/own - Strata's own Qwen vision tower (own-stack phase 3).  No ggml, no llama.cpp: plain C++17 and one CUDA / HIP source.
+# tools/vision/own - Nostroma's own Qwen vision tower (own-stack phase 3).  No ggml, no llama.cpp: plain C++17 and one CUDA / HIP source.
 #
 # Standalone (quick; this is how the reference, the GPU tower and the unit tests are built on the Linux test boxes):
 #   cmake -S tools/vision/own -B build-own -DCMAKE_BUILD_TYPE=Release [-DSTRATA_VIT_OWN_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES=86] && cmake --build build-own -j

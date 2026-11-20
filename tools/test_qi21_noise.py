@@ -1,4 +1,4 @@
-"""tools/test_qi21_noise.py - our initial noise (src/image/noise/qi21_noise.cpp, Strata's Philox generator) against
+"""tools/test_qi21_noise.py - our initial noise (src/image/noise/qi21_noise.cpp, Nostroma's Philox generator) against
 stable-diffusion.cpp 2988060's own PhiloxRNG as its x86 build computes it: tools/image/gate/data/qi21_noise_sha.json
 holds the sha256 of sd.cpp's noise for seeds 42, 1234, 7, 2026 at 65,536 and 262,144 values (the 512 and 1024
 latents), made by compiling sd.cpp's core/rng_philox.hpp with g++ -O3 on x86 (p1006).  Compiles our generator with

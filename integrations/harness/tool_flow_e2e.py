@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Tool execution, approval and cancellation, end to end (checklist A03, A04, A05).
 
-This drives the real path — a scripted Strata worker, the Harness agent loop with its real bash tool,
+This drives the real path — a scripted Nostroma worker, the Harness agent loop with its real bash tool,
 and a durable session — so what it proves is the *integration*, not a mock of it.
 
 The model is scripted. That is a deliberate and limited choice: writing a file via bash is
@@ -14,7 +14,7 @@ Three flows, each with one assertion that matters:
 **A03 — the tool runs once, in the Harness.**
     The scripted turn calls bash to append a line to a file. The assertions are that the file has
     exactly one line (so the tool ran exactly once), that the durable session records a tool call and
-    a tool result, and that the Strata worker was given the transcript rather than executing anything
+    a tool result, and that the Nostroma worker was given the transcript rather than executing anything
     itself — the worker has no tool-execution path at all, and the call count is the evidence. The
     call escalates the sandbox, so it cannot run until a peer *grants* it: the flow connects that peer
     and asserts an approval was asked, answered, and recorded as the grant.
@@ -385,7 +385,7 @@ def wait_for_worker(port: int, timeout: float = 60.0) -> None:
 
 
 def write_profile(port: int, tmp: Path) -> Path:
-    """The Strata profile patch with this run's worker port.
+    """The Nostroma profile patch with this run's worker port.
 
     The shipped patch names 8095, and a worker left over from an earlier session on that port will
     happily answer every request -- producing a green run against the *wrong* worker, which is
@@ -428,7 +428,7 @@ def worker_port_in_use(port: int) -> bool:
 
 def start_agent(dsh: Path, port: int, home: Path, profile: str, log_path: Path,
                 cwd: Path, patch: Path) -> subprocess.Popen:
-    """Boot the agent with the Strata profile.
+    """Boot the agent with the Nostroma profile.
 
     The profile is selected the way the working bridge does it: `--profile <base> --patch <file>`, a
     patch layer over a shipped bundle. `dsh web --profile` does not exist, and passing it produces
@@ -759,7 +759,7 @@ def main() -> int:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--dsh", required=True, help="path to the dsh executable")
     parser.add_argument("--profile", default="web",
-                        help="the base bundle profile the Strata patch layers over")
+                        help="the base bundle profile the Nostroma patch layers over")
     parser.add_argument("--base-port", type=int, default=8300)
     parser.add_argument("--only", default=None, help="run one flow: A03, A04 or A05")
     parser.add_argument("--keep", action="store_true", help="keep the temporary directory")

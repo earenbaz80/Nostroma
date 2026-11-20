@@ -308,7 +308,7 @@ def main(argv: list[str] | None = None) -> int:
                     help="an imported library that really is provided by the target system (rare; named so the check passes)")
     ap.add_argument("--shape", default="", metavar="GEOMETRY",
                     help="package the engine of a model shape (the name the engine was compiled for, -DSTRATA_GEOMETRY=q4_lite): its own component strata-q4-lite, installed "
-                         "next to the Strata engine and never in place of it (nostroma_control/shape_engine.py)")
+                         "next to the Nostroma engine and never in place of it (nostroma_control/shape_engine.py)")
     ap.add_argument("--include", action="append", default=[], metavar="GLOB", help="more files, relative to --src")
     ap.add_argument("--stamp-vision", type=Path, metavar="STAGE", help="write --vision-archs into STAGE/BUILD.json and exit")
     ap.add_argument("--vision-archs", default="", help="with --stamp-vision: the architectures the reader was built for, e.g. '60;61;70;75;80;86;89'")

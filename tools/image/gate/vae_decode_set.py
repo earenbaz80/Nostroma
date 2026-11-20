@@ -1,5 +1,5 @@
 """tools/image/gate/vae_decode_set.py - TEST-ONLY (OWN-5 gate harness): decode the fixed latents of a stage set with
-Strata's own VAE decoder (strata-vae-decode, src/image/vae) and write the pictures as sd-cli would, so compare.py and
+Nostroma's own VAE decoder (strata-vae-decode, src/image/vae) and write the pictures as sd-cli would, so compare.py and
 check_limits.py can put them next to sd.cpp's decode of the same latents.
 
     python -I -B vae_decode_set.py <strata-vae-decode> <vae.safetensors> <pics root> <latent tag> <out tag> [--repeat N] [--stream off]

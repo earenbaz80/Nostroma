@@ -26,7 +26,7 @@ class Text(unittest.TestCase):
     def test_arm_is_refused_with_a_reason_and_a_next_step(self):
         self.assertIn("Windows on ARM PC", self.ps1)
         self.assertIn("no engine for ARM", self.ps1)
-        self.assertNotIn("has no Strata Terminal yet", self.ps1)
+        self.assertNotIn("has no Nostroma Terminal yet", self.ps1)
         self.assertIn("NVIDIA DGX Spark", self.sh)      # 0.2.7.1: Linux ARM64 installs the Terminal (the engine is for the Spark only)
         self.assertIn("Apple silicon", self.sh)
 

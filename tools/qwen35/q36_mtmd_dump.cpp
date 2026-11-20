@@ -3,7 +3,7 @@
 // chunks (the text ids, the picture's token count) and the greedy ids, and dumps every step's full logits (f32,
 // [step][vocab]) so the first token's logits can be compared with strata-q36's (--dump-full-logits there).
 //
-// Built against a llama.cpp checkout with its mtmd library (not part of Strata's build):
+// Built against a llama.cpp checkout with its mtmd library (not part of Nostroma's build):
 //   g++ -O2 -std=c++17 q36_mtmd_dump.cpp -I<llama>/include -I<llama>/ggml/include -I<llama>/tools/mtmd -L<llama>/build/bin
 //       -lllama -lmtmd -lggml -lggml-base -Wl,-rpath,<llama>/build/bin -o q36_mtmd_dump
 // Usage: q36_mtmd_dump --model GGUF --mmproj F --image F [--image F2 ...] --prompt TEXT [--n 32] [--ngl 99] [--max-tokens N] [--mm-cpu 1]

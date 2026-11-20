@@ -320,7 +320,7 @@ class WrongCardFamily(unittest.TestCase):
             with self.assertRaises(ec.EngineMissing) as caught:
                 ec.resolve(self.root, backend="hip", runtime="1")
             note = ec.status(self.root, backend="hip")["notice"]
-        self.assertTrue(str(caught.exception).startswith("This build of Strata is for AMD RX 9000 cards."), str(caught.exception))
+        self.assertTrue(str(caught.exception).startswith("This build of Nostroma is for AMD RX 9000 cards."), str(caught.exception))
         self.assertIn("Ask for the RX 7000 build.", note)
         self.assertIn("(gfx1100)", note)
         self.assertNotIn("component", note)
@@ -328,7 +328,7 @@ class WrongCardFamily(unittest.TestCase):
     def test_an_amd_build_on_an_nvidia_pc_names_the_nvidia_download(self):
         with mock.patch.object(ec, "hip_archs_present", return_value=[]):
             note = ec.status(self.root, backend="cuda")["notice"]
-        self.assertTrue(note.startswith("This Strata is for AMD RX 9000 cards. Your PC has an NVIDIA card: download the NVIDIA version from "), note)
+        self.assertTrue(note.startswith("This Nostroma is for AMD RX 9000 cards. Your PC has an NVIDIA card: download the NVIDIA version from "), note)
         self.assertIn("https://github.com/Niko1221/Strata/releases", note)
 
     def test_the_matching_family_is_not_blocked(self):
@@ -364,7 +364,7 @@ class Rx6000Package(unittest.TestCase):
         with mock.patch.object(ec, "hip_archs_present", return_value=["gfx1100"]):
             with self.assertRaises(ec.EngineMissing) as caught:
                 ec.resolve(self.root, backend="hip", runtime="1")
-        self.assertTrue(str(caught.exception).startswith("This build of Strata is for AMD RX 6000 cards."), str(caught.exception))
+        self.assertTrue(str(caught.exception).startswith("This build of Nostroma is for AMD RX 6000 cards."), str(caught.exception))
         self.assertIn("Ask for the RX 7000 build.", str(caught.exception))
 
     def test_the_rx9000_package_on_an_rx6000_card_names_a_build_that_exists(self):

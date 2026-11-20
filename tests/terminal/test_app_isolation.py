@@ -1,4 +1,4 @@
-"""The desktop app never adopts an older command-line Strata install (tester report 2026-10-17: the app wrote
+"""The desktop app never adopts an older command-line Nostroma install (tester report 2026-10-17: the app wrote
 strata-gyro-gyro-s.log/.json into the tester's old T:\\Strata). The app points Control and the installer at a settings file of its
 own (STRATA_SETTINGS_FILE); the shared %APPDATA% / ~/.config file with the old install's folders is not read."""
 

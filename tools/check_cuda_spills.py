@@ -14,7 +14,7 @@ with the measured allowance: the kernels that keep a per-thread array on purpose
 is.  A byte over the allowance fails; a kernel that is not listed fails with any of either.  Kernels vendored from
 llama.cpp (ggml-cuda's mmq.cuh and quantize.cu, fetched at configure time and instantiated in strata_mmq, strata_kq
 and strata_mmq_w4a4) are skipped: they are the only kernels at global scope with no namespace at all, so a kernel
-whose demangled name carries no `::` is one of theirs, and they are llama.cpp's to gate - every kernel Strata wrote
+whose demangled name carries no `::` is one of theirs, and they are llama.cpp's to gate - every kernel Nostroma wrote
 sits in `strata::` or in an anonymous namespace.  The report line counts what was skipped.
 
   check_cuda_spills.py libstrata_kernels.a [libstrata_core.a ...]   (needs cuobjdump, and cu++filt or c++filt)
@@ -626,7 +626,7 @@ def main():
         print("check_cuda_spills: cuobjdump not found (put the CUDA toolkit's bin/ on PATH, or pass --cuobjdump)")
         return 77
     if demangler is None:
-        # without a demangler every Strata kernel would read as a no-namespace (vendored) one and be skipped: the
+        # without a demangler every Nostroma kernel would read as a no-namespace (vendored) one and be skipped: the
         # check cannot run, and a pass with nothing counted is not a pass
         print("check_cuda_spills: no demangler found (cu++filt beside %s, or cu++filt / c++filt on PATH)" % cuobjdump)
         return 77

@@ -351,7 +351,7 @@ class Demangling(unittest.TestCase):
 
     def test_a_demangler_that_prints_a_blank_name_is_not_a_pass(self):
         # exit 0 and one line per name, but the line is empty: the key would be "" and vendored("") is true, so a
-        # spilling Strata kernel would be skipped as ggml's
+        # spilling Nostroma kernel would be skipped as ggml's
         with tempfile.TemporaryDirectory() as d:
             filt = demangler(d, "while read -r n; do echo; done")
             self.assertIsNone(quiet(CS.demangle, filt, [MANGLED])[0])

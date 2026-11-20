@@ -1,4 +1,4 @@
-# Strata on an AMD card. gfx120X image: RX 9000 series and Radeon AI PRO R9700 (RDNA4). gfx110X image: RX 7000 series (RDNA3).
+# Nostroma on an AMD card. gfx120X image: RX 9000 series and Radeon AI PRO R9700 (RDNA4). gfx110X image: RX 7000 series (RDNA3).
 # Needs the amdgpu kernel driver on the host (the ROCm user-space is in the image).
 #
 #   cp .env.example .env

@@ -43,7 +43,7 @@ class Rule(unittest.TestCase):
         self.assertFalse(rule(next_start_s=40.0))
 
     def test_the_own_tower_wording_counts_too(self):
-        self.assertTrue(rule("strata-vision: Strata's picture reader did not start (cannot use GPU 0: out of memory)"))
+        self.assertTrue(rule("strata-vision: Nostroma's picture reader did not start (cannot use GPU 0: out of memory)"))
 
     def test_other_platforms_never_retry(self):
         self.assertFalse(rule(linux=False))           # Windows, Mac

@@ -303,7 +303,7 @@ class Fetch(Base):
         notice = (self.data / "dflash2" / "NOTICE-dflash2-tuned.md").read_text(encoding="utf-8")
         self.assertIn("Apache License", licence)
         self.assertIn("Version 2.0", licence)
-        for word in ("modified copy", "a22a1744e85c17364dcc54a6a420af7135d4c7f6", "Inco AI", "Strata changed"):
+        for word in ("modified copy", "a22a1744e85c17364dcc54a6a420af7135d4c7f6", "Inco AI", "Nostroma changed"):
             self.assertIn(word, notice)
         again = drafting_fetch.ensure_tuned(self.data, url="file:///no/such/file")     # already here: no download
         self.assertEqual(again, out)
@@ -346,7 +346,7 @@ class Fetch(Base):
         empty = self.make_feed(listed=False)
         self.assertIsNone(drafting_fetch.ensure_tuned(self.data, feed=str(empty)))
         other = self.make_feed(sub="other", pin_sha="0" * 64)
-        self.assertIsNone(drafting_fetch.ensure_tuned(self.data, feed=str(other)), "other bytes than the ones this Strata measured")
+        self.assertIsNone(drafting_fetch.ensure_tuned(self.data, feed=str(other)), "other bytes than the ones this Nostroma measured")
         elsewhere = self.make_feed(sub="mac-only", backends=["cuda"])
         self.assertIsNone(drafting_fetch.ensure_tuned(self.data, feed=str(elsewhere)))
         self.assertFalse(drafting.tuned_path(self.data).exists())

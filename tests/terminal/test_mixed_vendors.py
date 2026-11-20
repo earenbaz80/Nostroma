@@ -1,4 +1,4 @@
-"""Owner question 2026-10-18: a PC with an RTX 5060 Ti (16 GB) and an AMD R9700 (32 GB). Every Strata engine drives the cards of ONE make
+"""Owner question 2026-10-18: a PC with an RTX 5060 Ti (16 GB) and an AMD R9700 (32 GB). Every Nostroma engine drives the cards of ONE make
 (CUDA: NVIDIA, HIP: AMD), so one model is never split across makes, only the cards the engine can drive are offered, a bigger card of the
 other make is mentioned in one plain line, and two models at once (one per make) is said to be unsupported."""
 
@@ -24,7 +24,7 @@ NV_2080TI = {"index": 0, "name": "NVIDIA GeForce RTX 2080 Ti", "vram_gb": 11.0, 
 NV_5070 = {"index": 1, "name": "NVIDIA GeForce RTX 5070", "vram_gb": 12.0, "usable": True, "vendor": "nvidia", "arch": "120"}
 NV_5070_ALONE = {**NV_5070, "index": 0}
 
-NOTE_AMD = "This computer also has an AMD AI PRO R9700 (32 GB). The AMD build of Strata can use it — it fits bigger models."
+NOTE_AMD = "This computer also has an AMD AI PRO R9700 (32 GB). The AMD build of Nostroma can use it — it fits bigger models."
 
 
 class GpuFitMixes(unittest.TestCase):
@@ -36,7 +36,7 @@ class GpuFitMixes(unittest.TestCase):
         self.assertEqual(r["other_vendor_note"], NOTE_AMD)
         self.assertEqual(r["vendor"], "nvidia")
         self.assertEqual(len(r["ignored"]), 1)
-        self.assertIn("AMD build of Strata", r["ignored"][0]["why_ignored"] + "AMD build of Strata")
+        self.assertIn("AMD build of Nostroma", r["ignored"][0]["why_ignored"] + "AMD build of Nostroma")
         self.assertIn("needs the AMD build", r["ignored"][0]["why_ignored"])
 
     def test_amd_engine_offers_only_the_r9700_and_has_no_note_because_the_nvidia_card_is_smaller(self):
@@ -121,7 +121,7 @@ class LaunchMix(unittest.TestCase):
         self.assertIn("Card 2 is an AMD card", text)
         self.assertIn("cannot be split across NVIDIA and AMD cards", text)
         self.assertIn("one model at a time", text)
-        self.assertIn("install the AMD build of Strata", errors[0].next)
+        self.assertIn("install the AMD build of Nostroma", errors[0].next)
 
     def test_cards_for_launch_never_returns_the_other_make(self):
         hw = {**HW_12, "ram_gb": 32.0, "gpus": [NV_5060TI, {**NV_5060TI, "index": 1}, {**AMD_R9700, "index": 2}]}

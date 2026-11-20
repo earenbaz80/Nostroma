@@ -1,5 +1,5 @@
 """netpolicy rule 4b (owner 11-11, "Remembering refused update feeds on Windows": Ok): a feed host that REFUSED the connection is remembered
-on disk for 6 hours, in Strata's own state folder, host:port and the time only.  Only automatic reads (`automatic=True`) read the note; a read
+on disk for 6 hours, in Nostroma's own state folder, host:port and the time only.  Only automatic reads (`automatic=True`) read the note; a read
 the person asked for by name ignores it; the first answer from the host removes it; a damaged or unreadable note is no note, without a message.
 
 Windows needs about 2.0 s to report a refused connection (measured 2.03-2.04 s on the owner PC, owner-20261110-2003-a8da); a launch of a model
@@ -54,7 +54,7 @@ def refuse(request, timeout):
 class TheNote(Base):
     def test_the_values_of_the_rule(self):
         self.assertEqual(netpolicy.REFUSED_NOTE_S, 6 * 3600)
-        with Home():                                         # the default note lives in Strata's own state folder (read when used)
+        with Home():                                         # the default note lives in Nostroma's own state folder (read when used)
             self.assertEqual(netpolicy.REFUSALS.path(), paths.state_base() / "net" / "refused-hosts.json")
             base = Path(os.environ["LOCALAPPDATA" if os.name == "nt" else "XDG_STATE_HOME"])
             self.assertEqual(netpolicy.REFUSALS.path().parent.parent.parent, base, "inside the test HOME's state folder")

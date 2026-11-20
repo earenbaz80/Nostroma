@@ -1,8 +1,8 @@
 """Qwen4 day on an Intel Arc card: a model of the signed feed (nostroma_control/feed_models.py) gets an Arc run config, in the Terminal (nostroma_cli/launch/adopt.py,
 runner.adopt_prepared_files) and in the app (setup.py --backend sycl in CONTROL mode, tools/strata_mcp.py's install plan).
 
-Found by the Q4-READY rehearsal on the A750 (11-09): `strata launch` of a feed model stopped with "Strata can write the settings itself only for the Qwen3.8-Flash-Next,
-Swift, Coder and Gyro files, not for q4rehearsal-a", for a model on the Strata engine and for one on its own shape's engine alike. What these tests pin:
+Found by the Q4-READY rehearsal on the A750 (11-09): `strata launch` of a feed model stopped with "Nostroma can write the settings itself only for the Qwen3.8-Flash-Next,
+Swift, Coder and Gyro files, not for q4rehearsal-a", for a model on the Nostroma engine and for one on its own shape's engine alike. What these tests pin:
   * a feed model is laid out like Unsloth's sets: --native the first file, no --ple-gguf (the engine finds the n-gram table by its tensor name), its one GGUF when it is one file;
   * no Flash-Next draft layer for it; an entry that says drafter: none writes "mtp": false and "drafting": "off" (as setup_config writes it);
   * a model of its own shape names its engine component (component:strata-q4-lite) and the model's title for the engine's refusal;
@@ -122,7 +122,7 @@ class AdoptFeedModels(unittest.TestCase):
         t = Tree(self.root, "x", ["Q4R-00001-of-00002.gguf", "Q4R-00002-of-00002.gguf"])
         cfg, problems = t.plan("q4rehearsal-a", "X", {"title": "x", "tag": "x-"})
         self.assertIsNone(cfg)
-        self.assertEqual(problems, ["Strata can write the settings itself only for the Qwen3.8-Flash-Next, Swift, Coder and Gyro files, not for q4rehearsal-a"])
+        self.assertEqual(problems, ["Nostroma can write the settings itself only for the Qwen3.8-Flash-Next, Swift, Coder and Gyro files, not for q4rehearsal-a"])
 
     def test_the_built_in_families_are_what_they_were(self):
         t = Tree(self.root, "q2_0", ["Qwen3.8-Flash-Next-Q2_0-00001-of-00002.gguf", "Qwen3.8-Flash-Next-Q2_0-00002-of-00002.gguf"])

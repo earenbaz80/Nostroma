@@ -1,4 +1,4 @@
-"""serve/lifeline.py: a process Strata starts ends when the process that started it ends, however that ends.
+"""serve/lifeline.py: a process Nostroma starts ends when the process that started it ends, however that ends.
 
     python -m unittest serve.test_lifeline
 

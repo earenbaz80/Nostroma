@@ -580,8 +580,8 @@ class MacAppUnsloth(unittest.TestCase):
         with mock.patch.object(setup, "fail", fail):
             with self.assertRaises(SystemExit):
                 self.install("UD-IQ1_M", engines=[4242])
-        self.assertEqual(said[0][0], "a Strata engine is running (pid 4242): preparing a model beside it can freeze this Mac")
-        self.assertEqual(said[0][1], "stop the model in Strata (unload it), then install again")
+        self.assertEqual(said[0][0], "a Nostroma engine is running (pid 4242): preparing a model beside it can freeze this Mac")
+        self.assertEqual(said[0][1], "stop the model in Nostroma (unload it), then install again")
 
     def test_the_disk_check_counts_the_repacked_file(self):
         self.shards("UD-IQ1_M")

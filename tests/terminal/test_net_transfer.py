@@ -172,13 +172,13 @@ class FeedRule(Scaled):
             with self.assertRaises(feed.FeedError) as cm:
                 feed.fetch(f"http://127.0.0.1:{hole.port}/strata-feed.json", {"k": b"x" * 32}, timeout=0.8)
         self.assertEqual(str(cm.exception), "127.0.0.1 did not answer within 1 seconds, so the update check could not run. Check that this computer "
-                                            "can open https://127.0.0.1, then try again. Strata keeps working with what is installed.")
+                                            "can open https://127.0.0.1, then try again. Nostroma keeps working with what is installed.")
         t0 = time.monotonic()                                       # the same run asks again: no second wait
         with self.assertRaises(feed.FeedError) as cm:
             feed.fetch(f"http://127.0.0.1:{hole.port}/strata-feed.json", {"k": b"x" * 32}, timeout=0.8)
         self.assertLess(time.monotonic() - t0, 0.2)
         self.assertEqual(str(cm.exception), "127.0.0.1 did not answer a moment ago, so the update check was not tried again. "
-                                            "Strata keeps working with what is installed.")
+                                            "Nostroma keeps working with what is installed.")
 
     def test_an_offline_computer_gets_the_answer_at_once(self):
         t0 = time.monotonic()
@@ -186,7 +186,7 @@ class FeedRule(Scaled):
             feed.fetch(f"http://127.0.0.1:{refused_port()}/strata-feed.json", {"k": b"x" * 32}, timeout=30)
         self.assertLess(time.monotonic() - t0, AT_ONCE_S)           # no wait and no retry for an offline user (owner 11-01)
         self.assertEqual(str(cm.exception), "this computer could not connect to 127.0.0.1 (it looks offline), so the update check could not run. "
-                                            "Strata keeps working with what is installed.")
+                                            "Nostroma keeps working with what is installed.")
 
 
 class LocalSource(Scaled):

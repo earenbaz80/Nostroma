@@ -1,7 +1,7 @@
-"""Lane NET item 5: --model-path and the data folder Strata guesses from it (the folder above a `models` folder). Strata keeps its own files (the
+"""Lane NET item 5: --model-path and the data folder Nostroma guesses from it (the folder above a `models` folder). Nostroma keeps its own files (the
 prepared data, the picture reader) there only when it can write there and it is not a Hugging Face cache; otherwise in the data folder every
-command agrees on, with one line saying so, instead of stopping with "Strata cannot write to ...". The finish marks of the person's own files go
-to Strata's own marks/ folder, never beside the files."""
+command agrees on, with one line saying so, instead of stopping with "Nostroma cannot write to ...". The finish marks of the person's own files go
+to Nostroma's own marks/ folder, never beside the files."""
 
 from __future__ import annotations
 
@@ -66,7 +66,7 @@ class ReadOnlyFolder(Base):
         self.addCleanup(os.chmod, top, 0o755)
         r = Runner(S.LaunchSettings(family="qwen", model="IQ3_XXS", vision="off", mtp="off", drafting="off", context=32768, model_path=str(own)),
                    catalog=catalog(HW_12))
-        self.assertIsNone(r.existing_data_dir(), "not the folder Strata cannot write to: setup's own data folder")
+        self.assertIsNone(r.existing_data_dir(), "not the folder Nostroma cannot write to: setup's own data folder")
         self.assertEqual(r.beside_refused(), top)
         self.assertNotIn("--data-dir", r.setup_args())
         self.assertIn("--gguf-dir", r.setup_args())
@@ -95,7 +95,7 @@ class FinishMarks(Base):
             other = self.base / "data" / "x.gguf"
             other.parent.mkdir()
             other.write_bytes(b"x")
-            setup.mark(other)                                # a download of Strata's own: beside it, as before
+            setup.mark(other)                                # a download of Nostroma's own: beside it, as before
             self.assertTrue(other.with_name("x.gguf.done").exists())
 
 

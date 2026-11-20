@@ -1,4 +1,4 @@
-"""tools/test_strata_gguf.py - Strata's own GGUF reader/writer and quantizers (tools/strata_gguf.py, tools/strata_quants.py).
+"""tools/test_strata_gguf.py - Nostroma's own GGUF reader/writer and quantizers (tools/strata_gguf.py, tools/strata_quants.py).
 
     python tools/test_strata_gguf.py [-v]            run the tests
     python tools/test_strata_gguf.py --freeze        rewrite tools/strata_gguf_digests.json from gguf-py's outputs (needs gguf-py)

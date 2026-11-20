@@ -13,7 +13,7 @@ CUATRO COMPROBACIONES
 SOLO LECTURA. No escribe en el proyecto. Las pruebas de extracción corren
 en un directorio temporal que se elimina al terminar.
 
-La raíz tiene que ser un checkout de Strata (apps/host y el motor juntos). En cualquier otra carpeta —una copia del script fuera
+La raíz tiene que ser un checkout de Nostroma (apps/host y el motor juntos). En cualquier otra carpeta —una copia del script fuera
 el repo, la raíz del sistema— la herramienta se niega con exit 2 en vez de recorrer un árbol ajeno.
 
 Uso (la raíz por defecto es la de este repositorio, así que vale desde cualquier carpeta):
@@ -915,7 +915,7 @@ def run_selftest() -> int:
         root_ok = (root_problem(Path("/").resolve()) is not None
                    and root_problem(Path(tempfile.mkdtemp(prefix="strata-no-checkout-"))) is not None
                    and root_problem(base) is None)
-        print(f"  {'ok    ' if root_ok else 'FALLO '}[5] raíz: se niega fuera de un checkout de Strata y acepta el del fixture")
+        print(f"  {'ok    ' if root_ok else 'FALLO '}[5] raíz: se niega fuera de un checkout de Nostroma y acepta el del fixture")
         if not root_ok:
             failures += 1
 
@@ -988,7 +988,7 @@ def render(rows):
         print("-" * total)
 
 
-#: Lo que un checkout de Strata tiene además de la app: el motor (CMake), el servidor y el empaquetado.
+#: Lo que un checkout de Nostroma tiene además de la app: el motor (CMake), el servidor y el empaquetado.
 CHECKOUT_MARKERS = ("CMakeLists.txt", "serve/server.py", "packaging")
 
 
@@ -1000,19 +1000,19 @@ def root_problem(root: Path):
     carpeta es un error de uso, no un objetivo.
     """
     if root.parent == root:                                   # / en POSIX, C:\\ en Windows
-        return (f"{root} es la raíz del sistema de archivos, no un checkout de Strata: ahí no hay apps/host, y recorrerla leería el "
+        return (f"{root} es la raíz del sistema de archivos, no un checkout de Nostroma: ahí no hay apps/host, y recorrerla leería el "
                 f"disco entero. Indicá el repositorio: --root <ruta a Strata-main>.")
     if not (root / "apps" / "host").is_dir():
-        return (f"{root} no es un checkout de Strata: no tiene apps/host, que es lo que audita esta herramienta. Con una raíz "
+        return (f"{root} no es un checkout de Nostroma: no tiene apps/host, que es lo que audita esta herramienta. Con una raíz "
                 f"equivocada recorrería un árbol ajeno. Indicá el repositorio: --root <ruta a Strata-main>.")
     if not any((root / marker).exists() for marker in CHECKOUT_MARKERS):
-        return (f"{root} tiene apps/host pero nada más de Strata ({', '.join(CHECKOUT_MARKERS)}: ninguna existe), así que no es la raíz "
+        return (f"{root} tiene apps/host pero nada más de Nostroma ({', '.join(CHECKOUT_MARKERS)}: ninguna existe), así que no es la raíz "
                 f"del repositorio y el resto de las comprobaciones darían cualquier cosa. Indicá el repositorio: --root <ruta a Strata-main>.")
     return None
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Comprobaciones pendientes de la auditoría de Strata")
+    ap = argparse.ArgumentParser(description="Comprobaciones pendientes de la auditoría de Nostroma")
     ap.add_argument("--root", default=str(ROOT), help="raíz del proyecto (por defecto, este repositorio)")
     ap.add_argument("--json", help="volcar filas a JSON")
     ap.add_argument("--no-dynamic", action="store_true", help="omitir pruebas de extracción")

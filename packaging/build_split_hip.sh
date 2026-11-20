@@ -1,7 +1,7 @@
 #!/bin/bash
 # strata-split-N (the all-cards split engine, src/split, from sFNX, MIT, John Fink) for AMD on Linux, built next to the HIP engine package (packaging/build_hip_linux.sh)
 # so package_engine.py ships it with `--include 'strata-split-*'` beside `strata`. One executable per card count with a code object for every listed architecture
-# (ARCHS: gfx1201 = Radeon AI PRO R9700 / RX 9070, which Strata has run; gfx1200 = RX 9060; gfx11-generic = one code object for gfx1100..gfx1103, RDNA3: RX 7000 and the 780M, whose self-test passes on a 780M), named
+# (ARCHS: gfx1201 = Radeon AI PRO R9700 / RX 9070, which Nostroma has run; gfx1200 = RX 9060; gfx11-generic = one code object for gfx1100..gfx1103, RDNA3: RX 7000 and the 780M, whose self-test passes on a 780M), named
 # strata-split-<N>-amd (the launcher, nostroma_cli/launch/runner.py, looks for strata-split-<N>-<arch> first and then -amd): the AMD Linux package ships N = 2, 3 and 4. Only gfx1201 starts
 # the split by itself; the other architectures only with `--split-engine on`, and the engine then runs its kernel self-test first (src/split/src/hip/selftest_policy.hpp).
 # Which counts run which model is the launcher's rule (nostroma_control/split_engine.py: all the experts must fit in the cards' memory), not the binary's. RUNPATH $ORIGIN: it finds the ROCm libraries the engine package bundles (libamdhip64, hipblas, rocblas and its

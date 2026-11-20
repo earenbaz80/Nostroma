@@ -1,4 +1,4 @@
-// tools/trellis/tqenc_test.cpp - tests of the trellis encoder (tqenc.hpp) against Strata's own CPU decoder
+// tools/trellis/tqenc_test.cpp - tests of the trellis encoder (tqenc.hpp) against Nostroma's own CPU decoder
 // (src/kernels/cpu/tq_states.hpp, tq_cpu.cpp: scalar / AVX2 / AVX-512 kernels).  Build and run: tools/trellis/build.sh test.
 //
 //   T1  fp16 conversion (all 65536 halves, random floats vs the hardware where F16C exists)

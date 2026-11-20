@@ -1,4 +1,4 @@
-// tools/vision/strata_vision.cpp - the image half of Strata's multimodal path.
+// tools/vision/strata_vision.cpp - the image half of Nostroma's multimodal path.
 //
 // Turns an image into the embeddings the text model reads in place of its <|image_pad|> tokens, with llama.cpp's
 // mtmd library and the model's mmproj file (vision encoder + projector).  The engine does the rest: it places the
@@ -170,7 +170,7 @@ int main(int argc, char** argv) {
         const int rc = strata_vit::own_reader_run(o);
         if (rc != strata_vit::kOwnStartFailed) return rc;
         // nothing was written to stdout yet: the server still waits for READY, which mtmd's reader below gives (with "mtmd" as its third word)
-        std::fprintf(stderr, "strata-vision: Strata's picture reader did not start (%s); reading pictures with llama.cpp's reader\n", start_error.c_str());
+        std::fprintf(stderr, "strata-vision: Nostroma's picture reader did not start (%s); reading pictures with llama.cpp's reader\n", start_error.c_str());
         std::fflush(stderr);
         own_fell_back = true;
     }

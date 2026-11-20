@@ -1,4 +1,4 @@
-"""Ready-file lifecycle checked against a live mock Strata API process."""
+"""Ready-file lifecycle checked against a live mock Nostroma API process."""
 
 import json
 import os

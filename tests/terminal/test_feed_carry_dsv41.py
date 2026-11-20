@@ -1,5 +1,5 @@
 """build-feed --carry-dsv41 (owner 11-11, "Keep frozen"): the last feed's DeepSeek engine packages go into the new feed as they were, with each
-package URL made absolute to the release that holds the archive, so Strata 0.2.13 and earlier keep their DeepSeek engine; this Strata never
+package URL made absolute to the release that holds the archive, so Nostroma 0.2.13 and earlier keep their DeepSeek engine; this Nostroma never
 reads the member.  No network: the reader path an older Control takes is the entry schema (feed._engine_package, unchanged since 0.2.7) and
 the reference resolver (transfer.resolve_ref), both run on the carried entry here."""
 from __future__ import annotations

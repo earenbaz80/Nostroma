@@ -1,4 +1,4 @@
-"""tools/image/gate/run_set.py - TEST-ONLY (OWN-5 gate harness): run sd-cli for a set of prompt x seed pictures with exactly the command Strata's server runs
+"""tools/image/gate/run_set.py - TEST-ONLY (OWN-5 gate harness): run sd-cli for a set of prompt x seed pictures with exactly the command Nostroma's server runs
 (serve/images.py sd_cli_args + image_env from the repo copy), one process per picture, and record time and memory.
 
     python3 -I -B run_set.py <root> <backend> <tag> <W>x<H> <quant> <models_dir> <prompt-indices e.g. 0-7> <seeds e.g. 42,1234>

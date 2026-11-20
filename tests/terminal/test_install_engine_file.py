@@ -49,7 +49,7 @@ class InstallEngineFile(UpdaterCase):
         archive = self.package(archs=("sm_100",))
         with self.assertRaises(updater.UpdateError) as caught:
             self.install(archive)
-        self.assertIn("not a Strata engine for this PC", str(caught.exception))
+        self.assertIn("not a Nostroma engine for this PC", str(caught.exception))
         self.assertEqual(self.engine_folders(), [])
 
     def test_something_that_is_not_a_package_is_refused_in_plain_words(self):
@@ -57,7 +57,7 @@ class InstallEngineFile(UpdaterCase):
         junk.write_text("hello")
         with self.assertRaises(updater.UpdateError) as caught:
             self.install(junk)
-        self.assertIn("not a Strata engine package", str(caught.exception))
+        self.assertIn("not a Nostroma engine package", str(caught.exception))
         bad = self.root / "bad.tar.gz"
         bad.write_bytes(b"this is not gzip")
         with self.assertRaises(updater.UpdateError):

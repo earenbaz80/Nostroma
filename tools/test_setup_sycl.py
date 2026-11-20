@@ -274,7 +274,7 @@ class ToSycl(unittest.TestCase):
         self.assertTrue(m.is_b_series("xe", "e20b"))                        # B580
         self.assertFalse(m.is_b_series("i915", "56a1"))                     # A750
         self.assertFalse(m.is_b_series("xe", "56a0"))                       # A770 on xe
-        self.assertIn("new to Strata", m.B_SERIES_LINE)
+        self.assertIn("new to Nostroma", m.B_SERIES_LINE)
         self.assertIn("issues", m.B_SERIES_LINE)
         src = (ROOT / "sycl" / "setup_intel.py").read_text(encoding="utf-8")
         self.assertIn("B_SERIES_LINE", src)

@@ -1,4 +1,4 @@
-"""Leftover detection: a process is ended only when it is exactly what Strata recorded and its starter is gone."""
+"""Leftover detection: a process is ended only when it is exactly what Nostroma recorded and its starter is gone."""
 
 import json
 import os
@@ -313,7 +313,7 @@ class WindowsOrphanScan(unittest.TestCase):
         self.assertFalse(procs._name_may_be("OTHER~1.EXE", "strata-vision-hip.exe", None))
 
     def test_a_hard_link_under_another_name_is_left_to_the_full_read_only_off_windows(self):
-        # The full read matches any name that is the same file (os.path.samefile); the name filter does not. Strata never links an
+        # The full read matches any name that is the same file (os.path.samefile); the name filter does not. Nostroma never links an
         # engine under another name (setup's links are model files under their own name), so this is a hand-made case.
         e = self.ENGINE
         table = {201: ("my-engine.exe", e, [e, "--serve"])}

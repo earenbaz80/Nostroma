@@ -404,7 +404,7 @@ class SetupArgs(unittest.TestCase):
                 self.assertEqual(bool(comp.new_card_note), note, name)
                 if note:
                     text, nxt = comp.new_card_note
-                    self.assertIn("new to Strata", text)
+                    self.assertIn("new to Nostroma", text)
                     self.assertIn("--vision off", nxt)
                     self.assertIn("github.com/Niko1221/Strata/issues", nxt)
 
@@ -510,7 +510,7 @@ class AdoptRules(unittest.TestCase):
     def test_setup_detection(self):
         from nostroma_cli.launch import adopt
         self.assertTrue(adopt.setup_cannot_handle_this_card("no NVIDIA GPU found (nvidia-smi did not answer)"))
-        self.assertTrue(adopt.setup_cannot_handle_this_card("no AMD GPU Strata can use"))
+        self.assertTrue(adopt.setup_cannot_handle_this_card("no AMD GPU Nostroma can use"))
         self.assertFalse(adopt.setup_cannot_handle_this_card("not enough free disk space in /x"))
 
     def test_find_shards_needs_the_whole_set(self):
@@ -944,7 +944,7 @@ class FlagsCommand(unittest.TestCase):
             code, out, err = run_cli(["launch"])
         self.assertEqual(code, 0, err)
         run.assert_called_once()
-        self.assertIn("cannot show Strata's screens", out + err)
+        self.assertIn("cannot show Nostroma's screens", out + err)
         self.assertIn("winpty strata launch", out + err)
 
     def test_git_bash_answering_no_changes_nothing(self):
@@ -1035,7 +1035,7 @@ class FlagsCommand(unittest.TestCase):
         with mock.patch.object(Runner, "run", return_value=fake):
             code, out, err = run_cli(["launch", "--no-tui", "--model", "q2_0", "--access", "lan", "--save-preset", "Office"])
         self.assertEqual(code, 0, err)
-        self.assertIn("Strata is serving.", out)
+        self.assertIn("Nostroma is serving.", out)
         self.assertIn("http://127.0.0.1:8080/v1", out)
         self.assertIn("http://192.168.1.5:8080/v1", out)
         self.assertNotIn("sk-strata-abcdefghijkl", out)                      # the key is masked
@@ -1253,7 +1253,7 @@ class ConnectCommand(unittest.TestCase):
     def test_deepseek_harness_is_the_app(self):
         out = self.render("deepseek-harness")
         self.assertEqual(out["files"], [])
-        self.assertIn("Strata app", " ".join(out["limits"]))
+        self.assertIn("Nostroma app", " ".join(out["limits"]))
 
     def test_check_sends_the_apps_own_wire_format_and_reports_pass_or_fail(self):
         from nostroma_cli.launch import check

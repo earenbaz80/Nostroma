@@ -1,7 +1,7 @@
 r"""The Home() helper of the launch tests must keep every per-user file the code reads or writes inside its temp folder.
 
-A test that read the person's real %APPDATA%\Strata\settings.json (its remembered Strata folders) or ~/.config/strata saw the files of whoever ran it: the
-DeepSeek plan tests said "tight" / "spills" for UD-Q8_K_XL on a PC that had a Strata install, and "fits" everywhere else."""
+A test that read the person's real %APPDATA%\Strata\settings.json (its remembered Nostroma folders) or ~/.config/strata saw the files of whoever ran it: the
+DeepSeek plan tests said "tight" / "spills" for UD-Q8_K_XL on a PC that had a Nostroma install, and "fits" everywhere else."""
 import os
 import unittest
 from pathlib import Path

@@ -374,7 +374,7 @@ class Kinds(unittest.TestCase):
         self.assertEqual(N.what_words(None), "the model files")
         self.assertEqual(N.what_words("vision encoder"), "the picture reader")
         self.assertEqual(N.what_words("llama.cpp source"), "the tools that prepare models")
-        self.assertEqual(N.what_words("Strata engine"), "the Strata engine")
+        self.assertEqual(N.what_words("Nostroma engine"), "the Nostroma engine")
 
 
 if __name__ == "__main__":

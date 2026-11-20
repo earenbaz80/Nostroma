@@ -113,7 +113,7 @@ class MigrationTests(unittest.TestCase):
     def test_the_uninstaller_stops_only_the_processes_started_from_the_install_folder(self):
         ping = Path(os.environ.get("SystemRoot", r"C:\Windows")) / "System32" / "PING.EXE"
         if not ping.is_file():
-            self.skipTest("no PING.EXE to stand in for a running Strata process")
+            self.skipTest("no PING.EXE to stand in for a running Nostroma process")
         with tempfile.TemporaryDirectory() as tmp:
             base = Path(tmp)
             inst, other = base / "Programs" / "Strata", base / "Elsewhere"

@@ -33,7 +33,7 @@ class Home:
             "STRATA_RUNTIME_DIR": str(base / "runtime"),
             "XDG_STATE_HOME": str(base / "state"),
             "LOCALAPPDATA": str(base / "local"),
-            "APPDATA": str(base / "roaming"),            # Windows: %APPDATA%\Strata\settings.json (remembered Strata folders), profiles, connections
+            "APPDATA": str(base / "roaming"),            # Windows: %APPDATA%\Strata\settings.json (remembered Nostroma folders), profiles, connections
             "XDG_CONFIG_HOME": str(base / "xdg-config"),  # Linux/macOS: ~/.config/strata/settings.json
             "HOME": str(base / "home"),
             "USERPROFILE": str(base / "home"),

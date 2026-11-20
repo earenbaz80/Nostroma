@@ -6,6 +6,7 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import re
 import socket
 import sys
 import tempfile
@@ -267,7 +268,7 @@ class OfflineAndReuse(unittest.TestCase):
 
 
 class OneRequestAtATime(unittest.TestCase):
-    """DFlash2 cannot run beside request slots (--batch); Strata fills slots in by itself, so a choice that means DFlash2 (named, or Auto) means one request."""
+    """DFlash2 cannot run beside request slots (--batch); Nostroma fills slots in by itself, so a choice that means DFlash2 (named, or Auto) means one request."""
 
     def test_the_choice_that_means_dflash2_on_a_computer_that_can_run_it(self):
         want = drafting.wants_one_request
@@ -393,7 +394,8 @@ class TheTerminalStep(unittest.TestCase):
         self.assertEqual(en["df21"], drafting.LINE_METAL)
         self.assertEqual(en["df06"], drafting.mtp_line(drafting.NOT_THIS_CARD))
         self.assertEqual(en["df07"], "There is no internet connection, so the DFlash2 drafter can't be downloaded now.")
-        self.assertEqual(en["df09"], drafting.ONE_REQUEST_NOTE)
+        # The app swaps the brand on the way out (apps/host/src/lib/i18n.ts), so its catalogue is read the same way here.
+        self.assertEqual(re.sub(r"\bStrata\b", "Nostroma", en["df09"]), drafting.ONE_REQUEST_NOTE)
         self.assertEqual(en["df10"], drafting.line("off", drafting.NONE_HERE))
         self.assertEqual(en["df11"], drafting.line("dflash2", drafting.NO_MTP))
         self.assertEqual(en["df12"].replace("{0}", "1.2"), "Choosing DFlash2 downloads its drafter: about 1.2 GB, once.")

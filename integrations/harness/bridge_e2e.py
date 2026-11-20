@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""End-to-end agent bridge test: Strata API worker -> DeepSeek Harness -> durable session.
+"""End-to-end agent bridge test: Nostroma API worker -> DeepSeek Harness -> durable session.
 
 This exercises the integration that the handoff calls the difficult part, without needing model
-weights. It proves the *bridge*: that the pinned Harness boots with the Strata profile, that an
-agent turn reaches the local Strata API worker, that the assistant message records the Strata
+weights. It proves the *bridge*: that the pinned Harness boots with the Nostroma profile, that an
+agent turn reaches the local Nostroma API worker, that the assistant message records the Nostroma
 provider and model as its source, and that the turn reaches a terminal state in a durable session.
 
-It does NOT prove inference quality. The worker runs its built-in `MockEngine`, because no Strata
+It does NOT prove inference quality. The worker runs its built-in `MockEngine`, because no Nostroma
 pack fits this development Mac (see history/docs/work/IMPLEMENTATION_STATUS.md section 3.2). Every reported
 fact is about the path, not the model; the qualification kit replaces the mock engine with a real
 one on a machine that can hold a pack.
@@ -15,7 +15,7 @@ Usage:
     python integrations/harness/bridge_e2e.py [--dsh /path/to/dsh] [--port 8095] [--keep]
 
 Exit codes:
-    0  the turn completed and the assistant message names the Strata provider and model
+    0  the turn completed and the assistant message names the Nostroma provider and model
     1  the bridge failed; the durable session events are printed to help diagnose it
     2  a prerequisite was missing (the dsh CLI, the worker, or the profile)
 """
@@ -81,7 +81,7 @@ def wait_for_worker(port: int, timeout=60.0) -> dict:
         except OSError:
             pass
         time.sleep(0.4)
-    raise BridgeError(f"the Strata worker did not answer /health on 127.0.0.1:{port} within {timeout}s")
+    raise BridgeError(f"the Nostroma worker did not answer /health on 127.0.0.1:{port} within {timeout}s")
 
 
 def start_worker(python: Path, port: int, tmp: Path) -> tuple[subprocess.Popen, Path]:
@@ -89,7 +89,7 @@ def start_worker(python: Path, port: int, tmp: Path) -> tuple[subprocess.Popen, 
     handle = logfile.open("w")
     proc = subprocess.Popen(
         [str(python), "-m", "serve.server", "--engine", "mock", "--port", str(port),
-         "--script", "I am a local Strata model."],
+         "--script", "I am a local Nostroma model."],
         cwd=str(REPO), stdout=handle, stderr=subprocess.STDOUT,
     )
     return proc, logfile
@@ -178,7 +178,7 @@ def main() -> int:
         print(f"prerequisite missing: no interpreter at {python}", file=sys.stderr)
         return 2
     if not PROFILE_PATCH.exists():
-        print(f"prerequisite missing: the Strata profile patch is not at {PROFILE_PATCH}", file=sys.stderr)
+        print(f"prerequisite missing: the Nostroma profile patch is not at {PROFILE_PATCH}", file=sys.stderr)
         return 2
 
     tmp = Path(tempfile.mkdtemp(prefix=f"{WORKSPACE_MARKER}-"))
@@ -194,12 +194,12 @@ def main() -> int:
     print()
 
     try:
-        print("[1/5] Strata API worker")
+        print("[1/5] Nostroma API worker")
         worker, worker_log = start_worker(python, args.worker_port, tmp)
         health = wait_for_worker(args.worker_port)
         log(f"ready: model={health.get('model')} context={health.get('max_context')}")
 
-        print("[2/5] DeepSeek Harness with the Strata profile")
+        print("[2/5] DeepSeek Harness with the Nostroma profile")
         agent, dsh_log = start_agent(dsh, args.agent_port, tmp)
         text = wait_for_agent_url(dsh_log, agent)
         m = re.search(r"http://127\.0\.0\.1:(\d+)/\?token=([A-Za-z0-9_-]+)", text)
@@ -258,7 +258,7 @@ def main() -> int:
         activity = (json.loads(raw).get("activity") or {})
         requests = activity.get("requests") or 0
         if requests < 1:
-            raise BridgeError("the session completed but the Strata worker recorded no requests")
+            raise BridgeError("the session completed but the Nostroma worker recorded no requests")
 
         print()
         print("PASS")

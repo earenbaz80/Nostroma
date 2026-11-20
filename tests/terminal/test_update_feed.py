@@ -304,7 +304,7 @@ class FeedTool(unittest.TestCase):
 
 
 class DeepSeekEnginePackages(FeedChecks):
-    """The ``dsv41`` feed member stays in the feed, frozen, for Strata 0.2.13 and earlier (their DeepSeek engine); this Control runs no
+    """The ``dsv41`` feed member stays in the feed, frozen, for Nostroma 0.2.13 and earlier (their DeepSeek engine); this Control runs no
     DeepSeek model and does not read it (nostroma_control/retired.py)."""
 
     def test_the_member_is_ignored_and_is_never_an_engine_package(self):

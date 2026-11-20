@@ -1,4 +1,4 @@
-"""tools/image/sdcpp_vae/apply.py - put Strata's own VAE decoder (src/image/vae, CUDA and HIP) into a
+"""tools/image/sdcpp_vae/apply.py - put Nostroma's own VAE decoder (src/image/vae, CUDA and HIP) into a
 stable-diffusion.cpp checkout at the pinned commit (tools/image/qimage.py SD_CPP_COMMIT).  Idempotent; sd-cli keeps
 stable-diffusion.cpp's decoder unless it is started with --model-args strata_vae=1, and only CUDA / HIP builds have it.
 
@@ -164,6 +164,6 @@ def apply(sd: Path) -> None:
 if __name__ == "__main__":
     if len(sys.argv) == 2 and not sys.argv[1].startswith("-"):
         apply(Path(sys.argv[1]))
-        print("Strata VAE decoder applied")
+        print("Nostroma VAE decoder applied")
     else:
         raise SystemExit(__doc__)

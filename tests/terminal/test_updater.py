@@ -818,7 +818,7 @@ class AnotherCardFamilyNote(unittest.TestCase):
             report, offered = updater._choose_engine(SimpleNamespace(engine=[pkg]), ctx, SimpleNamespace(section=lambda name: {}))
         self.assertIsNone(offered)
         self.assertEqual(report["status"], "none-for-this-pc")
-        self.assertEqual(report["note"], "This build of Strata is for AMD RX 7000 cards. This computer has an AMD RX 9000 card (gfx1201). Ask for the RX 9000 build.")
+        self.assertEqual(report["note"], "This build of Nostroma is for AMD RX 7000 cards. This computer has an AMD RX 9000 card (gfx1201). Ask for the RX 9000 build.")
 
 
 class FailedStartRecords(LazyModel):

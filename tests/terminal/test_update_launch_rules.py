@@ -44,13 +44,13 @@ class QwenStaleEngine(unittest.TestCase):
         for kwargs in ({"assume_yes": True}, {"confirm": lambda *a: True}, {}):
             spawns, r, seen = self.ensure([OLD], serving=RUNNING, **kwargs)
             self.assertEqual(spawns, [], kwargs)
-            self.assertTrue(any("running, so Strata did not update the engine" in n for n in r.notices), r.notices)
+            self.assertTrue(any("running, so Nostroma did not update the engine" in n for n in r.notices), r.notices)
             self.assertTrue(any("strata launch --stop" in n for n in r.notices))
 
     def test_no_yes_no_update(self):
         spawns, r, _ = self.ensure([OLD])
         self.assertEqual(spawns, [])
-        self.assertIn("Strata did not update it. Run `strata update` (or start with --yes)", r.notices[0])
+        self.assertIn("Nostroma did not update it. Run `strata update` (or start with --yes)", r.notices[0])
 
     def test_no_to_the_question_no_update(self):
         asked = []

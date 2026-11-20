@@ -1,6 +1,6 @@
 """serve/test_tool_format.py - the tool-call parser is chosen from the chat template (Qwen4 prep, P4).
 
-  * serve/toolformat.py names the form a template documents: xml (every template Strata ships), json (Qwen3 / Hermes), dsml,
+  * serve/toolformat.py names the form a template documents: xml (every template Nostroma ships), json (Qwen3 / Hermes), dsml,
     none, other;
   * serve/frontend.py parser_for_template() maps that to a parser class: JSON templates get JsonOutputParser, everything else
     keeps OutputParser, so every model that runs today gets the class it always had;
@@ -151,7 +151,7 @@ class UnknownPreTokenizerAtStart(unittest.TestCase):
             self.assertEqual(cm.exception.code, 2)
             self.assertIn("'qwen4'", err.getvalue())
             self.assertIn("so it isn't loaded", err.getvalue())
-            self.assertIn("Strata doesn't have yet ('qwen4')", err.getvalue())
+            self.assertIn("Nostroma doesn't have yet ('qwen4')", err.getvalue())
             self.assertIn("the model's tokenizer (", err.getvalue())
             self.assertNotIn("Traceback", err.getvalue())
 

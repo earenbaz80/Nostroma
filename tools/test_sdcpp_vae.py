@@ -1,4 +1,4 @@
-"""Tests for the patch that puts Strata's VAE decoder into sd-cli (tools/image/sdcpp_vae/apply.py), on stand-in files
+"""Tests for the patch that puts Nostroma's VAE decoder into sd-cli (tools/image/sdcpp_vae/apply.py), on stand-in files
 with the code it edits at the pinned stable-diffusion.cpp commit: the sources it copies (byte for byte), the CMake
 target, the decode hook with its switch and its fallback (one warning that names the reason, then sd.cpp's own
 decoder), that a second run changes nothing, that it works before or after the native runner's and the noise

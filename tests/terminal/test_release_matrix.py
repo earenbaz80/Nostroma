@@ -137,9 +137,9 @@ class ReleaseSelection(unittest.TestCase):
                 self.assertIsNone(got, f"{gfx} on {platform}")
                 self.assertTrue(any(gfx in r for r in why))
         self.assertEqual(ec.arch_notice(("gfx1100", "gfx1151"), ["gfx1201"]),
-                         "This build of Strata is for AMD RX 7000 and Ryzen AI Max cards. This computer has an AMD RX 9000 card (gfx1201). Ask for the RX 9000 build.")
+                         "This build of Nostroma is for AMD RX 7000 and Ryzen AI Max cards. This computer has an AMD RX 9000 card (gfx1201). Ask for the RX 9000 build.")
         self.assertEqual(ec.arch_notice(("gfx1151",), ["gfx1201"]),
-                         "This build of Strata is for AMD Ryzen AI Max cards. This computer has an AMD RX 9000 card (gfx1201). Ask for the RX 9000 build.")
+                         "This build of Nostroma is for AMD Ryzen AI Max cards. This computer has an AMD RX 9000 card (gfx1201). Ask for the RX 9000 build.")
 
     def test_rx6000_has_its_own_package_and_only_gfx103x_cards_get_it(self):
         """0.2.2: gfx1030 / gfx1031 are in the RX 6000 package (Linux rx6000, Windows rdna2) and in no other; no RX 7000 / 9000 card gets it."""

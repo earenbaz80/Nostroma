@@ -1,5 +1,5 @@
 #!/bin/sh
-# Entry point of the Strata container: `strata launch --no-tui` with the settings the TUI asks for, read from environment
+# Entry point of the Nostroma container: `strata launch --no-tui` with the settings the TUI asks for, read from environment
 # variables, then stay up and stop cleanly on SIGTERM (`docker stop`).
 #
 #   docker run ... strata              start the server (default)
@@ -7,7 +7,7 @@
 #   docker run ... strata sh           a shell
 #
 # Settings (all optional; names match the screens of `strata launch`):
-#   MODEL         model size, e.g. IQ3_XXS, Q2_0 (empty: Strata picks one for this card and says so)
+#   MODEL         model size, e.g. IQ3_XXS, Q2_0 (empty: Nostroma picks one for this card and says so)
 #   FAMILY        model family when a size is offered by several (qwen, swift, coder, ...)
 #   MODEL_PATH    GGUF files you already have, a folder or one .gguf, inside the container (mount it read-only)
 #   ALLOW_DOWNLOAD  1: go on and download the model although model files of the older layout (/data/models) were left unread (default: stop)
@@ -19,7 +19,7 @@
 #   GPU_ROLES     a role for each card, e.g. 1=main,0=helper (main, helper or off; cards you do not name are off; not together with GPU / GPUS)
 #   TUNE          quick | thorough | skip   (done once; RETUNE=1 tunes again)
 #   PORT          port inside the container (default 8080)
-#   API_KEY / API_KEY_FILE   the key clients must send. The server listens on every address inside the container, and Strata does
+#   API_KEY / API_KEY_FILE   the key clients must send. The server listens on every address inside the container, and Nostroma does
 #                 not serve beyond loopback without a key, so one is always on: yours, or one made on the first start and kept in /data.
 #   PRESET        preset name in /data (default "docker"). Settings above are saved into it; with no settings given a saved preset is reused.
 #   STRATA_SET    advanced engine settings, space separated KEY=VALUE (like `strata launch --set`)
@@ -70,7 +70,7 @@ fi
 limit=$(cat /sys/fs/cgroup/memory.max 2>/dev/null || echo max)
 case "$limit" in max|"") ;; *[!0-9]*) ;; *)
   gb=$((limit / 1073741824))
-  warn "This container has a memory limit of ${gb} GB. Strata plans from the host's RAM (/proc/meminfo) and loads tens of GB, so a low limit can end in the container being killed. Raise or remove the limit."
+  warn "This container has a memory limit of ${gb} GB. Nostroma plans from the host's RAM (/proc/meminfo) and loads tens of GB, so a low limit can end in the container being killed. Raise or remove the limit."
 esac
 if [ -n "${API_KEY:-}" ] && [ "${#API_KEY}" -lt 16 ]; then
   warn "API_KEY is short (${#API_KEY} characters). Use 16 or more; 'openssl rand -hex 24' makes a good one."
@@ -244,7 +244,7 @@ if [ -n "$preset_exists" ]; then
 elif [ -n "$have" ]; then
   set -- "$@" --save-preset "$PRESET"
 else
-  warn "No MODEL was set, so Strata picks the model it recommends for this card. Set MODEL (for example MODEL=IQ3_XXS) to choose."
+  warn "No MODEL was set, so Nostroma picks the model it recommends for this card. Set MODEL (for example MODEL=IQ3_XXS) to choose."
   set -- "$@" --save-preset "$PRESET"
 fi
 
@@ -273,7 +273,7 @@ phase preparing
 if [ -n "${MODEL:-}" ]; then what="$MODEL${model_path:+ from $model_path}"
 elif [ -n "$model_path" ]; then what="the model files in $model_path"
 else what="the recommended model"; fi
-say "Starting Strata: $what (preset '$PRESET')."
+say "Starting Nostroma: $what (preset '$PRESET')."
 if [ -n "$key" ]; then
   STRATA_LAUNCH_KEY="$key" "$PYBIN" -c "$RESET_INT" "$STRATA" "$@" &
 else
@@ -293,7 +293,7 @@ fi
 ( umask 077; "$STRATA" launch --show-key --preset "$PRESET" > "$KEY_FILE" 2>/dev/null ) || true
 [ -s "$KEY_FILE" ] || rm -f "$KEY_FILE"
 if [ -z "$key" ]; then
-  warn "No API_KEY was set, so Strata made one (the server listens on all addresses in the container and will not run without a key)."
+  warn "No API_KEY was set, so Nostroma made one (the server listens on all addresses in the container and will not run without a key)."
   warn "Show it with: docker exec <container> strata launch --show-key --preset $PRESET   Set your own with -e API_KEY=..."
 fi
 phase serving

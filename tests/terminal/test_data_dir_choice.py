@@ -1,6 +1,6 @@
 """`--data-dir` names a new folder: the model library is never moved without a choice (0.2.1 R).
 
-Everything lives in temporary folders: settings.json (APPDATA / XDG_CONFIG_HOME), the Strata folder (setup.ROOT) and the data folders.
+Everything lives in temporary folders: settings.json (APPDATA / XDG_CONFIG_HOME), the Nostroma folder (setup.ROOT) and the data folders.
 """
 from __future__ import annotations
 
@@ -133,7 +133,7 @@ class DataFolderChoice(unittest.TestCase):
         self.assertNotIn("data_dir", self.saved())
 
     def test_no_data_dir_still_gathers_into_the_remembered_folder(self):
-        # the data folder's own job (an earlier Strata folder's models) is not part of the --data-dir question
+        # the data folder's own job (an earlier Nostroma folder's models) is not part of the --data-dir question
         other = self.base / "Strata-old"
         other.mkdir()
         (other / "setup.py").write_text("# old\n")

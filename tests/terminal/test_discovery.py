@@ -247,7 +247,7 @@ class GuiLayout(unittest.TestCase):
         self.assertEqual(plan["issues"], [])
         self.assertEqual(plan["candidate_selection"]["basis"], "same_layout_other_build")
         self.assertEqual(plan["candidate_selection"]["model"], "Gyro-S")           # the closest by expert formats
-        self.assertTrue(any("not exactly a build Strata has tested" in m for m in plan["messages"]))
+        self.assertTrue(any("not exactly a build Nostroma has tested" in m for m in plan["messages"]))
         self.assertIn("unrecognized_or_unsupported_model_variant", models.plan_import(str(folder))["issues"])   # the real table has 1224 tensors
 
     # ---- T05: where it is, what is missing

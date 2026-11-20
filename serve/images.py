@@ -1,7 +1,7 @@
 """serve/images.py - image generation (Qwen-Image-2.1-Turbo) through stable-diffusion.cpp's sd-cli.
 
 POST /v1/images/generations takes OpenAI's request shape (prompt, size, n, response_format b64_json|url, background)
-plus Strata's own fields seed and steps.  Each request runs one `sd-cli` process with the arguments the model's card
+plus Nostroma's own fields seed and steps.  Each request runs one `sd-cli` process with the arguments the model's card
 gives for stable-diffusion.cpp (8 steps, CFG 1, euler, Turbo's sigmas, --diffusion-fa).  The model writes RGBA; by
 default each picture is put on white and returned as an 8-bit RGB PNG with sd-cli's other chunks (its "parameters"
 text) unchanged (flatten_png); background "transparent" returns the PNG exactly as sd-cli wrote it.
@@ -23,10 +23,10 @@ The config's "images" section (written by setup --images, tools/image/install.py
    "gpu_policy": "auto", "reload": "lazy"|"eager", "max_n": 4, "max_side": 2048, "timeout_s": 3600,
    "lib_dirs": [...], "uma": false, "need_mib": null, "out_dir": null, "keep_files": 64,
    "native": false, "noise": "sdcpp"}
-   (native: Strata's own DiT runner, tools/image/sdcpp_native; CUDA / HIP builds.  noise: "sdcpp" (default) is
-   stable-diffusion.cpp's own noise; "strata" is Strata's generator, tools/image/sdcpp_noise: the same stream on every
+   (native: Nostroma's own DiT runner, tools/image/sdcpp_native; CUDA / HIP builds.  noise: "sdcpp" (default) is
+   stable-diffusion.cpp's own noise; "strata" is Nostroma's generator, tools/image/sdcpp_noise: the same stream on every
    operating system and CPU, built into sd-cli by setup --image-noise on.  "vae_decoder": "sdcpp" (default) is
-   stable-diffusion.cpp's VAE decoder; "strata" is Strata's own, src/image/vae via tools/image/sdcpp_vae, CUDA / HIP
+   stable-diffusion.cpp's VAE decoder; "strata" is Nostroma's own, src/image/vae via tools/image/sdcpp_vae, CUDA / HIP
    builds only, built into sd-cli by setup --image-vae on)
 """
 from __future__ import annotations
@@ -53,17 +53,17 @@ TURBO_STEPS = 8
 MODEL_NAME = "qwen-image-2.1-turbo"
 POLICIES = ("auto", "keep", "shrink", "unload")
 NOISES = ("sdcpp", "strata")
-# shown (log line at start, and as the failure of an image request) when the config asks for Strata's noise but the
+# shown (log line at start, and as the failure of an image request) when the config asks for Nostroma's noise but the
 # built sd-cli does not have it: ONE next step, in plain words
-NOISE_MISSING = ("Image generation is set to use Strata's own noise (\"noise\": \"strata\" in the images settings), but "
+NOISE_MISSING = ("Image generation is set to use Nostroma's own noise (\"noise\": \"strata\" in the images settings), but "
                  "the image program here was built without it. Run setup again with: --images qwen-image --image-noise on")
 VAE_DECODERS = ("sdcpp", "strata")
 VAE_DECODER_BACKENDS = ("cuda", "hip")
-# the same two cases for Strata's own VAE decoder (the owner's wording, 11-11)
-VAE_MISSING = ("Image generation is set to use Strata's own picture decoder (\"vae_decoder\": \"strata\" in the images "
+# the same two cases for Nostroma's own VAE decoder (the owner's wording, 11-11)
+VAE_MISSING = ("Image generation is set to use Nostroma's own picture decoder (\"vae_decoder\": \"strata\" in the images "
                "settings), but the image program here was built without it. Run setup again with: --images qwen-image "
                "--image-vae on")
-VAE_BACKEND = ("Image generation is set to use Strata's own picture decoder (\"vae_decoder\": \"strata\" in the images "
+VAE_BACKEND = ("Image generation is set to use Nostroma's own picture decoder (\"vae_decoder\": \"strata\" in the images "
                "settings), which needs the CUDA (NVIDIA) or ROCm (AMD) build of the image program; this one was built "
                "for {backend}. Set \"vae_decoder\" to \"sdcpp\" in the images settings.")   # {backend}: as setup prints it
 SIZE_STEP = 32                     # sd.cpp's Qwen-Image-2.1 docs: dimensions divisible by 32
@@ -163,11 +163,11 @@ def sd_cli_args(cfg: dict, job: dict, out_pattern: str, prompt_file: str) -> lis
     cmd += ["-o", out_pattern]
     cmd += [str(a) for a in (cfg.get("args") or [])]
     model_args = []
-    if cfg.get("native") is True:                   # Strata's DiT runner inside sd-cli (CUDA / HIP builds)
+    if cfg.get("native") is True:                   # Nostroma's DiT runner inside sd-cli (CUDA / HIP builds)
         model_args.append("qwen_image_2_1_native=1")
-    if cfg.get("noise") == "strata":                # Strata's noise generator inside sd-cli (tools/image/sdcpp_noise)
+    if cfg.get("noise") == "strata":                # Nostroma's noise generator inside sd-cli (tools/image/sdcpp_noise)
         model_args.append("strata_noise=1")
-    if cfg.get("vae_decoder") == "strata":          # Strata's VAE decoder inside sd-cli (tools/image/sdcpp_vae)
+    if cfg.get("vae_decoder") == "strata":          # Nostroma's VAE decoder inside sd-cli (tools/image/sdcpp_vae)
         model_args.append("strata_vae=1")
     if model_args:
         cmd += ["--model-args", ",".join(model_args)]
@@ -390,7 +390,7 @@ class ImageGen:
         return [self.cfg[k] for k in ("exe", "diffusion_model", "vae", "llm") if not Path(self.cfg[k]).exists()]
 
     def noise_problem(self) -> str | None:
-        """NOISE_MISSING when the config says "noise": "strata" and the sd-cli it runs was not built with Strata's noise
+        """NOISE_MISSING when the config says "noise": "strata" and the sd-cli it runs was not built with Nostroma's noise
         generator (its BUILD.json, written by setup, has no "noise" stamp); else None.  Without this the arg would be
         ignored and the picture would quietly get stable-diffusion.cpp's noise."""
         if self.cfg.get("noise") != "strata":

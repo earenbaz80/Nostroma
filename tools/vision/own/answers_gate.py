@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The answers gate of the own vision tower: greedy picture answers of the whole Strata server, one run per picture reader, compared.
+"""The answers gate of the own vision tower: greedy picture answers of the whole Nostroma server, one run per picture reader, compared.
 
     python3 answers_gate.py --box <box.json> --helper <strata-vision> --out <dir> [--towers mtmd,own] [--max-tokens 1024] [--threads N]
                             [--gpu] [--n-tokens 48] [--question "..."] [--port N] <image> [<image> ...]

@@ -3,7 +3,7 @@
 No imports from the rest of the server: tools/qwen4_intake.py and serve/frontend.py share this one function, so the report
 that says "this model writes XML calls" and the parser the server picks cannot disagree.
 
-    xml   `<tool_call>` around `<function=NAME>` and `<parameter=NAME>` blocks (Qwen3.6, Qwen3.8-Flash-Next: every template Strata ships)
+    xml   `<tool_call>` around `<function=NAME>` and `<parameter=NAME>` blocks (Qwen3.6, Qwen3.8-Flash-Next: every template Nostroma ships)
     json  `<tool_call>` around a JSON object `{"name": ..., "arguments": {...}}` (Qwen3, Hermes)
     dsml  DeepSeek-V4's `<｜DSML｜...>` blocks
     none  the template has no tool section

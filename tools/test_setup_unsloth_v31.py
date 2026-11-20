@@ -291,7 +291,7 @@ class OwnFiles(unittest.TestCase):
         for m in ("UD-IQ1_M", "UD-Q2_0", "UD-IQ2_XS", "UD-Q2_K_XL", "UD-IQ3_XXS", "UD-Q3_K_XL", "UD-IQ4_XS", "UD-Q4_K_XL", "UD-Q5_K_XL", "UD-Q6_K_XL", "Q8_0"):
             self.assertIn(m, setup.SUPPORTED_GGUFS)
         self.assertIn("(Unsloth's UD-IQ1_S, other K-quant files) cannot be used", setup.SUPPORTED_GGUFS)
-        self.assertEqual(setup.UNSUPPORTED_WHY["UD-IQ1_S"], "UD-IQ1_S mixes two expert formats in one layer, which Strata cannot load; UD-IQ1_M is the 1-bit choice")
+        self.assertEqual(setup.UNSUPPORTED_WHY["UD-IQ1_S"], "UD-IQ1_S mixes two expert formats in one layer, which Nostroma cannot load; UD-IQ1_M is the 1-bit choice")
 
     def test_q3_k_xl_really_has_some_4_bit_experts(self):
         n = sum(1 for s in shards_of("UD-Q3_K_XL") for t in (s["header"] or {"tensors": []})["tensors"]

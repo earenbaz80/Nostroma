@@ -3,7 +3,7 @@
     python -m pytest tools/test_setup_shape.py
 
 A Qwen4 model whose geometry is not Flash-Next's runs on its own engine component. The model list puts it in the same tables as every feed model, with the shape; setup's engine
-step fetches that engine (not the Strata engine's) and the run config names it ("component:strata-q4-lite"); the Terminal's launch checks it in its first step. Every other model
+step fetches that engine (not the Nostroma engine's) and the run config names it ("component:strata-q4-lite"); the Terminal's launch checks it in its first step. Every other model
 is exactly what it was. The engine fetch, downloads and processes are mocked; nothing is fetched from the network.
 """
 from __future__ import annotations
@@ -36,7 +36,7 @@ def clean(entry: dict) -> dict:
 class Registered(base.Base):
     def setUp(self):
         super().setUp()
-        self.result = feed_models.apply(self.setup, base.parsed(clean(shaped())), {"qwen4exp"})        # the Strata engine runs qwen4exp only: not what decides
+        self.result = feed_models.apply(self.setup, base.parsed(clean(shaped())), {"qwen4exp"})        # the Nostroma engine runs qwen4exp only: not what decides
         self.fam = self.setup.FAMILIES["q4lite-test"]
 
     def test_it_is_listed_and_installable_though_the_strata_engine_does_not_list_its_family(self):
@@ -46,7 +46,7 @@ class Registered(base.Base):
         self.assertNotIn("q4lite-test", self.setup.FEED_UNAVAILABLE)
 
     def test_its_min_engine_is_not_compared_with_the_strata_engine(self):
-        """The app marks a size "needs a newer engine" when the Strata engine is older than the size's `engine`; a shape model runs on its own engine."""
+        """The app marks a size "needs a newer engine" when the Nostroma engine is older than the size's `engine`; a shape model runs on its own engine."""
         feed_models.apply(self.setup, base.parsed(clean(shaped(id="q4lite-min", min_engine="0.1.59"))), None)
         sizes = [m for m in self.setup.MODELS.values() if "q4lite-min" in m.get("families", ())]
         self.assertTrue(sizes)
@@ -112,8 +112,8 @@ class EngineStep(base.Base):
                 mock.patch.object(shape_engine, "find", return_value=found), \
                 mock.patch.object(self.setup, "llama_cpp_if_here", return_value=Path("llama")), \
                 mock.patch.object(self.setup, "get_llama_cpp", return_value=Path("llama")), \
-                mock.patch.object(self.setup, "control_engine_step", side_effect=AssertionError("the Strata engine step must not run")), \
-                mock.patch.object(ec, "resolve", side_effect=AssertionError("the Strata engine must not be resolved")):
+                mock.patch.object(self.setup, "control_engine_step", side_effect=AssertionError("the Nostroma engine step must not run")), \
+                mock.patch.object(ec, "resolve", side_effect=AssertionError("the Nostroma engine must not be resolved")):
             llama, eng, meta, lib_dirs, gpu, vision = self.setup.engine_step(argparse.Namespace(feed="/some/feed"), {"index": 0}, False, False, 13, "none")
         self.assertEqual(ensure.call_args.args[:1], ("q4_lite",))
         self.assertEqual(ensure.call_args.args[1], "/some/feed")
@@ -163,7 +163,7 @@ class EngineStep(base.Base):
 
 
 class Launch(unittest.TestCase):
-    """The Terminal's first step reads the shape from setup's table and checks that engine, not the Strata engine's."""
+    """The Terminal's first step reads the shape from setup's table and checks that engine, not the Nostroma engine's."""
 
     def runner(self, families):
         from nostroma_cli.launch import runner as R
@@ -186,7 +186,7 @@ class Launch(unittest.TestCase):
     def test_step_one_checks_the_shape_engine_and_never_the_strata_engine(self):
         R, fake = self.runner({"q4lite-test": {"shape": "q4_lite"}})
         fake.model_shape.return_value = "q4_lite"
-        with mock.patch.object(ec, "status", side_effect=AssertionError("the Strata engine is not looked at")):
+        with mock.patch.object(ec, "status", side_effect=AssertionError("the Nostroma engine is not looked at")):
             R.Runner.ensure_engine(fake)
         fake.ensure_shape_engine.assert_called_once_with("q4_lite")
 

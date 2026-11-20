@@ -1,4 +1,4 @@
-// tools/vision/own/gguf_lite.h - a small GGUF reader for Strata's own vision tower (no ggml, no llama.cpp).
+// tools/vision/own/gguf_lite.h - a small GGUF reader for Nostroma's own vision tower (no ggml, no llama.cpp).
 //
 // Reads the header (key/value pairs, tensor directory) of a GGUF v2/v3 file and the data of single tensors, converted to float32:
 // F32, F16, BF16 and Q8_0 are handled (what an mmproj file comes in); any other tensor type is an error that names it.

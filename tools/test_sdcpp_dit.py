@@ -1,4 +1,4 @@
-"""Tests for the patch that puts Strata's DiT GEMMs into the native Qwen-Image-2.1 runner of sd-cli
+"""Tests for the patch that puts Nostroma's DiT GEMMs into the native Qwen-Image-2.1 runner of sd-cli
 (tools/image/sdcpp_dit/apply.py), on a stand-in checkout with the native runner applied by its own patch: the sources it
 copies (byte for byte), the CMake target, the runner's switch (strata_dit_gemm=1, off without it) and its gemm() branch,
 that a second run changes nothing, and that a checkout without the native runner is refused.

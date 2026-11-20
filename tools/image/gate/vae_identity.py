@@ -1,4 +1,4 @@
-"""tools/image/gate/vae_identity.py - TEST-ONLY (OWN-5 gate harness): the row-band decode (what Strata ships) against
+"""tools/image/gate/vae_identity.py - TEST-ONLY (OWN-5 gate harness): the row-band decode (what Nostroma ships) against
 the one-pass reference decode, byte for byte, for every fixed latent of the stage sets named; and run to run.
 
     python -I -B vae_identity.py <strata-vae-decode> <vae.safetensors> <pics root> <latent tag> [<latent tag> ...]

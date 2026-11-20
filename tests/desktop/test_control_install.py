@@ -264,7 +264,7 @@ class InstallerServerTests(unittest.TestCase):
         self.assertAlmostEqual(seen[-1]["remaining_gb"], 0.004 - seen[-1]["done_gb"], places=2)
         self.assertTrue(all(d["file"] == "model files" for d in seen))
         # not a download any more once setup is preparing the files
-        self.assertNotIn("download", self.mcp.combined_progress({"step": "6/7: preparing the model for Strata", "download": {"x": 1}}, job))
+        self.assertNotIn("download", self.mcp.combined_progress({"step": "6/7: preparing the model for Nostroma", "download": {"x": 1}}, job))
         # a resumed install counts what is already on disk
         self.assertGreater(self.mcp.combined_progress(dict(step5), job)["download"]["done_gb"], 0)
 
@@ -303,7 +303,7 @@ class InstallerServerTests(unittest.TestCase):
         self.assertTrue(all(x["state"] == "done" for x in three["parts"]))
         self.assertEqual(three["download"]["done_gb"], three["download"]["total_gb"])
         # not a download once setup prepares the files
-        self.assertNotIn("download", self.mcp.combined_progress({"step": "6/7: preparing the model for Strata", "download": {"x": 1}}, job))
+        self.assertNotIn("download", self.mcp.combined_progress({"step": "6/7: preparing the model for Nostroma", "download": {"x": 1}}, job))
 
     def test_a_pack_with_many_files_reports_the_whole_pack(self):
         S = self.mcp.Strata(self.root, ROOT).setup_module()

@@ -120,7 +120,7 @@ class Tokenizer:
         if pre_tokenizer_kind(pre) is None:
             # Not a fallback: another model's pre-tokenizer splits text differently, so encoding with the qwen35 rule would
             # change every prompt without any error (llama.cpp has one rule per `tokenizer.ggml.pre` type for the same reason).
-            raise UnknownPreTokenizer("This model splits text with a rule Strata doesn't have yet (%r), so it isn't loaded: "
+            raise UnknownPreTokenizer("This model splits text with a rule Nostroma doesn't have yet (%r), so it isn't loaded: "
                                       "running it with the wrong rule would change what it reads." % (pre,))
         self.token_types = token_types
         self.special_ids = special_ids or {}

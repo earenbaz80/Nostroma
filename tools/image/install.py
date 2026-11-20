@@ -1,4 +1,4 @@
-"""tools/image/install.py - image generation (Qwen-Image-2.1-Turbo) for an existing Strata install, or on its own:
+"""tools/image/install.py - image generation (Qwen-Image-2.1-Turbo) for an existing Nostroma install, or on its own:
 compiles sd-cli for the backend (setup.py's build_image_engine), downloads and checks the three model files, and
 writes the "images" section into a run config (or prints it).  setup.py --images qwen-image does the same inside
 the normal setup; this is the way to add it without running the whole setup again.
@@ -52,7 +52,7 @@ def main(argv=None) -> int:
     ap.add_argument("--gpu-policy", choices=["auto", "keep", "shrink", "unload"], default="auto")
     ap.add_argument("--gpu", type=int, help="the GPU's number for the image job (default: the backend's first)")
     ap.add_argument("--native", choices=["on", "off"], default="off",
-                    help="EXPERIMENTAL: Strata's own DiT runner on CUDA / HIP (the config's \"native\")")
+                    help="EXPERIMENTAL: Nostroma's own DiT runner on CUDA / HIP (the config's \"native\")")
     ap.add_argument("--noise", choices=["on", "off"], default="off", help=argparse.SUPPRESS)
     ap.add_argument("--vae", choices=["on", "off"], default="off", help=argparse.SUPPRESS)
     ap.add_argument("--build-only", action="store_true", help="compile sd-cli only")

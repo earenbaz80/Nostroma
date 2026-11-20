@@ -20,7 +20,7 @@ sys.path.insert(0, str(ROOT))
 from nostroma_control import cfg_paths, models, retired, runtime  # noqa: E402
 from nostroma_control.profiles import ProfileError  # noqa: E402
 
-D1_HEAD = "is a DeepSeek model. This version of Strata no longer runs DeepSeek models, so it was not started."
+D1_HEAD = "is a DeepSeek model. This version of Nostroma no longer runs DeepSeek models, so it was not started."
 
 
 def sha(p: Path) -> str:
@@ -153,7 +153,7 @@ class Setup(unittest.TestCase):
                      ("--model=ISTA-DAS-Coder",)):
             code, out = self.run_setup(*argv, "--yes", "--no-start")
             self.assertEqual(code, 2, argv)
-            self.assertIn("Strata no longer offers DeepSeek models. Run `strata launch` to choose one of the Qwen models.", out)
+            self.assertIn("Nostroma no longer offers DeepSeek models. Run `strata launch` to choose one of the Qwen models.", out)
 
     def test_config_lists_leave_deepseek_out(self):
         import setup
@@ -169,7 +169,7 @@ class Setup(unittest.TestCase):
                 self.assertIsNone(setup.previous_config([Path(d)], {"installs": []}))     # never set up "like" the DeepSeek model
             self.assertEqual(sha(path), before)
             self.assertEqual(retired.left_as_is(retired.title(None, path)),
-                             "DeepSeek-V4.1-Flash ISTA-DAS 2.00 bpw: a DeepSeek model, left as it is (this version of Strata no longer "
+                             "DeepSeek-V4.1-Flash ISTA-DAS 2.00 bpw: a DeepSeek model, left as it is (this version of Nostroma no longer "
                              "runs DeepSeek models).")
 
 

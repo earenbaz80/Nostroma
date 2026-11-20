@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Sign the Strata Mac app (dmg or .app) and, optionally, the Mac Terminal archive with the owner's Developer ID, then notarise
+# Sign the Nostroma Mac app (dmg or .app) and, optionally, the Mac Terminal archive with the owner's Developer ID, then notarise
 # them with Apple, so macOS opens them without the "damaged" / "unidentified developer" warning.
 #
 #   bash sign-and-notarize.sh <Strata-tester-mac.dmg | Nostroma.app> [--terminal <Strata-Terminal-Mac.zip>] [--engine <engine-folder.tar.gz>] [--updater-archive] [--out DIR] [--dry-run]

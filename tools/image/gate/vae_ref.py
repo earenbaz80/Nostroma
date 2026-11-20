@@ -51,7 +51,7 @@ LATENT_STD = [3.2001, 3.2936, 3.4321, 3.0091, 3.1061, 4.0379, 4.0705, 3.7910,
               3.8747, 3.7608, 3.5735, 3.1490, 3.7662, 3.6746, 3.4563, 3.8161]
 
 CONV_SCALE = np.float32(1.0 / 128.0)   # wan_vae.hpp: "Keep large VAE activations within the FP16 convolution range"
-# Strata's decoder (src/image/vae/wan_vae.cu conv_shift) uses other fixed shifts for these layers (f16 headroom)
+# Nostroma's decoder (src/image/vae/wan_vae.cu conv_shift) uses other fixed shifts for these layers (f16 headroom)
 CONV_SHIFTS = {"decoder.up_blocks.4.resnets.0.conv_shortcut": 11}
 F16_MAX = 65504.0
 # up block i: (in, out, DupUp factor_t, has upsampler); wan_vae.hpp temperal_upsample {true, true, true, false}
@@ -88,7 +88,7 @@ def load_safetensors(path, prefix="") -> dict:
 
 class Decoder:
     def __init__(self, weights: dict, mode: str = "f32", stats: bool = False, shifts: bool = True):
-        """shifts: Strata's per-layer operand shifts (CONV_SHIFTS); False = sd.cpp's 2^-7 everywhere ("f16op" only
+        """shifts: Nostroma's per-layer operand shifts (CONV_SHIFTS); False = sd.cpp's 2^-7 everywhere ("f16op" only
         differs; in "f32" a power-of-two scale is exact)."""
         assert mode in ("f32", "f16op")
         self.w, self.mode, self.shifts = weights, mode, shifts

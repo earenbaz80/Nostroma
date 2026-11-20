@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the frozen fixture bundle of the Strata standard benchmark (docs/BENCHMARK_PROTOCOL.md).
+"""Build the frozen fixture bundle of the Nostroma standard benchmark (docs/BENCHMARK_PROTOCOL.md).
 
     python tools/build_standard_corpus.py --tokenizer PACK/tokenizer [--out bench/prompts/standard-v1]
 
@@ -9,7 +9,7 @@ bundle has one JSON file per scheduled request (the 22 required ones and the 12 
 listing of every other file). The SHA-256 of that manifest is the protocol's `corpus_sha256`.
 
 The prompts are synthetic. The two record counts (for about 4,096 and 16,384 tokens) are chosen with the pinned tokenizer and the
-chat template Strata ships (serve/chat_template.jinja), rendered the way the server renders a thinking request. Run it again
+chat template Nostroma ships (serve/chat_template.jinja), rendered the way the server renders a thinking request. Run it again
 and the bytes are identical; a change to anything the protocol freezes needs a new protocol ID.
 """
 from __future__ import annotations

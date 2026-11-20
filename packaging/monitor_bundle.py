@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and manage the thin, read-only Strata monitor zipapp.
+"""Build and manage the thin, read-only Nostroma monitor zipapp.
 
 The bundle contains no engine, model, installer or terminal framework. One-shot
 JSON status uses stdlib only; interactive mode needs the explicit Textual add-on.
@@ -330,7 +330,7 @@ def uninstall(target: Path, *, plan: bool = False,
 
 
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description="Build or locally manage a thin Strata monitor bundle")
+    ap = argparse.ArgumentParser(description="Build or locally manage a thin Nostroma monitor bundle")
     sp = ap.add_subparsers(dest="action", required=True)
     sp.add_parser("build").add_argument("bundle", type=Path)
     sp.add_parser("verify").add_argument("bundle", type=Path)

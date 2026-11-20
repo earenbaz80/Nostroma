@@ -45,9 +45,9 @@ PROGRAMS = ("strata.exe", "strata-device.exe")
 DYNAMIC = ("amd_comgr.dll",)                     # LoadLibrary'd by amdhip64_7.dll: not in any import table
 CRT = ("msvcp140.dll", "msvcp140_1.dll", "msvcp140_2.dll", "vcruntime140.dll", "vcruntime140_1.dll",
        "msvcp140_atomic_wait.dll", "msvcp140_codecvt_ids.dll", "vcruntime140_threads.dll", "concrt140.dll")      # strata.exe imports msvcp140_atomic_wait.dll (VS 2022 std::atomic wait)
-KPACKS = ("blas_lib",)       # rocblas.dll's own device code; rocSOLVER's (27 MB per arch) is never launched by Strata
+KPACKS = ("blas_lib",)       # rocblas.dll's own device code; rocSOLVER's (27 MB per arch) is never launched by Nostroma
 LICENSES = ("rocblas", "rocsolver", "hipblas", "hipblas-common", "hipblaslt", "amd_comgr", "rocm-core")
-NOTICE = """Strata's Windows HIP engine ships these AMD ROCm components unmodified, from AMD's TheRock Python wheels
+NOTICE = """Nostroma's Windows HIP engine ships these AMD ROCm components unmodified, from AMD's TheRock Python wheels
 (ROCm {rocm}, https://nightly.repo.amd.com/rocm/whl-next/, built from https://github.com/ROCm/TheRock):
 
 {dlls}

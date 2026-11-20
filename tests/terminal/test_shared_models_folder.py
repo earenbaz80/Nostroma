@@ -1,6 +1,6 @@
 """One models folder for the Terminal and the desktop app: the folder changed last wins, the other settings file is updated, nothing moves.
 
-The folder the app proposes in Documents is ``Nostroma`` now; ``Strata`` is the name installs made before the rename keep their models in.
+The folder the app proposes in Documents is ``Nostroma`` now; ``Nostroma`` is the name installs made before the rename keep their models in.
 Discovery takes either, prefers the new one when both hold models, and creates neither.
 """
 from __future__ import annotations
@@ -98,7 +98,7 @@ class SharedModelsFolder(GuiLayout):
 
 
 class DocumentsModelFolder(unittest.TestCase):
-    """The model folder the app proposes in Documents: ``Nostroma`` now, ``Strata`` for installs made before the rename.
+    """The model folder the app proposes in Documents: ``Nostroma`` now, ``Nostroma`` for installs made before the rename.
 
     Discovery takes either, prefers the new name when both hold models, and creates neither: making
     ``Documents/Nostroma/Models`` is the host's job (apps/host/server/store.mjs). The fixture already built a

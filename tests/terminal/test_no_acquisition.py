@@ -172,7 +172,7 @@ class StartNeverAcquiresTests(unittest.TestCase):
         eng = self.root / "engine"
         eng.mkdir()
         (eng / setup.EXE).write_bytes(b"engine")
-        # an engine older than this Strata expects: a start used to download the new one
+        # an engine older than this Nostroma expects: a start used to download the new one
         (eng / "BUILD.json").write_text(json.dumps({"version": "0.1.1", "source": "prebuilt", "backend": "cuda",
                                                     "archs": [86]}))
         self.cfg = self.root / "strata-q2_0.json"
@@ -225,7 +225,7 @@ class StartNeverAcquiresTests(unittest.TestCase):
         self.assertEqual(len(started), 1, text)                        # the server was started
         self.assertIn("server.py", " ".join(started[0]))
         self.assertEqual(self.env_of_start, "1")                         # the server is told, too
-        self.assertIn("is older than this Strata expects", text)
+        self.assertIn("is older than this Nostroma expects", text)
         self.assertTrue("UPDATE" in text or "update.sh" in text, text)     # UPDATE.bat on Windows, ./update.sh elsewhere
 
     def test_a_start_moves_copies_and_creates_nothing(self):

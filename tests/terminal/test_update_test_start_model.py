@@ -1,4 +1,4 @@
-"""The update's test start must not pick a DeepSeek model: it runs the engine under test (the Strata engine) with the model's options, and a
+"""The update's test start must not pick a DeepSeek model: it runs the engine under test (the Nostroma engine) with the model's options, and a
 DeepSeek model runs on strata-dsv41 (a separate package). Seen on a PC with a DeepSeek and a Qwen model: the test start failed with
 'unknown argument: --eos' and engine 0.1.50 was refused."""
 

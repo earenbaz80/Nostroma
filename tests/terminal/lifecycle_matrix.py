@@ -1,4 +1,4 @@
-"""The close-path matrix: every way a Strata server or app can end, and what must be true afterwards.
+"""The close-path matrix: every way a Nostroma server or app can end, and what must be true afterwards.
 
 After each case: no process of the tree that was running is left, the port is free, and the runtime's lease can be
 taken again (nothing holds it). With a real engine, `--vram` also checks that the GPU's memory came back.
@@ -128,7 +128,7 @@ def vram_used_mib() -> int | None:
 
 
 class Rig:
-    """A throwaway Strata home: state, runtime, profile and (fake or real) engine config."""
+    """A throwaway Nostroma home: state, runtime, profile and (fake or real) engine config."""
 
     def __init__(self, root: Path, *, real_config: Path | None = None, real_components: Path | None = None,
                  slow_steps: int = 0):

@@ -1,5 +1,5 @@
 #!/bin/sh
-# Strata Terminal: one-line installer for Linux (x86_64, and ARM64 on the NVIDIA DGX Spark) and macOS (Apple silicon).
+# Nostroma Terminal: one-line installer for Linux (x86_64, and ARM64 on the NVIDIA DGX Spark) and macOS (Apple silicon).
 #
 #     curl -fsSL --connect-timeout 15 --max-time 120 https://github.com/Niko1221/Strata/releases/latest/download/install.sh -o install.sh && sh install.sh
 #
@@ -29,7 +29,7 @@ BIN_DIR="${STRATA_BIN_DIR:-$HOME/.local/bin}"
 say() { printf '%s\n' "$*"; }
 die() { printf 'strata installer: %s\n' "$*" >&2; exit 1; }
 
-[ -n "$FEED" ] || die "this installer does not know where the Strata release folder is. Set STRATA_FEED to its address and run it again, for example: STRATA_FEED=https://example.org/strata sh install.sh"
+[ -n "$FEED" ] || die "this installer does not know where the Nostroma release folder is. Set STRATA_FEED to its address and run it again, for example: STRATA_FEED=https://example.org/strata sh install.sh"
 
 # Everything below is one function, called on the last line: a download that stops half-way is a syntax error (nothing runs), not a half installer.
 main() {
@@ -62,8 +62,8 @@ main() {
     Linux-x86_64|Linux-amd64) platform=linux-x86_64 ;;
     Darwin-arm64|Darwin-aarch64) platform=macos-arm64 ;;
     Linux-aarch64|Linux-arm64) platform=linux-aarch64 ;;      # the NVIDIA DGX Spark (GB10); the note below says so for any other ARM computer
-    Darwin-x86_64) die "this Mac has an Intel processor. Strata for Mac needs Apple silicon (M1 or newer), so it could not run a model here." ;;
-    *) die "this computer ($os $arch) has no Strata Terminal. Supported: Linux x86_64 with an NVIDIA or AMD card, Linux ARM64 on an NVIDIA DGX Spark, macOS on Apple silicon (Windows: use install.ps1)." ;;
+    Darwin-x86_64) die "this Mac has an Intel processor. Nostroma for Mac needs Apple silicon (M1 or newer), so it could not run a model here." ;;
+    *) die "this computer ($os $arch) has no Nostroma Terminal. Supported: Linux x86_64 with an NVIDIA or AMD card, Linux ARM64 on an NVIDIA DGX Spark, macOS on Apple silicon (Windows: use install.ps1)." ;;
   esac
   gpu=""
   if command -v nvidia-smi >/dev/null 2>&1; then
@@ -80,12 +80,12 @@ main() {
   if [ -z "$gpu" ] && [ "$os" = Darwin ]; then
     gpu=$(system_profiler SPDisplaysDataType 2>/dev/null | sed -n 's/^ *Chipset Model: //p' | head -1 || true)
   fi
-  say "Strata Terminal installer"
+  say "Nostroma Terminal installer"
   say "  This computer: $os $arch ($platform)${gpu:+, graphics: $gpu}"
   if [ "$platform" = linux-aarch64 ]; then      # recommend, never force: the Terminal installs on any ARM Linux, its engine is for one machine
     case "$gpu" in
       *GB10*) ;;
-      *) say "  Note: Strata's engine for ARM Linux is built and tested on the NVIDIA DGX Spark (GB10) only. This computer reports ${gpu:-no NVIDIA graphics}: the Terminal installs, but 'strata launch' may find no engine for it." ;;
+      *) say "  Note: Nostroma's engine for ARM Linux is built and tested on the NVIDIA DGX Spark (GB10) only. This computer reports ${gpu:-no NVIDIA graphics}: the Terminal installs, but 'strata launch' may find no engine for it." ;;
     esac
   fi
   say "  Release folder: $FEED"
@@ -118,7 +118,7 @@ main() {
       mv "${inner%/}" "$dest.inner" && rm -rf "$dest.incoming" && mv "$dest.inner" "$dest.incoming"
     fi
   fi
-  [ -f "$dest.incoming/bin/strata" ] || { rm -rf "$dest.incoming"; die "the archive does not look like a Strata Terminal (no bin/strata). Nothing was installed."; }
+  [ -f "$dest.incoming/bin/strata" ] || { rm -rf "$dest.incoming"; die "the archive does not look like a Nostroma Terminal (no bin/strata). Nothing was installed."; }
   chmod +x "$dest.incoming/bin/strata" 2>/dev/null || true
 
   # ---- 4. the signed feed, checked with the Terminal just unpacked

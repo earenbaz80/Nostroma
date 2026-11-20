@@ -56,7 +56,7 @@ class FailedStart(unittest.TestCase):
         cfg.write_text(json.dumps({"log": str(engine)}))
         marks = {str(engine): engine.stat().st_size, str(server): 0}
         with open(server, "a") as f:
-            f.write("server.py: error: port 8190 is already in use - is Strata (or another server) already running?\n")
+            f.write("server.py: error: port 8190 is already in use - is Nostroma (or another server) already running?\n")
         text, nxt = R.explain_engine_exit({"state": "failed", "error": "server_exited", "engine_exit_code": 2}, cfg, marks=marks, server_log=server)
         self.assertIn("Port 8190 is already in use by another program.", text)
         self.assertIn("--port 8191", nxt)
@@ -99,7 +99,7 @@ class FailedStart(unittest.TestCase):
 
 
 class FolderChangeMovesNothing(unittest.TestCase):
-    """The Folder step text: changing the folder never moves the models Strata already keeps (only --move-data / strata models move do)."""
+    """The Folder step text: changing the folder never moves the models Nostroma already keeps (only --move-data / strata models move do)."""
 
     def setUp(self):
         self.home = Home().__enter__()

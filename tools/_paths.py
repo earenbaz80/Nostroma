@@ -1,6 +1,6 @@
 """tools/_paths.py - where the tools find a GGUF library.
 
-The preparation tools use Strata's own reader/writer and quantizers (tools/strata_gguf.py, tools/strata_quants.py): gguf_lib() returns it.
+The preparation tools use Nostroma's own reader/writer and quantizers (tools/strata_gguf.py, tools/strata_quants.py): gguf_lib() returns it.
 $STRATA_GGUF_PY (a folder that holds llama.cpp's `gguf` package) still selects that package instead, for two releases (the byte-identical
 A/B of the pack tools runs both); llama.cpp's HF converter (NVFP4-local) imports gguf-py itself and always uses the vendored copy.
 
@@ -43,7 +43,7 @@ def gguf_py() -> str:
     for c in cands:
         if c and (Path(c) / "gguf").is_dir():
             return str(c)
-    sys.exit("gguf-py was not found. It ships with Strata in third_party/strata-gguf-py; set STRATA_GGUF_PY to the folder that holds the "
+    sys.exit("gguf-py was not found. It ships with Nostroma in third_party/strata-gguf-py; set STRATA_GGUF_PY to the folder that holds the "
              "`gguf` package (for example <llama.cpp>/gguf-py) to use another copy")
 
 

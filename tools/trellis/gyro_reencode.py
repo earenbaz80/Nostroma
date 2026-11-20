@@ -1,6 +1,6 @@
 """gyro_reencode.py - gate 2/3 quality check of the trellis encoder against agentionai's Gyro files.
 
-Decodes expert tensors of a Gyro GGUF (TQK6 gate/up, TQK7 down in Gyro-S; TQ2_T in Gyro-M) with the Strata decoder
+Decodes expert tensors of a Gyro GGUF (TQK6 gate/up, TQK7 down in Gyro-S; TQ2_T in Gyro-M) with the Nostroma decoder
 (libtqenc's decode, bit-identical to tq_states.hpp, see tqenc_test), re-encodes the decoded weights at the same type
 with tools/tqenc.py and reports the reconstruction error.  The decoded weights are a feasible trellis point, so an
 ideal encoder recovers them exactly (error 0): the error measures the search, not the quantization.

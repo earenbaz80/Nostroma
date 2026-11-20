@@ -291,7 +291,7 @@ class Issue3410TrashIsNotAnInstall(unittest.TestCase):
             trash.mkdir(parents=True)
             (trash / "setup.py").write_text("x")
             from unittest import mock
-            nowhere = Path(tmp) / "none" / "none" / "home"            # no Strata* folders beside it on this PC
+            nowhere = Path(tmp) / "none" / "none" / "home"            # no Nostroma* folders beside it on this PC
             with mock.patch.object(setup, "home", return_value=nowhere):
                 self.assertEqual(setup.other_installs({"installs": [str(trash)]}), [])
                 self.assertEqual(setup.other_installs({"installs": [str(trash)] + [str(trash.parent.parent)]}), [])

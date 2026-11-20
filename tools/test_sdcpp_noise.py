@@ -1,4 +1,4 @@
-"""Tests for Strata's noise generator for sd-cli (tools/image/sdcpp_noise): the patch for the pinned
+"""Tests for Nostroma's noise generator for sd-cli (tools/image/sdcpp_noise): the patch for the pinned
 stable-diffusion.cpp (a stand-in file with the code it edits), the table as a C array, and, where a C++ compiler is
 there, the generator's stream for three seeds against the hashes of stable-diffusion.cpp's Linux x86 build.  The
 exhaustive proofs (every input of the generator, 1005 seeds, three CPUs and compilers) are tools/image/gate/noise.

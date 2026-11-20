@@ -133,7 +133,7 @@ class Words(unittest.TestCase):
             (pack / "ds4.txt").write_text(f"n_layer 43\nformat gguf\nmodel_dir {models}\n", encoding="utf-8")
             cfg = {**DS, "args": ["--pack", str(pack)]}
             text = retired.refusal(cfg, "DeepSeek-V4.1-Flash ISTA-DAS 2.00 bpw")
-            self.assertTrue(text.startswith("DeepSeek-V4.1-Flash ISTA-DAS 2.00 bpw is a DeepSeek model. This version of Strata no longer runs "
+            self.assertTrue(text.startswith("DeepSeek-V4.1-Flash ISTA-DAS 2.00 bpw is a DeepSeek model. This version of Nostroma no longer runs "
                                             "DeepSeek models, so it was not started."), text)
             self.assertIn(f"Its files are still on this computer: 0.0 GB in {models} and {pack}. Nothing was changed or deleted.", text)
             self.assertTrue(text.endswith("Choose a Qwen model to run instead. If you no longer need the DeepSeek files, you can delete that "

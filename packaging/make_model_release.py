@@ -12,7 +12,7 @@ engines have to be rebuilt for its shape; case C is refused) and prints the plan
             from the feed (the Settings update check is enough). `--with-app` adds the app steps when a release has app text anyway.
             Engines and Controls stay as they are: same files, same names.
     case B  the engine of the model's shape, as its own component (`--shape`, package_engine.py --shape, feed member shape_engines: nostroma_control/shape_engine.py),
-            plus the feed. The Strata engine, the Controls and the app are not rebuilt: a Control of 0.2.13 or later already installs and runs
+            plus the feed. The Nostroma engine, the Controls and the app are not rebuilt: a Control of 0.2.13 or later already installs and runs
             a shape engine, and the model's family `qwen4exp_<shape>` makes it fetch it.
 
 Each step shows where it runs, a rough time, the command (printed, never run) and its outputs with sizes.  Sizes are those of the
@@ -136,7 +136,7 @@ def plan(report: dict, set_index: int, a, prev: dict) -> dict:
             if e["name"].endswith((".tar.gz", ".zip")):
                 new = renamed(e["name"], e["version"], a.engine_version).replace("strata-engine-", comp + "-", 1)
                 changed.append({"name": new, "size": e["size"], "est": True, "why": "the engine of the shape %s, its own component" % shape})
-        kept += [{"name": e["name"], "size": e["size"], "why": "the Strata engine is not touched: Flash-Next and every other model keep it"} for e in prev["engine"]]
+        kept += [{"name": e["name"], "size": e["size"], "why": "the Nostroma engine is not touched: Flash-Next and every other model keep it"} for e in prev["engine"]]
         kept += [{"name": e["name"], "size": e["size"], "why": "no Control rebuild: a Control of 0.2.13 or later already knows shape engines"} for e in prev["control"]]
         by_box: dict[str, list] = {}
         for e in prev["engine"]:
@@ -146,7 +146,7 @@ def plan(report: dict, set_index: int, a, prev: dict) -> dict:
                                                           for d in v.get("shape_fields_that_differ", [])]
              + ["python tools/q4geo_synth.py --from-gguf <first shard> --header <geo.hpp> --label %s" % shape,
                 "# every build passes -DSTRATA_GEOMETRY_FILE=<geo.hpp> (Linux packaging scripts: STRATA_CMAKE_EXTRA=\"-DSTRATA_GEOMETRY_FILE=<geo.hpp>\"); give the engines their own version %s" % a.engine_version],
-             note="the engine built for this shape refuses Flash-Next files, so it ships as its own component named after the shape (%s) and never in place of the Strata engine (owner, 2026-11-08; RESULTS-SHAPE.md)" % comp)
+             note="the engine built for this shape refuses Flash-Next files, so it ships as its own component named after the shape (%s) and never in place of the Nostroma engine (owner, 2026-11-08; RESULTS-SHAPE.md)" % comp)
         n += 1
         for box, es in sorted(by_box.items()):
             step("%d" % n, "Build the %s engine packages on %s" % (shape, box), "%s (%s)" % (box, BOX_NOTE.get(box, "see the 0.2.11 build plan")), 25 if box.startswith("owner") else 15 if box == "l620" else 10,

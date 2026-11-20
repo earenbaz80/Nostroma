@@ -99,7 +99,7 @@ class EngineBeforeModel(unittest.TestCase):
         warning = no_engine_warning(note)
         self.assertEqual(r.events[-1].text, warning)
         self.assertEqual(r.events[-1].level, "warn")
-        self.assertIn("Strata couldn't find an engine for this computer (The feed has no engine package for this PC)", warning)
+        self.assertIn("Nostroma couldn't find an engine for this computer (The feed has no engine package for this PC)", warning)
         self.assertIn("The model will download, but it may not run until you install the right engine (next step:", warning)
         self.assertIn(NO_ENGINE_STEP, warning)
         self.assertNotIn("The app never downloads", warning)          # not the generic line
@@ -108,9 +108,9 @@ class EngineBeforeModel(unittest.TestCase):
         report = dict(UNUSABLE, backend=None)
         spawns, err, r = self.run_ensure_runner([report, report], update_events("none-for-this-pc"))
         self.assertIsNone(err)
-        self.assertTrue(r.engine_problem.startswith("no graphics card that Strata can use was found"))
+        self.assertTrue(r.engine_problem.startswith("no graphics card that Nostroma can use was found"))
         text = r.events[-1].text
-        self.assertIn("Strata needs an NVIDIA or AMD graphics card", text)
+        self.assertIn("Nostroma needs an NVIDIA or AMD graphics card", text)
         self.assertNotIn("--feed", text)
         self.assertNotIn("<address>", text)
         self.assertNotIn("--feed", no_engine_final(r.engine_problem))
@@ -124,7 +124,7 @@ class EngineBeforeModel(unittest.TestCase):
         self.assertIsNone(err)
         self.assertEqual(r.engine_problem, WRONG_FAMILY)
         text = r.events[-1].text
-        self.assertIn("This build of Strata is for AMD RX 7000 cards. This computer has an AMD RX 9000 card (gfx1201).", text)
+        self.assertIn("This build of Nostroma is for AMD RX 7000 cards. This computer has an AMD RX 9000 card (gfx1201).", text)
         self.assertIn("Ask for the RX 9000 build)", text)
 
     def test_installed_wrong_family_package_uses_its_plain_notice(self):
@@ -137,7 +137,7 @@ class EngineBeforeModel(unittest.TestCase):
         spawns, err, r = self.run_ensure_runner([UNUSABLE, UNUSABLE], update_events("none-for-this-pc", "No engine here."),
                                                 confirm=lambda title, text: asked.append((title, text)) or False, gb=66.0)
         self.assertEqual(len(asked), 1)
-        self.assertIn("Strata couldn't find an engine for this computer (No engine here)", asked[0][1])
+        self.assertIn("Nostroma couldn't find an engine for this computer (No engine here)", asked[0][1])
         self.assertIn("Download the model now (about 66 GB)?", asked[0][1])
         self.assertIsInstance(err, LaunchError)
         self.assertEqual(err.code, 130)
@@ -180,7 +180,7 @@ class EngineBeforeModel(unittest.TestCase):
         self.assertEqual(result.urls, [])
         self.assertEqual(result.engine_problem, WRONG_FAMILY)
         self.assertEqual(result.final_text, no_engine_final(WRONG_FAMILY))
-        self.assertIn("The model is ready, but Strata can't start it yet", result.final_text)
+        self.assertIn("The model is ready, but Nostroma can't start it yet", result.final_text)
         self.assertIn("Ask for the RX 9000 build)", result.final_text)
         self.assertIn(NO_ENGINE_STEP, result.final_text)
 

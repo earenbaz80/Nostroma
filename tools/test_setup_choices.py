@@ -134,7 +134,7 @@ class GgufDirShards(unittest.TestCase):
 
 
 class GgufDirUnsupported(unittest.TestCase):
-    """#444: --gguf-dir with GGUFs Strata cannot run (Unsloth's UD-IQ3_XXS, UD-Q2_K_XL) says so, names the files it
+    """#444: --gguf-dir with GGUFs Nostroma cannot run (Unsloth's UD-IQ3_XXS, UD-Q2_K_XL) says so, names the files it
     runs (ISTA-DASLab's GSQ-RCO, the Coder's, Unsloth's UD-Q4_K_XL) and the --family/--model of the usable ones."""
     UD = ["Qwen3.8-Flash-Next-UD-IQ1_S-%05d-of-00003.gguf" % i for i in range(1, 4)] + \
          ["Qwen3.8-Flash-Next-BF16-%05d-of-00008.gguf" % i for i in range(1, 4)]   # round 0214: UD-IQ3_XXS and UD-Q2_K_XL run now; UD-IQ1_S and BF16 do not
@@ -187,7 +187,7 @@ class GgufDirUnsupported(unittest.TestCase):
         self.assertIn("has no IQ3_XXS model file", out)
         self.assertIn("choose one of: UD-IQ4_XS, UD-Q4_K_XL, UD-Q5_K_XL, UD-Q6_K_XL, Q8_0, UD-IQ1_M, UD-Q2_0, UD-IQ2_XS, UD-Q2_K_XL, UD-IQ3_XXS, UD-Q3_K_XL, "
                       "UD-IQ4_XS-v31 (or IQ3_XXS: --family qwen --model IQ3_XXS, --family swift --model IQ3_XXS)", out)
-        self.assertIn("Strata runs ISTA-DASLab's GSQ-RCO files", out)
+        self.assertIn("Nostroma runs ISTA-DASLab's GSQ-RCO files", out)
 
 
 class ReadOnlyGgufDir(unittest.TestCase):
@@ -225,7 +225,7 @@ class ReadOnlyGgufDir(unittest.TestCase):
 
 
 class ReadOnlyModelFolderMark(unittest.TestCase):
-    """0.2.10: a model folder Strata cannot write to (a read-only disk) keeps its finish marks under Strata's own folder, so the
+    """0.2.10: a model folder Nostroma cannot write to (a read-only disk) keeps its finish marks under Nostroma's own folder, so the
     SHA-256 of the 110 GB Engram is not computed again on every launch."""
 
     def test_the_mark_is_kept_elsewhere_and_the_hash_is_not_repeated(self):

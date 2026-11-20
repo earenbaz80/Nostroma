@@ -19,7 +19,7 @@ Runs, each in its own step with its own timeout, in a scratch folder (build tree
 Prints one table: passed / failed / skipped / not run, per step, with the reason for every skip and every "not run".
 A step that cannot run because a tool is missing (Node, cmake, a compiler, pytest, torch) is "not run" and says which tool;
 it is never reported as a pass.  The exit code is 1 when anything failed or timed out, and 0 otherwise; --strict makes a
-"not run" step exit 2 too.  Nothing here needs a GPU, a model or the real Strata install.
+"not run" step exit 2 too.  Nothing here needs a GPU, a model or the real Nostroma install.
 
     python tools/check                      everything above
     python tools/check --only cmake-cpu,py-tools
@@ -515,7 +515,7 @@ def table(results):
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(description="Strata fast checks (see the top of this file)")
+    ap = argparse.ArgumentParser(description="Nostroma fast checks (see the top of this file)")
     ap.add_argument("--only", help="comma list of steps")
     ap.add_argument("--skip", help="comma list of steps to leave out")
     ap.add_argument("--list", action="store_true", help="list the steps and their timeouts")

@@ -77,7 +77,7 @@ class Words(unittest.TestCase):
         self.assertEqual(w[0]["text"], R.NO_CARD_LINE)
 
     def test_sentence_and_describe(self):
-        self.assertEqual(R.sentence(V["hw"]["one"]), "Strata will use your RTX 4070 Ti.")
+        self.assertEqual(R.sentence(V["hw"]["one"]), "Nostroma will use your RTX 4070 Ti.")
         s = R.sentence(V["hw"]["three"])
         self.assertIn("RTX 4070 Ti is Main: it is faster.", s)
         self.assertIn("RTX 2060 starts Off: 8 GB or less.", s)

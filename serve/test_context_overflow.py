@@ -87,7 +87,7 @@ class ContextOverflow(unittest.TestCase):
 
     def test_the_anthropic_route_says_it_the_way_anthropic_does_and_keeps_strata_s_sentence(self):
         # #4838: Claude Code decides from the words of a 400: "prompt is too long" makes it compact, "input length and `max_tokens` exceed
-        # context limit" makes it shorten max_tokens. Strata's own sentence stays after it, so the other clients' phrase is still in the message.
+        # context limit" makes it shorten max_tokens. Nostroma's own sentence stays after it, so the other clients' phrase is still in the message.
         for stream in (False, True):
             with self.subTest(stream=stream, case="prompt alone"):
                 status, _, body = self.post("/v1/messages", "max_tokens", 150722, 16, stream)

@@ -200,7 +200,7 @@ class ConnectStatus(unittest.TestCase):
             header = next(ln for ln in shown.splitlines() if "Vendor tested" in ln)
             self.assertIn("This server", header)
             for h in harness.HARNESSES:
-                said = "built into Strata" if h.built_in else h.tested
+                said = "built into Nostroma" if h.built_in else h.tested
                 row = next(ln for ln in shown.splitlines() if h.title[:16] in ln and said[:23] in ln)
                 self.assertIn("Not checked", row)                          # nothing has been tried against THIS server yet
                 self.assertNotIn("tested ok", row)

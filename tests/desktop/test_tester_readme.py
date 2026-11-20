@@ -12,7 +12,7 @@ SCRIPT = ROOT / "apps" / "desktop" / "scripts" / "make-tester-readme.sh"
 TEMPLATES = ROOT / "apps" / "desktop" / "tester"
 # the README names the app version, which make-tester-readme.sh reads from Cargo.toml
 APP_VERSION = next(line.split('"')[1] for line in (ROOT / "apps" / "desktop" / "src-tauri" / "Cargo.toml").read_text().splitlines() if line.startswith("version = "))
-NOTICE = "Strata opened in your browser because the app window couldn't start on this computer."
+NOTICE = "Nostroma opened in your browser because the app window couldn't start on this computer."
 
 
 def sha(path: Path) -> str:
@@ -47,7 +47,7 @@ class TesterReadmeTests(unittest.TestCase):
         text = self.out.read_text()
         self.assertIn(sha(app), text)
         self.assertNotIn("@APPIMAGE@", text)
-        for needle in ("libfuse2t64", "Ubuntu 26.04", "--browser", "--quit", "--save-logs", f"Strata {APP_VERSION}", NOTICE):
+        for needle in ("libfuse2t64", "Ubuntu 26.04", "--browser", "--quit", "--save-logs", f"Nostroma {APP_VERSION}", NOTICE):
             self.assertIn(needle, text)
         run("--verify", self.out, "--files-dir", self.files)
 

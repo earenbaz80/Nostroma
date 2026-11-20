@@ -286,7 +286,7 @@ class Fallback(unittest.TestCase):
         v, started, log, err = self.run_start({"strata-vision": "READY 2560 mtmd fallback\n"}, cpu)
         self.assertIsNone(err)
         self.assertEqual((v.reader, len(started)), ("mtmd", 1))           # the same process: no second start
-        self.assertEqual(log.count("[strata] Strata's picture reader did not start; pictures are read with llama.cpp's reader."), 1)
+        self.assertEqual(log.count("[strata] Nostroma's picture reader did not start; pictures are read with llama.cpp's reader."), 1)
 
     def test_the_reader_choice_reaches_the_reader_through_the_run_configs_env(self):
         """The settings write STRATA_VISION_TOWER=mtmd into the model's run config "env" (nostroma_control/speed_switches.py picture_reader); the server

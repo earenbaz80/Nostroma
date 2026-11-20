@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""dgx_bench - the DGX Spark benchmark family for Strata (Qwen3.8-Flash-Next first).
+"""dgx_bench - the DGX Spark benchmark family for Nostroma (Qwen3.8-Flash-Next first).
 
     python tools/dgx_bench.py --config strata-iq3_s.json --tag base
     python tools/dgx_bench.py --config strata-iq3_s.json --tag gu-swiglu --env STRATA_GU_SWIGLU=1

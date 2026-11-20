@@ -199,7 +199,7 @@ class Native(unittest.TestCase):
 
 
 class Noise(unittest.TestCase):
-    """OWN-5 step 1: Strata's noise generator for sd-cli (tools/image/sdcpp_noise): off by default; nobody compiles
+    """OWN-5 step 1: Nostroma's noise generator for sd-cli (tools/image/sdcpp_noise): off by default; nobody compiles
     again unasked."""
 
     def test_stamp_without_the_switch_is_what_it_was(self):
@@ -288,7 +288,7 @@ class Noise(unittest.TestCase):
 
 
 class VaeDecoder(unittest.TestCase):
-    """OWN-5 step 2: Strata's VAE decoder for sd-cli (tools/image/sdcpp_vae, CUDA / HIP builds): off by default; nobody
+    """OWN-5 step 2: Nostroma's VAE decoder for sd-cli (tools/image/sdcpp_vae, CUDA / HIP builds): off by default; nobody
     compiles again unasked; another backend never gets it."""
 
     def test_stamp_without_the_switch_is_what_it_was(self):

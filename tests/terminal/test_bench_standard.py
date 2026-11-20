@@ -31,7 +31,7 @@ def corpus_specs() -> dict[str, dict]:
 
 
 class MockStrata:
-    """A server that speaks enough of Strata's API: /health, /props, /v1/status, /metrics and streamed chat completions."""
+    """A server that speaks enough of Nostroma's API: /health, /props, /v1/status, /metrics and streamed chat completions."""
 
     def __init__(self, model_file: Path):
         self.specs = corpus_specs()
@@ -68,7 +68,7 @@ class MockStrata:
                 if self.path == "/props":
                     return self._json(200, {"model_alias": "qwen3.8-flash-next", "chat_template": TEMPLATE,
                                             "default_generation_settings": {"n_ctx": 131072, "params": {"temperature": 0.7}},
-                                            "total_slots": 1, "build_info": "Strata 0.1.45.3",
+                                            "total_slots": 1, "build_info": "Nostroma 0.1.45.3",
                                             "model_path": str(owner.model_file), "is_sleeping": False})
                 if self.path == "/v1/status":
                     return self._json(200, {"service": "strata", "model": "qwen3.8-flash-next", "engine": "0.1.45.3",
@@ -784,7 +784,7 @@ class CommandLineTests(StandardBase):
         out = self.root / "cli"
         code, text, errors = self.invoke("--url", self.server.url, "--out", str(out))
         self.assertEqual(code, 0, errors)
-        self.assertIn("Strata standard benchmark (strata-qwen38-thinking-v1-draft.1)", text)
+        self.assertIn("Nostroma standard benchmark (strata-qwen38-thinking-v1-draft.1)", text)
         self.assertIn("Sanity checks: 12 of 12 passed", text)
         self.assertIn("Report:", text)
         self.assertEqual(bs.load(out)["run"]["status"], "complete")
@@ -905,7 +905,7 @@ class CommandLineTests(StandardBase):
         output = io.StringIO()
         with contextlib.redirect_stdout(output):
             self.assertEqual(main(["bench", "report", str(out), "--output", "markdown"]), 0)
-        self.assertIn("# Strata standard benchmark", output.getvalue())
+        self.assertIn("# Nostroma standard benchmark", output.getvalue())
         output = io.StringIO()
         with contextlib.redirect_stdout(output):
             self.assertEqual(main(["bench", "report", str(out), "--output", "json"]), 0)

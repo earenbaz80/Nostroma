@@ -1,4 +1,4 @@
-"""tools/nvfp4_local_pack.py - NVIDIA's Qwen3.8-Flash-Next-FP4-Local (ModelOpt, QAD) -> files Strata can pack.
+"""tools/nvfp4_local_pack.py - NVIDIA's Qwen3.8-Flash-Next-FP4-Local (ModelOpt, QAD) -> files Nostroma can pack.
 
     python tools/nvfp4_local_pack.py convert --model <nvidia/Qwen3.8-Flash-Next-FP4-Local dir> --outfile <model.gguf>
     python tools/nvfp4_local_pack.py ple     --model <same dir> --out <ple-nvfp4.gguf>

@@ -128,7 +128,7 @@ def rttime_limit_note() -> str:
         return ""
     return (f"This session has a real-time CPU limit (RLIMIT_RTTIME hard limit {hard}; the desktop's audio system sets "
             "it to 0 when rtkit is not installed). Linux can then end a program with signal 9 for no visible reason. "
-            "Install rtkit, or start Strata outside the desktop session's limits, for example: "
+            "Install rtkit, or start Nostroma outside the desktop session's limits, for example: "
             "systemd-run --user --collect -p LimitRTTIME=infinity -- strata serve ...")
 
 
@@ -165,7 +165,7 @@ def listen_problem(host: str, port: int, e: OSError) -> str:
     import errno
     code = getattr(e, "winerror", None) or e.errno
     if code in (errno.EADDRINUSE, 10048):
-        return (f"port {port} is already in use - is Strata (or another server) already running? "
+        return (f"port {port} is already in use - is Nostroma (or another server) already running? "
                 f"Close it, or start this one with a different --port")
     what = e.strerror or str(e)
     if code in (10013, errno.EACCES):
@@ -1099,7 +1099,7 @@ class StrataEngine:
         # retry_vram_args: the same start with no drafter (nodraft_retry_args), used instead when the engine ended because a card ran out of memory: swapping DFlash2 for
         # the MTP takes MORE memory from a card that is already short, so that direction is never taken then
         self.spawn = (exe, list(args), cwd, log, env, False, cpus)   # to start it again after it died (issue #27)
-        # the all-cards split engine (sFNX, strata-split-N[-arch]): its GEN parser accepts fewer keys than Strata's engine (tests/split/test_split_gen_keys.py pins them)
+        # the all-cards split engine (sFNX, strata-split-N[-arch]): its GEN parser accepts fewer keys than Nostroma's engine (tests/split/test_split_gen_keys.py pins them)
         self.split_engine = os.path.basename(str(exe)).startswith("strata-split")
         self.session_save_reclaim = '--session-save-reclaim' in args
         paths = {k: v for k, v in zip(args, args[1:]) if k in ("--native", "--pack")}
@@ -1160,7 +1160,7 @@ class StrataEngine:
         end_leftover_engines(exe)                        # one an earlier run lost still holds the GPU and the memory
         spawned_at = time.monotonic()
         try:
-            self.proc = popen("the Strata engine", [exe, "--serve", *args], cwd=cwd, stdin=subprocess.PIPE,
+            self.proc = popen("the Nostroma engine", [exe, "--serve", *args], cwd=cwd, stdin=subprocess.PIPE,
                               stdout=subprocess.PIPE, stderr=self.log, text=True, encoding="utf-8", errors="replace",
                               bufsize=1, env=env, **pin)    # (#5044: a byte that is not UTF-8 killed the reader thread)
         except OSError:                                  # nothing started: the narrator stops, the log handle goes back
@@ -1570,7 +1570,7 @@ class StrataEngine:
                 raise EngineDied("the engine did not answer the VRAM command")
 
     def pen_from_key(self, orig_len: int, prompt_len: int) -> str:
-        """` pen_from=N` for a leg that continues a request (prompt + what it generated): where the reply began, Strata's penalty window start. The all-cards split engine
+        """` pen_from=N` for a leg that continues a request (prompt + what it generated): where the reply began, Nostroma's penalty window start. The all-cards split engine
         (sFNX) counts its penalty window over the last penalty_last_n tokens of the whole context, so the continued prompt gives it the same window and the engine refuses the
         key (GEN: unknown key pen_from): it is not sent."""
         if self.split_engine or prompt_len <= orig_len:
@@ -3031,7 +3031,7 @@ class StrataEngine:
             try:
                 self.proc.wait(timeout=ENGINE_KILL_WAIT_S)
             except subprocess.TimeoutExpired:
-                raise EngineStuck("Strata is still releasing GPU/RAM; retry unloading after it exits") from None
+                raise EngineStuck("Nostroma is still releasing GPU/RAM; retry unloading after it exits") from None
         except OSError:
             pass
         finally:
@@ -3205,7 +3205,7 @@ class Vision:
         self.gpu_spawn, self.cpu_spawn = self.spawn, self.fallback   # an on-demand reader tries the GPU one again at every start
         self.on_cpu = False                             # the CPU reader is what runs (the GPU one did not start, or there was no room)
         self.cpu_note = None                            # why, in words for the person (nostroma_control/reader_room.py), when the card had no room
-        self.reader = None                              # "own" (Strata's) or "mtmd" (llama.cpp's) from the READY line; None for an older reader
+        self.reader = None                              # "own" (Nostroma's) or "mtmd" (llama.cpp's) from the READY line; None for an older reader
         self.proc = None
         self.stopped = True
         self.lock = threading.Lock()
@@ -3369,12 +3369,12 @@ class Vision:
             room = reader_room.find((line + chr(10) + chr(10).join(strays) + chr(10) + vision_log_tail(log, since=since)).splitlines())
             raise (VisionNoRoom(message, room) if room else RuntimeError(message))
         self.stopped = False
-        # "READY <n_embd> <reader> [fallback]": the reader that runs (own: Strata's, mtmd: llama.cpp's; an older strata-vision says only "READY <n_embd>"),
-        # and "fallback" when Strata's reader did not start and llama.cpp's took its place (strata-vision wrote the reason to the log)
+        # "READY <n_embd> <reader> [fallback]": the reader that runs (own: Nostroma's, mtmd: llama.cpp's; an older strata-vision says only "READY <n_embd>"),
+        # and "fallback" when Nostroma's reader did not start and llama.cpp's took its place (strata-vision wrote the reason to the log)
         words = line.split()
         self.reader = words[2] if len(words) > 2 else None
         if "fallback" in words[3:]:
-            print("[strata] Strata's picture reader did not start; pictures are read with llama.cpp's reader. Details are in the log.", flush=True)
+            print("[strata] Nostroma's picture reader did not start; pictures are read with llama.cpp's reader. Details are in the log.", flush=True)
 
     #: how long a reader that has already ended may still hold its output pipe open (a debugger attached to it, a child it started) before the start is
     #: judged: the pipe's end does not come, the process's end is what counts.
@@ -4106,7 +4106,7 @@ def engine_has_text(exe: str, needle: bytes) -> bool | None:
 
 
 def draft_costs_dir() -> Path:
-    """Where the learned draft cost tables live: beside the saved tunings (nostroma_control/presets.py), in the user's Strata settings folder
+    """Where the learned draft cost tables live: beside the saved tunings (nostroma_control/presets.py), in the user's Nostroma settings folder
     (%APPDATA%\\Strata\\draft-costs, ~/.config/strata/draft-costs), which the Windows uninstaller's "remove my data" deletes with them.
     STRATA_DRAFT_COSTS_DIR: another folder (tests and test jobs, which never write into a real settings folder)."""
     explicit = os.environ.get("STRATA_DRAFT_COSTS_DIR")
@@ -4352,7 +4352,7 @@ def hip_no_card_message(devices: list[dict]) -> str:
     """The plain line when the engine has code for none of the computer's cards."""
     cards = ", ".join(f"{d['name'] or 'graphics card'} ({d['arch'] or 'unknown'}{', integrated' if d['integrated'] else ''})" for d in devices)
     built = next((m.group(1) for d in devices for m in [re.search(r"compiled for \(([^)]*)\)", d["cannot_run"] or "")] if m), "")
-    text = f"[strata] none of this computer's graphics cards has code in this Strata engine{f' (it is built for {built})' if built else ''}. Cards found: {cards}."
+    text = f"[strata] none of this computer's graphics cards has code in this Nostroma engine{f' (it is built for {built})' if built else ''}. Cards found: {cards}."
     note = engine_component.no_package_note([d["arch"] for d in devices])
     return text + (f" {note}" if note else "")
 
@@ -4890,7 +4890,7 @@ class Service:
         # #321: browser pages of these origins may call /v1/* (CORS; "*" = any page - only with an api_key that
         # matters); empty = no CORS headers at all, as before
         self.cors_origins: list[str] = []
-        # #321: origins that count as Strata's own page for /settings and MCP tools, e.g. the web app reached through a
+        # #321: origins that count as Nostroma's own page for /settings and MCP tools, e.g. the web app reached through a
         # reverse proxy or tunnel whose Host differs ("https://strata.example.com"); never a wildcard
         self.trusted_origins: list[str] = []
         # DNS rebinding: extra Host names this server answers to (the config's allowed_hosts, $STRATA_ALLOWED_HOSTS;
@@ -7186,7 +7186,7 @@ def openai_chunks(svc: Service, req: dict, ids, thinking, tools, max_new, cancel
     cid, created = "chatcmpl-" + uuid.uuid4().hex[:24], int(time.time())
     model = svc.model_for(req)
     # llama.cpp's flag, and its default: a client that wants prompt progress asks for it, and nothing changes for one
-    # that does not.  Strata already sends a keep-alive comment on every PP line, so this only fills that line in.
+    # that does not.  Nostroma already sends a keep-alive comment on every PP line, so this only fills that line in.
     want_progress = bool(req.get("return_progress"))
 
     def chunk(delta, finish=None):
@@ -7691,7 +7691,7 @@ def make_handler(svc: Service):
                   f"answers to (add it to \"allowed_hosts\" in the config or STRATA_ALLOWED_HOSTS, or set an API key)",
                   flush=True)
             self._json(403, {"error": {"type": "forbidden", "message":
-                             f"Host {host!r} is not allowed (DNS rebinding protection). Reaching Strata under this "
+                             f"Host {host!r} is not allowed (DNS rebinding protection). Reaching Nostroma under this "
                              f"name on purpose? Add it to \"allowed_hosts\" in the config (strata-<model>.json) or to "
                              f"the STRATA_ALLOWED_HOSTS environment variable, or set an API key (\"api_key\"), which "
                              f"turns this check off"}})
@@ -8194,7 +8194,7 @@ def make_handler(svc: Service):
                         busy = bool(svc.status.get("busy"))
                         # llama.cpp's name for what the slot's context holds: the running request's prompt size,
                         # kept after it ends (the conversation cache carries it on).  A front-end's context meter
-                        # divides it by n_ctx; without the key it reads 0 % against Strata forever (#562).
+                        # divides it by n_ctx; without the key it reads 0 % against Nostroma forever (#562).
                         in_use = int(svc.status.get("prompt_tokens") or 0)
                     if getattr(svc.engine, "batch", 0) and hasattr(svc.engine, "slots_view"):
                         # --batch: one entry per slot (the same view /metrics has), not one for the whole engine
@@ -8233,7 +8233,7 @@ def make_handler(svc: Service):
                 return
             if path in ("/unload", "/load") and not self._control_body():
                 return
-            # JSON from Strata's own page only, as /settings: else a plain form POST from any site unloads the model
+            # JSON from Nostroma's own page only, as /settings: else a plain form POST from any site unloads the model
             if path in ("/unload", "/load") and not self._own_page("the model can be loaded or unloaded"):
                 return
             # the same for the slot files: else any site could overwrite a saved conversation or replace the live one
@@ -8457,7 +8457,7 @@ def make_handler(svc: Service):
                 props["model_path"] = svc.engine.model_path
             version = getattr(svc.engine, "info", {}).get("version")
             if version:
-                props["build_info"] = "Strata " + str(version)
+                props["build_info"] = "Nostroma " + str(version)
             self._json(200, props)
 
         def _control_body(self) -> bool:
@@ -8502,7 +8502,7 @@ def make_handler(svc: Service):
                 self._json(415, {"error": {"message": "send application/json"}})
                 return False
             if self._foreign_origin():
-                self._json(403, {"error": {"message": f"{what} only from Strata's own page (or an origin in the "
+                self._json(403, {"error": {"message": f"{what} only from Nostroma's own page (or an origin in the "
                                                       f"config's trusted_origins)"}})
                 return False
             return True
@@ -8519,7 +8519,7 @@ def make_handler(svc: Service):
             self._json(200, runconfig.view(cfg, svc.config_path))
 
         def _config_post(self):
-            """#564: change a few documented keys of the run config - JSON from Strata's own page only, as
+            """#564: change a few documented keys of the run config - JSON from Nostroma's own page only, as
             /settings (the key is checked before); every other key of the file stays as it is."""
             body = self._body()
             if not self._own_page("the run config can be changed"):
@@ -8557,7 +8557,7 @@ def make_handler(svc: Service):
             """A web page of another origin must not have a file on this computer read as an image.  Without an
             api_key, _foreign_page refuses such a page unless cors_origins lets it in - and a page cors_origins lets
             in (["*"]: every page) could name any file and, CORS allowing, read what the model says about it.  data:
-            and http(s) images are the page's own to send; files come from Strata's own page, a trusted origin or a
+            and http(s) images are the page's own to send; files come from Nostroma's own page, a trusted origin or a
             client that is no browser.  ValueError (a 400)."""
             if self._foreign_origin() and any(not src.startswith(("data:", "http://", "https://"))
                                               for src in images_of(messages)):
@@ -8929,7 +8929,7 @@ def make_handler(svc: Service):
             try:
                 ids, thinking, max_new = svc.prepare(messages, tools, kw, max_new, force=force, req=req, cancel=cancel)
             except ContextOverflow as e:
-                raise ValueError(e.anthropic_text()) from None       # #4838: Anthropic's own wording first, Strata's sentence after it
+                raise ValueError(e.anthropic_text()) from None       # #4838: Anthropic's own wording first, Nostroma's sentence after it
             _debug_req("anthropic", req, messages, tools, max_new, thinking, len(ids))
             events = anthropic_events(svc, req, ids, thinking, callable_tools, max_new, cancel, force=force,
                                       deferred=deferred)
@@ -10061,7 +10061,7 @@ def _main(argv=None, *, lifecycle_event=None, interrupt_exit_code: int = 0) -> i
     split_joined_args(cfg)
     from nostroma_control import retired
     _ds = retired.config_reason(cfg) if a.config else None
-    if _ds:                                             # DeepSeek: this Strata no longer runs it; stop before the engine starts (retired.py)
+    if _ds:                                             # DeepSeek: this Nostroma no longer runs it; stop before the engine starts (retired.py)
         print(retired.server_line(_ds), flush=True)
         return 2
     if a.config and a.engine == "strata":
@@ -10460,7 +10460,7 @@ def _main(argv=None, *, lifecycle_event=None, interrupt_exit_code: int = 0) -> i
         print(f"[strata] starting {len(hub.servers)} MCP server{'s' * (len(hub.servers) != 1)} for the web app's "
               f"chat: {', '.join(hub.servers)}", flush=True)
         hub.start()
-        atexit.register(hub.close)                      # the servers Strata started end with it
+        atexit.register(hub.close)                      # the servers Nostroma started end with it
     httpd = serve(svc, host=a.host, port=a.port)
     bound_port = httpd.server_address[1]               # --port 0: report the port the OS actually assigned
     svc.start_idle_unload()
@@ -10483,7 +10483,7 @@ def _main(argv=None, *, lifecycle_event=None, interrupt_exit_code: int = 0) -> i
                   flush=True)
         if os.name == "nt":
             print("       nothing arrives? Windows Firewall blocks it until allowed: accept its prompt for Python, or run "
-                  "in an admin PowerShell:\n         New-NetFirewallRule -DisplayName \"Strata " + str(bound_port) + "\" "
+                  "in an admin PowerShell:\n         New-NetFirewallRule -DisplayName \"Nostroma " + str(bound_port) + "\" "
                   "-Direction Inbound -Protocol TCP -LocalPort " + str(bound_port) + " -Action Allow -Profile Private\n"
                   "       (and set this network to Private in Windows' network settings)", flush=True)
     if a.open and cfg.get("open_browser") is not False:   # #609: the config's "open_browser": false wins (an older

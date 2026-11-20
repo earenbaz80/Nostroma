@@ -1,4 +1,4 @@
-"""serve/lifeline.py - a process Strata starts ends when the process that started it ends, however that ends.
+"""serve/lifeline.py - a process Nostroma starts ends when the process that started it ends, however that ends.
 
 The graceful path is the server's own (QUIT to the engine, drain, exit). This module is the guarantee behind it
 for the cases where nothing gets to run: kill -9, a crash, the console window closed, logoff, power-off.

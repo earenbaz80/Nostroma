@@ -16,9 +16,9 @@ sys.path.insert(0, str(ROOT / "tools"))
 import strata_mcp  # noqa: E402
 from nostroma_control import progress_words as W  # noqa: E402
 
-HEAD = ["Strata - Qwen3.8-Flash-Next on a normal PC", "=== Step 1: checking your PC ===", "  [ok] GPU: NVIDIA GeForce RTX 5070",
+HEAD = ["Nostroma - Qwen3.8-Flash-Next on a normal PC", "=== Step 1: checking your PC ===", "  [ok] GPU: NVIDIA GeForce RTX 5070",
         "=== Step 2: your choices ===", "  [ok] size: Gyro-S", "=== Step 3: Python packages ===", "  [ok] numpy ...",
-        "=== Step 4: the Strata engine ==="]
+        "=== Step 4: the Nostroma engine ==="]
 STEP5 = ["=== Step 5: downloading Qwen3.8-Flash-Next (Gyro) Gyro-S ===",
          "  The model files go in C:\\Users\\x\\Documents\\Strata\\models\\gyro-Gyro-S"]
 MODEL_PROGRESS = "  Qwen3.8-Flash-Next-Gyro-S-TQ1_0.gguf:  30.53 / 58.49 GB (52%)   "
@@ -38,7 +38,7 @@ class StepWords(unittest.TestCase):
     def test_the_engine_and_the_helper_download_have_their_own_words(self):
         self.assertEqual(prog(HEAD + ["  llama.cpp source:   0.01 / 0.04 GB (21%)   "])[2], "helpers")
         self.assertIn("small tools", prog(HEAD + ["  llama.cpp source:   0.01 / 0.04 GB (21%)   "])[1])
-        self.assertEqual(prog(HEAD + ["  Strata engine:   0.20 / 0.90 GB (22%)   "])[1], "Downloading the engine for this PC")
+        self.assertEqual(prog(HEAD + ["  Nostroma engine:   0.20 / 0.90 GB (22%)   "])[1], "Downloading the engine for this PC")
         self.assertEqual(prog(HEAD)[2], "engine")
 
     def test_the_model_download(self):
@@ -109,7 +109,7 @@ class StepWords(unittest.TestCase):
                 self.assertEqual((label, phase), ("The model files are on this computer; checking them", "verify"))
 
     def test_step_six_claims_preparation_only_while_it_runs(self):
-        # 0.2.14.1 check (M5 Max): "Preparing your model for Strata (one time)" on every launch, also a 4-5 s restart with the model prepared
+        # 0.2.14.1 check (M5 Max): "Preparing your model for Nostroma (one time)" on every launch, also a 4-5 s restart with the model prepared
         self.assertEqual(prog(HEAD + STEP5 + STEP6)[1:], ("The model files are on this computer; checking them", "verify"))
         self.assertEqual(prog(HEAD + STEP5 + STEP6 + ["  > python tools/iq_pack.py --gguf x --out y"])[1:],
                          ("Preparing the model data for the engine (one time)", "pack"))
@@ -133,7 +133,7 @@ class StepWords(unittest.TestCase):
         self.assertEqual(prog(lines)[2], "pack")
 
     def test_no_step_yet(self):
-        self.assertEqual(prog(["Strata - Qwen3.8-Flash-Next"])[1:], ("Getting your model ready", "working"))
+        self.assertEqual(prog(["Nostroma - Qwen3.8-Flash-Next"])[1:], ("Getting your model ready", "working"))
 
     def test_with_numbers(self):
         w = W.describe(5, STEP5, {"file": "x.gguf", "done_gb": 12.34, "total_gb": 58.49, "percent": 21})

@@ -89,7 +89,7 @@ from nostroma_control import updater                                  # noqa: E4
 
 
 class OwnLaunchHoldsTheCardTests(test_updater.UpdaterCase):
-    """#10 (H04/H06): the engine update says one next step when Strata's own launch holds the card."""
+    """#10 (H04/H06): the engine update says one next step when Nostroma's own launch holds the card."""
 
     def test_test_start_failure_with_own_launch_serving_gives_the_next_step(self):
         self.install_current()

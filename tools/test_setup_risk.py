@@ -157,7 +157,7 @@ class Context(unittest.TestCase):
 
 
 class BrokenEarlierConfig(unittest.TestCase):
-    """#459: a new copy of Strata set up like an earlier install skips an earlier config that does not parse (an
+    """#459: a new copy of Nostroma set up like an earlier install skips an earlier config that does not parse (an
     empty strata-*.json crashed START-HERE with JSONDecodeError) and goes on as a fresh install; configs are written
     whole (a temporary file moved over the old one)."""
     RAM64, GPU32 = PROFILES["64GB-1x32GB"]

@@ -1,4 +1,4 @@
-"""Which Strata model a GGUF is - and whether Strata can run it - from its header alone.
+"""Which Nostroma model a GGUF is - and whether Nostroma can run it - from its header alone.
 
 Reads only the files' headers (a few MB each, by HTTP range requests for a remote file) with quantscope, prints the
 real storage of every weight group (bits per weight, quantization types), then compares the routed experts and the
@@ -29,7 +29,7 @@ import quantscope as qs  # noqa: E402
 
 FINGERPRINTS = ROOT / "data" / "gguf_fingerprints.json"
 ARCH = "qwen4exp"                                       # Qwen3.8-Flash-Next's general.architecture
-PREVIEW_ARCHS = {"qwen35moe": "Qwen3.6-35B-A3B"}         # model families Strata knows but does not run yet (T0)
+PREVIEW_ARCHS = {"qwen35moe": "Qwen3.6-35B-A3B"}         # model families Nostroma knows but does not run yet (T0)
 
 # the files setup installs: (family, model, ModelScope repository, file name prefix) - for --fingerprints
 KNOWN = [
@@ -93,17 +93,17 @@ def load_fingerprints(path: Path = FINGERPRINTS) -> dict:
 
 
 def verdict(fp: dict, table: dict) -> tuple[str, str]:
-    """(kind, sentence): kind is "known" (a file setup installs, under any name), "family" (another family Strata
+    """(kind, sentence): kind is "known" (a file setup installs, under any name), "family" (another family Nostroma
     runs on its own engine path: Qwen3.6), "layout" (the same routed-expert
-    layout as one: a fine-tune made with the same recipe, untested), "no" (Strata cannot run it) or "untested"
-    (naming the tensors whose quantization no file Strata runs has for them)."""
+    layout as one: a fine-tune made with the same recipe, untested), "no" (Nostroma cannot run it) or "untested"
+    (naming the tensors whose quantization no file Nostroma runs has for them)."""
     known = {k: v for k, v in table.items() if not k.startswith("_")}
     if fp["arch"] in PREVIEW_ARCHS:
-        return "family", (f"{PREVIEW_ARCHS[fp['arch']]} (architecture {fp['arch']!r}): Strata runs it on its own "
+        return "family", (f"{PREVIEW_ARCHS[fp['arch']]} (architecture {fp['arch']!r}): Nostroma runs it on its own "
                           "engine path in the NVIDIA (CUDA) and AMD (HIP) builds, not yet on Intel Arc (SYCL); setup "
                           "installs it with --family qwen36")
     if fp["arch"] != ARCH:
-        return "no", f"not Qwen3.8-Flash-Next (architecture {fp['arch']!r}): Strata runs only that model"
+        return "no", f"not Qwen3.8-Flash-Next (architecture {fp['arch']!r}): Nostroma runs only that model"
     exact = [k for k, v in known.items() if v["expert_bytes"] == fp["expert_bytes"] and v["bytes"] == fp["bytes"]
              and v["tensors"] == fp["tensors"]]
     if exact:
@@ -117,17 +117,17 @@ def verdict(fp: dict, table: dict) -> tuple[str, str]:
     runs = set().union(*(v["expert_bytes"] for v in known.values()))
     other = sorted(set(fp["expert_bytes"]) - runs)
     if other:
-        return "no", ("its routed experts use " + ", ".join(other) + ", a quantization no file Strata runs uses "
-                      "(Strata's expert kernels cover " + ", ".join(sorted(runs)) + ")")
+        return "no", ("its routed experts use " + ", ".join(other) + ", a quantization no file Nostroma runs uses "
+                      "(Nostroma's expert kernels cover " + ", ".join(sorted(runs)) + ")")
     seen = table.get("_roles", {})
     new = [f"{r} {'/'.join(t for t in ts if t not in seen.get(r, []))}" for r, ts in fp.get("roles", {}).items()
            if any(t not in seen.get(r, []) for t in ts)]
-    head = ("its routed experts use only quantizations Strata runs (" + ", ".join(fp["expert_bytes"]) +
+    head = ("its routed experts use only quantizations Nostroma runs (" + ", ".join(fp["expert_bytes"]) +
             "), but this file is not one setup installs: not tested (and setup still refuses the GGUF names "
             "it lists as unsupported, such as UD-Q2_K_XL: this is a header reading, not a promise that it runs)")
     if new:
-        return "untested", head + ". Stored differently from every file Strata runs: " + ", ".join(new)
-    return "untested", head + "; every tensor uses a quantization some file Strata runs has for it"
+        return "untested", head + ". Stored differently from every file Nostroma runs: " + ", ".join(new)
+    return "untested", head + "; every tensor uses a quantization some file Nostroma runs has for it"
 
 
 def make_fingerprints(out: Path) -> None:

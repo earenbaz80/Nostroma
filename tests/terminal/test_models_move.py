@@ -37,7 +37,7 @@ class MoveCase(unittest.TestCase):
             f.write_bytes(data)
         # a finished download carries the pinned checksum in its mark
         (self.old / "models/gyro-s/a.gguf.done").write_text(f"done sha256 {sha(self.files['models/gyro-s/a.gguf'])}\n")
-        (self.old / "notes.txt").write_text("not a model file")        # Strata moves its own folders only
+        (self.old / "notes.txt").write_text("not a model file")        # Nostroma moves its own folders only
         self.install = self.base / "install"
         self.install.mkdir()
         self.config = self.install / "strata-gyro-s.json"
@@ -119,7 +119,7 @@ class MoveTests(MoveCase):
         self.assertEqual({k for k in self.tree(self.new) if not k.endswith(".done")}, set(self.files))
         for rel, data in self.files.items():
             self.assertEqual((self.new / rel).read_bytes(), data)
-        self.assertEqual(self.tree(self.old), {"notes.txt"})                       # only what is not Strata's own is left
+        self.assertEqual(self.tree(self.old), {"notes.txt"})                       # only what is not Nostroma's own is left
         cfg = json.loads(self.config.read_text())
         self.assertEqual(Path(cfg["args"][1]), self.new / "models/gyro-s/a.gguf")
         self.assertEqual(Path(cfg["mtp"]), self.new / "mtp/rt")

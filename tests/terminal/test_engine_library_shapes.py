@@ -3,7 +3,7 @@
 A shape's engine lives in <components>/shapes/<shape>/engine/ (nostroma_control/shape_engine.py). The list shows one family per installed shape ("shape:<shape>",
 an id the app never shows; the title is None and the app names the group with the model's catalog title), after the Qwen and DeepSeek families. Switching
 pins within the shape's own folder (the same ``.updates/state.json`` engine.pinned the Qwen engine uses, which engine_component.resolve reads at every start of
-a model of that shape); the newest goes back to no pin. Deleting refuses the one in use and one a running program uses with the existing lines. The Strata
+a model of that shape); the newest goes back to no pin. Deleting refuses the one in use and one a running program uses with the existing lines. The Nostroma
 engine's files and state are never touched, and a PC with no shape engine lists exactly what it did before.
 """
 from __future__ import annotations
@@ -61,7 +61,7 @@ class ShapeEngines(Base):
         self.assertEqual({r["family"] for r in rows.values()}, {FAMILY})
         self.assertEqual(listing["total_bytes"], sum(r["bytes"] for f in listing["families"] for r in f["engines"]))
         qwen = lib.rows_of(listing, lib.QWEN)
-        self.assertEqual([r["version"] for r in qwen], ["0.1.58"], "the Strata engine is listed as before, alone in its family")
+        self.assertEqual([r["version"] for r in qwen], ["0.1.58"], "the Nostroma engine is listed as before, alone in its family")
 
     def test_switch_to_the_older_one_and_back_to_the_newest(self):
         self.install("0.1.59", "0.1.60")
@@ -70,7 +70,7 @@ class ShapeEngines(Base):
         self.assertEqual((out["status"], out["from"], out["to"], out["automatic"]), ("switched", "0.1.60", "0.1.59", False))
         self.assertEqual(self.picked(), "0.1.59")
         self.assertEqual(ec.pinned_folder(shape_engine.root(SHAPE, self.comp)), old)
-        self.assertIsNone(ec.pinned_folder(self.comp), "the Strata engine's pin is not touched")
+        self.assertIsNone(ec.pinned_folder(self.comp), "the Nostroma engine's pin is not touched")
         self.assertTrue(self.rows()["0.1.59"]["active"], "a fresh read (a restart) sees it")
         back = lib.use_engine(self.ctx(), FAMILY, self.rows()["0.1.60"]["folder"])
         self.assertEqual((back["status"], back["automatic"]), ("switched", True))

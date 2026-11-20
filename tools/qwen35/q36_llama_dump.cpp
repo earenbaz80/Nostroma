@@ -3,7 +3,7 @@
 // position's layer outputs ("l_out-N", through the scheduler's eval callback) in strata-q36ref's format
 // ([pos][layer][n_embd] f32) plus each greedy step's top-2 (id, logit).
 //
-// Built against a llama.cpp checkout (not part of Strata's build):
+// Built against a llama.cpp checkout (not part of Nostroma's build):
 //   g++ -O2 -std=c++17 q36_llama_dump.cpp -I<llama>/include -I<llama>/ggml/include -L<llama>/build/bin -lllama -lggml
 //       -lggml-base -Wl,-rpath,<llama>/build/bin -o q36_llama_dump
 // Usage: q36_llama_dump --model GGUF (--prompt TEXT | --tokens ID,ID,...) [--n 64] [--ngl 99] [--dump-layers F]

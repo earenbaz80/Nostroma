@@ -4,7 +4,7 @@
 #
 # With SHAPE set, a build script configures the engine for that geometry (-DSTRATA_GEOMETRY=<SHAPE>, unless STRATA_CMAKE_EXTRA already names
 # one, e.g. -DSTRATA_GEOMETRY_FILE=<the header made from the model's file>), checks that the built program's `strata --geometry` names SHAPE,
-# and packages it with package_engine.py --shape (no DeepSeek engine in it: a shape package is the Strata engine program built for that shape).
+# and packages it with package_engine.py --shape (no DeepSeek engine in it: a shape package is the Nostroma engine program built for that shape).
 # Without SHAPE nothing changes: both variables are empty and the check returns at once.
 #
 #   shape_setup <repo>      sets shape_cmake (one configure argument or empty) and shape_pkg (package_engine.py arguments or empty)

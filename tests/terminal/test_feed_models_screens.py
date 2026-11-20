@@ -1,4 +1,4 @@
-"""The model screen of `strata launch` with models from the signed feed: a model this Strata does not know is named under the list with the plain reason, and a feed
+"""The model screen of `strata launch` with models from the signed feed: a model this Nostroma does not know is named under the list with the plain reason, and a feed
 without models changes nothing on the screen. No engine is needed: the list comes from the cached feed in the test's own components folder (a throwaway key)."""
 
 from __future__ import annotations
@@ -60,7 +60,7 @@ class FeedModelsOnTheModelScreen(Base):
         async def case(app, pilot, ctx):
             await press(pilot, "enter")
             t = text_of(app)
-            self.assertNotIn("update Strata to use it", t)
+            self.assertNotIn("update Nostroma to use it", t)
             self.assertIn("Which model?", t)
         self.run_app(case, ctx=make_ctx())
 

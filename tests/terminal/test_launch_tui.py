@@ -360,7 +360,7 @@ class FolderStep(Base):
                 f.value = ""
                 await typed(pilot, str(self.home.base / "new-data"))
                 t = " ".join(text_of(app).replace("\n", " ").split())
-            self.assertIn("Model files Strata already keeps in", t)
+            self.assertIn("Model files Nostroma already keeps in", t)
             self.assertIn("stay there and keep working", t)
             self.assertNotIn("are moved into this folder", t)
         self.run_app(case)
@@ -737,7 +737,7 @@ class AccessStep(Base):
                 await press(pilot, *self.reach())
                 self.assertNotIn("Windows may ask", flat(app))
                 await press(pilot, "down")
-                self.assertIn("Windows may ask whether to allow Strata", flat(app))
+                self.assertIn("Windows may ask whether to allow Nostroma", flat(app))
                 self.assertIn("choose Allow for private networks", flat(app))
         self.run_app(case)
 
@@ -759,7 +759,7 @@ class AccessStep(Base):
     def test_default_is_a_key_and_no_key_survives_moving_on(self):
         async def case(app, pilot, ctx):
             await press(pilot, *self.reach(), "down")
-            self.assertTrue(ctx.settings.api_key)                       # default: Strata makes a key
+            self.assertTrue(ctx.settings.api_key)                       # default: Nostroma makes a key
             await press(pilot, "t")                                     # one keypress: no key
             await press(pilot, "down")                                  # moving the cursor does not bring the key back
             await press(pilot, "up")

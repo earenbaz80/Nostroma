@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Strata one-click setup and start (Windows and Linux, NVIDIA or AMD GPUs).
+"""Nostroma one-click setup and start (Windows and Linux, NVIDIA or AMD GPUs).
 
     START-HERE.bat  (Windows)   /   ./setup.sh  (Linux)      - they install Python if needed and run this file
 
@@ -13,11 +13,11 @@ What the first run does (each step is skipped when it is already done):
   1. checks your PC: NVIDIA or AMD GPU and driver, RAM, CPU, free disk space
   2. asks the questions
   3. installs the Python packages it needs into .venv (numpy, jinja2, ..., and NVIDIA's CUDA libraries)
-  4. gets the Strata engine: a ready-made build for RTX 20/30/40/50 cards (no compiler needed); if none fits your PC,
+  4. gets the Nostroma engine: a ready-made build for RTX 20/30/40/50 cards (no compiler needed); if none fits your PC,
      it installs the missing build tools (asks first) and compiles the engine for your GPU.  AMD (--backend hip, chosen by
      itself on a PC with no usable NVIDIA card): the ready-made HIP engine on Windows, compiled here on Linux
   5. downloads the model from Hugging Face (resumable), and the vision encoder if you want images
-  6. prepares the model for Strata and fetches the MTP draft layer (~5 GB, from the original Qwen checkpoint)
+  6. prepares the model for Nostroma and fetches the MTP draft layer (~5 GB, from the original Qwen checkpoint)
   7. writes run-<model>.bat / run-<model>.sh and starts the model
 
 Options: --family qwen|swift, --model Q2_0|IQ2_XS|IQ3_XXS|IQ3_S, --context 32768, --rope-scaling none|linear|yarn
@@ -75,7 +75,7 @@ from nostroma_control.discovery import in_trash
 from nostroma_control import user_args
 
 ROOT = Path(__file__).resolve().parent
-# The desktop app runs this installer under Strata Control (its bundled Python, STRATA_CONTROL_INSTALL=1). The source
+# The desktop app runs this installer under Nostroma Control (its bundled Python, STRATA_CONTROL_INSTALL=1). The source
 # (tools/, data/, serve/) stays in ROOT, inside the app; everything the install writes (run configs, logs, third_party,
 # the data folder beside it) goes to home(), a per-user folder (STRATA_INSTALL_DIR). In that mode it installs no Python
 # package and no engine and compiles nothing: it downloads the model files, prepares them with the bundled tools and
@@ -199,7 +199,7 @@ def model_alias(name: str) -> str:
 
 
 def proxy_hint() -> str:
-    """The next step when a download cannot reach its server: behind a proxy, the variables below are what Strata (and pip, git) read."""
+    """The next step when a download cannot reach its server: behind a proxy, the variables below are what Nostroma (and pip, git) read."""
     names = ("HTTPS_PROXY", "https_proxy", "ALL_PROXY", "all_proxy")
     if any(os.environ.get(n) for n in names):
         return "; a proxy is set in this terminal (HTTPS_PROXY): check that it is the right one and that it is running"
@@ -271,7 +271,7 @@ REQUIREMENTS = ROOT / "requirements.txt"   # the same packages and their depende
 BUILD_PACKAGES = ["cmake", "ninja"]
 BUILD_REQUIREMENTS = ROOT / "requirements-build.txt"
 
-# NVFP4 experts (MODEL-UPDATE Phase 4; the engine path is ported from sergqwer/strata-nvfp4, MIT).  Ready-made Strata
+# NVFP4 experts (MODEL-UPDATE Phase 4; the engine path is ported from sergqwer/strata-nvfp4, MIT).  Ready-made Nostroma
 # packs on Hugging Face by the fork's author: nothing is converted here.  Every file is pinned by its upload's commit,
 # size and SHA-256 (the fork's setup.py NVFP4_REPOS, checked against the Hub's LFS pointers 2026-10-12).  The FP8 n-gram
 # table and the BF16 token embedding are the same files in both repositories (a second install links them).  The
@@ -533,7 +533,7 @@ MODELS = {
                                 "License) with Qwen3.8-Flash-Next's Qwen Community License 1.0: "
                                 "https://huggingface.co/nvidia/Qwen3.8-Flash-Next-NVFP4"},
     "NVFP4-QAD": {"about": "NVIDIA's FP4, trained for FP4 (NVIDIA's Qwen3.8-Flash-Next-FP4-Local) - slightly faster on short prompts; "
-                           "a 102 GB download that this PC turns into a Strata pack once (about 20-40 minutes, 110 GB more disk); "
+                           "a 102 GB download that this PC turns into a Nostroma pack once (about 20-40 minutes, 110 GB more disk); "
                            "RTX 50 cards have FP4 tensor cores, other NVIDIA cards run it at 8-bit precision. It reads pictures (the shared Qwen3.8-Flash-Next encoder)",
                   "download_gb": 102.2, "prepare_gb": 110.0, "ram_gb": 80, "arena_gb": 68.0,
                   "families": ("nvfp4",), "nvidia_only": True, "vision": True, "repo": NVFP4_FP4LOCAL_REPO,
@@ -774,7 +774,7 @@ OWN_PATH_FAMILIES = {
 }
 PREVIEW_FAMILIES = OWN_PATH_FAMILIES             # the earlier name (tools and tests that import it)
 
-# Every model file Strata downloads has a fixed size and SHA-256: (repository, file name) -> (bytes, sha256).  download()
+# Every model file Nostroma downloads has a fixed size and SHA-256: (repository, file name) -> (bytes, sha256).  download()
 # checks the file against it as soon as it is whole (a wrong file is deleted and setup stops), and stops before the
 # download when the server's size is not the pinned one.  The files are fetched from the commits in HF_REVISIONS.
 REPO_PINS = {
@@ -953,7 +953,7 @@ def out(cmd):
 
 
 def _kept_mark(path: Path) -> Path | None:
-    """Where the finish mark of a file in a folder Strata cannot write to is kept instead: marks/<hash>.done under Strata's own folder.  The hash is of
+    """Where the finish mark of a file in a folder Nostroma cannot write to is kept instead: marks/<hash>.done under Nostroma's own folder.  The hash is of
     the file's full path, size and modification time, so a file that changed (or a different file at the same place) has no mark."""
     try:
         st = path.stat()
@@ -1015,7 +1015,7 @@ _OWN_DIRS: list = []                                   # --gguf-dir: folders of 
 
 
 def own_files_in(folder) -> None:
-    """Strata writes nothing beside the person's own model files (lane NET item 5): their finish marks are kept in marks/ (_kept_mark)."""
+    """Nostroma writes nothing beside the person's own model files (lane NET item 5): their finish marks are kept in marks/ (_kept_mark)."""
     try:
         _OWN_DIRS.append(Path(folder).expanduser().resolve())
     except OSError:
@@ -1050,7 +1050,7 @@ def done(path: Path) -> bool:
 
 def mark(path: Path, text=""):
     """Write the finish mark.  A folder that cannot be written (--gguf-dir on a read-only share, #570, a read-only model disk) keeps the mark
-    in Strata's own folder instead (marks/), so a 110 GB Engram is hashed once, not on every launch; only when that cannot be written either
+    in Nostroma's own folder instead (marks/), so a 110 GB Engram is hashed once, not on every launch; only when that cannot be written either
     does setup say so and go on (the step is repeated on the next run), it does not stop."""
     text = text or time.strftime("%Y-%m-%d %H:%M")
     beside: BaseException | str = "a folder of the person's own model files"
@@ -1458,7 +1458,7 @@ def pool_workers_note(args, layout=None) -> list[str]:
            "more than its physical cores" if cores and asked + 1 > sum(cores) else
            "more than the cores of one CPU socket" if len(cores) > 1 and asked + 1 > cores[0] else
            "more than the memory bandwidth can feed")
-    return [f"the config asks for {asked} CPU expert workers, {why}: extra workers can make Strata slower. Recommended: "
+    return [f"the config asks for {asked} CPU expert workers, {why}: extra workers can make Nostroma slower. Recommended: "
             f"--pool-workers {rec} (or remove the setting: the engine picks that by itself). It stays as you set it."]
 
 
@@ -1469,7 +1469,7 @@ def vision_threads(logical: int | None = None) -> int:
 
 
 def cpu_info():
-    """(name, avx2, avx512): avx512 means everything Strata's fast AVX-512 kernels use (F, BW, VL, VNNI, VBMI),
+    """(name, avx2, avx512): avx512 means everything Nostroma's fast AVX-512 kernels use (F, BW, VL, VNNI, VBMI),
     the same test the engine makes (cpu_avx512_ok), not just AVX-512F."""
     name, avx2, avx512 = sysinfo.processor() or "unknown CPU", False, False
     if WIN:
@@ -1659,7 +1659,7 @@ def compute_mode_warning(index: int, mode: str) -> str | None:
     """#1445: the warning for a card that is not in the Default compute mode, or None.  In Exclusive_Process only one
     process may hold a CUDA context, so the engine, the vision encoder and the tuning run cannot share the card
     ("CUDA-capable device(s) is/are busy or unavailable"); Prohibited allows none.  A warning only: it is the
-    administrator's setting, Strata never changes it."""
+    administrator's setting, Nostroma never changes it."""
     if not mode or mode.lower() == "default" or mode.lower().startswith("n/a") or mode.lower().startswith("[n/a"):
         return None
     return (f"GPU {index} is in the compute mode {mode}, not Default: a second process cannot use the card while "
@@ -1742,7 +1742,7 @@ def maxwell_note(found) -> str:
     if not cards:
         return ""
     names = ", ".join(f"GPU {g['index']} ({g['name']})" for g in cards)
-    return (f"{names}: Maxwell (compute capability {cc(cards[0])}). No ready-made Strata engine holds code for it, so "
+    return (f"{names}: Maxwell (compute capability {cc(cards[0])}). No ready-made Nostroma engine holds code for it, so "
             "setup cannot install one. One reporter built the engine from source for two Quadro M6000 with a CUDA 12.x "
             "toolkit (cmake -B build -G Ninja -DSTRATA_EXPERIMENTAL_SM60=ON -DCMAKE_CUDA_ARCHITECTURES=52) and saw about "
             "22 tokens a second with a 1-bit Qwen3.8-Flash-Next; nobody has checked the answer text yet. Steps and "
@@ -1852,9 +1852,9 @@ def config_toolkit(cfg: dict) -> int:
 
 
 def gpu_problem(g, together=False):
-    """Why Strata cannot use this card, in plain words (None: it can)."""
+    """Why Nostroma cannot use this card, in plain words (None: it can)."""
     if int(g["arch"]) < 75 and not (sm60_card(g["arch"]) and experimental_sm60()):
-        return (f"not supported - older than the RTX 20 series (compute capability {cc(g)}; Strata needs 7.5 or "
+        return (f"not supported - older than the RTX 20 series (compute capability {cc(g)}; Nostroma needs 7.5 or "
                 "newer" + ("; experimental: choose it with --gpu " + str(g["index"]) + " (the CUDA 12 engine, "
                           "docs/OLDER_GPUS.md)" if sm60_card(g["arch"]) else
                           "; Maxwell only runs from a source build, docs/OLDER_GPUS.md" if maxwell_card(g["arch"]) else "") + ")")
@@ -1907,7 +1907,7 @@ def parse_gpus(text, found) -> list:
         sel = [g["index"] for g in together_ok(found)]
         if not sel:
             gpu_table(found)
-            fail("--gpus all: this PC does not have two GPUs Strata can use together")
+            fail("--gpus all: this PC does not have two GPUs Nostroma can use together")
         return sel
     try:
         sel = [int(x) for x in str(text).split(",") if x.strip()]
@@ -1928,7 +1928,7 @@ def check_gpus(sel, found, what="", yes=False, named=False) -> None:
         p = "not found on this PC" if g is None else gpu_problem(g, together)
         if p is None:
             continue
-        if named and g is not None and gpu_problem(g) is None:     # it runs Strata; only its VRAM is small
+        if named and g is not None and gpu_problem(g) is None:     # it runs Nostroma; only its VRAM is small
             confirm_risk(f"GPU {i} ({g['name']}) has {g['vram_gb']:.0f} GB of VRAM: a card sharing the model needs "
                          f"{SPLIT_MIN_VRAM_GB} GB or more (it holds the dense weights of its layers and its own prompt "
                          "buffers), so the model may not start, or run slower than without it", True, yes,
@@ -1943,7 +1943,7 @@ def check_gpus(sel, found, what="", yes=False, named=False) -> None:
         ones = " or ".join(f"--gpu {x['index']}" for x in single)
         both = "--gpus " + ",".join(str(x["index"]) for x in can) if can else ""
         hint = ((f"use these together: {both}" + (f" (or one card: {ones})" if not together else "")) if can else
-                f"use one card: {ones}" if single else "Strata needs an NVIDIA RTX 20 series or newer card")
+                f"use one card: {ones}" if single else "Nostroma needs an NVIDIA RTX 20 series or newer card")
         fail(f"GPU {i}{'' if g is None else ' (' + g['name'] + ')'} {what}cannot be used: {p}", hint)
 
 
@@ -2000,7 +2000,7 @@ def engine_runs_on(g, toolkit=13) -> bool:
 
 def start_gpus(text):
     """--gpus when starting an installed model: NVIDIA cards as nvidia-smi numbers them, or on a PC whose AMD cards
-    are the ones Strata can use, AMD cards as setup lists them ("all": every supported AMD card)."""
+    are the ones Nostroma can use, AMD cards as setup lists them ("all": every supported AMD card)."""
     if not text:
         return None
     found = gpus()
@@ -2028,7 +2028,7 @@ def choose_gpus(a, found) -> list:
     single = sorted([g for g in found if gpu_problem(g) is None], key=lambda x: (-round(x["vram_gb"]), x["index"]))
     if not single:
         gpu_table(found)
-        fail("none of your GPUs can run Strata", "it needs an NVIDIA RTX 20 series or newer (compute capability 7.5+)")
+        fail("none of your GPUs can run Nostroma", "it needs an NVIDIA RTX 20 series or newer (compute capability 7.5+)")
     can = together_ok(found)
     if not can:
         for g in found:                                # said, not asked: a card that works alone but cannot share a model beside a bigger one
@@ -2067,7 +2067,7 @@ def choose_roles(a, found) -> list:
     cards = roles_cards(found)
     roles = dict(gpu_roles.recommend(cards)["roles"])
     say()
-    say("  Strata recommends a role for each graphics card. Main does the last steps of every answer; a Helper holds part of the model;")
+    say("  Nostroma recommends a role for each graphics card. Main does the last steps of every answer; a Helper holds part of the model;")
     say("  Off leaves the card alone (a card with 8 GB or less starts Off beside a bigger card). Details: docs/MULTI_GPU.md.")
     by = {c["index"]: c for c in cards}
     for i in sorted(roles):
@@ -2259,7 +2259,7 @@ def offer_together(cfg_path: Path, cfg: dict, yes: bool) -> dict:
     # #642: the engines from RESIDENT_SPLIT_ENGINE keep it on both cards, so they are offered as for any config
     resident = "--resident-experts" in cfg.get("args", []) and not resident_split()
     say()
-    say("  This PC has " + " and ".join(gpu_name(g) for g in pair) + ": Strata can share the model across both.")
+    say("  This PC has " + " and ".join(gpu_name(g) for g in pair) + ": Nostroma can share the model across both.")
     say("  Together they hold about twice the model's experts and read prompts about 20% faster (docs/MULTI_GPU.md).")
     if resident:
         say("  This model runs in the low-RAM mode with its experts kept in RAM, on one GPU (recommended: steady RAM")
@@ -2296,7 +2296,7 @@ def offer_together(cfg_path: Path, cfg: dict, yes: bool) -> dict:
 
 
 def gpu_info(pick=None):
-    """The GPU Strata runs on: `pick` (nvidia-smi's number) if given, else the one with the most VRAM (ties: the
+    """The GPU Nostroma runs on: `pick` (nvidia-smi's number) if given, else the one with the most VRAM (ties: the
     lower number).  None when there is no NVIDIA GPU.  The dict also says how many there are ("count")."""
     found = gpus()
     if not found:
@@ -2443,7 +2443,7 @@ def disk_room_problem(models_dir, pack_dir, other_gb, copy_gb, other_note="", fr
     if free_packs < needs:
         return (f"not enough free disk space for the low-RAM copy of the experts in {pack_dir}: it needs about {needs:.0f} GB "
                 f"and {free_packs:.0f} GB are free there.",
-                "Free some space, move Strata's data folder to a bigger drive (strata launch --data-dir), or set Low-RAM mode to Automatic to run without the copy.")
+                "Free some space, move Nostroma's data folder to a bigger drive (strata launch --data-dir), or set Low-RAM mode to Automatic to run without the copy.")
     return None
 
 
@@ -3239,7 +3239,7 @@ def download(url, dst: Path, what=None):
             if e.code == 404 and hf_unpinned(url) != url:  # the pinned revision is gone from the repository
                 if not allow_unpinned():
                     fail(f"the pinned version of {what or dst.name} is no longer on Hugging Face",
-                         "update Strata: a newer version pins the files that are there now")
+                         "update Nostroma: a newer version pins the files that are there now")
                 warn(f"{what or dst.name}: not at the pinned revision any more; downloading the repository's "
                      "current file (not checked against a SHA-256)")
                 url = hf_unpinned(url)
@@ -3261,7 +3261,7 @@ def download(url, dst: Path, what=None):
         total = pin[0] if pin else (meta[0] if meta else 0)
     if pin and total and total != pin[0]:              # not the pinned file: stop before the download, not after
         fail(f"{what or dst.name} is {total:,} bytes on {url.split('/')[2]}, not the pinned {pin[0]:,}",
-             "update Strata (the file there has changed since this version pinned it)")
+             "update Nostroma (the file there has changed since this version pinned it)")
     label = what or dst.name
     if bad.is_file() and not dst.exists() and total:
         try:
@@ -3367,16 +3367,16 @@ def gguf_dir_shards(folder: Path, fam: dict, model: str) -> list[Path]:
 # #444: the quantization in a GGUF's name (Unsloth's UD-IQ3_XXS, a K-quant's Q2_K_XL, a GSQ-RCO IQ3_S, ...)
 GGUF_QUANT = re.compile(r"(?<![A-Za-z0-9])((?:UD-)?(?:I?Q\d+(?:_[A-Za-z0-9]+)*|BF16|F16|F32))"
                         r"(?=-\d{5}-of-\d{5}\.gguf$|\.gguf$)", re.I)
-SUPPORTED_GGUFS = ("Strata runs ISTA-DASLab's GSQ-RCO files (Qwen3.8-Flash-Next Q2_0, IQ2_XS, IQ3_XXS, IQ3_S; Swift "
+SUPPORTED_GGUFS = ("Nostroma runs ISTA-DASLab's GSQ-RCO files (Qwen3.8-Flash-Next Q2_0, IQ2_XS, IQ3_XXS, IQ3_S; Swift "
                    "1.5's; the Coder's IQ1_M) and Unsloth's UD-IQ1_M, UD-Q2_0, UD-IQ2_XS, UD-Q2_K_XL, UD-IQ3_XXS, UD-Q3_K_XL, "
                    "UD-IQ4_XS, UD-Q4_K_XL, UD-Q5_K_XL, UD-Q6_K_XL and Q8_0 only: other GGUFs (Unsloth's UD-IQ1_S, other "
                    "K-quant files) cannot be used")
-# why a GGUF of a name Strata knows is still refused (said beside SUPPORTED_GGUFS)
-UNSUPPORTED_WHY = {"UD-IQ1_S": "UD-IQ1_S mixes two expert formats in one layer, which Strata cannot load; UD-IQ1_M is the 1-bit choice"}
+# why a GGUF of a name Nostroma knows is still refused (said beside SUPPORTED_GGUFS)
+UNSUPPORTED_WHY = {"UD-IQ1_S": "UD-IQ1_S mixes two expert formats in one layer, which Nostroma cannot load; UD-IQ1_M is the 1-bit choice"}
 
 
 def gguf_unsupported(name: str) -> str | None:
-    """#444: the quantization a GGUF's name says, when it is one Strata cannot run (not a setup size); else None."""
+    """#444: the quantization a GGUF's name says, when it is one Nostroma cannot run (not a setup size); else None."""
     m = GGUF_QUANT.search(name)
     return m.group(1) if m and m.group(1).upper() not in MODELS and not name.lower().startswith("mmproj") else None
 
@@ -3395,13 +3395,13 @@ def gguf_choice(name: str) -> tuple | None:
 
 def gguf_dir_problem(folder: Path, first: Path, fam: dict, model: str) -> tuple | None:
     """#444: (message, hint) when --gguf-dir has no file setup can use for this choice: the chosen shard is a GGUF
-    Strata cannot run (Unsloth's UD-IQ3_XXS taken for IQ3_XXS by its name), or it is missing and the folder holds
+    Nostroma cannot run (Unsloth's UD-IQ3_XXS taken for IQ3_XXS by its name), or it is missing and the folder holds
     other GGUFs - then the hint names the --family/--model of the usable ones.  None otherwise (a missing shard in a
     folder without GGUFs stays check_shards' "missing")."""
     bad = gguf_unsupported(first.name) if first.exists() else None
     if bad:
         why = UNSUPPORTED_WHY.get(bad.upper())
-        return f"{first.name} is {bad}, a GGUF Strata cannot run", SUPPORTED_GGUFS + (".\n       " + why if why else "")
+        return f"{first.name} is {bad}, a GGUF Nostroma cannot run", SUPPORTED_GGUFS + (".\n       " + why if why else "")
     if first.exists():
         return None
     firsts = sorted(p.name for p in folder.glob("*.gguf")
@@ -3478,7 +3478,7 @@ def verify_sha256(s: Path, size: int, sha: str, own: bool = False, repair=None, 
     so the ~5 minutes of hashing 111 GB happen once.  A wrong file is deleted, so the next run downloads it again.
     `repair` (a downloaded file's own re-reader, see repair_download): the wrong file is first compared with the server
     piece by piece and only the damaged pieces are written again, then it is checked a second time.
-    `also`: other SHA-256 values that are the same file for Strata's purposes."""
+    `also`: other SHA-256 values that are the same file for Nostroma's purposes."""
     m = s.with_name(s.name + ".done")
     kept = mark_text(s)
     if kept is not None and any(f"sha256 {x}" in kept for x in (sha, *also)):
@@ -3486,7 +3486,7 @@ def verify_sha256(s: Path, size: int, sha: str, own: bool = False, repair=None, 
     have = s.stat().st_size if s.exists() else -1
     if own and have > 0 and have != size and own_gguf_is_whole(s):
         # a fine-tune or another build with the layout of the published file (#3777: 96 bytes apart): recommend, never refuse
-        warn(f"{s.name} is {have:,} bytes; the published file is {size:,}. It is a complete GGUF file, so Strata uses it as it is; "
+        warn(f"{s.name} is {have:,} bytes; the published file is {size:,}. It is a complete GGUF file, so Nostroma uses it as it is; "
              "it may be another version or a fine-tune, so check a few answers before you rely on it")
         return
     if have != size:
@@ -3513,7 +3513,7 @@ def verify_sha256(s: Path, size: int, sha: str, own: bool = False, repair=None, 
     if digest != sha:
         if own and own_gguf_is_whole(s):
             warn(f"{s.name} is not the published file (SHA-256 {digest[:12]}..., expected {sha[:12]}...) but it is a complete GGUF file, so "
-                 "Strata uses it as it is; it may be another version or a fine-tune, so check a few answers before you rely on it")
+                 "Nostroma uses it as it is; it may be another version or a fine-tune, so check a few answers before you rely on it")
             return
         if own:
             fail(f"{s.name} does not match the published file (SHA-256 {digest}, expected {sha})",
@@ -3521,11 +3521,11 @@ def verify_sha256(s: Path, size: int, sha: str, own: bool = False, repair=None, 
         keep_bad(s)                                    # kept as <name>.bad, not thrown away (see keep_bad)
         m.unlink(missing_ok=True)
         if server_same:
-            hint = ("the server sends exactly the bytes you have (every block was compared), so the file there is not the version this Strata pins: "
+            hint = ("the server sends exactly the bytes you have (every block was compared), so the file there is not the version this Nostroma pins: "
                     "update Strata. Run setup again to check the kept file once more")
         else:
             hint = "run setup again: the kept file is checked once more, and if it still differs it is downloaded again and the kept one is removed"
-        fail(f"{s.name} does not match the pinned SHA-256 (it is {digest}, Strata expects {sha}); the file was kept as {s.name}.bad", hint)
+        fail(f"{s.name} does not match the pinned SHA-256 (it is {digest}, Nostroma expects {sha}); the file was kept as {s.name}.bad", hint)
     mark(s, f"sha256 {sha}")
 
 
@@ -3895,7 +3895,7 @@ def pip_install(packages, what, extra=()):
     if CONTROL:                                        # the app ships these (hash-locked); nothing is installed here
         missing = control_missing_packages()
         if missing:
-            fail("this copy of Strata Control lacks " + ", ".join(missing), "reinstall the Strata app")
+            fail("this copy of Nostroma Control lacks " + ", ".join(missing), "reinstall the Nostroma app")
         ok(f"{what}: bundled with the app")
         return
     stamp = Path(sys.prefix) / ".strata-pip.json"
@@ -3984,7 +3984,7 @@ ROCM_INDEXES = {"gfx1100": "https://rocm.nightlies.amd.com/v2/gfx110X-dgpu/",   
 # version for every card cannot work.  The wheel is chosen per index (the family): a preferred version, tried first; when
 # the index no longer offers it, the newest one of the same 7.x line, else of the same major, with a warning (rocm_pick).
 # STRATA_ROCM_VERSION still forces one exact version (no lookup).
-ROCM_VERSION_DEFAULT = "7.10.0a20251120"                 # what Strata's HIP build was tested with (gfx120X, gfx110X)
+ROCM_VERSION_DEFAULT = "7.10.0a20251120"                 # what Nostroma's HIP build was tested with (gfx120X, gfx110X)
 ROCM_FAMILY_PINS = {"gfx103X-all": "7.13.0a20260515",    # #1103: 7.13.0a20260515 runs; the 7.14 nightlies time out
                     "gfx110X-all": "7.10.0a20251121",    # the experimental gfx1103: this index has no ...20251120
                     "gfx1151": "7.14.0a20260608"}        # #1267: 7.14.0a20260529 to 20260608 run on kernel 7.2.8; the 7.10 wheel segfaults
@@ -4137,7 +4137,7 @@ def is_rdna2(g) -> bool:
     return isinstance(g, dict) and any(gfx_arch_is(g.get("arch"), a) for a in RDNA2_ARCHS)
 
 
-RDNA2_PACKAGE_NOTE = ("RX 6000 series (RDNA2, {arch}): Strata has a ready-made engine package for these cards, built, not tested on a real "
+RDNA2_PACKAGE_NOTE = ("RX 6000 series (RDNA2, {arch}): Nostroma has a ready-made engine package for these cards, built, not tested on a real "
                       "RX 6000 card. It runs plain kernels (this chip has no matrix cores, so the RX 7000 / RX 9000 prompt paths stay off) "
                       "and plain hipBLAS (no hipBLASLt tuning table for it). If something goes wrong, open an issue with the end of "
                       "strata-<model>.log: docs/AMD_HIP.md, \"RDNA2\".")
@@ -4528,7 +4528,7 @@ def amd_gpus(sysfs="/sys"):
 
 def amd_problem(g):
     if g["arch"] not in AMD_ARCHS:
-        return (f"not supported - Strata's AMD backend runs on {AMD_CARDS} only, this is {g['arch']}"
+        return (f"not supported - Nostroma's AMD backend runs on {AMD_CARDS} only, this is {g['arch']}"
                 + (" (an integrated Radeon, not Strix Halo)" if g["arch"] in ("gfx1150", "gfx1152", "gfx1103") else ""))
     if g.get("cannot_run"):                            # Windows: the installed engine's own check (--list-devices)
         return g["cannot_run"]
@@ -4554,7 +4554,7 @@ def amd_gpus_win() -> list[dict]:
 
 def amd_parse_gpus(text, amd) -> list:
     """--gpus with AMD cards, numbered as HIP numbers them (setup's list): "1,0", or "all" (every supported card, the
-    most VRAM first).  Every chosen card must be one Strata supports (AMD_ARCHS; they may be of different
+    most VRAM first).  Every chosen card must be one Nostroma supports (AMD_ARCHS; they may be of different
     architectures: the engine is compiled for each).  Returns the cards, the main one first."""
     usable = [g for g in amd if amd_problem(g) is None]
     if str(text).strip().lower() == "all":
@@ -4573,7 +4573,7 @@ def amd_parse_gpus(text, amd) -> list:
             fail(f"--gpus takes AMD GPU numbers as setup lists them, e.g. --gpus 1,0 (or --gpus all), not {text!r}")
     if len(sel) < 2 or len(set(sel)) != len(sel):
         fail("--gpus takes two or more different GPUs, e.g. --gpus 1,0 (one GPU: --gpu 1)",
-             "this PC has " + (f"{len(usable)} AMD card{'s' if len(usable) != 1 else ''} Strata can use"
+             "this PC has " + (f"{len(usable)} AMD card{'s' if len(usable) != 1 else ''} Nostroma can use"
                                + (": " + ", ".join(f"GPU {g['index']} ({g['name']})" for g in usable) if usable else "")))
     byid = {g["index"]: g for g in amd}
     for i in sel:
@@ -4672,7 +4672,7 @@ def _pci_device_id(text: str) -> int | None:
 
 
 def win_amd_arch(device_id: int | None, name: str) -> str:
-    """A Windows AMD adapter's architecture from its PCI device id, else its name; "" when it is none Strata knows
+    """A Windows AMD adapter's architecture from its PCI device id, else its name; "" when it is none Nostroma knows
     (an integrated Radeon, an older card)."""
     if device_id in _WIN_AMD_DID:
         return _WIN_AMD_DID[device_id]
@@ -4681,7 +4681,7 @@ def win_amd_arch(device_id: int | None, name: str) -> str:
 
 def amd_gpus_windows(adapters=None, registry=None) -> list[dict]:
     """The AMD display adapters present, in display-adapter order (setup's numbering until the HIP engine is
-    installed), with the arch Strata would run them as ("" = unknown: listed, not supported).  adapters / registry:
+    installed), with the arch Nostroma would run them as ("" = unknown: listed, not supported).  adapters / registry:
     tools/test_setup_amd.py passes mocked ones."""
     adapters = _win_display_adapters() if adapters is None else adapters
     registry = _win_display_registry() if registry is None else registry
@@ -4845,7 +4845,7 @@ def hip_runtime_beside_exe(eng: Path) -> None:
                 shutil.copy2(src, dst)
             except OSError as e:                   # e.g. the engine is running and holds the old copy
                 warn(f"could not put {src.name} next to the AMD engine ({e}); if the engine stops on its first "
-                     "request, close Strata and run START-HERE.bat again")
+                     "request, close Nostroma and run START-HERE.bat again")
 
 
 def hip_match(card: dict, listed: list[dict], hip: list[dict]) -> dict | None:
@@ -4963,8 +4963,8 @@ def get_prebuilt_hip(url_base, gpu, updating=False) -> Path | None:
                 continue
             warn(f"no ready-made AMD engine at {base} ({e})")
             return engine_from_feed(eng, updating)
-    say("  Downloading the ready-made Strata engine for AMD GPUs (with the ROCm libraries it uses) ...")
-    download(base + WIN_HIP_ASSET, z, "Strata AMD engine")
+    say("  Downloading the ready-made Nostroma engine for AMD GPUs (with the ROCm libraries it uses) ...")
+    download(base + WIN_HIP_ASSET, z, "Nostroma AMD engine")
     try:
         verify_engine_archive(z, WIN_HIP_ASSET, base)
     except UnverifiedEngine as e:
@@ -4989,7 +4989,7 @@ def get_prebuilt_hip(url_base, gpu, updating=False) -> Path | None:
                "for runs from a self-build of the engine: see docs/AMD_HIP.md (--build)")   # #881
         if is_strix_halo(gpu):                         # never a zip without gfx1151 code: say so, and what to do
             why = (f"it is built for {', '.join(arch_names(meta.get('archs'))) or 'other GPUs'} and has no gfx1151 code: your "
-                   f"{gpu['name']} (Strix Halo) needs a ready-made engine from Strata 0.1.40 or newer, whose zip is "
+                   f"{gpu['name']} (Strix Halo) needs a ready-made engine from Nostroma 0.1.40 or newer, whose zip is "
                    "built for gfx1151 too.  Until then: the Linux guide docs/STRIX_HALO.md, or compile the engine "
                    "here with tools\\hip\\build_windows.bat (its default list has gfx1151) and start setup with "
                    "--prebuilt <its dist folder>")
@@ -5037,7 +5037,7 @@ def rocm_root(archs):
         if (ver is None or ver >= ROCM_SYSTEM_MIN) and not missing:
             return sysroot, [str(sysroot / "lib")]
         if ver is not None and ver < ROCM_SYSTEM_MIN:
-            warn(f"the ROCm in {sysroot} is {ver[0]}.{ver[1]}; Strata needs {ROCM_SYSTEM_MIN[0]}.{ROCM_SYSTEM_MIN[1]} "
+            warn(f"the ROCm in {sysroot} is {ver[0]}.{ver[1]}; Nostroma needs {ROCM_SYSTEM_MIN[0]}.{ROCM_SYSTEM_MIN[1]} "
                  "or newer: using AMD's wheels in .venv instead")
         else:                                          # #446: a runtime-only ROCm (no -dev packages): cmake would fail
             warn(f"the ROCm in {sysroot} has no HIP development files ({', '.join(missing)}): using AMD's wheels in "
@@ -5154,7 +5154,7 @@ def build_engine_hip(gpu, llama, vision="none") -> Path:
     os.environ["PATH"] = os.pathsep.join([str(root / "bin"), str(root / "llvm" / "bin"), os.environ.get("PATH", "")])
     say("  The engine's source changed: compiling it again (only what changed, a few minutes) ..."
         if meta.get("backend") == "hip" and (eng / EXE).exists() and has_archs
-        else f"  Compiling the Strata engine for your AMD GPU{'s' if len(archs) > 1 else ''} ({', '.join(archs)}; "
+        else f"  Compiling the Nostroma engine for your AMD GPU{'s' if len(archs) > 1 else ''} ({', '.join(archs)}; "
              "10-20 minutes, once) ...")
     cmake_build(ROOT, ROOT / "build-hip", "strata",
                 ["-DSTRATA_ENABLE_HIP=ON", "-DSTRATA_ENABLE_CUDA=OFF", "-DSTRATA_BUILD_TESTS=OFF",
@@ -5352,7 +5352,7 @@ def apply_noise_generator(src: Path) -> None:
 
 
 def apply_vae_decoder(src: Path) -> None:
-    """OWN-5 step 2: Strata's VAE decoder (src/image/vae via tools/image/sdcpp_vae) into the stable-diffusion.cpp
+    """OWN-5 step 2: Nostroma's VAE decoder (src/image/vae via tools/image/sdcpp_vae) into the stable-diffusion.cpp
     source (idempotent; CUDA / HIP builds; sd-cli uses it only with --model-args strata_vae=1)."""
     import importlib.util
     QI = _qimage()
@@ -5364,7 +5364,7 @@ def apply_vae_decoder(src: Path) -> None:
 
 def build_image_engine(backend: str, gpu: dict, noise: bool = False, vae: bool = False) -> tuple[Path, list[str]]:
     """Compile sd-cli for `backend` into engine-image/ (again only when the pins or the backend changed, or, with
-    `noise`, the noise generator's sources) -> (its path, the library folders it runs with).  `noise`: Strata's noise
+    `noise`, the noise generator's sources) -> (its path, the library folders it runs with).  `noise`: Nostroma's noise
     generator is patched in (images "noise": "strata"); off, the build and its stamp are what they always were."""
     QI = _qimage()
     IMAGE_ENGINE.mkdir(exist_ok=True)
@@ -5378,11 +5378,11 @@ def build_image_engine(backend: str, gpu: dict, noise: bool = False, vae: bool =
         ok(f"image generator already built ({backend})")
         return exe, lib_dirs
     src = get_sd_cpp()
-    if backend in QI.NATIVE_BACKENDS:                 # Strata's DiT runner (inert unless the config asks for it)
+    if backend in QI.NATIVE_BACKENDS:                 # Nostroma's DiT runner (inert unless the config asks for it)
         apply_native_runner(src)
-    if noise:                                          # Strata's noise generator (inert unless the config asks for it)
+    if noise:                                          # Nostroma's noise generator (inert unless the config asks for it)
         apply_noise_generator(src)
-    if vae:                                            # Strata's VAE decoder (inert unless the config asks for it)
+    if vae:                                            # Nostroma's VAE decoder (inert unless the config asks for it)
         apply_vae_decoder(src)
     vcvars, lib_dirs = None, []
     if backend == "cuda":
@@ -5462,7 +5462,7 @@ def setup_images(a, gpu: dict, hip: bool, models_dir: Path) -> dict | None:
     noise = getattr(a, "image_noise", None) == "on"
     vae = getattr(a, "image_vae", None) == "on"
     if vae and backend not in QI.VAE_BACKENDS:         # the owner's wording, 11-11
-        warn(f"Strata's own picture decoder runs with CUDA or ROCm only; image generation on {backend} keeps "
+        warn(f"Nostroma's own picture decoder runs with CUDA or ROCm only; image generation on {backend} keeps "
              "stable-diffusion.cpp's decoder")
         vae = False
     exe, lib_dirs = build_image_engine(backend, gpu or {}, noise, vae)
@@ -5638,7 +5638,7 @@ def engine_refused(asset: str, e: Exception, updating: bool) -> None:
     catches what the download can throw.
     """
     if not updating:
-        fail(f"the downloaded Strata engine does not match GitHub's checksum: {e}",
+        fail(f"the downloaded Nostroma engine does not match GitHub's checksum: {e}",
              "the bad download has been deleted (corrupt or tampered), so the next run fetches the "
              "published file again. Set STRATA_SKIP_SHA256=1 only if you insist on installing it anyway")
         return
@@ -5789,8 +5789,8 @@ def get_prebuilt(url_base, gpu, vision, updating=False, toolkit=13) -> Path | No
                     return got
             warn(f"no ready-made engine at {base} ({e})" + ("" if updating else ": compiling instead"))
             return None
-    say("  Downloading the ready-made Strata engine" + (" (CUDA 12, experimental)" if int(toolkit) == 12 else "") + " ...")
-    download(base + asset, z, "Strata engine")
+    say("  Downloading the ready-made Nostroma engine" + (" (CUDA 12, experimental)" if int(toolkit) == 12 else "") + " ...")
+    download(base + asset, z, "Nostroma engine")
     try:
         verify_engine_archive(z, asset, base)
     except UnverifiedEngine as e:
@@ -5885,7 +5885,7 @@ def engine_update_note() -> None:
         else:
             old = ver < need
         if old:
-            warn(f"the installed engine ({meta.get('version') or 'unknown version'}) is older than this Strata expects: "
+            warn(f"the installed engine ({meta.get('version') or 'unknown version'}) is older than this Nostroma expects: "
                  "starting it as it is. Starting never updates anything; run "
                  + ("UPDATE.bat" if WIN else "./update.sh") + " (or `strata install --update`) to update it")
 
@@ -6305,10 +6305,10 @@ def prebuilt_vision(meta: dict, gpu: dict, vision: str) -> str:
 
 
 def local_build_archs(archs, found) -> list:
-    """#4662: the architectures a compiled engine gets code for: the cards this install uses AND every other card Strata can run on in the PC.
+    """#4662: the architectures a compiled engine gets code for: the cards this install uses AND every other card Nostroma can run on in the PC.
     A PC with a TITAN RTX (sm_75) and an RTX 3080 (sm_86) was updated with archs [75] (the pair was not picked as a split by setup), and the
     layer-split run on both cards then launched kernels the sm_75 build holds only a trap for: "unspecified launch failure" on every long prompt.
-    One more architecture is a few more minutes of compile, once; a card Strata cannot use (older than sm_75) is left out."""
+    One more architecture is a few more minutes of compile, once; a card Nostroma cannot use (older than sm_75) is left out."""
     try:
         present = {int(g["arch"]) for g in found or [] if gpu_problem(g) is None}
     except (KeyError, TypeError, ValueError):
@@ -6354,7 +6354,7 @@ def build_engine(gpu, vision, yes, llama, toolkit=None) -> Path:
         say("  Compiling the engine for " + ", ".join(f"sm_{x}" for x in archs) + " (a card it had no code for; "
             "10-20 minutes, once) ..." if new_arch else
             "  The engine's source changed: compiling it again (only what changed, a few minutes) ..."
-            if local and (eng / EXE).exists() else "  Compiling the Strata engine for your GPU (10-20 minutes, once) ...")
+            if local and (eng / EXE).exists() else "  Compiling the Nostroma engine for your GPU (10-20 minutes, once) ...")
         cmake_build(ROOT, bdir, "strata",
                     ["-DSTRATA_ENABLE_CUDA=ON", "-DSTRATA_BUILD_TESTS=OFF", "-DSTRATA_Q6K_EXPERTS=ON", "-DSTRATA_MMQ_KQUANTS=ON",
                      # without llama.cpp's MMQ, also in a build folder configured before (its cache says ON); ARM64 (DGX Spark):
@@ -6396,9 +6396,9 @@ def build_engine(gpu, vision, yes, llama, toolkit=None) -> Path:
 
 # ------------------------------------------------------------------------------------------------ the data folder
 # The model files - the GGUFs, the prepared packs and the MTP layer, 70-120 GB - live in a data folder NEXT TO the
-# Strata folder (`Strata-data`), not inside it: updating Strata by unzipping a new copy used to give a new, empty
-# folder and a full download again.  Where it is, and which Strata folders this user ran, is kept in a small
-# per-user file, so every Strata folder on the PC finds the same files.
+# Nostroma folder (`Strata-data`), not inside it: updating Nostroma by unzipping a new copy used to give a new, empty
+# folder and a full download again.  Where it is, and which Nostroma folders this user ran, is kept in a small
+# per-user file, so every Nostroma folder on the PC finds the same files.
 DATA_ITEMS = ("models", "packs", "mtp")
 
 
@@ -6688,7 +6688,7 @@ def ram_ctx(model, ram, low_ram=False) -> int:
 
 def app_settings_file() -> Path | None:
     """The desktop app keeps its own settings file (STRATA_SETTINGS_FILE, in the app's data folder) and never reads or writes the
-    one an older command-line Strata uses, so an old install is never adopted or moved."""
+    one an older command-line Nostroma uses, so an old install is never adopted or moved."""
     raw = os.environ.get("STRATA_SETTINGS_FILE")
     return Path(raw) if raw else None
 
@@ -6730,7 +6730,7 @@ def has_data(folder: Path) -> bool:
 
 
 def other_installs(settings: dict) -> list:
-    """Strata folders besides this one that may hold model files: the ones this user ran before, and Strata* folders
+    """Nostroma folders besides this one that may hold model files: the ones this user ran before, and Nostroma* folders
     next to this one (a zip unpacked again lands in e.g. `Strata-main (1)\\Strata-main`)."""
     cands = [Path(p) for p in settings.get("installs", []) if not in_trash(p)]
     for base in dict.fromkeys(() if app_settings_file() else (home().parent, home().parent.parent)):
@@ -6836,7 +6836,7 @@ def data_folder(requested: str | None, move: bool = False, yes: bool = True, set
     the person is asked: keep them where they are and use the new folder for new downloads (the answer with --yes
     or when nobody can answer), or move them in (`move`, --move-data, or the answer "move").  Only a move, or
     --set-default-data-dir, or a PC with no model files anywhere, changes the remembered data folder.  Without
-    --data-dir the model files of this folder and of earlier Strata folders on the same drive are gathered into the
+    --data-dir the model files of this folder and of earlier Nostroma folders on the same drive are gathered into the
     remembered data folder and their configs point there (that is the data folder's own job)."""
     settings = load_settings()
     remembered = Path(settings["data_dir"]) if settings.get("data_dir") else home().parent / "Strata-data"
@@ -6851,7 +6851,7 @@ def data_folder(requested: str | None, move: bool = False, yes: bool = True, set
         settings = {k: v for k, v in settings.items() if k != "data_dir"}
     try:
         dest.mkdir(parents=True, exist_ok=True)
-    except OSError as e:                                # e.g. no write access next to the Strata folder
+    except OSError as e:                                # e.g. no write access next to the Nostroma folder
         warn(f"cannot use {dest} for the model files ({e}): keeping them in {home()}")
         dest = home()
     elsewhere = []
@@ -6916,7 +6916,7 @@ def data_folder(requested: str | None, move: bool = False, yes: bool = True, set
             elsewhere.append(folder)                    # in use, or a copy the data folder already has
             warn(f"some model files are still in {folder} (in use, or already in {dest})")
         else:
-            ok(f"model files from {folder} moved to {dest} (a new copy of Strata finds them there)")
+            ok(f"model files from {folder} moved to {dest} (a new copy of Nostroma finds them there)")
     installs = [str(home())] + [p for p in settings.get("installs", [])
                                 if p != str(home()) and Path(p).is_dir() and not in_trash(p)]
     save_settings({**settings, "data_dir": str(dest), "installs": installs[:20]})
@@ -6932,7 +6932,7 @@ def data_folder_for(a) -> tuple:
 def data_folder_in_place() -> tuple:
     """(the data folder, []) for a start: where settings.json says the model files are, or the default place.  Reads
     the settings and nothing else: no folder is created, nothing is moved or copied, no setting is saved.  The run
-    configs name their model files, so an install made by an earlier Strata starts from where it is."""
+    configs name their model files, so an install made by an earlier Nostroma starts from where it is."""
     settings = load_settings()
     dest = Path(settings["data_dir"]) if settings.get("data_dir") else home().parent / "Strata-data"
     from nostroma_control import folders
@@ -7094,7 +7094,7 @@ def args_dropped(old: dict, cfg: dict) -> list[str]:
     return list(dict.fromkeys(f for f in flags(old) if f not in new))
 
 
-SHAPE_ENGINE: dict = {}       # the model-shape engine the chosen model runs on: {"shape": "q4_lite"} (nostroma_control/shape_engine.py); empty: the Strata engine
+SHAPE_ENGINE: dict = {}       # the model-shape engine the chosen model runs on: {"shape": "q4_lite"} (nostroma_control/shape_engine.py); empty: the Nostroma engine
 
 
 def engine_exe(eng: Path) -> str:
@@ -7170,7 +7170,7 @@ def model_config_files(folder: Path) -> list:
 
 
 def previous_config(elsewhere_first: list, settings: dict):
-    """The most recently used model config of another Strata folder on this PC, for a folder that has none yet.  One
+    """The most recently used model config of another Nostroma folder on this PC, for a folder that has none yet.  One
     that does not parse (an empty or cut-off file, #459) is skipped with a warning: the newest readable one is used,
     and with none this copy is set up as a fresh install."""
     cands = []
@@ -7247,7 +7247,7 @@ def find_in(roots: list, rel: str):
 
 def mmproj_beside(gguf_dir, name: str, size: int | None = None):
     """The picture file a person's own GGUF folder (--gguf-dir, "Use a local GGUF") already has: in the folder itself, or in the folder above it and that
-    folder's models/ (a Strata data folder's layout: models/<size>/ shards, models/<picture file>; pictures.places() looks there too).  The two outer places are
+    folder's models/ (a Nostroma data folder's layout: models/<size>/ shards, models/<picture file>; pictures.places() looks there too).  The two outer places are
     taken only at the pinned size (`size`), so a half-copied file is fetched again and not used.  None when there is none."""
     if not gguf_dir:
         return None
@@ -7288,7 +7288,7 @@ def alt_reader_places(pinned: str, models_dir, roots, gguf_dir) -> list:
 
 def accepted_alt_reader(pinned: str, places, *, start: bool = True):
     """The first file in `places` that is the alternative reader of `pinned` (name, size and SHA-256 all as pinned in ALT_READERS), else None. Anything
-    else with that name is ignored (never deleted, never renamed). The SHA-256 (0.9 GB, a few seconds) is remembered in a mark in Strata's own
+    else with that name is ignored (never deleted, never renamed). The SHA-256 (0.9 GB, a few seconds) is remembered in a mark in Nostroma's own
     marks/ folder, never beside the person's file; the mark is keyed by the real path, size, modification time and change time
     (_alt_reader_mark), so a file that was replaced, also in place with its size and modification time kept, is hashed again. start=True is
     the setup run (says what it does, writes the mark); start=False is the plan (the same answer, says nothing, writes nothing)."""
@@ -7381,12 +7381,12 @@ def model_config(path: Path) -> bool:
         why = e.strerror or str(e)
     except ValueError:
         why = "not valid JSON"
-    warn(f"skipped {path.name} ({why}): it is not a Strata model config")
+    warn(f"skipped {path.name} ({why}): it is not a Nostroma model config")
     return False
 
 
 def installed_configs():
-    """The model configs of this install, newest first; a DeepSeek one is not among them (this Strata does not run, check, tune or rewrite it:
+    """The model configs of this install, newest first; a DeepSeek one is not among them (this Nostroma does not run, check, tune or rewrite it:
     retired_configs, nostroma_control/retired.py)."""
     from nostroma_control import retired
     return [p for p in sorted(model_config_files(home()), key=lambda p: p.stat().st_mtime, reverse=True)
@@ -7535,7 +7535,7 @@ def calibrate_config(cfg_path: Path) -> bool:
     import calibrate as CAL
     cfg = json.loads(cfg_path.read_text(encoding="utf-8-sig"))
     say()
-    say("  Tuning Strata for this PC: the output speed is measured with a few engine settings (the PCIe share, the")
+    say("  Tuning Nostroma for this PC: the output speed is measured with a few engine settings (the PCIe share, the")
     say("  draft depth, the CPU threads, the expert cache; on two or more cards also the prompt chunks). It takes")
     say("  roughly 15-30 minutes (3 rounds of each value); the PC is busy meanwhile.")
     try:
@@ -7617,7 +7617,7 @@ def update_install(have: list, a) -> int:
     keeps its engine (update_installed_engine says to close it and run this again)."""
     have = [p for p in have if model_config(p)]        # #549: a strata-*.json that is no model config is skipped
     if not have:
-        say("  No model is installed in this Strata folder yet: run START-HERE.bat (Linux: ./setup.sh) to set it up -")
+        say("  No model is installed in this Nostroma folder yet: run START-HERE.bat (Linux: ./setup.sh) to set it up -")
         say("  it finds an earlier install's model files next to it and reuses them.")
         return 0
     pip_install(runtime_packages(),
@@ -7636,12 +7636,12 @@ def update_install(have: list, a) -> int:
     say()
     start = "START-HERE.bat" if WIN else "./setup.sh"
     if any(ver) and tuple(ver) < MIN_ENGINE:             # #3653: the engine step failed above; "updated" would be untrue
-        warn(f"Strata's files are updated, but the engine was NOT: it is still {'.'.join(map(str, ver))} and this Strata wants "
+        warn(f"Nostroma's files are updated, but the engine was NOT: it is still {'.'.join(map(str, ver))} and this Nostroma wants "
              f"{'.'.join(map(str, MIN_ENGINE))} or newer. The model still starts with the old engine.")
         say(f"  Next step: check the internet connection (and that the model window is closed), then run {'UPDATE.bat' if WIN else './update.sh'} again; "
             "the line above this one says why the engine was not fetched.")
         return 0
-    ok("Strata is updated" + (f" (engine {'.'.join(map(str, ver))})" if any(ver) else "") +
+    ok("Nostroma is updated" + (f" (engine {'.'.join(map(str, ver))})" if any(ver) else "") +
        f". Start the model with {start} when you want it.")
     return 0
 
@@ -8115,7 +8115,7 @@ def provide_dflash2_vocab(data: Path, choice: str = "cjk") -> None:
     in setup (--draft-vocab, saved in the model's config; the default file when none)."""
     from nostroma_control import drafting
     if drafting.provide_vocab(data, choice or "cjk") is None:
-        warn("the draft vocabulary file (data/draft_vocab.bin) is missing from this Strata folder, so DFlash2 cannot start; update Strata")
+        warn("the draft vocabulary file (data/draft_vocab.bin) is missing from this Nostroma folder, so DFlash2 cannot start; update Nostroma")
 
 
 def refresh_dflash2_vocab(data: Path | None, choice: str = "cjk") -> None:
@@ -8256,7 +8256,7 @@ def write_run_script(model, cfg_path, port, open_browser=True):
              "--port", str(port)] + (["--open"] if open_browser else [])
     if WIN:
         script = home() / f"run-{model.lower()}.bat"
-        script.write_text("@echo off\r\ntitle Strata " + model + "\r\ncd /d \"" + str(ROOT) + "\"\r\n" +
+        script.write_text("@echo off\r\ntitle Nostroma " + model + "\r\ncd /d \"" + str(ROOT) + "\"\r\n" +
                           " ".join(f'"{x}"' for x in serve) + "\r\nif errorlevel 1 pause\r\n", encoding="utf-8")
     else:
         script = home() / f"run-{model.lower()}.sh"
@@ -8335,7 +8335,7 @@ def sycl_setup(argv) -> int:
             rest.append(x)
     script = ROOT / "sycl" / "setup_intel.py"
     if not script.exists():
-        fail(f"{script} is missing", "use a full Strata checkout (git clone) - docs/INTEL_ARC.md")
+        fail(f"{script} is missing", "use a full Nostroma checkout (git clone) - docs/INTEL_ARC.md")
     return subprocess.call([sys.executable, str(script), *rest])
 
 
@@ -8347,7 +8347,7 @@ def intel_control_setup(a) -> int:
     (a source build with oneAPI, sycl/setup_intel.py) is sycl_setup(), for a checkout; the app's bundle has no sycl/ folder."""
     from nostroma_cli.launch import adopt
     from nostroma_control import intel_app
-    say("Strata on an Intel Arc card (the SYCL engine)")
+    say("Nostroma on an Intel Arc card (the SYCL engine)")
     step(1, "checking this computer")
     if not intel_app.supported_here():
         fail("the Intel Arc engine runs on Linux only", "there is no Windows or Mac Intel engine yet")
@@ -8393,7 +8393,7 @@ def intel_control_setup(a) -> int:
                                model_name=f"{fam.get('name', family)}-{model.lower()}", family_def=fam, log=home() / f"strata-{tag.lower()}.log",
                                backend="sycl", vram_gb=vram, notes=notes, pack_name=tag.lower())
     if cfg is None:
-        fail("Strata cannot start this model on the Intel Arc card yet: " + "; ".join(problems))
+        fail("Nostroma cannot start this model on the Intel Arc card yet: " + "; ".join(problems))
     if a.port:
         cfg["port"] = a.port
     if a.host:
@@ -8449,7 +8449,7 @@ def control_engine_step(gpu, vision):
 
 def shape_engine_fetch(a):
     """The engine of the chosen model's shape (SHAPE_ENGINE), fetched through the signed feed (--feed, STRATA_UPDATE_FEED, the remembered feed, or the release's), checked, started
-    once and kept (nostroma_control/shape_engine.py); the Strata engine is not touched. Returns its component (shape_engine.find), or None when there is none and the person said to
+    once and kept (nostroma_control/shape_engine.py); the Nostroma engine is not touched. Returns its component (shape_engine.find), or None when there is none and the person said to
     go on without it (STRATA_ALLOW_NO_ENGINE: the model is downloaded and prepared, and set up again later); otherwise it stops with the owner's lines."""
     from nostroma_control import engine_component as EC, shape_engine
     shape, title = SHAPE_ENGINE["shape"], SHAPE_ENGINE.get("title")
@@ -8469,7 +8469,7 @@ def shape_engine_fetch(a):
 
 def shape_engine_step(a, gpu, vision):
     """Step 4 for a model that runs on the engine of its own shape (a Qwen4 model whose geometry is not Flash-Next's: nostroma_control/shape_engine.py). That engine is a
-    separate component next to the Strata engine (shape_engine_fetch); the run config names it ("component:strata-q4-lite") and every start looks it up.
+    separate component next to the Nostroma engine (shape_engine_fetch); the run config names it ("component:strata-q4-lite") and every start looks it up.
     Returns what engine_step returns."""
     shape = SHAPE_ENGINE["shape"]
     llama = llama_cpp_if_here()
@@ -8497,7 +8497,7 @@ def engine_step(a, gpu, hip, amd, cuda_tk, vision):
     if hip and WIN:                                    # AMD on Windows: the ready-made HIP engine (no compiler)
         eng = None if a.build else get_prebuilt_hip(a.prebuilt, gpu)
         if eng is None:
-            fail("no ready-made AMD engine for this Strata version" + (" (--build)" if a.build else ""),
+            fail("no ready-made AMD engine for this Nostroma version" + (" (--build)" if a.build else ""),
                  "compiling it on Windows: tools\\hip\\build_windows.bat makes strata-windows-x64-hip.zip, then run "
                  "START-HERE.bat --backend hip --prebuilt <its dist folder> (docs/AMD_HIP.md)")
         gpu = hip_card(eng, gpu, amd)
@@ -8798,7 +8798,7 @@ def install_own_path(a, family, gpu, hip, amd, cuda_tk, multi, port, ram, adopte
     pip_install(runtime_packages(),
                 "numpy, jinja2, regex, pyyaml, tqdm, requests, cmake, ninja, pillow, psutil, textual (the screens)")
 
-    step(4, "the Strata engine")
+    step(4, "the Nostroma engine")
     llama, eng, meta, lib_dirs, gpu, vision = engine_step(a, gpu, hip, amd, cuda_tk, vision)
     reader = None
     if hip and vision != "none":
@@ -8841,7 +8841,7 @@ def install_own_path(a, family, gpu, hip, amd, cuda_tk, multi, port, ram, adopte
         verify_sha256(mmproj, *fam["sha256"][mmproj.name], own=bool(a.gguf_dir))
         ok(f"vision encoder: {mmproj}")
 
-    step(6, "preparing the model for Strata")
+    step(6, "preparing the model for Nostroma")
     data, _ = data_folder_for(a)
     pack = data / "packs" / tag.lower()            # only the tokenizer: the engine reads the GGUF itself
     if not (pack / "tokenizer" / "vocab.json").exists():
@@ -8919,12 +8919,12 @@ def install_own_path(a, family, gpu, hip, amd, cuda_tk, multi, port, ram, adopte
 def preview_family(a) -> int:
     """--family qwen36: a family setup knows but the engine does not run yet (PREVIEW_FAMILIES).  Downloads the chosen
     size (pinned revision, size and SHA-256 checked) and, with --vision, the image encoder - and says plainly that
-    Strata cannot start it yet.  Nothing is configured: no engine, no pack, no start script."""
+    Nostroma cannot start it yet.  Nothing is configured: no engine, no pack, no start script."""
     fam = PREVIEW_FAMILIES[a.family]
     names = list(fam["models"])
     say()
     say(f"  {fam['title']} - {fam['by']}: {fam['about']}")
-    warn(f"this Strata version does not run {fam['title']} yet (support is in development): setup downloads its "
+    warn(f"this Nostroma version does not run {fam['title']} yet (support is in development): setup downloads its "
          "files, and the engine refuses them with a message until a version that runs it")
     if a.model and a.model not in names:
         fail(f"{fam['title']} has no {a.model} model file", "choose one of: " + ", ".join(names))
@@ -8957,7 +8957,7 @@ def preview_family(a) -> int:
         verify_sha256(f, *fam["sha256"][f.name])
     ok(f"{fam['title']} {model}: {folder}")
     say()
-    say(f"{fam['title']} is downloaded, but this Strata version cannot run it yet (its engine path is in "
+    say(f"{fam['title']} is downloaded, but this Nostroma version cannot run it yet (its engine path is in "
         "development); nothing was configured. Run setup again without --family qwen36 to install a model it runs.")
     return 0
 
@@ -9086,8 +9086,8 @@ def mac_prepare_lock(native: Path) -> Path:
     and never beside a running engine: an engine of 70-90 GB beside a repack froze the 128 GB M5 Max twice.  The caller removes the lock."""
     running = mac_engine_pids()
     if running:
-        fail(f"a Strata engine is running (pid {running[0]}): preparing a model beside it can freeze this Mac",
-             "stop the model in Strata (unload it), then install again")
+        fail(f"a Nostroma engine is running (pid {running[0]}): preparing a model beside it can freeze this Mac",
+             "stop the model in Nostroma (unload it), then install again")
     native.parent.mkdir(parents=True, exist_ok=True)
     lock = native.parent / MAC_PREPARE_LOCK
     lock.write_text(str(os.getpid()))
@@ -9111,13 +9111,13 @@ def mac_control_setup(a) -> int:
     metal/setup_mac.py. Which sizes a Mac can run, whether one stays in memory or streams its experts from the SSD, and the
     Metal flags of the config are nostroma_control/mac_fit.py's, the module setup_mac.py and the model list use too."""
     from nostroma_control import mac_fit as MF
-    say("Strata on a Mac (Apple Silicon, Metal)")
+    say("Nostroma on a Mac (Apple Silicon, Metal)")
     step(1, "checking your Mac")
     info = MF.mac_info()
     ram = float(info["ram_gb"] or ram_gb())
     ok(f"{info['chip']}, {ram:.0f} GB unified memory, macOS {info['macos'] or '?'}")
     if info.get("rosetta_python"):
-        say("  (the Python that runs this is an Intel build running through Rosetta: Strata works, and the Apple Silicon Python "
+        say("  (the Python that runs this is an Intel build running through Rosetta: Nostroma works, and the Apple Silicon Python "
             "from python.org or Homebrew in /opt/homebrew is a little faster to start)")
     problems = MF.mac_problems(info, need_compiler=False)       # the app compiles nothing: no Command Line Tools needed
     for p in problems:
@@ -9158,7 +9158,7 @@ def mac_control_setup(a) -> int:
     tag = fam["tag"] + model
     stream = MF.streams(model, ram)
 
-    step(4, "the Strata engine (Metal)")
+    step(4, "the Nostroma engine (Metal)")
     from nostroma_control import engine_component as EC
     llama = llama_cpp_if_here()                        # gguf-py for the preparation tools only (fetched when one runs): no git, no compiler
     ok(f"llama.cpp {LLAMA_CPP_COMMIT[:7]} (gguf-py for the preparation tools)")
@@ -9197,7 +9197,7 @@ def mac_control_setup(a) -> int:
     files = gguf_dir_shards(models_dir, fam, model) if a.gguf_dir else \
         [models_dir / model_file(fam, model, i) for i in range(1, model_shards(fam, model) + 1)]
     problem = gguf_dir_problem(models_dir, files[0], fam, model) if a.gguf_dir else None
-    if problem:                                        # files Strata cannot run, or another choice's files
+    if problem:                                        # files Nostroma cannot run, or another choice's files
         fail(*problem)
     mark_whole_unless_pinned(files, model_hf(fam, model) if fam.get("hf") else None, bool(a.gguf_dir))     # a whole file copied in by hand has no finish mark
     repacked = family == "unsloth" and len(files) > 2           # Unsloth's many-shard set: one GGUF for the GPU (mac_repack), the n-gram table left in its shard
@@ -9230,7 +9230,7 @@ def mac_control_setup(a) -> int:
             verify_sha256(mmproj, *ISTA_FILES[fam["mmproj"]])
         ok(f"vision encoder: {mmproj}" + (" (Unsloth's mmproj-F16.gguf, SHA-256 checked)" if kind == "alt" else ""))
 
-    step(6, "preparing the model for Strata")
+    step(6, "preparing the model for Nostroma")
     pack = find_in(roots, f"packs/{tag.lower()}") or data / "packs" / tag.lower()
     env = dict(os.environ, **gguf_py_env())
     shards = [files[0], files[0]] if family == "gyro" else files      # Gyro: one file, the model and its n-gram table
@@ -9388,7 +9388,7 @@ def main() -> int:
     ap.add_argument("--gpu", help="one GPU, numbered as nvidia-smi numbers them (AMD: as setup lists them) (default: asked when several can be "
                                   "used; with --setup it is saved, when starting it is for that start only)")
     ap.add_argument("--gpus", help="several GPUs sharing one model, as nvidia-smi numbers them (AMD: as setup lists "
-                                   "them): \"0,2\", or \"all\" (every card that can); Strata puts the faster card last, "
+                                   "them): \"0,2\", or \"all\" (every card that can); Nostroma puts the faster card last, "
                                    "and the last card is the Main one. Saved, also when starting (see docs/MULTI_GPU.md)")
     ap.add_argument("--gpu-roles", metavar="LIST", help="a role for each GPU: main, helper or off, e.g. 1=main,0=helper (cards you do not "
                                                         "name are off). Main does the last steps of every answer. Saved (docs/MULTI_GPU.md)")
@@ -9407,7 +9407,7 @@ def main() -> int:
     ap.add_argument("--browser", dest="browser", action="store_true",
                     help="open the chat page again when the model is ready (the default; undoes --no-browser)")
     ap.add_argument("--data-dir", help="where the model files go (~70-120 GB): default Strata-data next to this folder, "
-                                       "remembered for every Strata folder on this PC")
+                                       "remembered for every Nostroma folder on this PC")
     ap.add_argument("--move-data", action="store_true",
                     help="with --data-dir: move the model files already on this PC into the new folder (without it nothing "
                          "is moved: the old files stay usable and the new folder gets the new downloads)")
@@ -9437,7 +9437,7 @@ def main() -> int:
                     help="only build the pack of the GGUF files in --gguf-dir into PACK_DIR (what `strata launch` runs for an Intel Arc card): "
                          "fetches llama.cpp's gguf-py by itself, runs tools/iq_pack.py, changes nothing else")
     ap.add_argument("--inspect", nargs="+", metavar=("SOURCE", "VARIANT"),
-                    help="what a GGUF is and whether Strata runs it, from its headers only (no download): a file, a "
+                    help="what a GGUF is and whether Nostroma runs it, from its headers only (no download): a file, a "
                          "folder, a URL, ms:owner/repo (ModelScope) or hf:owner/repo, and optionally a variant name")
     ap.add_argument("--cuda", choices=["12", "13", "auto"], default=os.environ.get("STRATA_CUDA") or None,
                     help="NVIDIA: the CUDA toolkit of this model's engine. auto (default): CUDA 13, the ready-made "
@@ -9454,7 +9454,7 @@ def main() -> int:
                          "and the Cyrillic script (Russian: 26%% more tokens a second), fr = English, "
                          "code and French (French answers: 18%% more drafts accepted), latin = English, code and "
                          "the Latin-script languages (German, Spanish, French, Polish: 8-12%% more tokens a "
-                         "second). Without this setting Strata picks cyrillic or latin by itself from the "
+                         "second). Without this setting Nostroma picks cyrillic or latin by itself from the "
                          "languages of this computer, and keeps the default when one of them is Chinese, "
                          "Japanese or Korean")
     ap.add_argument("--low-ram", choices=["auto", "on", "off", "resident", "mmap"], default="auto",
@@ -9493,11 +9493,11 @@ def main() -> int:
                          "experts fit on the GPU); auto: when the RAM has room for it")
     ap.add_argument("--backend", choices=["cuda", "hip", "sycl"],
                     help="cuda = NVIDIA (default), hip = AMD RX 7900 / 7800 / 7700 XT, RX 9060 XT / 9070 / AI PRO R9700 on "
-                         "Linux or Windows (chosen by itself when the PC has no NVIDIA card Strata can use), "
+                         "Linux or Windows (chosen by itself when the PC has no NVIDIA card Nostroma can use), "
                          "sycl = Intel Arc, EXPERIMENTAL: Linux, built from source (docs/INTEL_ARC.md)")
     ap.add_argument("--skip-build", action="store_true", help=argparse.SUPPRESS)
     a = ap.parse_args()
-    if getattr(a, "gguf_dir", None):                   # the person's own files: their finish marks go to Strata's marks/, never beside them
+    if getattr(a, "gguf_dir", None):                   # the person's own files: their finish marks go to Nostroma's marks/, never beside them
         own_files_in(a.gguf_dir)
     if getattr(a, "dsv41_package", None):              # DeepSeek's engine package: no longer offered (nostroma_control/retired.py)
         say("  " + retired.NOT_OFFERED)
@@ -9551,7 +9551,7 @@ def main() -> int:
             a.gpus = ",".join(str(i) for i in order)
         else:
             a.gpu = order[0]
-    say("Strata - " + (OWN_PATH_FAMILIES[a.family]["title"] if a.family in OWN_PATH_FAMILIES else "Qwen3.8-Flash-Next")
+    say("Nostroma - " + (OWN_PATH_FAMILIES[a.family]["title"] if a.family in OWN_PATH_FAMILIES else "Qwen3.8-Flash-Next")
         + " on a normal PC (a GPU + system RAM + CPU)")
     have = installed_configs()
     if a.update or not (a.setup or a.model or a.family or a.check or a.no_start or a.calibrate or a.rollback_engine):
@@ -9577,7 +9577,7 @@ def main() -> int:
         return update_install(have, a)
     explicit = a.setup or a.model or a.family or a.check or a.no_start
     adopted = None                                     # #629: the earlier install this copy is set up like
-    if not have and not explicit:                      # a new copy of Strata (an update unzipped elsewhere): set it
+    if not have and not explicit:                      # a new copy of Nostroma (an update unzipped elsewhere): set it
         prev = previous_config(elsewhere, load_settings())   # up like the last one, from the files already here
         if prev is not None:
             ch = choices_from_config(prev)
@@ -9670,7 +9670,7 @@ def main() -> int:
     if a.backend is None and nv_ok and amd_ok:
         # both kinds of card: asked (a first run on such a PC used to take NVIDIA without mentioning the Radeon)
         say()
-        say("  This PC has NVIDIA and AMD cards Strata can use:")
+        say("  This PC has NVIDIA and AMD cards Nostroma can use:")
         say("  1) NVIDIA: " + ", ".join(f"{g['name']} ({g['vram_gb']:.0f} GB)" for g in found if gpu_problem(g) is None)
             + "   (recommended)")
         say("  2) AMD: " + ", ".join(f"{g['name']} ({g['vram_gb']:.0f} GB{', unified memory' if g.get('uma') else ''})"
@@ -9712,7 +9712,7 @@ def main() -> int:
                         "empty: ROCm cannot use it yet (docs/STRIX_HALO.md: the amdgpu driver and /dev/kfd access, "
                         "your user in the render and video groups)")
         if not usable:
-            fail("no AMD GPU Strata can use", f"the AMD backend runs on {AMD_CARDS}")
+            fail("no AMD GPU Nostroma can use", f"the AMD backend runs on {AMD_CARDS}")
         if a.gpus:                                     # a layer split across these cards, the first one the main
             chosen = amd_parse_gpus(a.gpus, amd)
             gpu = chosen[0]
@@ -9781,7 +9781,7 @@ def main() -> int:
                 warn(note)
     if gpu["vram_gb"] < 11:
         warn("less than 12 GB of " + ("GPU memory (this APU's carve-out + shared memory)" if gpu.get("uma") else "VRAM")
-             + ": Strata will run, but most experts stay on the CPU and it will be slow")
+             + ": Nostroma will run, but most experts stay on the CPU and it will be slow")
     ram = ram_gb()
     cpu, avx2, avx512 = cpu_info()
     need = min(d["ram_gb"] for d in MODELS.values() if not d.get("mem_total"))   # Gyro counts VRAM + RAM: not a RAM floor
@@ -9790,11 +9790,11 @@ def main() -> int:
         # every model keeps ALL its experts in RAM (23+ GB); VRAM only holds a copy of the most-used ones, so a
         # bigger GPU does not lower this.  The owner's rule: a stop by default, a risk the user can take (--model
         # with --yes, or y)
-        confirm_risk(f"RAM: {ram:.0f} GB - the smallest model (the Coder) needs about {need} GB: Strata keeps all of "
+        confirm_risk(f"RAM: {ram:.0f} GB - the smallest model (the Coder) needs about {need} GB: Nostroma keeps all of "
                      "the model's experts in RAM (23-50 GB, whatever the GPU), so the OS will page them from disk. "
                      "Expect it to be very slow, and it may not start at all.", bool(a.model), a.yes,
                      f"RAM: {ram:.0f} GB - the smallest model (the Coder) needs about {need} GB",
-                     "Strata keeps all of the model's experts in RAM (23-50 GB, whatever the GPU) and the GPU holds a "
+                     "Nostroma keeps all of the model's experts in RAM (23-50 GB, whatever the GPU) and the GPU holds a "
                      "copy of the most-used ones: it needs 32 GB of RAM or more (48 GB for the full model); --model "
                      "NAME --yes installs one anyway")
         warn(f"going on with {ram:.0f} GB of RAM, as you chose")
@@ -9814,7 +9814,7 @@ def main() -> int:
             warn(problem)
     floor = cpu_floor(avx2)
     if floor == "unsupported":
-        fail("this CPU has neither AVX2 nor SSE4.2; Strata needs at least SSE4.2 (Intel Nehalem, 2008, or newer)")
+        fail("this CPU has neither AVX2 nor SSE4.2; Nostroma needs at least SSE4.2 (Intel Nehalem, 2008, or newer)")
     if is_arm64():
         # DGX Spark / GB10 (#3622): the engine is the linux-aarch64 package of the signed feed when the release has one, else compiled here
         # (spark/build_engine.sh). A warning, not a stop.
@@ -9825,7 +9825,7 @@ def main() -> int:
         # #394 #595 #623: the ready-made engine is AVX2; an older CPU gets one compiled here, whose CPU experts run on
         # ggml-cpu's kernels for this CPU.  Experimental: measured only on newer CPUs with the older path forced, and by
         # users on a few Xeons.  A warning, not a stop.
-        warn(f"this CPU has no AVX2: Strata support for it is EXPERIMENTAL and slow. Setup compiles the engine on this "
+        warn(f"this CPU has no AVX2: Nostroma support for it is EXPERIMENTAL and slow. Setup compiles the engine on this "
              f"PC for {'AVX' if floor == 'avx' else 'SSE4.2'} (STRATA_ISA_FLOOR={floor}; 10-20 minutes, once), and the "
              "CPU's share of the experts runs on ggml-cpu's kernels, a few times slower than on an AVX2 CPU. "
              "See \"Older CPUs\" in docs/INSTALL.md")
@@ -9848,7 +9848,7 @@ def main() -> int:
         if not any_fits:
             # #977: every size says "does not fit", so the verdict says so too (and the exit code, for scripts). It only
             # reports: --model NAME --yes still installs one anyway.
-            say(f"\nThis PC cannot run Strata yet: no model size fits {ram:.0f} GB of RAM (the smallest needs about "
+            say(f"\nThis PC cannot run Nostroma yet: no model size fits {ram:.0f} GB of RAM (the smallest needs about "
                 f"{need} GB). --model NAME --yes installs one anyway, slowly.")
             return 1
         say("\nThis PC can run Strata. Run it again without --check to install.")
@@ -9910,7 +9910,7 @@ def main() -> int:
     names = [m for m in MODELS if family in MODELS[m].get("families", ("qwen", "swift"))]
     names.sort(key=lambda m: bool(MODELS[m].get("experimental")))   # an experimental size last, never the default
     if a.model and a.model not in names:
-        # #444: say which family has that size, and (with --gguf-dir) which files Strata can run at all
+        # #444: say which family has that size, and (with --gguf-dir) which files Nostroma can run at all
         elsewhere_fams = [f for f in FAMILIES if f in MODELS[a.model].get("families", ("qwen", "swift"))]
         fail(f"{fam['title']} has no {a.model} model file", "choose one of: " + ", ".join(names)
              + (f" (or {a.model}: " + ", ".join(f"--family {f} --model {a.model}" for f in elsewhere_fams) + ")"
@@ -10151,7 +10151,7 @@ def main() -> int:
     ready = bool(fam.get("ready"))                     # NVFP4: ready-made packs (NVFP4_REPOS), no GGUF shards
     if ready:
         models_dir = Path(a.models_dir)
-        for r in elsewhere:                            # already downloaded and checked in a Strata folder elsewhere
+        for r in elsewhere:                            # already downloaded and checked in a Nostroma folder elsewhere
             if all(ready_verified(ready_where(r / "models", f), f[5]) for f in ready_needed(model, r / "models")):
                 models_dir = r / "models"
                 ok(f"model files found in {models_dir}")
@@ -10162,10 +10162,10 @@ def main() -> int:
         shards = gguf_dir_shards(models_dir, fam, model) if a.gguf_dir else \
             [models_dir / model_file(fam, model, i) for i in range(1, model_shards(fam, model) + 1)]
     problem = gguf_dir_problem(models_dir, shards[0], fam, model) if a.gguf_dir else None
-    if problem:                                        # #444: files Strata cannot run, or another choice's files
+    if problem:                                        # #444: files Nostroma cannot run, or another choice's files
         fail(*problem)
     if not ready and not a.gguf_dir and not all(sh.exists() and done(sh) for sh in shards):
-        for r in elsewhere:                            # already downloaded in a Strata folder on another drive
+        for r in elsewhere:                            # already downloaded in a Nostroma folder on another drive
             cand = [r / "models" / tag / sh.name for sh in shards]
             if all(c.exists() and done(c) for c in cand):
                 models_dir, shards = cand[0].parent, cand
@@ -10210,7 +10210,7 @@ def main() -> int:
                 "numpy, jinja2, regex, pyyaml, tqdm, requests, pillow, psutil, textual (the screens)")
 
     # ---- 4. the engine
-    step(4, "the Strata engine")
+    step(4, "the Nostroma engine")
     llama, eng, meta, lib_dirs, gpu, vision = engine_step(a, gpu, hip, amd, cuda_tk, vision)
     reader = None
     if hip and vision != "none":                       # AMD: the engine folder's reader (GPU, else CPU), settled now the engine is known
@@ -10228,7 +10228,7 @@ def main() -> int:
     # checked before the 94-188 GB download
     if (MODELS[model].get("budget") or family == "gyro") and engine_ver < need_engine:
         fail(f"{model} needs engine {'.'.join(map(str, need_engine))} or newer; this one is {meta.get('version')}",
-             "update Strata (or compile the engine with --build) and run setup again")
+             "update Nostroma (or compile the engine with --build) and run setup again")
     ok("engine: the engine component (looked up when the model loads)" if CONTROL else f"engine: {eng / EXE}")
 
     # ---- 5. the model files
@@ -10290,12 +10290,12 @@ def main() -> int:
                 "cosine 0.999 vs BF16); see 'A Q8_0 encoder' in docs/DETAILS.md")
 
     # ---- 6. the pack and the MTP draft layer
-    step(6, "preparing the model for Strata")
+    step(6, "preparing the model for Nostroma")
     pack = find_in(roots, f"packs/{tag.lower()}") or data / "packs" / tag.lower()
     env = dict(os.environ, **gguf_py_env())
     prepared = bool(ready and MODELS[model].get("prepare"))
     if prepared and not prepared_done(model, models_dir):
-        say("  NVIDIA's checkpoint is turned into a Strata pack on this PC (once; 20-40 minutes, reads the 102 GB, writes about")
+        say("  NVIDIA's checkpoint is turned into a Nostroma pack on this PC (once; 20-40 minutes, reads the 102 GB, writes about")
         say(f"  {MODELS[model]['prepare_gb']:.0f} GB). Nothing of NVIDIA's weights leaves this PC.")
         ensure_nvfp4_local_packages()
         run([sys.executable, str(ROOT / "tools" / "nvfp4_local_pack.py"), "prepare",
@@ -10379,7 +10379,7 @@ def main() -> int:
     script = write_run_script(tag, cfg_path, port, cfg.get("open_browser") is not False)
     # offered only when someone answers: --yes installs and adopted earlier installs are not held up by it
     if cal is None and not hip and not a.no_start and not a.yes and ask(
-            "Tune Strata for this PC now? It measures a few engine settings (about 15-30 minutes, longer on a slow card; the PC is busy "
+            "Tune Nostroma for this PC now? It measures a few engine settings (about 15-30 minutes, longer on a slow card; the PC is busy "
             "meanwhile; later: START-HERE --calibrate)", ["y", "n"], "y", a.yes) == "y":
         tuned = calibrate_config(cfg_path)
     else:

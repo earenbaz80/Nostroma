@@ -52,7 +52,7 @@ class Update(unittest.TestCase):
         self.assertEqual(dv.call_args[0][1], "en")                 # the model's own subset is kept
         start.assert_not_called()
         call.assert_not_called()
-        self.assertIn("Strata is updated", out)
+        self.assertIn("Nostroma is updated", out)
 
     def test_an_engine_that_stayed_old_is_not_called_updated(self):                  # #3653
         with tempfile.TemporaryDirectory() as d:
@@ -61,10 +61,10 @@ class Update(unittest.TestCase):
                 rc, pip, eng, dv, start, call, out = self.run_update([p])
             self.assertIn("the engine was NOT", out)
             self.assertIn("Next step:", out)
-            self.assertNotIn("[ok] Strata is updated", out)
+            self.assertNotIn("[ok] Nostroma is updated", out)
             with mock.patch.object(setup, "engine_version", return_value=(0, 1, 49, 2)):
                 rc, pip, eng, dv, start, call, out = self.run_update([p])
-            self.assertIn("Strata is updated (engine 0.1.49.2)", out)
+            self.assertIn("Nostroma is updated (engine 0.1.49.2)", out)
 
     def test_build_keeps_the_compiled_engine_path(self):
         with tempfile.TemporaryDirectory() as d:
@@ -91,11 +91,11 @@ class Update(unittest.TestCase):
             broken.write_text("{\"args\": [", encoding="utf-8")
             rc, pip, eng, dv, start, call, out = self.run_update([other, broken, p])
         self.assertEqual(rc, 0, out)
-        self.assertIn('skipped strata-notes.json (no "exe" or "args"): it is not a Strata model config', out)
+        self.assertIn('skipped strata-notes.json (no "exe" or "args"): it is not a Nostroma model config', out)
         self.assertIn("skipped strata-cut.json (not valid JSON)", out)
         dv.assert_called_once()                                     # the real model is still refreshed
         self.assertIn("Qwen IQ3_S: up to date", out)
-        self.assertIn("Strata is updated", out)
+        self.assertIn("Nostroma is updated", out)
 
     def test_installed_configs_lists_only_model_configs(self):
         with tempfile.TemporaryDirectory() as d:

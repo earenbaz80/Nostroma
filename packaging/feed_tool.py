@@ -280,8 +280,8 @@ DSV41_BASE_EXAMPLE = "https://github.com/Niko1221/Strata/releases/download/<DSV4
 
 
 def carried_dsv41(previous_feed: Path, base: str) -> dict:
-    """The ``dsv41`` member of a published feed, frozen (owner 11-11, "Keep frozen"): Strata 0.2.13 and earlier read it to keep their DeepSeek
-    engine; this Strata never does.  Every entry is kept as it was, except a relative ``url`` (a flat release asset, resolved against the feed's
+    """The ``dsv41`` member of a published feed, frozen (owner 11-11, "Keep frozen"): Nostroma 0.2.13 and earlier read it to keep their DeepSeek
+    engine; this Nostroma never does.  Every entry is kept as it was, except a relative ``url`` (a flat release asset, resolved against the feed's
     own release): it becomes ``base`` + url, the release that really holds the archive, because the new feed sits in a newer release that does
     not.  Absolute https URLs are what those Controls accept (nostroma_control/transfer.py resolve_ref since 0.2.7).  ``base`` must be a real https
     release folder: the placeholder in DSV41_BASE_EXAMPLE stops the build."""
@@ -316,7 +316,7 @@ def build_feed(out: Path, *, key: dict, sequence: int, channel: str = "stable", 
     if engine_dir:
         document["engine"] = {"packages": [json.loads(p.read_text(encoding="utf-8"))
                                            for p in sorted(Path(engine_dir).glob("*.entry.json"))]}
-    if dsv41_member:                              # the frozen DeepSeek engine packages of Strata 0.2.13 and earlier (carried_dsv41)
+    if dsv41_member:                              # the frozen DeepSeek engine packages of Nostroma 0.2.13 and earlier (carried_dsv41)
         document["dsv41"] = dsv41_member
     if shapes_dir:                                # the engines of model shapes (feed member shape_engines): each entry must name a shape
         entries = []
@@ -485,7 +485,7 @@ def main(argv: list[str] | None = None) -> int:
     bf.add_argument("--channel", default="stable")
     bf.add_argument("--engine", type=Path)
     bf.add_argument("--carry-dsv41", type=Path, metavar="PREVIOUS-FEED",
-                    help="the last published strata-feed.json: its dsv41 member (the DeepSeek engine of Strata 0.2.13 and earlier) is carried over, frozen")
+                    help="the last published strata-feed.json: its dsv41 member (the DeepSeek engine of Nostroma 0.2.13 and earlier) is carried over, frozen")
     bf.add_argument("--carry-dsv41-base", metavar="URL", help="the https folder of the release that holds those archives, e.g. " + DSV41_BASE_EXAMPLE)
     bf.add_argument("--no-dsv41-carry", action="store_true", help="build the feed without the frozen DeepSeek member (a test feed, or the owner's choice)")
     bf.add_argument("--shapes", type=Path, help="folder of the model-shape engines' .entry.json files (feed member shape_engines; pack-engine writes them for a package made with package_engine.py --shape)")

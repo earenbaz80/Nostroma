@@ -47,7 +47,7 @@ def build():
     total = sum(count_files(os.path.join(RESULTS, f)) for f in folders) + len(loose)
     lines = ["# Benchmark results", "",
              "Raw results and short reports from measurement runs, one folder per run, named by date. They stay here as they were written: each states",
-             "the Strata version, hardware and method of its own day, and none is a statement about a later release. Current numbers are in the",
+             "the Nostroma version, hardware and method of its own day, and none is a statement about a later release. Current numbers are in the",
              "[docs](../../docs/README.md) and the [README](../../README.md); how to measure is in [BENCHMARK_PROTOCOL.md](../../docs/BENCHMARK_PROTOCOL.md).",
              "", "This page is built by `python tools/bench_results_index.py` (`--check` fails when a folder is missing from it). "
              "%d folders and %d loose files, %d files in all." % (len(folders), len(loose), total), ""]

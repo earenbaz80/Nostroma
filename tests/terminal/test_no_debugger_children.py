@@ -1,8 +1,8 @@
 """The product never starts a debugger on a user's machine (nostroma_control/childenv.py).
 
-ggml's abort path forks `gdb --batch -ex attach <pid>` (Linux; lldb and backtrace_symbols after it).  Every child Strata starts therefore gets
+ggml's abort path forks `gdb --batch -ex attach <pid>` (Linux; lldb and backtrace_symbols after it).  Every child Nostroma starts therefore gets
 GGML_NO_BACKTRACE=1, unless a developer sets STRATA_BACKTRACE=1.  These tests check the helper, the environment of every spawn site that builds one, and
-list every place product code starts a process, so a new one has to be looked at (does it start a Strata program? then it needs the variable).
+list every place product code starts a process, so a new one has to be looked at (does it start a Nostroma program? then it needs the variable).
 
     python -m pytest tests/terminal/test_no_debugger_children.py
 """
@@ -139,7 +139,7 @@ class EntryPointsSetItForEveryChild(unittest.TestCase):
 
 
 # Every place product code starts a process, with what it starts.  A file may hold at most this many; a new site fails the test until it is
-# listed here (and, when it starts a Strata program - the engine, the picture reader, sd-cli, setup, a worker - it builds its environment with
+# listed here (and, when it starts a Nostroma program - the engine, the picture reader, sd-cli, setup, a worker - it builds its environment with
 # quiet_crash_env or inherits the one an entry point set).
 STRATA_PROGRAMS = {
     "serve/server.py": 7,              # the engine, the picture reader (env from child_env / vision_env), the strata-device probe, before_load commands
@@ -208,7 +208,7 @@ class EverySpawnSiteIsListed(unittest.TestCase):
     def test_no_process_is_started_that_nobody_has_looked_at(self):
         known = {**STRATA_PROGRAMS, **OTHER_PROGRAMS}
         new = {rel: n for rel, n in spawn_sites().items() if n > known.get(rel, 0)}
-        self.assertEqual(new, {}, "a new place that starts a process: if it starts a Strata program (engine, picture reader, sd-cli, setup, a worker) "
+        self.assertEqual(new, {}, "a new place that starts a process: if it starts a Nostroma program (engine, picture reader, sd-cli, setup, a worker) "
                                   "its environment must carry GGML_NO_BACKTRACE (nostroma_control.childenv.quiet_crash_env); then list it in "
                                   "STRATA_PROGRAMS (or OTHER_PROGRAMS when it starts nothing of ours) in tests/terminal/test_no_debugger_children.py")
 

@@ -71,7 +71,7 @@ class OwnFileChecks(unittest.TestCase):
         for size, sha in ((gguf.stat().st_size + 96, "0" * 64), (gguf.stat().st_size, "0" * 64)):
             code, text = run(setup.verify_sha256, gguf, size, sha, own=True)
             self.assertEqual(code, 0, text)
-            self.assertIn("Strata uses it as it is", text)
+            self.assertIn("Nostroma uses it as it is", text)
         cut = Path(self.tmp.name) / "cut.gguf"
         cut.write_bytes(gguf.read_bytes()[:-40])                    # cut short: the tensor payload is not all there
         code, text = run(setup.verify_sha256, cut, gguf.stat().st_size, "0" * 64, own=True)

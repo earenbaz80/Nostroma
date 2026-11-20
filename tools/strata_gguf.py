@@ -1,4 +1,4 @@
-"""tools/strata_gguf.py - Strata's own GGUF reader and writer for the preparation tools (replaces llama.cpp's gguf-py in them).
+"""tools/strata_gguf.py - Nostroma's own GGUF reader and writer for the preparation tools (replaces llama.cpp's gguf-py in them).
 
 It covers what the tools use, with gguf-py's names so a tool runs on either (see tools/_paths.py gguf_lib(); STRATA_GGUF_PY still selects
 the vendored gguf-py for two releases):

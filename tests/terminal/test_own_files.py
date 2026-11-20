@@ -325,7 +325,7 @@ class Words(unittest.TestCase):
         self.assertEqual(models.plain_issue("model-00002-of-00002.gguf: GGUF metadata is truncated"),
                          "model-00002-of-00002.gguf: the file is cut short (a download or copy that did not finish)")
         self.assertIn("shorter than its own header", models.plain_issue("a.gguf: GGUF tensor payload is shorter than its directory requires"))
-        self.assertIn("old format (version 2)", models.plain_issue("a.gguf: Strata metadata preflight requires GGUF v3"))
+        self.assertIn("old format (version 2)", models.plain_issue("a.gguf: Nostroma metadata preflight requires GGUF v3"))
         self.assertEqual(models.plain_issue("incomplete_or_invalid_shard_set"), "some parts of the model are missing")
 
     def test_the_plan_carries_the_words(self):

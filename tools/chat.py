@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""A tiny terminal chat for a running Strata server (start it with run-<model>.bat / run-<model>.sh first).
+"""A tiny terminal chat for a running Nostroma server (start it with run-<model>.bat / run-<model>.sh first).
 
     python tools/chat.py [--port 8080] [--think none|low|medium|high]
 
@@ -48,7 +48,7 @@ def main() -> int:
     hl = StreamHighlighter(color=sys.stdout.isatty())
     messages, pending = [], []
     think = "none" if a.no_think else a.think
-    print(f"Strata chat ({url}).  /image <path> = attach a picture, /think none|low|medium|high (now: {think}), "
+    print(f"Nostroma chat ({url}).  /image <path> = attach a picture, /think none|low|medium|high (now: {think}), "
           f"/reset = new conversation, /quit = leave.")
     while True:
         try:

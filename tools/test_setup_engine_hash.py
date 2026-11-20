@@ -337,8 +337,8 @@ class WhatARefusalDoesToTheCaller(unittest.TestCase):
         # get_prebuilt_hip downloads the AMD engine from a SECOND `download(base + ...)` call site, which
         # the first version of this change missed entirely - so AMD users got nothing from it.
         src = (ROOT / "setup.py").read_text(encoding="utf-8")
-        for call in ('download(base + asset, z, "Strata engine")',
-                     'download(base + WIN_HIP_ASSET, z, "Strata AMD engine")'):
+        for call in ('download(base + asset, z, "Nostroma engine")',
+                     'download(base + WIN_HIP_ASSET, z, "Nostroma AMD engine")'):
             i = src.index(call)
             self.assertIn("verify_engine_archive", src[i:i + 400], f"{call} is not verified")
 

@@ -236,7 +236,7 @@ class EngineArguments(unittest.TestCase):
             c = self.cfg(drafting="dflash2")
             d = self.apply(c)
         self.assertEqual((d.drafter, d.note), ("dflash2", ""))
-        self.assertEqual(c["args"][c["args"].index("--mtp-draft-vocab") + 1], str(self.vocab), "Strata's own default subset")
+        self.assertEqual(c["args"][c["args"].index("--mtp-draft-vocab") + 1], str(self.vocab), "Nostroma's own default subset")
         self.assertNotIn("--mtp", c["args"])
 
     def test_mtp_has_no_dflash2_option(self):
@@ -868,9 +868,9 @@ class FetchAndPack(unittest.TestCase):
         vocab = drafting.vocab_target(self.data)
         self.assertEqual(vocab, self.data / drafting.FOLDER / "draft_vocab.bin")
         self.assertTrue(vocab.is_file() and vocab.stat().st_size > 0)
-        self.assertEqual(vocab.read_bytes(), drafting.shipped_vocab().read_bytes(), "the subset Strata ships")
+        self.assertEqual(vocab.read_bytes(), drafting.shipped_vocab().read_bytes(), "the subset Nostroma ships")
         args = ["--pack", str(self.data / "packs" / "gyro"), "--native", "/m.gguf", "--mtp", str(self.data / "mtp" / "rt"), "--spec", "4", "--spec-min-p", "0.5"]
-        # the Strata folder's own copy is not needed any more: the install keeps its own
+        # the Nostroma folder's own copy is not needed any more: the install keeps its own
         with mock.patch.object(drafting, "shipped_vocab", return_value=self.dir / "gone.bin"):
             cfg = {"model_name": GYRO, "args": list(args)}
             d = drafting.apply(cfg, data_dir=self.data, backend="cuda", archs=["sm_120"])

@@ -480,8 +480,8 @@ class OwnerRule(Base):
 
     def test_the_shipped_policy_and_words(self):
         self.assertEqual(SHIPPED_POLICY, "warn_allow")                                  # the owner's standing rule: warn plainly, still allow, never refuse
-        self.assertEqual(feed_models.UNAVAILABLE_ENGINE, "needs a newer Strata engine: update Strata to use it")
-        self.assertEqual(feed_models.UNAVAILABLE_UNKNOWN, "this Strata version doesn't know this model yet: update Strata to use it")
+        self.assertEqual(feed_models.UNAVAILABLE_ENGINE, "needs a newer Nostroma engine: update Nostroma to use it")
+        self.assertEqual(feed_models.UNAVAILABLE_UNKNOWN, "this Nostroma version doesn't know this model yet: update Nostroma to use it")
         for family in ("qwen35moe", "qwen5new"):
             self.assertNotIn(family, feed_models.unavailable_reason(family))
 

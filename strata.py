@@ -1,4 +1,4 @@
-"""Strata's small, dependency-free terminal entry point.
+"""Nostroma's small, dependency-free terminal entry point.
 
 Run ``python strata.py --help`` from a source checkout. Optional terminal UI
 dependencies are imported only by ``monitor``.
@@ -21,7 +21,7 @@ def _preflight(argv):
         return 0
     sys.stderr.write(
         "strata: the interpreter %s is missing packages the API server needs: %s.\n"
-        "        Starting and serving never install anything. Use the Strata terminal archive (it carries them),\n"
+        "        Starting and serving never install anything. Use the Nostroma terminal archive (it carries them),\n"
         "        or install them yourself: python -m pip install -r requirements.txt\n"
         "        (status, monitor, timeskip and tune plan do not need them)\n" % (sys.executable, ", ".join(missing)))
     return 5

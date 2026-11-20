@@ -96,7 +96,7 @@ def main() -> int:
         print(f"revise_once: the Harness CLI is not at {dsh}; set DSH_CLI or --dsh", file=sys.stderr)
         return 3
     if not PROFILE_PATCH.exists():
-        print(f"revise_once: the Strata profile is not at {PROFILE_PATCH}", file=sys.stderr)
+        print(f"revise_once: the Nostroma profile is not at {PROFILE_PATCH}", file=sys.stderr)
         return 3
 
     # Each attempt gets its own Harness home. That keeps sessions and approvals scoped to the

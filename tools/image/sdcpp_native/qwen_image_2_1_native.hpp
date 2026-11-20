@@ -1,4 +1,4 @@
-// qwen_image_2_1_native.hpp - Strata's native Qwen-Image-2.1 DiT runner for stable-diffusion.cpp (CUDA / HIP builds).
+// qwen_image_2_1_native.hpp - Nostroma's native Qwen-Image-2.1 DiT runner for stable-diffusion.cpp (CUDA / HIP builds).
 //
 // Copied into src/model/diffusion/ by tools/image/sdcpp_native/apply.py and chosen by model_builders.cpp when the
 // model args contain qwen_image_2_1_native=1.  sd.cpp keeps the text encoder, the VAE, the sampler and the RNG; this
@@ -8,7 +8,7 @@
 // its modulation row is the t = 0 one) goes through all blocks once per prompt and leaves each layer's K/V (fp16)
 // behind - the same prefix cache sd.cpp keeps.  GEMMs are ggml graphs on the runner's backend (the MMQ / BLAS
 // kernels sd.cpp uses, same numerics); LayerNorm+modulate, gate+residual, q/k RMSNorm+RoPE, SwiGLU and (on gfx11)
-// the image attention are Strata kernels (ggml/src/ggml-cuda/qi21-native.cu) on the backend's stream.  Anything this
+// the image attention are Nostroma kernels (ggml/src/ggml-cuda/qi21-native.cu) on the backend's stream.  Anything this
 // runner does not cover (reference images, an unfused MLP, a CPU / Vulkan backend, too little VRAM) goes to the
 // stock runner.
 #ifndef __SD_MODEL_DIFFUSION_QWEN_IMAGE_2_1_NATIVE_H__
@@ -232,7 +232,7 @@ namespace Qwen {
             }
             LOG_INFO("Qwen Image 2.1 native: %zu tensors, %.2f GB on %s%s", W.size(),
                      ggml_backend_buffer_get_size(wbuf) / 1e9, ggml_backend_name(runtime_backend),
-                     wmma_attn ? " (Strata attention)" : "");
+                     wmma_attn ? " (Nostroma attention)" : "");
             return true;
         }
 

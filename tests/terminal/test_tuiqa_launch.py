@@ -129,10 +129,10 @@ class NoEngineFlow(unittest.TestCase):
         with mock.patch.object(Runner, "run", return_value=self.served_nothing()):
             code, out, err = run_cli(["launch", "--no-tui", "--model", "q2_0", "--yes"])
         self.assertEqual(code, 0, err)
-        self.assertIn("The model is ready, but Strata can't start it yet", out)
+        self.assertIn("The model is ready, but Nostroma can't start it yet", out)
         self.assertIn("The feed has no engine package for this PC", out)
         self.assertIn("Next step:", out)
-        self.assertNotIn("Strata is serving", out)
+        self.assertNotIn("Nostroma is serving", out)
 
     def test_json_says_not_serving(self):
         from nostroma_cli.launch.runner import Runner
@@ -183,7 +183,7 @@ class NoEngineFlow(unittest.TestCase):
 
         class Asking(FakeRunner):
             def run(self, start=True):
-                answers.append(self.confirm("No engine", "Strata couldn't find an engine for this computer (x). Download?"))
+                answers.append(self.confirm("No engine", "Nostroma couldn't find an engine for this computer (x). Download?"))
                 return super().run(start)
 
             def __init__(self, *a, confirm=None, **kw):
@@ -196,7 +196,7 @@ class NoEngineFlow(unittest.TestCase):
             with mock.patch("nostroma_cli.launch.app.Runner", Asking):
                 async with app.run_test(size=SIZE) as pilot:
                     await pilot.pause(0.4)
-                    self.assertIn("Strata couldn't find an engine for this computer", text_of(app))
+                    self.assertIn("Nostroma couldn't find an engine for this computer", text_of(app))
                     await pilot.press("enter")                  # Download anyway
                     for _ in range(60):
                         await pilot.pause(0.05)
@@ -215,4 +215,4 @@ class NoEngineFlow(unittest.TestCase):
             with contextlib.redirect_stdout(out):
                 code = launch_app.run_tui(flags_settings(), catalog=catalog(HW_12), auto_run=True)
         self.assertEqual(code, 0)
-        self.assertIn("The model is ready, but Strata can't start it yet", out.getvalue())
+        self.assertIn("The model is ready, but Nostroma can't start it yet", out.getvalue())

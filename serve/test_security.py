@@ -69,7 +69,7 @@ class ListenAddress(unittest.TestCase):
                 self.assertNotEqual(s.server_address[1], 0)
 
     def test_bind_sets_server_name_to_the_address_and_server_port(self):
-        # (http.server set server_name to the looked-up name, "localhost" for 127.0.0.1; no Strata code reads it)
+        # (http.server set server_name to the looked-up name, "localhost" for 127.0.0.1; no Nostroma code reads it)
         with Server(("127.0.0.1", 0), BaseHTTPRequestHandler) as s:
             self.assertEqual((s.server_name, s.server_port), ("127.0.0.1", s.server_address[1]))
             self.assertGreater(s.server_port, 0)
@@ -134,7 +134,7 @@ class HostCheck(unittest.TestCase):
 class OriginCheck(unittest.TestCase):
     def test_accepted(self):
         names = LOCAL | {"box"}
-        self.assertTrue(origin_allowed("http://127.0.0.1:8095", "127.0.0.1:8095", names))      # Strata's own page
+        self.assertTrue(origin_allowed("http://127.0.0.1:8095", "127.0.0.1:8095", names))      # Nostroma's own page
         self.assertTrue(origin_allowed("http://192.168.1.20:8095", "192.168.1.20:8095", names))  # ... by LAN IP
         self.assertTrue(origin_allowed("http://localhost:3000", "127.0.0.1:8095", names))      # a local app
         self.assertTrue(origin_allowed("http://[::1]:3000/", "127.0.0.1:8095", names))

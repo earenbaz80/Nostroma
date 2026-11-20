@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the self-contained Strata Terminal distribution for Windows x64, Linux x86_64, Linux aarch64 (the DGX Spark) or macOS arm64.
+"""Build the self-contained Nostroma Terminal distribution for Windows x64, Linux x86_64, Linux aarch64 (the DGX Spark) or macOS arm64.
 
 The requirement this exists for (checklist P04, and the owner's rule that starting or serving never fetches Python
 packages from the internet): a user installs the terminal without Desktop, and needs no development checkout, no
@@ -536,14 +536,14 @@ Put `bin/` on your PATH to get the `strata` command everywhere:
            "    [math]::Round((Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory / 1MB, 1)   # GB free" if win else
            "    free -g" if not target.startswith("darwin") else
            "    Activity Monitor > Memory, or:  vm_stat   (free + inactive pages x 16 KB)")
-    return f"""Strata Terminal {version} ({target})
+    return f"""Nostroma Terminal {version} ({target})
 {'=' * (len(version) + len(target) + 18)}
 
 This is the terminal distribution. It carries its own Python {PYTHON_VERSION} and its own packages, so you do not
 need Python, pip, Node, a compiler or a development checkout. Serving and watching (`strata serve`, `strata runtime`,
 `strata monitor`) never install or download anything; if something is missing, the error names the command that
 installs it. Only two commands fetch files, and only when you run them: `strata launch` (the engine and the model you
-choose, after it tells you the size) and `strata update` (the engine and the Strata components).
+choose, after it tells you the size) and `strata update` (the engine and the Nostroma components).
 
 Install
 -------
@@ -560,7 +560,7 @@ What it does NOT include
 ------------------------
 The **engine** is a separate, independently versioned component and is not bundled: the right engine package
 depends on your OS, CPU and GPU. `strata launch` (or `strata update`) fetches the one for your card from the signed
-release feed; or point Strata at one with STRATA_ENGINE. Model weights are likewise not included: `strata launch`
+release feed; or point Nostroma at one with STRATA_ENGINE. Model weights are likewise not included: `strata launch`
 downloads the one you choose (the installer files setup.py and tools/ are in this archive for that).
 
 Useful commands

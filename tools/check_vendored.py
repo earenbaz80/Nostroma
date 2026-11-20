@@ -5,8 +5,8 @@ The vendored ggml / ggml-cuda sources are frozen at the llama.cpp commit named i
 kind and sha256 (text files are hashed with LF line ends, so a Windows checkout agrees with a Linux one):
 
   upstream   identical to the file at the pinned commit
-  edited     a Strata edit of an upstream file (the edit is described in UPSTREAM.md); the row also holds the upstream sha256
-  added      a file that is Strata's own (not in llama.cpp)
+  edited     a Nostroma edit of an upstream file (the edit is described in UPSTREAM.md); the row also holds the upstream sha256
+  added      a file that is Nostroma's own (not in llama.cpp)
   copy       ggml/src/ggml-cuda-tq/X: a verbatim copy of its pristine counterpart (ggml-cuda/X; ggml-cuda-tq/include/X is include/X); the row holds the
              counterpart's hash.  The trellis (Gyro) MMQ build compiles its headers from this folder, which is first on strata_mmq's include path,
              so a header that includes mmq.cuh by name has to sit beside the patched mmq.cuh

@@ -1,4 +1,4 @@
-// qi21-native.cu - Strata's native kernels for the Qwen-Image-2.1 DiT inside stable-diffusion.cpp (CUDA and HIP).
+// qi21-native.cu - Nostroma's native kernels for the Qwen-Image-2.1 DiT inside stable-diffusion.cpp (CUDA and HIP).
 //
 // Copied into ggml/src/ggml-cuda/ by tools/image/sdcpp_native/apply.py, so ggml-cuda and ggml-hip compile it with
 // their own toolchain and vendor headers.  The host side (qwen_image_2_1_native.hpp) runs the GEMMs as ggml graphs

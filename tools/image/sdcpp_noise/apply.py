@@ -1,4 +1,4 @@
-"""tools/image/sdcpp_noise/apply.py - put Strata's noise generator into a stable-diffusion.cpp checkout at the pinned
+"""tools/image/sdcpp_noise/apply.py - put Nostroma's noise generator into a stable-diffusion.cpp checkout at the pinned
 commit (tools/image/qimage.py SD_CPP_COMMIT).  Idempotent; sd-cli keeps stable-diffusion.cpp's own noise unless it is
 started with --model-args strata_noise=1 (serve/images.py adds that when the config's images "noise" is "strata").
 
@@ -30,7 +30,7 @@ INIT_OLD = """    rng = get_rng(sd_ctx_params->rng_type);
         sampler_rng = rng;
     }
 """
-INIT_NEW = INIT_OLD + """    """ + MARK + """ (--model-args strata_noise=1): Strata's Philox for the default --rng cuda
+INIT_NEW = INIT_OLD + """    """ + MARK + """ (--model-args strata_noise=1): Nostroma's Philox for the default --rng cuda
     if (strata_noise::requested(sd_ctx_params->model_args)) {
         if (sd_ctx_params->rng_type == CUDA_RNG) {
             rng = std::make_shared<StrataPhiloxRNG>();
@@ -86,6 +86,6 @@ if __name__ == "__main__":
         print("noise generator files written to", sys.argv[2])
     elif len(sys.argv) == 2 and not sys.argv[1].startswith("-"):
         apply(Path(sys.argv[1]))
-        print("Strata noise generator applied")
+        print("Nostroma noise generator applied")
     else:
         raise SystemExit(__doc__)

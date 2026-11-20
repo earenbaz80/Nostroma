@@ -332,7 +332,7 @@ def resolve_repo():
     except urllib.error.HTTPError as e:
         if e.code == 404 and "/resolve/%s/" % REVISION in REPO:
             if (os.environ.get("STRATA_ALLOW_UNPINNED") or "").strip() != "1":
-                sys.exit("the pinned version of the checkpoint (%s) is no longer on Hugging Face: update Strata" % REVISION)
+                sys.exit("the pinned version of the checkpoint (%s) is no longer on Hugging Face: update Nostroma" % REVISION)
             print("STRATA_ALLOW_UNPINNED=1: the checkpoint's pinned revision %s is gone: reading its current files "
                   "(main); every tensor is still checked against the pinned SHA256" % REVISION, file=sys.stderr)
             REPO = REPO.replace("/resolve/%s/" % REVISION, "/resolve/main/")

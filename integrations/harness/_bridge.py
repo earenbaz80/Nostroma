@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Agent bridge tests: Strata API worker -> DeepSeek Harness -> durable session.
+"""Agent bridge tests: Nostroma API worker -> DeepSeek Harness -> durable session.
 
 This exercises the integration that the handoff calls the difficult part, without needing model
-weights. It proves the *bridge*: that the pinned Harness boots with the Strata profile, that an
-agent turn reaches the local Strata API worker, that the assistant message records the Strata
+weights. It proves the *bridge*: that the pinned Harness boots with the Nostroma profile, that an
+agent turn reaches the local Nostroma API worker, that the assistant message records the Nostroma
 provider and model as its source, and that the turn reaches a terminal state in a durable session.
 
-It does NOT prove inference quality. The worker runs its built-in `MockEngine`, because no Strata
+It does NOT prove inference quality. The worker runs its built-in `MockEngine`, because no Nostroma
 pack fits this development Mac (see history/docs/work/IMPLEMENTATION_STATUS.md section 3.2). Every reported
 fact is about the path, not the model; the qualification kit replaces the mock engine with a real
 one on a machine that can hold a pack.
@@ -15,7 +15,7 @@ Usage:
     python integrations/harness/bridge_e2e.py [--dsh /path/to/dsh] [--port 8095] [--keep]
 
 Exit codes:
-    0  the turn completed and the assistant message names the Strata provider and model
+    0  the turn completed and the assistant message names the Nostroma provider and model
     1  the bridge failed; the durable session events are printed to help diagnose it
     2  a prerequisite was missing (the dsh CLI, the worker, or the profile)
 """
@@ -76,7 +76,7 @@ def wait_for_worker(port: int, timeout=60.0) -> dict:
         except OSError:
             pass
         time.sleep(0.4)
-    raise BridgeError(f"the Strata worker did not answer /health on 127.0.0.1:{port} within {timeout}s")
+    raise BridgeError(f"the Nostroma worker did not answer /health on 127.0.0.1:{port} within {timeout}s")
 
 
 def start_worker(python: Path, port: int, tmp: Path) -> tuple[subprocess.Popen, Path]:
@@ -84,7 +84,7 @@ def start_worker(python: Path, port: int, tmp: Path) -> tuple[subprocess.Popen, 
     handle = logfile.open("w")
     proc = subprocess.Popen(
         [str(python), "-m", "serve.server", "--engine", "mock", "--port", str(port),
-         "--script", "I am a local Strata model."],
+         "--script", "I am a local Nostroma model."],
         cwd=str(REPO), stdout=handle, stderr=subprocess.STDOUT,
     )
     return proc, logfile

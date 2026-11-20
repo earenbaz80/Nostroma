@@ -1,4 +1,4 @@
-"""tools/image/qimage.py - Qwen-Image-2.1-Turbo for Strata's image endpoint: stable-diffusion.cpp (sd-cli) at a pinned
+"""tools/image/qimage.py - Qwen-Image-2.1-Turbo for Nostroma's image endpoint: stable-diffusion.cpp (sd-cli) at a pinned
 commit, built for this PC's GPU, and the model's three files at pinned Hugging Face revisions.
 
 setup.py (--images qwen-image) and tools/image/install.py use these pieces; serve/images.py runs the result.
@@ -180,7 +180,7 @@ def native_hash() -> str:
     return h.hexdigest()[:16]
 
 
-NOISE_DIR = Path(__file__).resolve().parent / "sdcpp_noise"     # Strata's noise generator for sd-cli (every backend)
+NOISE_DIR = Path(__file__).resolve().parent / "sdcpp_noise"     # Nostroma's noise generator for sd-cli (every backend)
 NOISE_FILES = ("apply.py", "strata_noise.hpp", "strata_noise_tables.inc", "strata_philox_rng.hpp", "strata_sin_exc.bin")
 
 
@@ -196,7 +196,7 @@ def noise_hash() -> str:
     return h.hexdigest()[:16]
 
 
-VAE_DIR = Path(__file__).resolve().parent / "sdcpp_vae"         # Strata's VAE decoder for sd-cli (CUDA / HIP builds)
+VAE_DIR = Path(__file__).resolve().parent / "sdcpp_vae"         # Nostroma's VAE decoder for sd-cli (CUDA / HIP builds)
 VAE_BACKENDS = NATIVE_BACKENDS
 
 
@@ -220,7 +220,7 @@ def vae_hash(repo: Path | None = None) -> str:
 def build_stamp(backend: str, arch, noise: bool = False, vae: bool = False) -> dict:
     """What a built sd-cli is stamped with (BUILD.json): the pins, the backend and, where it applies, a fingerprint of
     the native runner's sources and, only when the noise generator is asked for (images "noise": "strata"), of the
-    noise generator's, and only when Strata's VAE decoder is asked for (images "vae_decoder": "strata", CUDA / HIP), of
+    noise generator's, and only when Nostroma's VAE decoder is asked for (images "vae_decoder": "strata", CUDA / HIP), of
     the decoder's: nobody compiles again unasked when they are off."""
     stamp = {"sd_cpp": SD_CPP_COMMIT, "ggml": SD_GGML_COMMIT, "backend": backend, "arch": str(arch or "")}
     if backend in NATIVE_BACKENDS:
@@ -241,11 +241,11 @@ def image_config(backend: str, quant: str, exe: Path, models_dir: Path, *, uma: 
            "llm": str(local_path(models_dir, "llm")), "args": default_args(backend), "gpu_policy": policy,
            "uma": bool(uma), "sd_cpp": SD_CPP_COMMIT[:7]}
     if backend in NATIVE_BACKENDS:
-        cfg["native"] = bool(native)       # Strata's DiT runner (--model-args qwen_image_2_1_native=1)
+        cfg["native"] = bool(native)       # Nostroma's DiT runner (--model-args qwen_image_2_1_native=1)
     if noise:
-        cfg["noise"] = "strata"            # Strata's noise generator (--model-args strata_noise=1); absent = "sdcpp"
+        cfg["noise"] = "strata"            # Nostroma's noise generator (--model-args strata_noise=1); absent = "sdcpp"
     if vae and backend in VAE_BACKENDS:
-        cfg["vae_decoder"] = "strata"      # Strata's VAE decoder (--model-args strata_vae=1); absent = "sdcpp"
+        cfg["vae_decoder"] = "strata"      # Nostroma's VAE decoder (--model-args strata_vae=1); absent = "sdcpp"
     if gpu is not None:
         cfg["gpu"] = gpu
     if lib_dirs:

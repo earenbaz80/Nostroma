@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""Agent bridge tests: Strata API worker -> DeepSeek Harness -> durable session.
+"""Agent bridge tests: Nostroma API worker -> DeepSeek Harness -> durable session.
 
 These cover the three behaviours the handoff singles out as the difficult part of the integration,
 and they run without model weights:
 
-    default      one turn reaches the local Strata worker and completes with recorded provenance
+    default      one turn reaches the local Nostroma worker and completes with recorded provenance
     --cancel     a turn is cancelled mid-flight and reaches an aborted terminal state
     --approval   a tool call raises an approval request over the gateway and the answer is applied
     --all        all three
 
 What they do NOT prove: inference quality, tokens-per-second, or tool correctness against a real
-model. The worker runs its built-in `MockEngine` because no Strata pack fits this development Mac
+model. The worker runs its built-in `MockEngine` because no Nostroma pack fits this development Mac
 (history/docs/work/IMPLEMENTATION_STATUS.md section 3.2). Every assertion here is about the *path*.
 
 The reusable helpers live in `_bridge.py`; `bridge_e2e.py` is the single-behaviour convenience

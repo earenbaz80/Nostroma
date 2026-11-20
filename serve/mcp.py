@@ -1,7 +1,7 @@
 """serve/mcp.py - tools from MCP (Model Context Protocol) servers for the web app's chats.
 
 The user lists servers in the run config (`"mcp_servers"`, or Claude Desktop's `"mcpServers"` block pasted as is) or
-in a separate file (`--mcp-config`).  Each one is either a program Strata starts (`command`, `args`, `env`, `cwd`:
+in a separate file (`--mcp-config`).  Each one is either a program Nostroma starts (`command`, `args`, `env`, `cwd`:
 the stdio transport, newline-delimited JSON-RPC 2.0 on its stdin/stdout) or an address (`url`, `headers`: the
 Streamable HTTP transport, JSON-RPC POSTed, answered as JSON or as an event stream).  Both are implemented here with
 the standard library only; no MCP SDK is needed.
@@ -36,7 +36,7 @@ import urllib.request
 
 from serve import lifeline
 
-PROTOCOL = "2025-06-18"               # the MCP revision Strata asks for; the server's answer is used as given
+PROTOCOL = "2025-06-18"               # the MCP revision Nostroma asks for; the server's answer is used as given
 DEFAULTS = {"timeout_s": 60.0, "max_result_chars": 20000, "max_rounds": 8, "start_timeout_s": 120.0, "image_results": False}
 
 
@@ -80,7 +80,7 @@ def _wait(slot: _Slot, timeout: float, cancel: threading.Event | None, what: str
 
 # ------------------------------------------------------------------------------------------------ transports
 class StdioTransport:
-    """A server Strata starts: JSON-RPC messages one per line on its stdin and stdout; its stderr is its log."""
+    """A server Nostroma starts: JSON-RPC messages one per line on its stdin and stdout; its stderr is its log."""
     kind = "stdio"
 
     def __init__(self, name: str, cfg: dict):
@@ -655,7 +655,7 @@ def _check_server(name, cfg, where) -> dict:
     if cfg.get("url"):
         if cfg.get("type") == "sse":
             raise SystemExit(f"[strata] {where}: MCP server {name!r} uses the old SSE transport (\"type\": \"sse\"); "
-                             "Strata speaks Streamable HTTP - most servers offer it at /mcp")
+                             "Nostroma speaks Streamable HTTP - most servers offer it at /mcp")
         if not isinstance(cfg.get("headers") or {}, dict):
             raise SystemExit(f"[strata] {where}: MCP server {name!r}: \"headers\" must be an object")
         return cfg

@@ -1,9 +1,9 @@
-# The Strata profile: DeepSeek Harness as the agent backend for a *local* model.
+# The Nostroma profile: DeepSeek Harness as the agent backend for a *local* model.
 #
 # This is a patch layer over the shipped base + web-app bundles (see package.json). It does two
 # things and nothing else:
 #
-#   1. points the agent's model at `strata-local`, the Strata API worker on loopback;
+#   1. points the agent's model at `strata-local`, the Nostroma API worker on loopback;
 #   2. declares that route to the pi-ai adapter as an ordinary OpenAI-completions endpoint with
 #      explicit capabilities.
 #
@@ -25,13 +25,13 @@
   config:
     providers:
       strata-local:
-        displayName: Strata (local)
+        displayName: Nostroma (local)
         # An OpenAI-compatible dialect. `supportedProtocols()` in llm-pi-ai is
-        # openai-completions | openai-responses | anthropic-messages; the Strata worker implements
+        # openai-completions | openai-responses | anthropic-messages; the Nostroma worker implements
         # the documented subsets of all three, and chat completions is the one exercised here.
         api: openai-completions
         baseURL: http://127.0.0.1:8095/v1
-        # The Strata worker does not require a key on loopback, but pi-ai's OpenAI-compatible
+        # The Nostroma worker does not require a key on loopback, but pi-ai's OpenAI-compatible
         # client insists on one before it will send a request at all. Two things were tried and
         # both fail before reaching the worker, which is worth recording:
         #   * `apiKeyEnv: <NAME>` with the variable unset -> `no credential for provider route`

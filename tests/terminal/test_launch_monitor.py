@@ -87,7 +87,7 @@ class Connect(unittest.TestCase):
             self.assertIn("Node 24.16", flat(app))
             await pilot.press("down")
             await pilot.pause(0.2)
-            self.assertIn("built into the Strata app", flat(app))
+            self.assertIn("built into the Nostroma app", flat(app))
             await pilot.press("up", "up", "up", "up", "up", "up", "up")
             await pilot.pause(0.2)
             self.assertIn("OpenCode setup", flat(app))

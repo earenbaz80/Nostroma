@@ -185,7 +185,7 @@ class NotFoundOnThePinnedCommit(unittest.TestCase):
                 setup.download(pinned_url("Q2_0/Qwen3.8-Flash-Next-GSQ-RCO-Q2_0-00001-of-00002.gguf"), dst, "the model")
             self.assertFalse(dst.exists())
         self.assertIn("the pinned version of the model is no longer on Hugging Face", out.getvalue())
-        self.assertIn("update Strata", out.getvalue())
+        self.assertIn("update Nostroma", out.getvalue())
         self.assertEqual(len(seen), 1)                 # no second try on main
 
     def test_the_opt_out_takes_the_current_file_and_says_so(self):

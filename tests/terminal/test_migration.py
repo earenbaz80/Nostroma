@@ -1,6 +1,6 @@
-"""An install made by today's Strata is found and used in place by the terminal.
+"""An install made by today's Nostroma is found and used in place by the terminal.
 
-The fixture is today's layout: a Strata folder with strata-<model>.json run configs (absolute paths into it and into
+The fixture is today's layout: a Nostroma folder with strata-<model>.json run configs (absolute paths into it and into
 the data folder), an engine/ folder, run-<model> scripts, a .venv, and a separate data folder (Strata-data) holding the
 GGUF files, prepared packs and the MTP layer; the user's settings.json remembers the data folder and the install. The
 terminal archive is a NEW folder. Nothing may be copied, moved, created or rewritten in the old layout, and the real

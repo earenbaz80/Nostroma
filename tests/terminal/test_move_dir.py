@@ -1,4 +1,4 @@
-"""#4853: a checked engine folder that Windows (a virus scanner, the indexer) will not let Strata rename is copied into place instead of
+"""#4853: a checked engine folder that Windows (a virus scanner, the indexer) will not let Nostroma rename is copied into place instead of
 ending the install with "the update didn't finish". A rename that works is still a rename."""
 
 import os

@@ -1,6 +1,6 @@
 """Codex MCP names that are not the declared namespace.member form.
 
-Observed with Qwen3.8-Flash-Next through Codex CLI against Strata v0.2.2. The model
+Observed with Qwen3.8-Flash-Next through Codex CLI against Nostroma v0.2.2. The model
 wrote <function=mcp__filesystem=write_file>, <function=mcp__filesystem_edit_file>,
 and later a bare <function=write_file>. The declared tool was
 mcp__filesystem.write_file. Stock main already accepts namespace__member. The

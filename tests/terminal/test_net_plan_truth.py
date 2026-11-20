@@ -1,7 +1,7 @@
 """Lane NET item 4: the plan says what the start does.
 
 4a. A copy of the model installed in another data folder is not what a launch with --data-dir uses (installed_serves_request): the start runs setup
-    with the given folder, and setup takes model files only from there and from the folders it reuses (the remembered data folder, Strata's own). The plan
+    with the given folder, and setup takes model files only from there and from the folders it reuses (the remembered data folder, Nostroma's own). The plan
     counted the other copy as installed ("About 1.2 GB": the start then fetched 112 GB, lane 10 on the V100 box).
 4b. The plan took any mmproj*.gguf as the picture reader; setup takes only the family's pinned file name (beside a person's own files by name, in the folder
     above it or its models/ only at the pinned size) and downloads 0.9 GB otherwise. Which file setup accepts is NOT changed here.

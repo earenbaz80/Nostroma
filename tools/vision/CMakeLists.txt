@@ -1,4 +1,4 @@
-# tools/vision - strata-vision, the image encoder for Strata's multimodal path (optional; setup.py builds it when
+# tools/vision - strata-vision, the image encoder for Nostroma's multimodal path (optional; setup.py builds it when
 # the vision encoder is chosen).  Uses llama.cpp's mtmd library at the same pinned commit as the engine's ggml, from the vendored
 # third_party/strata-llama (own-stack phase 1B; phase 3 replaces this program with a native vision tower).
 #

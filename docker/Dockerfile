@@ -1,4 +1,4 @@
-# Strata container image, built from the engine COMPONENT PACKAGE: nothing is compiled on the user's side.
+# Nostroma container image, built from the engine COMPONENT PACKAGE: nothing is compiled on the user's side.
 #
 #   one image = the Terminal (bundled Python 3.12 + nostroma_cli / nostroma_control / serve, built exactly as the release archive)
 #             + one engine package (CUDA 13, CUDA 12, HIP gfx120X, HIP gfx110X or SYCL) + the entrypoint
@@ -149,7 +149,7 @@ LABEL org.opencontainers.image.title="Strata" \
       org.opencontainers.image.source="https://github.com/Niko1221/Strata" \
       org.opencontainers.image.url="https://github.com/Niko1221/Strata" \
       org.opencontainers.image.documentation="https://github.com/Niko1221/Strata/blob/main/docs/DOCKER.md" \
-      org.opencontainers.image.description="Strata local LLM server (Terminal + engine package), flavor ${FLAVOR}" \
+      org.opencontainers.image.description="Nostroma local LLM server (Terminal + engine package), flavor ${FLAVOR}" \
       org.opencontainers.image.version="${STRATA_VERSION}" \
       org.opencontainers.image.licenses="see LICENSE" \
       com.strata.flavor="${FLAVOR}" \

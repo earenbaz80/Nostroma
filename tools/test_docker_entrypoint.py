@@ -278,7 +278,7 @@ class Entrypoint(unittest.TestCase):
         p = self.start(MODEL_PATH=str(self.tmp / "g"))
         self.wait_for("--show-key")
         code, out, err = self.stop(p)
-        self.assertIn("Starting Strata: the model files in " + str(self.tmp / "g"), out)
+        self.assertIn("Starting Nostroma: the model files in " + str(self.tmp / "g"), out)
 
     def test_other_commands_run_instead_of_the_server(self):
         r = subprocess.run([SH, str(self.script), "strata", "launch", "--plan", "--model", "q2_0"], env=self.env(), capture_output=True,
