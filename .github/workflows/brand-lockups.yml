@@ -1,0 +1,39 @@
+name: Brand lockups
+
+# Checks that the lockups in apps/host/public/brand still match what
+# apps/host/scripts/prepare-brand-lockups.py draws from the face in
+# apps/host/public/fonts. It runs the script's own --check, which also prints
+# the contrast of every theme, and needs no write access.
+
+on:
+  pull_request:
+    paths:
+      - 'apps/host/scripts/prepare-brand-lockups.py'
+      - 'apps/host/public/brand/**'
+      - 'apps/host/public/fonts/**'
+      - '.github/workflows/brand-lockups.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/host/scripts/prepare-brand-lockups.py'
+      - 'apps/host/public/brand/**'
+      - 'apps/host/public/fonts/**'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      # fontTools is pinned to the release named as DRAWN_WITH in the script:
+      # the way it formats path numbers can change between releases, and a
+      # newer one would fail the comparison for a reason that is not an edit.
+      - name: Install the drawing tools
+        run: python3 -m pip install --disable-pip-version-check fonttools==4.68.0 brotli
+      - name: Check the lockups
+        run: python3 apps/host/scripts/prepare-brand-lockups.py --check

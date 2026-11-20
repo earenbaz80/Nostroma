@@ -1,4 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="186.23" height="48" viewBox="0 0 186.23 48" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="186.23" height="48" viewBox="0 0 186.23 48" role="img" aria-labelledby="t">
+<title id="t">Nostroma, light lockup</title>
+<!-- Brand asset of Nostroma. Drawn from public/fonts/Exo2-Variable.woff2 (weight 700) by apps/host/scripts/prepare-brand-lockups.py with fontTools 4.68.0; regenerate it rather than editing. -->
 <rect x="3.556" y="8" width="8.889" height="32" rx="0" fill="#2b1e0a" />
 <rect x="30.222" y="8" width="8.889" height="32" rx="0" fill="#2b1e0a" />
 <polygon points="12.444,8 19.556,8 30.222,40 23.111,40" fill="#8f5200" />

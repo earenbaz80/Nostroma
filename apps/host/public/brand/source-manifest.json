@@ -25,15 +25,15 @@
       "source": "logo/strata-lockup-light.svg",
       "source_sha256": "b9b077df326da8c0bdb5505ee7a6659ab3de986d481354c8d216722c673370f1",
       "output": "brand/strata-lockup-light.svg",
-      "output_sha256": "6a33ac50ece501ae0cd2794635b5dcfaf227e1846db361dd688c6e6ae5f49dfb",
-      "method": "mark kept 3.556/30.222 as supplied, name outlined from public/fonts/Exo2-Variable.woff2 at its 700 instance with cap height 21.8, baseline 37.75 and -0.01em tracking; scripts/prepare-brand-lockups.py reproduces this file byte for byte"
+      "output_sha256": "f7095b70d3ed81cce78f335b9d0241cf12965c45ebf3690de0ce55ff8de4165a",
+      "method": "mark kept 3.556/30.222 as supplied, word 'ostroma' outlined from public/fonts/Exo2-Variable.woff2 at weight 700 with cap height 21.8, baseline 37.75 and -0.01em tracking; scripts/prepare-brand-lockups.py regenerates this file byte for byte"
     },
     {
       "source": "logo/strata-lockup-dark.svg",
       "source_sha256": "ec689b25498bf177eb8dd50f980d34ba05cd7f38403fca73c1bf9d231fde5e3b",
       "output": "brand/strata-lockup-dark.svg",
-      "output_sha256": "bd1e1dbc62dd1dffb5e075be330954ed3aecf665c5fc77f6d6aec2f7d576f0dc",
-      "method": "mark kept 3.556/30.222 as supplied, name outlined from public/fonts/Exo2-Variable.woff2 at its 700 instance with cap height 21.8, baseline 37.75 and -0.01em tracking; scripts/prepare-brand-lockups.py reproduces this file byte for byte"
+      "output_sha256": "d72e0bf0214e1200e877c0805991493fa89a133ee1d40f96e227f1143721de50",
+      "method": "mark kept 3.556/30.222 as supplied, word 'ostroma' outlined from public/fonts/Exo2-Variable.woff2 at weight 700 with cap height 21.8, baseline 37.75 and -0.01em tracking; scripts/prepare-brand-lockups.py regenerates this file byte for byte"
     },
     {
       "source": "web/favicon.svg",
@@ -111,6 +111,13 @@
       "output": "site.webmanifest",
       "output_sha256": "7685f061bad78f5a9a835d32e283869e3b359338b3bdd0ed0673c73cf21ce338",
       "method": "root-local app identity and hash-route launch, with the product name changed to Nostroma"
+    },
+    {
+      "source": "logo/strata-lockup-light.svg",
+      "source_sha256": "b9b077df326da8c0bdb5505ee7a6659ab3de986d481354c8d216722c673370f1",
+      "output": "brand/strata-lockup-high-contrast.svg",
+      "output_sha256": "3a032ac19f4931c7a4a8ab0d01a2e44233fa75f6c0b18e126fe9f296627dbe4d",
+      "method": "mark kept 3.556/30.222 as supplied, word 'ostroma' outlined from public/fonts/Exo2-Variable.woff2 at weight 700 with cap height 21.8, baseline 37.75 and -0.01em tracking, in the high-contrast palette (#000000 on #f3e8d2); scripts/prepare-brand-lockups.py regenerates this file byte for byte"
     }
   ]
 }
