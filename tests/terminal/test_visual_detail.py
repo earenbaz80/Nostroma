@@ -74,7 +74,7 @@ class VisualDetailTests(unittest.TestCase):
             for view in ("serving", "requests", "engine", "hardware", "logs"):
                 with self.subTest(width=width, view=view):
                     shown = self.render(sample, view, width, height)
-                    self.assertIn(f"STRATA  /  {view.upper()}", shown)
+                    self.assertIn(f"NOSTROMA  /  {view.upper()}", shown)
                     self.assertNotIn("SECRET_PROMPT", shown)
                     self.assertLessEqual(len(shown.splitlines()), height - 2)
                     self.assertTrue(all(len(line) <= width - 2 for line in shown.splitlines()))

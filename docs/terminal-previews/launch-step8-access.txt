@@ -1,16 +1,15 @@
 # strata launch preview: step8-access
 # (text of the screen as drawn at the size named in tests/terminal/launch_previews.py)
 
- STRATA  Set up   Step 8 of 9: Access
+ NOSTROMA  Set up   Step 2 of 10: Folder
  ────────────────────────────────────────────────────────────────────────────────────────────────────────────
- Who can use it?
-   This computer only    http://127.0.0.1:8080                         for apps on this computer
- › My local network      http://192.168.88.21:8080                     other computers at home or the office
-   Cloudflare tunnel     https://<random>.trycloudflare.com            from anywhere · cloudflared found
-   Tailscale             http://<tailnet address>:8080                 Tailscale is not installed
-
-    Port      [ 8080 ]   press p to change
-    API key   [ on ]   sk-strata-••••••••  (recommended for anything beyond this computer)
+ Where should the model files be stored?
+ Not downloaded yet: about 84 GB to download.
+ Free space in that folder's drive: 47 GB   Not enough for the 92 GB needed. You can still go on, but the
+ download is likely to stop; pick a bigger drive.
+ ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+ │  n                                                                                                       │
+ └──────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 
 
@@ -30,8 +29,9 @@
 
 
  ────────────────────────────────────────────────────────────────────────────────────────────────────────────
- Windows may ask whether to allow Strata (python.exe) on your network: choose Allow for private networks. If
- you choose Cancel, the model still works on this computer.
- Other computers on your network can use it at the address shown. Keep the API key on.
- ↑↓ choose   Enter next   p port   k new key   t key on/off   Esc back   ? help
- An API key was made for you, because this reaches beyond your computer.
+ Models are large files. Nostroma keeps them in one folder; the default is Nostroma's own data folder. Press
+ Enter to keep it, or type another folder (it is created if it does not exist). Models you already have stay
+ where they are and stay usable; the new folder is for new downloads.
+ Type to change the folder   Enter next   Esc back   ? help
+ ! This is not a full path: C:/Users/AI-Server/Documents/Nostroma. Type the whole path, starting with /, like
+ /data/strata-models. Nothing was downloaded or changed.

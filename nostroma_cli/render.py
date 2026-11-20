@@ -457,7 +457,7 @@ def render_view(snapshot: dict, view: str, width: int = 80, height: int = 24,
             marker = f"[FROZEN/{short}]" if short else "[FROZEN]"
         else:
             marker = f"[{labels[state]}]"
-    lines = [f"STRATA  {view.title():<10} {safe(connection, max(0, width - 42))} {marker}"]
+    lines = [f"NOSTROMA  {view.title():<10} {safe(connection, max(0, width - 44))} {marker}"]
     if tiny:       # a small window: the tabs (names kept, the selected one marked) and, under them, the keys that matter
         lines += [nav.plain(VIEWS.index(view), width, connect), f"{nav.keys(connect)} views  q quit  ? help"[:width]]
     else:

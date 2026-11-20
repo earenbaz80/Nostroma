@@ -554,7 +554,7 @@ def render_detail_dashboard(snapshot: dict, view: str, *, width: int, height: in
     state, live = _state(snapshot, connection_state, frozen)
     active = palette["green"] if state == "LIVE" else palette["amber"] if "STALE" in state else palette["red"]
     heading = Text()
-    heading.append(f"STRATA  /  {view.upper()}", style=f"bold {palette['cyan']}")
+    heading.append(f"NOSTROMA  /  {view.upper()}", style=f"bold {palette['cyan']}")
     heading.append("   ")
     heading.append(state, style=f"bold {active}" if color else "bold")
     heading.append(f"   {safe(connection, max(0, width - 48))}")

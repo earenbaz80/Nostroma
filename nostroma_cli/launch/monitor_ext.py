@@ -341,7 +341,7 @@ class LaunchMonitor(MonitorApp):
         state = {"connected": "[LIVE]", "stale": "[STALE]", "connecting": "[CONNECTING]", "disconnected": "[DISCONNECTED]",
                  "auth_required": "[AUTH REQUIRED]"}.get(self.connection_state, "[LIVE]")
         t = Text(no_wrap=True, overflow="crop")
-        head = f"STRATA  Connect   {self.info['url']}"
+        head = f"NOSTROMA  Connect   {self.info['url']}"
         if len(head) + len(state) + 2 <= width:
             t.append(head, style=bold_accent)
             t.append(" " * max(2, width - len(head) - len(state)) + state + "\n", style=bold_accent)

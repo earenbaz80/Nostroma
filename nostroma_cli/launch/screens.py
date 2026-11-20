@@ -142,7 +142,7 @@ class Base(Screen):
     def head_text(self) -> Text:
         flow = flow_for(self.ctx)
         out = Text(no_wrap=True, overflow="crop")
-        out.append("STRATA  ", style=f"bold {ACCENT}")
+        out.append("NOSTROMA  ", style=f"bold {ACCENT}")
         out.append(f"{self.title_line}", style=f"bold {ACCENT}")
         if self.step_id in flow:
             labels = STEP_LABELS
@@ -309,9 +309,9 @@ class StartScreen(Base):
 
     def head_text(self) -> Text:
         out = Text(no_wrap=True, overflow="crop")
-        out.append("STRATA  Launch", style=f"bold {ACCENT}")
+        out.append("NOSTROMA  Launch", style=f"bold {ACCENT}")
         info = self.ctx.computer.line()
-        gap = max(2, self.width() - len("STRATA  Launch") - len(info))
+        gap = max(2, self.width() - len("NOSTROMA  Launch") - len(info))
         out.append(" " * gap + info, style=MUTE)
         return out
 
@@ -1714,7 +1714,7 @@ class RunScreen(Base):
 
     def head_text(self) -> Text:
         out = Text(no_wrap=True, overflow="crop")
-        out.append("STRATA  Launch", style=f"bold {ACCENT}")
+        out.append("NOSTROMA  Launch", style=f"bold {ACCENT}")
         s = self.ctx.settings
         out.append(f"   {s.name or ''}", style=MUTE)
         return out

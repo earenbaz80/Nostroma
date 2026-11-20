@@ -1,24 +1,22 @@
 # strata launch preview: step9-save
 # (text of the screen as drawn at the size named in tests/terminal/launch_previews.py)
 
- STRATA  Set up   Step 9 of 9: Save
+ NOSTROMA  Set up   Step 2 of 10: Folder
  ────────────────────────────────────────────────────────────────────────────────────────────────────────────
- Save as preset, then launch
-   Name   (type below)
-   Model     Qwen3.8-Flash-Next IQ3_XXS
-   Context   128K, memory int8
-   Pictures  off
-   Parallel  fit to your card (1)
-   Tuning    quick (about 20 min)
-   Access    My local network, port 8080, API key on
-   Storage   Strata's data folder
-
+ Where should the model files be stored?
+ Not downloaded yet: about 84 GB to download.
+ Free space in that folder's drive: 47 GB   Not enough for the 92 GB needed. You can still go on, but the
+ download is likely to stop; pick a bigger drive.
  ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────┐
- │  IQ3_XXS 128K                                                                                            │
+ │  n                                                                                                       │
  └──────────────────────────────────────────────────────────────────────────────────────────────────────────┘
- › Save as a preset and launch
-   Launch without saving
-   Save the preset and stop here
+
+
+
+
+
+
+
 
 
 
@@ -31,6 +29,9 @@
 
 
  ────────────────────────────────────────────────────────────────────────────────────────────────────────────
- Press Enter on the first choice to save and start. The first start may download the model and tune; the
- monitor opens when it is serving.
- ↑↓ choose   Enter do it   Tab rename   Esc back   ? help
+ Models are large files. Nostroma keeps them in one folder; the default is Nostroma's own data folder. Press
+ Enter to keep it, or type another folder (it is created if it does not exist). Models you already have stay
+ where they are and stay usable; the new folder is for new downloads.
+ Type to change the folder   Enter next   Esc back   ? help
+ ! This is not a full path: n. Type the whole path, starting with /, like /data/strata-models. Nothing was
+ downloaded or changed.

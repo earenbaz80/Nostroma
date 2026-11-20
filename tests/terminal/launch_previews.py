@@ -62,6 +62,13 @@ def run() -> None:
                      "  --prefill N          how many prompt tokens are read at once\n  --expert-cache N     experts kept in graphics memory\n"
                      "  --spec N             draft tokens per step (faster replies)\n  --native-rope        experimental pinned rotary arithmetic\n")
         patches = [mock.patch.object(Ctx, "base_config", lambda self: base), mock.patch.object(Ctx, "engine_exe", lambda self: "/engine/strata"),
+                   # The fake computer's folder and free space: a capture must read the same on every machine, so the
+                   # Folder step shows a fixed path and a fixed number instead of this run's temporary home and disk.
+                   mock.patch.object(Ctx, "default_folder", lambda self: Path("C:/Users/AI-Server/Documents/Nostroma")),
+                   mock.patch("nostroma_cli.launch.catalog.Catalog.disk_free", lambda self, path: 47.0),
+                   # One fixed clock: the request rows and the sampled times come from the fake snapshot, so the same
+                   # command writes the same file twice instead of a capture that changes with the minute.
+                   mock.patch("time.time", return_value=1792144800.0),
                    mock.patch("nostroma_cli.launch.params.engine_help_text", return_value=help_text),
                    mock.patch.object(access, "lan_ips", return_value=["192.168.88.21"]),
                    mock.patch.object(access, "find_cloudflared", return_value="/usr/bin/cloudflared"),
@@ -142,11 +149,15 @@ def run() -> None:
                 write("monitor-quit", text_of(app), "q asks: keep serving or stop")
 
         asyncio.run(monitor())
+
+        # The ascii overview is drawn, not a screen of the app, so it is written here, with the fixed clock still on:
+        # the request rows carry the time they were made, and this file must read the same on every run.
+        (OUT / "launch-overview-ascii.txt").write_text(
+            "# nostroma monitor Overview in the classic Windows console mode (--glyphs ascii, or detected): no characters Consolas lacks\n\n"
+            + ov.draw(ov.overview.build(ov.metrics("generating")), glyphs="ascii", color=False, connect=True), encoding="utf-8")
+        print("wrote", "launch-overview-ascii.txt")
         for p in patches:
             p.stop()
-    Path(OUT / "launch-overview-ascii.txt").write_text(
-        "# strata monitor Overview in the classic Windows console mode (--glyphs ascii, or detected): no characters Consolas lacks\n\n"
-        + ov.draw(ov.overview.build(ov.metrics("generating")), glyphs="ascii", color=False, connect=True), encoding="utf-8")
 
 
 if __name__ == "__main__":

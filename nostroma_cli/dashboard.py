@@ -762,7 +762,7 @@ def render_dashboard(snapshot: dict, *, width: int, height: int, history: Monito
                    "READY" if model.get("loaded") is True else
                    "NO MODEL LOADED" if model.get("loaded") is False else "UNKNOWN")
     heading = Text()
-    heading.append("STRATA  /  MONITOR", style=f"bold {accent}")
+    heading.append("NOSTROMA  /  MONITOR", style=f"bold {accent}")
     heading.append("   ")
     heading.append(state, style=(f"bold {accent}" if state == "LIVE" else
                                  "bold yellow" if state in ("SLEEPING", "STALE", "CONNECTING") else

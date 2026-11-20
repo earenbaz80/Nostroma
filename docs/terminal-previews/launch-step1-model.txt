@@ -1,36 +1,36 @@
 # strata launch preview: step1-model
 # (text of the screen as drawn at the size named in tests/terminal/launch_previews.py)
 
- STRATA  Set up   Step 1 of 9: Model
+ NOSTROMA  Set up   Step 1 of 10: Model
  ────────────────────────────────────────────────────────────────────────────────────────────────────────────
- Which model?                                          This computer: RTX 5070 12 GB · 64 GB RAM · 47 GB free
+ Which model?                                           This computer: RTX 5070 12 GB · 64 GB RAM · 7 GB free
    Model                                     Download  Needs (RAM + VRAM)  On this computer
-   Qwen3.8-Flash-Next Q2_0                   66 GB     35 GB               fits
-   Qwen3.8-Flash-Next IQ2_XS                 68 GB     36 GB               fits
- › Qwen3.8-Flash-Next IQ3_XXS                76 GB     44 GB               fits (recommended)
-   Qwen3.8-Flash-Next IQ3_S                  84 GB     51 GB               fits
-   Swift 1.5 IQ2_XS                          68 GB     36 GB               fits
-   Swift 1.5 IQ3_XXS                         76 GB     44 GB               fits
-   Swift 1.5 IQ3_S                           84 GB     51 GB               fits
-   Qwen3.8-Flash-Next Coder IQ1_M            58 GB     24 GB               fits
-   Qwen3.8-Flash-Next (Unsloth) UD-IQ4_XS    94 GB     60 GB               fits, part read from SSD
-   Qwen3.8-Flash-Next (Unsloth) UD-Q4_K_XL   111 GB    78 GB               fits · SSD 16 GB
-   Qwen3.8-Flash-Next (Unsloth) UD-Q5_K_XL   158 GB    99 GB               tight · SSD 37 GB
-   Qwen3.8-Flash-Next (Unsloth) UD-Q6_K_XL   169 GB    110 GB              tight · SSD 48 GB
-   Qwen3.8-Flash-Next (Unsloth) Q8_0         188 GB    129 GB              tight · SSD 67 GB
+   Qwen3.8-Flash-Next Q2_0                   66 GB     38 GB               fits
+   Qwen3.8-Flash-Next IQ2_XS                 68 GB     39 GB               fits
+   Qwen3.8-Flash-Next IQ3_XXS                76 GB     47 GB               fits
+ › Qwen3.8-Flash-Next IQ3_S                  84 GB     55 GB               fits (recommended)
+   Swift 1.5 IQ2_XS                          68 GB     39 GB               fits
+   Swift 1.5 IQ3_XXS                         76 GB     47 GB               fits
+   Swift 1.5 IQ3_S                           84 GB     55 GB               fits
+   Qwen3.8-Flash-Next Coder IQ1_M            58 GB     30 GB               fits
+   Qwen3.8-Flash-Next (Unsloth) UD-IQ4_XS    94 GB     65 GB               fits
+   Qwen3.8-Flash-Next (Unsloth) UD-Q4_K_XL   111 GB    82 GB               may run slower
+   Qwen3.8-Flash-Next (Unsloth) UD-Q5_K_XL   158 GB    104 GB              may run slower
+   Qwen3.8-Flash-Next (Unsloth) UD-Q6_K_XL   169 GB    115 GB              may run slower
+   Qwen3.8-Flash-Next (Unsloth) Q8_0         188 GB    134 GB              may run slower
+   Qwen3.8-Flash-Next (Unsloth) UD-IQ1_M     68 GB     39 GB               fits
+   Qwen3.8-Flash-Next (Unsloth) UD-Q2_0      70 GB     42 GB               fits
+   Qwen3.8-Flash-Next (Unsloth) UD-IQ2_XS    76 GB     47 GB               fits
+   Qwen3.8-Flash-Next (Unsloth) UD-Q2_K_XL   80 GB     51 GB               fits
+   Qwen3.8-Flash-Next (Unsloth) UD-IQ3_XXS   84 GB     55 GB               fits
+   Qwen3.8-Flash-Next (Unsloth) UD-Q3_K_XL   90 GB     61 GB               fits
+   Qwen3.8-Flash-Next (Unsloth) UD-IQ4_XS-v3194 GB     65 GB               fits
    Qwen3.8-Flash-Next (Gyro) Gyro-S          58 GB     28 GB               fits
    Qwen3.8-Flash-Next (Gyro) Gyro-M          92 GB     35 GB               fits
-   Qwen3.8-Flash-Next (NVFP4) NVFP4          128 GB    69 GB               too big (can still try) · SSD 7 GB
-   Qwen3.8-Flash-Next (NVFP4) NVFP4-NVIDIA   128 GB    69 GB               too big (can still try) · SSD 7 GB
-   Qwen3.8-Flash-Next (NVFP4) NVFP4-QAD      102 GB    69 GB               too big (can still try) · SSD 7 GB
-
-
-
-
-
-
+   1-22 of 25
 
  ────────────────────────────────────────────────────────────────────────────────────────────────────────────
- Qwen3.8-Flash-Next IQ3_XXS: 3-bit i-quant, better quality, slower (more CPU work per token).
+ Qwen3.8-Flash-Next IQ3_S: 3.5-bit i-quant, the best quality (matches the full model), the slowest; needs a
+ 64 GB PC with little else running.
  The n-gram table stays on your SSD and is not counted above.
  ↑↓ choose   Enter next   o use my own files   Esc back   ? help

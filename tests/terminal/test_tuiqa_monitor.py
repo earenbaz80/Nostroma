@@ -174,8 +174,8 @@ class MonitorViews(unittest.TestCase):
 
     def test_the_overview_is_titled_overview(self):
         async def case(app, pilot):
-            self.assertIn("STRATA  Overview", text_of(app))
-            self.assertNotIn("STRATA  Serving", text_of(app))
+            self.assertIn("NOSTROMA  Overview", text_of(app))
+            self.assertNotIn("NOSTROMA  Serving", text_of(app))
             await pilot.press("2")
             await pilot.pause(0.1)
             self.assertIn("Serving", text_of(app))

@@ -1,16 +1,15 @@
 # strata launch preview: step6-tuning
 # (text of the screen as drawn at the size named in tests/terminal/launch_previews.py)
 
- STRATA  Set up   Step 6 of 9: Tuning
+ NOSTROMA  Set up   Step 2 of 10: Folder
  ────────────────────────────────────────────────────────────────────────────────────────────────────────────
- Tune for the best speed on this computer?
- › Quick       about 20 minutes      checks the most likely gains
-   Thorough    up to 2 hours         tries more settings, measures each one several times
-   Skip                              use the default settings (already good on most computers)
-
-   [ ] Allow settings that change answers very slightly (same quality)   press a to change
-
-
+ Where should the model files be stored?
+ Not downloaded yet: about 84 GB to download.
+ Free space in that folder's drive: 47 GB   Not enough for the 92 GB needed. You can still go on, but the
+ download is likely to stop; pick a bigger drive.
+ ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+ │  C:/Users/AI-Server/Documents/Nostroma                                                                   │
+ └──────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 
 
@@ -30,7 +29,9 @@
 
 
  ────────────────────────────────────────────────────────────────────────────────────────────────────────────
- Tuning is optional. It tries single changes against your settings, keeps only gains above the noise, and
- saves the result as a preset the Strata app can use too. Close other heavy programs while it measures. If
- your computer is already at its best it says so and changes nothing.
- ↑↓ choose   Enter next   a answer-changing settings on/off   Esc back   ? help
+ Models are large files. Nostroma keeps them in one folder; the default is Nostroma's own data folder. Press
+ Enter to keep it, or type another folder (it is created if it does not exist). Models you already have stay
+ where they are and stay usable; the new folder is for new downloads.
+ Type to change the folder   Enter next   Esc back   ? help
+ ! This is not a full path: C:/Users/AI-Server/Documents/Nostroma. Type the whole path, starting with /, like
+ /data/strata-models. Nothing was downloaded or changed.

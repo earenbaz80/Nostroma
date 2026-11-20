@@ -1,16 +1,15 @@
 # strata launch preview: step5-parallel
 # (text of the screen as drawn at the size named in tests/terminal/launch_previews.py)
 
- STRATA  Set up   Step 5 of 9: Parallel
+ NOSTROMA  Set up   Step 2 of 10: Folder
  ────────────────────────────────────────────────────────────────────────────────────────────────────────────
- How many requests at the same time?
- › Fit to my graphics card (1)         recommended
-   1 request
-   2 requests                          may not fit: slower answers
-   3 requests                          may not fit: slower answers
-   4 requests                          may not fit: slower answers
-
-
+ Where should the model files be stored?
+ Not downloaded yet: about 84 GB to download.
+ Free space in that folder's drive: 47 GB   Not enough for the 92 GB needed. You can still go on, but the
+ download is likely to stop; pick a bigger drive.
+ ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+ │  C:/Users/AI-Server/Documents/Nostroma                                                                   │
+ └──────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 
 
@@ -30,7 +29,9 @@
 
 
  ────────────────────────────────────────────────────────────────────────────────────────────────────────────
- Your card has 12 GB of graphics memory, which fits 1 at once by Strata's rule (12 GB: 1, 20 GB: 2, 24 GB: 3,
- 32 GB or more: 4). One person: pick 1. A team or several coding agents: more. More than fits still starts,
- only slower.
- ↑↓ choose   Enter next   Esc back   ? help   q quit
+ Models are large files. Nostroma keeps them in one folder; the default is Nostroma's own data folder. Press
+ Enter to keep it, or type another folder (it is created if it does not exist). Models you already have stay
+ where they are and stay usable; the new folder is for new downloads.
+ Type to change the folder   Enter next   Esc back   ? help
+ ! This is not a full path: C:/Users/AI-Server/Documents/Nostroma. Type the whole path, starting with /, like
+ /data/strata-models. Nothing was downloaded or changed.

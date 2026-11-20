@@ -238,7 +238,7 @@ class MonitorApp(App):
                 offset = 0
                 for line in content.splitlines(keepends=True):
                     stripped = line.strip()
-                    if stripped.startswith("STRATA") or stripped.startswith(("REQUEST FLOW", "GPU SENSORS", "Hardware", "Recent requests", "Slots / groups", "Occupied slots by group")):
+                    if stripped.startswith("NOSTROMA") or stripped.startswith(("REQUEST FLOW", "GPU SENSORS", "Hardware", "Recent requests", "Slots / groups", "Occupied slots by group")):
                         display.stylize(f"bold {accent}", offset, offset + len(line.rstrip("\n")))
                     elif stripped.startswith(("---", "Sample age", "1-6 views", "1-7 views", "Read only")):
                         display.stylize(muted, offset, offset + len(line.rstrip("\n")))
