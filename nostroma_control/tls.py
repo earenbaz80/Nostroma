@@ -4,7 +4,7 @@ Python's OpenSSL checks a server against a list of root certificates it carries 
 certificate. Chrome and curl.exe use the operating system's certificate store and its chain building (Windows schannel, macOS Security,
 the system bundle on Linux): they also trust the roots that antivirus HTTPS scanning, a company proxy or a Windows Insider build adds
 there, and they fetch a missing intermediate from the address inside the certificate. So a PC where the browser works could still
-fail with CERTIFICATE_VERIFY_FAILED ("unable to get local issuer certificate") in Strata.
+fail with CERTIFICATE_VERIFY_FAILED ("unable to get local issuer certificate") in Nostroma.
 
 `install()` makes every later HTTPS connection of this process use the operating system's store, through the `truststore` package
 (pure Python, Python 3.10 and newer, pinned in requirements.txt and the runtime locks). Where it is not installed (an older Python, a

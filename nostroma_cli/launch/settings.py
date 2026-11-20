@@ -179,7 +179,7 @@ def check_access(s: LaunchSettings) -> list[Notice]:
     out: list[Notice] = []
     if s.access not in ACCESS_KINDS:
         near = closest(s.access, list(ACCESS_KINDS))
-        out.append(Notice("error", f"'{s.access}' is not a way to share Strata.",
+        out.append(Notice("error", f"'{s.access}' is not a way to share Nostroma.",
                           f"Choose one of: {', '.join(ACCESS_KINDS)}." + (f" Did you mean '{near}'?" if near else "")))
         return out
     port = check_port(s.port)

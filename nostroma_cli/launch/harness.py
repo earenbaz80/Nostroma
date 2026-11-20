@@ -130,7 +130,7 @@ def claude_file(t: Target) -> str:
 
 def omp_models(t: Target) -> str:
     return ("providers:\n  strata:\n    baseUrl: " + t.base + "\n    api: openai-completions\n    auth: none\n    compat:\n"
-            "      supportsDeveloperRole: false\n    models:\n      - id: " + t.model + "\n        name: Qwen3.8-Flash-Next (Strata, local)\n"
+            "      supportsDeveloperRole: false\n    models:\n      - id: " + t.model + "\n        name: Qwen3.8-Flash-Next (Nostroma, local)\n"
             "        reasoning: true\n        input: [text]\n        contextWindow: " + str(t.context) + "\n        maxTokens: " + str(t.output_cap) +
             "\n        thinking:\n          mode: effort\n          efforts: [minimal, low, medium, high]\n          defaultLevel: medium\n"
             "        cost: {input: 0, output: 0, cacheRead: 0, cacheWrite: 0}\n")
@@ -144,7 +144,7 @@ def omp_config(t: Target) -> str:
 def pi_models(t: Target) -> str:
     return _j({"providers": {"strata": {"baseUrl": t.base, "api": "openai-completions", "apiKey": t.key,
                                         "compat": {"supportsDeveloperRole": False, "supportsReasoningEffort": False},
-                                        "models": [{"id": t.model, "name": "Qwen3.8-Flash-Next (Strata, local)", "reasoning": True,
+                                        "models": [{"id": t.model, "name": "Qwen3.8-Flash-Next (Nostroma, local)", "reasoning": True,
                                                     "input": ["text"], "contextWindow": t.context, "maxTokens": t.output_cap,
                                                     "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0}}]}}})
 
@@ -162,7 +162,7 @@ def hermes_file(t: Target) -> str:
 def openclaw_file(t: Target) -> str:
     return _j({"models": {"mode": "merge", "providers": {"strata": {
         "baseUrl": t.base, "apiKey": t.key, "api": "openai-completions",
-        "models": [{"id": t.model, "name": f"{t.model} (Strata)", "contextWindow": t.context,
+        "models": [{"id": t.model, "name": f"{t.model} (Nostroma)", "contextWindow": t.context,
                     "contextTokens": int(t.context * 23192 / 32768), "maxTokens": t.output_cap, "reasoning": True, "input": ["text"],
                     "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0}}]}}},
         "agents": {"defaults": {"model": {"primary": f"strata/{t.model}"},
@@ -322,7 +322,7 @@ def write_file(spec: dict, *, backup: bool = True) -> dict:
 
 
 def _keep_output_cap(old, merged) -> None:
-    """The output cap in a config being rewritten (in place on `merged`): a value the person set stays, so does a larger one from a newer Strata. The value
+    """The output cap in a config being rewritten (in place on `merged`): a value the person set stays, so does a larger one from a newer Nostroma. The value
     older Nostroma versions wrote on every window (OUTPUT_CAP, 4,096) is the generated default and is replaced, or the files written before #5006 would keep
     the cap that breaks compaction for ever. OpenCode's limit.output and Claude Code's CLAUDE_CODE_MAX_OUTPUT_TOKENS."""
     if not (isinstance(old, dict) and isinstance(merged, dict)):

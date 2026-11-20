@@ -1020,7 +1020,7 @@ def driver_notice(have: str | None, need: str) -> str:
     major = str(need).split(".")[0]
     how = ("download it from nvidia.com/drivers" if os.name == "nt" else
            "on Ubuntu open Software & Updates > Additional Drivers, or run: sudo ubuntu-drivers install")
-    return (f"Your NVIDIA graphics driver ({have}) is too old for Strata. Install driver {major} or newer ({how}), "
+    return (f"Your NVIDIA graphics driver ({have}) is too old for Nostroma. Install driver {major} or newer ({how}), "
             "restart the computer and open Nostroma again.")
 
 

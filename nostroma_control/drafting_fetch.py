@@ -376,7 +376,7 @@ def ensure(data_dir: str | Path, *, progress: Progress | None = None, cancel: th
             if tmp.stat().st_size != drafting.PACK_BYTES or transfer.sha256_file(tmp) != drafting.PACK_SHA256:
                 tmp.unlink(missing_ok=True)
                 raise DraftingError("The DFlash2 drafter was prepared but did not pass the safety check, so it was deleted. The model keeps using the MTP. "
-                                    "Try again; if it keeps happening, update Strata.")
+                                    "Try again; if it keeps happening, update Nostroma.")
         os.replace(tmp, out)
     except DraftingError:
         raise

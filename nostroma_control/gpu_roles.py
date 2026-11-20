@@ -320,7 +320,7 @@ def warnings(roles: dict[int, str], cards: list[dict], *, spill_gb: float = 0.0,
         if c is None or role == "off":
             continue
         if not _can_run(c):
-            out.append({"code": "cannot_run", "card": i, "text": f"{short_name(c)} cannot run Strata.", "fix": {"card": i, "role": "off"}})
+            out.append({"code": "cannot_run", "card": i, "text": f"{short_name(c)} cannot run Nostroma.", "fix": {"card": i, "role": "off"}})
         elif role == "main" and _shares(c) and any(not _shares(x) and _can_run(x) for x in cs.values()):
             real = sorted([x for x in cs.values() if not _shares(x) and _can_run(x)], key=lambda x: (-_speed(x), -_mem(x), _idx(x)))[0]
             out.append({"code": "igpu_main", "card": i, "text": f"{short_name(c)} is built-in graphics; it is slow as Main.",
