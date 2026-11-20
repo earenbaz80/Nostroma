@@ -1,7 +1,7 @@
 STRATA @APP_VERSION@ FOR LINUX - TESTER BUILD FOR AMD RX 9000 (RDNA4) CARDS (RX 9070 XT)
 =====================================================================
 
-This is a private test version of Strata for Linux with an AMD graphics card. Please keep it to yourself: it is not a public release.
+This is a private test version of Nostroma for Linux with an AMD graphics card. Please keep it to yourself: it is not a public release.
 THIS BUILD IS FOR AMD RX 9000 (RDNA4) CARDS ONLY (RX 9070 XT, RX 9070, RX 9060 XT, AI PRO R9700; gfx1200 / gfx1201). If your card is from another family the engine will not start and says
 so in one line; ask for the other build (the RX 7000 build: Strata-tester-linux-amd-rx7900.AppImage).
 
@@ -42,12 +42,12 @@ THE DESKTOP APP (AppImage)
        ./@APPIMAGE@
    The very first start takes about a minute longer: the engine that came with the app is unpacked into ~/.local/share/strata.
    Then open the Models page, pick a model and press the install button. A model download is big; it carries on where it stopped if it is interrupted.
-   Closing the window stops Strata and the engine. To stop a running Strata from a terminal:   ./@APPIMAGE@ --quit
+   Closing the window stops Nostroma and the engine. To stop a running Nostroma from a terminal:   ./@APPIMAGE@ --quit
    For the assistant (chat that works on files and runs tools) choose a context of 32K or more when you load the model; a smaller context is too small for the assistant's instructions.
 
 @INCLUDE:common-troubleshoot.txt@
 
-Please tell us about the window: which Linux and desktop (for example "CachyOS, KDE Plasma, Wayland"), your graphics driver, and whether the Strata window showed up
+Please tell us about the window: which Linux and desktop (for example "CachyOS, KDE Plasma, Wayland"), your graphics driver, and whether the Nostroma window showed up
 and worked: yes / opened in the browser instead / blank / closed by itself.
 
 
@@ -82,11 +82,11 @@ WHAT WE TESTED AND WHAT WE DID NOT
 * Pictures (image input) are on by default. The picture reader runs on the processor (CPU) for a card under 24 GB, so your 16 GB RX 9070 XT
   uses the CPU reader (a few seconds per picture, nothing taken from the card's memory). The graphics-card reader (strata-vision-hip, for
   gfx1200 / gfx1201) is in this build for cards of 24 GB and up; we tested it on the 32 GB R9700 (0.06 s for a small picture against 3.1 s on the
-  CPU) and tested the CPU reader. If the card's reader cannot start, Strata uses the CPU reader by itself. You can switch it per model.
+  CPU) and tested the CPU reader. If the card's reader cannot start, Nostroma uses the CPU reader by itself. You can switch it per model.
 * Speed is not final; treat the numbers as a baseline.
 
 
-WHERE THINGS ARE (to remove Strata completely, delete the files and these folders)
+WHERE THINGS ARE (to remove Nostroma completely, delete the files and these folders)
 ---------------------------------------------------------------------------------
   ~/.strata                      settings, chats, prepared model files
   ~/.local/share/strata          the unpacked engine and the terminal app, and logs/ (what the app printed, and a crash log if the window ever crashes)

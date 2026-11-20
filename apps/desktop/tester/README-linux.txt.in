@@ -1,7 +1,7 @@
-STRATA FOR LINUX - TESTER BUILD (Strata @APP_VERSION@)
+NOSTROMA FOR LINUX - TESTER BUILD (Nostroma @APP_VERSION@)
 =====================================================
 
-This is a test version of the Strata desktop app for Linux. The AI engine is already inside the file, so there is nothing to
+This is a test version of the Nostroma desktop app for Linux. The AI engine is already inside the file, so there is nothing to
 install for it and no engine to download. Only the AI model itself is downloaded (from Hugging Face), when you pick one.
 Please keep this file to yourself: it is not a public release.
 
@@ -14,10 +14,10 @@ WHAT YOU NEED
 -------------
 * Ubuntu 22.04 or newer (22.04, 24.04 and 26.04 are what it was built for), or Fedora 44. 64-bit, on a normal desktop session.
 * An NVIDIA graphics card, RTX 20 series or newer (built and checked for RTX 30 cards; the RTX 40 and RTX 50 series are inside too).
-  If the computer also has AMD or Intel graphics (for example a Ryzen with built-in graphics), Strata ignores them and uses the NVIDIA card.
+  If the computer also has AMD or Intel graphics (for example a Ryzen with built-in graphics), Nostroma ignores them and uses the NVIDIA card.
 * The NVIDIA driver, version 580.65 or newer (the CUDA 13 engine in this file needs it).
   To see yours, open a terminal and type:   nvidia-smi    - the number next to "Driver Version" is it.
-  If the driver is older, Strata tells you in one line which version to install. To install a newer one:
+  If the driver is older, Nostroma tells you in one line which version to install. To install a newer one:
     Ubuntu:  open "Software & Updates" > "Additional Drivers", or run:  sudo ubuntu-drivers install   and restart.
     Fedora:  use the NVIDIA driver from RPM Fusion (akmod-nvidia), and  sudo dnf install xorg-x11-drv-nvidia-cuda  so that nvidia-smi exists.
 * 32 GB of RAM or more is best (the model list shows what fits your computer).
@@ -40,8 +40,8 @@ The very first start takes about a minute longer: the engine that came with the 
 (~/.local/share/strata). Later starts are quick. Then open the Models page, pick a model and press the install button.
 A model download is big; it carries on where it stopped if it is interrupted.
 
-Closing the window stops Strata and the engine. (In browser mode closing the tab does not: see BROWSER MODE below.)
-To stop a running Strata from a terminal:   ./@APPIMAGE@ --quit
+Closing the window stops Nostroma and the engine. (In browser mode closing the tab does not: see BROWSER MODE below.)
+To stop a running Nostroma from a terminal:   ./@APPIMAGE@ --quit
 
 
 @INCLUDE:common-troubleshoot.txt@
@@ -52,7 +52,7 @@ PLEASE TELL US ABOUT THE WINDOW
 This is one of the first times the Linux window runs on real graphics desktops. In your report please say:
   - which Linux and which desktop (for example "Ubuntu 26.04, GNOME, Wayland" or "Fedora 44, GNOME, Wayland"),
   - your graphics card and driver version (nvidia-smi),
-  - whether the Strata window showed up and worked: yes / opened in the browser instead / blank / closed by itself,
+  - whether the Nostroma window showed up and worked: yes / opened in the browser instead / blank / closed by itself,
   - for a blank or closed window: what you typed (any of the lines above) and what changed.
 If you started it from a terminal, copy what it printed there.
 
@@ -65,7 +65,7 @@ If the window crashed or would not open, the app window is not available for tha
 It writes strata-logs-<date>.txt in your Downloads folder (including the crash log of the window); send that file.
 
 
-WHERE THINGS ARE (to remove Strata completely, delete the file and these folders)
+WHERE THINGS ARE (to remove Nostroma completely, delete the file and these folders)
 --------------------------------------------------------------------------------
   ~/.strata                      settings, chats, prepared model files
   ~/.local/share/strata          the unpacked engine, and logs/ (what the app printed, and a crash log if the window ever crashes)

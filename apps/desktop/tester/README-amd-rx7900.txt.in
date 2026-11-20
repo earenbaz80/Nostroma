@@ -1,7 +1,7 @@
 STRATA @APP_VERSION@ FOR LINUX - TESTER BUILD FOR AMD RX 7000 (RDNA3) CARDS (RX 7900 XTX)
 =====================================================================
 
-This is a private test version of Strata for Linux with an AMD graphics card. Please keep it to yourself: it is not a public release.
+This is a private test version of Nostroma for Linux with an AMD graphics card. Please keep it to yourself: it is not a public release.
 THIS BUILD IS FOR AMD RX 7000 (RDNA3) CARDS ONLY (RX 7900 XTX, RX 7900 XT, RX 7800 XT, RX 7700 XT, RX 7600; gfx1100 / gfx1101 / gfx1102). If your card is from another family the engine will not start and says
 so in one line; ask for the other build (the RX 9000 build: Strata-tester-linux-amd-rx9070.AppImage).
 
@@ -42,12 +42,12 @@ THE DESKTOP APP (AppImage)
        ./@APPIMAGE@
    The very first start takes about a minute longer: the engine that came with the app is unpacked into ~/.local/share/strata.
    Then open the Models page, pick a model and press the install button. A model download is big; it carries on where it stopped if it is interrupted.
-   Closing the window stops Strata and the engine. To stop a running Strata from a terminal:   ./@APPIMAGE@ --quit
+   Closing the window stops Nostroma and the engine. To stop a running Nostroma from a terminal:   ./@APPIMAGE@ --quit
    For the assistant (chat that works on files and runs tools) choose a context of 32K or more when you load the model; a smaller context is too small for the assistant's instructions.
 
 @INCLUDE:common-troubleshoot.txt@
 
-Please tell us about the window: which Linux and desktop (for example "Ubuntu 24.04, GNOME, Wayland"), your graphics driver, and whether the Strata window showed up
+Please tell us about the window: which Linux and desktop (for example "Ubuntu 24.04, GNOME, Wayland"), your graphics driver, and whether the Nostroma window showed up
 and worked: yes / opened in the browser instead / blank / closed by itself.
 
 
@@ -78,19 +78,19 @@ WHAT WE TESTED AND WHAT WE DID NOT
 ----------------------------------
 * NOT TESTED by us on any RDNA3 card (RX 7000 series): we have no such card. The engine and the libraries inside contain code for gfx1100, gfx1101 and
   gfx1102 (we checked the files), but this packaged build has never run on real hardware. Earlier engines built from source were run by community
-  members on an RX 7900 XTX and an RX 7800 XT (see docs/AMD_HIP.md in the Strata repository), which is why we expect it to work. Expect problems; every
+  members on an RX 7900 XTX and an RX 7800 XT (see docs/AMD_HIP.md in the Nostroma repository), which is why we expect it to work. Expect problems; every
   report helps. This is the most important thing to know.
 * The same program was tested on an RDNA4 card (AMD Radeon AI PRO R9700) under Ubuntu 24.04: it loads a model, answers, runs tool calls and stops cleanly.
   The RDNA3 code is the same source compiled for your card.
 * NOT tested by us either: the app window on a real desktop (our test box has no screen).
 * Pictures (image input) are on by default. The picture reader runs on the processor (CPU) for a card under 24 GB and on the graphics card from 24 GB, so
   your 24 GB RX 7900 XTX uses the card's reader (strata-vision-hip, for gfx1100 / gfx1101 / gfx1102) and a 20 GB RX 7900 XT or a 16 GB RX 7800 XT uses the CPU
-  reader. The card's reader compiles for RDNA3 but has never run on an RDNA3 card here (we ran it on an R9700, RDNA4). If it cannot start, Strata uses the
+  reader. The card's reader compiles for RDNA3 but has never run on an RDNA3 card here (we ran it on an R9700, RDNA4). If it cannot start, Nostroma uses the
   CPU reader by itself. You can switch it per model. Please tell us whether pictures worked.
 * Speed is not final; treat the numbers as a baseline.
 
 
-WHERE THINGS ARE (to remove Strata completely, delete the files and these folders)
+WHERE THINGS ARE (to remove Nostroma completely, delete the files and these folders)
 ---------------------------------------------------------------------------------
   ~/.strata                      settings, chats, prepared model files
   ~/.local/share/strata          the unpacked engine and the terminal app, and logs/ (what the app printed, and a crash log if the window ever crashes)
