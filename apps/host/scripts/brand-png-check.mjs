@@ -95,10 +95,17 @@ if (!executablePath) {
   process.exit(0);
 }
 
-const browser = await chromium.launch({
-  executablePath,
-  args: ['--no-sandbox', '--disable-gpu', '--force-device-scale-factor=1'],
-});
+let browser;
+try {
+  browser = await chromium.launch({
+    executablePath,
+    args: ['--no-sandbox', '--disable-gpu', '--force-device-scale-factor=1'],
+  });
+} catch (error) {
+  console.error(`FAIL: the browser did not start: ${error.message.split('\n')[0]}`);
+  console.error(`      It came from ${executablePath}`);
+  process.exit(1);
+}
 
 const shot = await browser.newPage();
 const differ = await browser.newPage();

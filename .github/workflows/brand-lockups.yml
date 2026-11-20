@@ -2,13 +2,15 @@ name: Brand lockups
 
 # Checks that the lockups in apps/host/public/brand still match what
 # apps/host/scripts/prepare-brand-lockups.py draws from the face in
-# apps/host/public/fonts. It runs the script's own --check, which also prints
-# the contrast of every theme, and needs no write access.
+# apps/host/public/fonts, and that each committed PNG still shows the SVG it
+# sits next to. It needs no write access.
 
 on:
   pull_request:
     paths:
       - 'apps/host/scripts/prepare-brand-lockups.py'
+      - 'apps/host/scripts/brand-png-check.mjs'
+      - 'apps/host/scripts/browser.mjs'
       - 'apps/host/public/brand/**'
       - 'apps/host/public/fonts/**'
       - '.github/workflows/brand-lockups.yml'
@@ -16,6 +18,8 @@ on:
     branches: [main]
     paths:
       - 'apps/host/scripts/prepare-brand-lockups.py'
+      - 'apps/host/scripts/brand-png-check.mjs'
+      - 'apps/host/scripts/browser.mjs'
       - 'apps/host/public/brand/**'
       - 'apps/host/public/fonts/**'
 
@@ -37,3 +41,19 @@ jobs:
         run: python3 -m pip install --disable-pip-version-check fonttools==4.68.0 brotli
       - name: Check the lockups
         run: python3 apps/host/scripts/prepare-brand-lockups.py --check
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: apps/host/package-lock.json
+      # The headless shell is the smaller Chromium build and is all a
+      # screenshot needs. It lands in the Playwright cache, which
+      # scripts/browser.mjs reads, so no path has to be pinned here.
+      - name: Install the browser
+        working-directory: apps/host
+        run: |
+          npm ci
+          npx playwright-core install --with-deps --only-shell chromium
+      - name: Compare each SVG with its PNG
+        working-directory: apps/host
+        run: npm run brand:png-vs-svg

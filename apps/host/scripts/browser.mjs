@@ -7,21 +7,60 @@
  * place with the same order everywhere:
  *
  *   1. STRATA_CHROME — an explicit override, for a CI image or a second Chrome
- *   2. the cached Playwright build (macOS, the original platforms)
- *   3. an installed browser: Chrome, Edge, Chromium
+ *   2. a Playwright browser cache: `playwright-core install chromium` puts one
+ *      in the usual cache directory for the platform, and Playwright's own
+ *      PLAYWRIGHT_BROWSERS_PATH moves that directory
+ *   3. an installed browser: Chrome, Edge, Chromium or Brave
  *
  * `requireChromium` exits with the harness message the scripts already used, so
  * a machine with no browser at all still fails loudly instead of silently
  * passing a gate.
  */
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 
-const PLAYWRIGHT_MAC = [
-  join(homedir(), 'Library/Caches/ms-playwright/chromium-1234/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing'),
-  join(homedir(), 'Library/Caches/ms-playwright/chromium_headless_shell-1234/chrome-headless-shell-mac-arm64/chrome-headless-shell'),
+const CACHE_ROOTS = [
+  process.env.PLAYWRIGHT_BROWSERS_PATH,
+  join(homedir(), '.cache', 'ms-playwright'), // Linux
+  join(homedir(), 'Library', 'Caches', 'ms-playwright'), // macOS
+  process.env.LOCALAPPDATA ? join(process.env.LOCALAPPDATA, 'ms-playwright') : '', // Windows
+].filter((root) => root && existsSync(root));
+
+// Where a build puts its binary, relative to the build directory. The full
+// browser comes first, then the headless shell that `--only-shell` installs.
+const FULL_LAYOUTS = [
+  'chrome-linux/chrome',
+  'chrome-linux64/chrome',
+  'chrome-mac/Chromium.app/Contents/MacOS/Chromium',
+  'chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing',
+  'chrome-win/chrome.exe',
 ];
+
+const SHELL_LAYOUTS = [
+  'chrome-headless-shell-linux64/chrome-headless-shell',
+  'chrome-linux/headless_shell',
+  'chrome-headless-shell-mac/chrome-headless-shell',
+  'chrome-headless-shell-mac-arm64/chrome-headless-shell',
+  'chrome-headless-shell-win64/chrome-headless-shell.exe',
+];
+
+function cachedBrowsers() {
+  const found = [];
+  for (const root of CACHE_ROOTS) {
+    const builds = readdirSync(root)
+      .filter((name) => name.startsWith('chromium-') || name.startsWith('chromium_headless_shell-'))
+      .sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
+    for (const build of builds) {
+      const layouts = build.startsWith('chromium-') ? FULL_LAYOUTS : SHELL_LAYOUTS;
+      for (const layout of layouts) {
+        const candidate = join(root, build, layout);
+        if (existsSync(candidate)) found.push(candidate);
+      }
+    }
+  }
+  return found;
+}
 
 const INSTALLED = [
   // Windows
@@ -43,7 +82,7 @@ const INSTALLED = [
 ];
 
 export function findChromium() {
-  const candidates = [process.env.STRATA_CHROME, ...PLAYWRIGHT_MAC, ...INSTALLED].filter(Boolean);
+  const candidates = [process.env.STRATA_CHROME, ...cachedBrowsers(), ...INSTALLED].filter(Boolean);
   return candidates.find((path) => existsSync(path)) ?? null;
 }
 

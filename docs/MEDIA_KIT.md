@@ -64,7 +64,8 @@ reach them. `apps/host/scripts/prepare-brand-lockups.py` draws them from
 - `npm run brand:png-vs-svg` in `apps/host` renders each committed SVG in the local Chromium and
   diffs it against its PNG, so a picture that stopped matching its SVG fails here. It prints a skip
   line and exits 0 when no browser is installed, and takes `--max-channel` and `--max-share` to tune
-  the tolerance.
+  the tolerance. The `Brand lockups` job runs it as well, with the Chromium that Playwright installs
+  on the runner.
 - `--ink-left` is a trial offset for the wordmark. It needs `--out DIR`, so a trial never overwrites
   the committed files.
 
