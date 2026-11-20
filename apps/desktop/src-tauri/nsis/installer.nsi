@@ -159,7 +159,7 @@ VIAddVersionKey "ProductVersion" "${VERSION}"
 !if "${UNINSTALLERICON}" != ""
   !define MUI_UNICON "${UNINSTALLERICON}"
 !else if "${INSTALLERICON}" != ""
-  ; Tauri leaves the uninstaller icon empty unless asked; use the Strata icon so the uninstaller is not the NSIS default
+  ; Tauri leaves the uninstaller icon empty unless asked; use the Nostroma icon so the uninstaller is not the NSIS default
   !define MUI_UNICON "${INSTALLERICON}"
 !endif
 
@@ -168,7 +168,7 @@ VIAddVersionKey "ProductVersion" "${VERSION}"
 !define MUI_LANGDLL_REGISTRY_KEY "${MANUPRODUCTKEY}"
 !define MUI_LANGDLL_REGISTRY_VALUENAME "Installer Language"
 
-; Strata's look and words: the app's light surface and ink, short copy. The install folder page is shown on a first or manual install (#3186 #3190: C: can be short on space) and
+; Nostroma's look and words: the app's light surface and ink, short copy. The install folder page is shown on a first or manual install (#3186 #3190: C: can be short on space) and
 ; skipped in an update (passive), which goes on into the folder the earlier install wrote to the registry.
 !define MUI_BGCOLOR "F9FAFB"
 !define MUI_TEXTCOLOR "171B1E"
@@ -204,7 +204,7 @@ ShowInstDetails nevershow
 ;    only if a previous installation was detected
 Var ReinstallPageCheck
 ; 1 when this installer was started on an installed copy of the SAME version and the person chose Uninstall: after it ran the
-; uninstaller this installer ends. (Stock Tauri goes on to the install pages, so Uninstall reinstalled Strata at once; tester report 2026-10-17.)
+; uninstaller this installer ends. (Stock Tauri goes on to the install pages, so Uninstall reinstalled Nostroma at once; tester report 2026-10-17.)
 Var UninstallOnly
 Page custom PageReinstall PageLeaveReinstall
 Function PageReinstall
@@ -484,7 +484,7 @@ Var DeleteAppDataCheckboxState
 !define MUI_PAGE_CUSTOMFUNCTION_PRE un.SkipIfPassive
 !insertmacro MUI_UNPAGE_CONFIRM
 
-; 2. "Also remove my Strata data": unticked by default, and it says exactly what it deletes. Skipped when updating or in passive mode
+; 2. "Also remove my Nostroma data": unticked by default, and it says exactly what it deletes. Skipped when updating or in passive mode
 ;    (an update never deletes anything). Model folders the person chose themselves are never touched.
 UninstPage custom un.DataPage un.DataPageLeave
 Function un.DataPage
@@ -702,7 +702,7 @@ SectionEnd
 ; STRATA-MIGRATE-END
 
 ; STRATA-STOP-BEGIN
-; Stop what Strata itself started from the install folder (the app, its host, the node runtime, the engine) before files are removed:
+; Stop what Nostroma itself started from the install folder (the app, its host, the node runtime, the engine) before files are removed:
 ; a running copy keeps its files open, so the folder stayed behind after use. Only processes whose image path is inside INSTDIR are
 ; stopped; this uninstaller's own process and any program elsewhere are left alone.
 !macro StrataStopOwnProcesses INSTALLDIR
@@ -982,7 +982,7 @@ Section Uninstall
     RmDir /r "$APPDATA\${BUNDLEID}"
     RmDir /r "$LOCALAPPDATA\${BUNDLEID}"
 
-    ; Strata's own data, for a fresh start: the folders listed on the page, nothing else. Each path is checked first.
+    ; Nostroma's own data, for a fresh start: the folders listed on the page, nothing else. Each path is checked first.
     ${If} "$LOCALAPPDATA" != ""
       RmDir /r "$LOCALAPPDATA\Strata"
     ${EndIf}
@@ -1035,7 +1035,7 @@ Function StrIsUnder
   Push $R9
 FunctionEnd
 
-; Strata: the install folder remembered in the registry is only reused when it is a real place for an app. A location under the
+; Nostroma: the install folder remembered in the registry is only reused when it is a real place for an app. A location under the
 ; temp folders (a test install, a build machine's scratch run) is ignored and the default per-user folder is used instead.
 Function RestorePreviousInstallLocation
   ReadRegStr $4 SHCTX "${MANUPRODUCTKEY}" ""

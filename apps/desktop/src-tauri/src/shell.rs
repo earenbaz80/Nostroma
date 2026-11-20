@@ -1,14 +1,14 @@
 //! The shell's own choices and the two things the host asks of it besides updates (#3402, #3477).
 //!
-//! `<Strata data folder>/shell-prefs.json` is written by the App Host when the person changes a setting
-//! (`apps/host/server/shell-prefs.mjs`) and read here when Strata starts, before any page exists:
+//! `<Nostroma data folder>/shell-prefs.json` is written by the App Host when the person changes a setting
+//! (`apps/host/server/shell-prefs.mjs`) and read here when Nostroma starts, before any page exists:
 //!
 //!   { "port": 0 | 1024..65535, "tray": false, "language": "en" }
 //!
 //! * `port`: the port the window's origin uses. 0 is the default, 47831. When the port is busy the shell takes a free one and tells the
 //!   host (`STRATA_PORT_NOTICE=busy:<wanted>:<used>`), which shows the person a warning: the chats and settings of the page are kept per
 //!   port, so a different port starts empty.
-//! * `tray`: closing the window hides it and keeps Strata running in the tray (Windows, macOS). The tray menu follows `language`.
+//! * `tray`: closing the window hides it and keeps Nostroma running in the tray (Windows, macOS). The tray menu follows `language`.
 //! * `/shell/notify` on the loopback bridge shows a desktop notification (an approval is waiting) whether the window is open or hidden.
 
 use std::path::PathBuf;
@@ -126,7 +126,7 @@ mod native {
         }
     }
 
-    /// Hide the window and keep Strata running in the tray (made on the first need, with the menu in the app's language).
+    /// Hide the window and keep Nostroma running in the tray (made on the first need, with the menu in the app's language).
     pub fn hide_to_tray(app: &AppHandle, language: &str) {
         if app.tray_by_id(TRAY_ID).is_none() {
             let (open, quit, tip) = super::tray_labels(language);
@@ -212,8 +212,8 @@ mod tests {
 
     #[test]
     fn query_values_are_decoded_and_bounded() {
-        let path = "/shell/notify?title=Strata%20needs%20your%20answer&body=a%20%26%20b%3F+ok";
-        assert_eq!(query_value(path, "title").as_deref(), Some("Strata needs your answer"));
+        let path = "/shell/notify?title=Nostroma%20needs%20your%20answer&body=a%20%26%20b%3F+ok";
+        assert_eq!(query_value(path, "title").as_deref(), Some("Nostroma needs your answer"));
         assert_eq!(query_value(path, "body").as_deref(), Some("a & b? ok"));
         assert_eq!(query_value(path, "missing"), None);
         assert_eq!(query_value("/shell/notify", "title"), None);

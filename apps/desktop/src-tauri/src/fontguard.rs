@@ -94,7 +94,7 @@ pub fn config_text(system_config: &str) -> String {
     let mut lines: Vec<String> = vec![
         "<?xml version=\"1.0\"?>".into(),
         "<!DOCTYPE fontconfig SYSTEM \"urn:fontconfig:fonts.dtd\">".into(),
-        "<!-- Written by Strata for its own window only. The WebKitGTK inside the AppImage aborts while it draws a COLRv1 colour font,".into(),
+        "<!-- Written by Nostroma for its own window only. The WebKitGTK inside the AppImage aborts while it draws a COLRv1 colour font,".into(),
         "     so those faces are hidden from the window; every other font is the system's own setup, included first.".into(),
         "     Off: STRATA_FONT_CONFIG=off. Your own file: set FONTCONFIG_FILE yourself. -->".into(),
         "<fontconfig>".into(),
@@ -116,7 +116,7 @@ pub fn config_text(system_config: &str) -> String {
 
 /// Write the file under `dir` and return its path, or None when it cannot be written or there is no system configuration to include
 /// (then the window would be left without any font). Rewritten only when the contents differ, so a start-up touches the disk once, and a
-/// file left by an older Strata is put right. Written through a temporary file and moved, so a second instance starting at the same moment
+/// file left by an older Nostroma is put right. Written through a temporary file and moved, so a second instance starting at the same moment
 /// never hands fontconfig half a file.
 pub fn ensure_config(dir: &Path, system_config: &Path) -> Option<PathBuf> {
     if !system_config.exists() {

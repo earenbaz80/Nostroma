@@ -1,4 +1,4 @@
-//! Strata Desktop — Tauri shell.
+//! Nostroma Desktop — Tauri shell.
 //!
 //! The shell is a *carrier*, not an owner. It does exactly three things:
 //!
@@ -11,7 +11,7 @@
 //!
 //! One app instance runs at a time (the single-instance plugin): a second launch focuses the window that is
 //! already open and starts nothing, so two apps never fight over the `app-N` engine slots. One app can still run
-//! several engines (one per GPU, say): the host gives each its own `app-N` profile under Strata Control.
+//! several engines (one per GPU, say): the host gives each its own `app-N` profile under Nostroma Control.
 //!
 //! Closing ends the engines this app started, on every path:
 //!   - a normal exit and the window's X: the host is asked to stop them through Control (drained, then ended), with a
@@ -22,7 +22,7 @@
 //! Engines the Terminal started are not in any of this and are left alone.
 //!
 //! Ownership stays where the architecture puts it. The App Host owns the local client API and the
-//! engine lifecycle; Strata Control owns components, models, profiles and jobs; DeepSeek Harness
+//! engine lifecycle; Nostroma Control owns components, models, profiles and jobs; DeepSeek Harness
 //! owns the agent loop and durable sessions. There is deliberately no second supervisor, no
 //! conversation store and no agent loop in this file.
 
@@ -365,7 +365,7 @@ fn wait_for_health(
     while Instant::now() < deadline {
         // A host that already died will never answer: say so now instead of after the timeout.
         if let Some(why) = exited() {
-            return Err(format!("the Strata App Host stopped before it became healthy: {why}"));
+            return Err(format!("the Nostroma App Host stopped before it became healthy: {why}"));
         }
         match ureq_get_ok(&url) {
             Ok(true) => return Ok(()),
@@ -374,7 +374,7 @@ fn wait_for_health(
         }
         std::thread::sleep(Duration::from_millis(250));
     }
-    Err(format!("the Strata App Host did not become healthy at {url}: {last}"))
+    Err(format!("the Nostroma App Host did not become healthy at {url}: {last}"))
 }
 
 /// A minimal blocking HTTP POST with no body (the shell's one clean-stop request). Returns the status line.
@@ -488,7 +488,7 @@ fn host_command(res: &Path, port: u16, shutdown_token: &str) -> Result<Command, 
     if let Some(notice) = PORT_NOTICE.lock().unwrap().clone() {
         cmd.env("STRATA_PORT_NOTICE", notice);
     }
-    // A user with the Strata API worker on a different port sets this; unset means the worker's
+    // A user with the Nostroma API worker on a different port sets this; unset means the worker's
     // documented loopback default.
     if let Ok(url) = std::env::var("NOSTROMA_SERVER_URL").or_else(|_| std::env::var("STRATA_SERVER_URL")) {
         cmd.env("NOSTROMA_SERVER_URL", &url).env("STRATA_SERVER_URL", url);
@@ -874,7 +874,7 @@ fn main() {
         if !options.window_child {
             std::process::exit(supervisor::run(&options));
         }
-        // A window process its shell did not start is the app updater's restart (the shell that owned the window is stopping): start Strata again normally.
+        // A window process its shell did not start is the app updater's restart (the shell that owned the window is stopping): start Nostroma again normally.
         if !supervisor::started_by_shell(std::env::var(supervisor::SHELL_PID_ENV).ok().as_deref(), std::os::unix::process::parent_id()) {
             std::process::exit(supervisor::restart_after_update());
         }
@@ -932,12 +932,12 @@ fn run_embedded() {
             let shell_token = handle.state::<ShutdownToken>().0.lock().map(|t| t.clone().unwrap_or_default()).unwrap_or_default();
             if let Err(e) = open_window(app, port, &shell_token) {
                 kill_host(&handle);
-                desktoplog::startup_failed(&format!("the Strata window could not be opened: {e}"))
+                desktoplog::startup_failed(&format!("the Nostroma window could not be opened: {e}"))
             }
             Ok(())
         })
         .on_window_event(|window, event| {
-            // "Minimise to tray" (Settings, off by default): closing the main window hides it and keeps Strata running in the tray; Quit in the
+            // "Minimise to tray" (Settings, off by default): closing the main window hides it and keeps Nostroma running in the tray; Quit in the
             // tray menu ends it (#3477). If no tray could be made the window closes as before.
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 if window.label() == "main" {
@@ -956,7 +956,7 @@ fn run_embedded() {
             }
         })
         .build(tauri::generate_context!())
-        .unwrap_or_else(|e| desktoplog::startup_failed(&format!("the Strata application could not be built: {e}")))
+        .unwrap_or_else(|e| desktoplog::startup_failed(&format!("the Nostroma application could not be built: {e}")))
         .run(|app, event| {
             if let tauri::RunEvent::ExitRequested { .. } | tauri::RunEvent::Exit = event {
                 stop_host(app);
@@ -1284,7 +1284,7 @@ fn run_window_process() -> ! {
             }
         })
         .build(tauri::generate_context!())
-        .expect("error while building the Strata application")
+        .expect("error while building the Nostroma application")
         .run(|_app, _event| {});
     std::process::exit(0)
 }
@@ -1317,7 +1317,7 @@ mod tests {
         let first = pick_stable_port().unwrap();
         let second = pick_stable_port().unwrap();
         if first == PREFERRED_PORT {
-            // (when another program already holds the preferred port, as an installed Strata does on a dev PC, every call falls back to a fresh port)
+            // (when another program already holds the preferred port, as an installed Nostroma does on a dev PC, every call falls back to a fresh port)
             assert_eq!(first, second);
         }
         // held by another program: a different free port, not a failure

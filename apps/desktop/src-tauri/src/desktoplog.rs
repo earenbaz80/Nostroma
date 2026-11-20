@@ -28,7 +28,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 const KEEP: usize = 10;
 const RING_LINES: usize = 300;
 
-/// `<data>/` : where Strata keeps its engine, runtime and logs on this system.
+/// `<data>/` : where Nostroma keeps its engine, runtime and logs on this system.
 pub fn data_dir() -> PathBuf {
     if let Some(dir) = std::env::var_os("NOSTROMA_DESKTOP_DATA_DIR")
         .or_else(|| std::env::var_os("STRATA_DESKTOP_DATA_DIR"))
@@ -130,7 +130,7 @@ impl Log {
         let path = dir.join(format!("desktop-{}.log", stamp(SystemTime::now())));
         let file = std::fs::OpenOptions::new().create(true).append(true).open(&path).ok();
         let log = Log { file: Arc::new(Mutex::new(file)), path: Some(path) };
-        log.line("shell", &format!("Strata desktop {} starting (pid {})", env!("CARGO_PKG_VERSION"), std::process::id()));
+        log.line("shell", &format!("Nostroma desktop {} starting (pid {})", env!("CARGO_PKG_VERSION"), std::process::id()));
         log
     }
     pub fn line(&self, who: &str, text: &str) {
@@ -244,11 +244,11 @@ fn system_backtrace(pid: u32) -> Option<String> {
 #[allow(clippy::too_many_arguments)]
 pub fn crash_report(what: &str, pid: u32, window_tail: &[String], host_tail: &[String], backtrace: Option<&str>, app_version: &str, log_path: Option<&Path>) -> String {
     let mut t = String::new();
-    t.push_str("Strata app window crash\n=======================\n\n");
+    t.push_str("Nostroma app window crash\n=======================\n\n");
     t.push_str(&format!("When:     {} UTC\n", stamp(SystemTime::now())));
     t.push_str(&format!("What:     the app window process (pid {pid}) stopped without being closed: {what}\n"));
-    t.push_str("Effect:   Strata kept running and opened in the web browser instead (browser mode); nothing was lost.\n");
-    t.push_str(&format!("App:      Strata desktop {app_version}\n"));
+    t.push_str("Effect:   Nostroma kept running and opened in the web browser instead (browser mode); nothing was lost.\n");
+    t.push_str(&format!("App:      Nostroma desktop {app_version}\n"));
     t.push_str(&format!("System:   {} / {}\n", os_pretty_name(), first_line("/proc/version").unwrap_or_default()));
     if let Some(v) = first_line("/proc/driver/nvidia/version") {
         t.push_str(&format!("NVIDIA:   {v}\n"));
@@ -314,7 +314,7 @@ pub fn save_logs(out_dir: &Path) -> std::io::Result<PathBuf> {
     std::fs::create_dir_all(out_dir)?;
     let path = out_dir.join(format!("strata-logs-{}.txt", stamp(SystemTime::now())));
     let mut t = String::new();
-    t.push_str(&format!("Strata desktop logs {} UTC\nApp {}\nSystem: {} / {}\n", stamp(SystemTime::now()), env!("CARGO_PKG_VERSION"), os_pretty_name(), first_line("/proc/version").unwrap_or_default()));
+    t.push_str(&format!("Nostroma desktop logs {} UTC\nApp {}\nSystem: {} / {}\n", stamp(SystemTime::now()), env!("CARGO_PKG_VERSION"), os_pretty_name(), first_line("/proc/version").unwrap_or_default()));
     if let Some(v) = first_line("/proc/driver/nvidia/version") {
         t.push_str(&format!("NVIDIA: {v}\n"));
     }
@@ -413,25 +413,25 @@ fn system_version() -> String {
 pub fn plain_reason(detail: &str) -> String {
     let lower = detail.to_ascii_lowercase();
     if lower.contains("webview2") || lower.contains("webview") {
-        "Strata shows its window with Microsoft's WebView2 component, and it could not be started. \
+        "Nostroma shows its window with Microsoft's WebView2 component, and it could not be started. \
          Update or repair \"Microsoft Edge WebView2 Runtime\" (Settings > Apps > Installed apps), or install it from \
-         https://go.microsoft.com/fwlink/p/?LinkId=2124703, then start Strata again."
+         https://go.microsoft.com/fwlink/p/?LinkId=2124703, then start Nostroma again."
             .into()
     } else if lower.contains("app host") || lower.contains("node runtime") || lower.contains("could not start the app host") {
-        "Strata's background program did not start. Security software may have blocked a file in the Strata folder. \
-         Allow the Strata folder in it (or reinstall Strata) and start Strata again."
+        "Nostroma's background program did not start. Security software may have blocked a file in the Nostroma folder. \
+         Allow the Nostroma folder in it (or reinstall Strata) and start Nostroma again."
             .into()
     } else {
-        "Strata stopped while it was starting. Starting it again may work; if it does not, please send us the log file named below.".into()
+        "Nostroma stopped while it was starting. Starting it again may work; if it does not, please send us the log file named below.".into()
     }
 }
 
 /// The text of the crash file for a failed start, as text (so it can be tested without a failure).
 pub fn startup_report(detail: &str, app_version: &str, log_path: Option<&Path>) -> String {
     let mut t = String::new();
-    t.push_str("Strata app start failure\n========================\n\n");
+    t.push_str("Nostroma app start failure\n========================\n\n");
     t.push_str(&format!("When:     {} UTC\n", stamp(SystemTime::now())));
-    t.push_str(&format!("App:      Strata desktop {app_version}\n"));
+    t.push_str(&format!("App:      Nostroma desktop {app_version}\n"));
     t.push_str(&format!("{}\n", system_line()));
     t.push_str(&format!("What:     {detail}\n"));
     t.push_str(&format!("Meaning:  {}\n", plain_reason(detail)));
@@ -488,7 +488,7 @@ fn report_failure(detail: &str) {
     if run.dialog && !REPORTED.swap(true, Ordering::SeqCst) {
         let short: String = detail.chars().take(400).collect();
         let place = saved.or_else(|| run.log.path.clone()).map(|p| p.display().to_string()).unwrap_or_else(|| dir.display().to_string());
-        show_error(&format!("Strata could not start.\n\n{}\n\nWhat happened: {short}\n\nA log was saved here, please send it to us:\n{place}", plain_reason(detail)));
+        show_error(&format!("Nostroma could not start.\n\n{}\n\nWhat happened: {short}\n\nA log was saved here, please send it to us:\n{place}", plain_reason(detail)));
     }
 }
 
@@ -581,7 +581,7 @@ mod tests {
     fn a_failed_start_is_explained_in_plain_words_and_written_to_a_crash_file() {
         let webview = plain_reason("Failed to setup app: error encountered during setup hook: WebView2 error: 0x8007139F");
         assert!(webview.contains("WebView2") && webview.contains("go.microsoft.com"));
-        assert!(plain_reason("the Strata App Host did not become healthy at http://127.0.0.1:47831/api/health").contains("background program"));
+        assert!(plain_reason("the Nostroma App Host did not become healthy at http://127.0.0.1:47831/api/health").contains("background program"));
         assert!(plain_reason("something else").contains("log file"));
         let dir = std::env::temp_dir().join(format!("strata-startlog-test-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
