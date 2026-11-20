@@ -1,6 +1,7 @@
 """Writes src/locales/fix-<lang>.json: the interface strings that had no key in the locale files (#3479, #3825) and the strings of the 0.2.4.3 bug fixes.
 Run from apps/host:  python scripts/make-fix-locales.py
-The keys are fx01.. in this order; fix-en.json is the English source. Placeholders ({0}, {1}) must be kept in every language."""
+The keys are fx01.. in this order; fix-en.json is the English source. Placeholders ({0}, {1}) must be kept in every language.
+Keys the files hold and this list does not are kept as they are, so strings added after a run (fx45..fx85, fxec*, fxpr*) survive it."""
 import json
 from pathlib import Path
 
@@ -48,6 +49,7 @@ EN = [
     "PDF added",
     "Select the text and copy it with Ctrl+C.",
     "{0} is in this chat. Ask about it in your next message.",
+    "This page asks for files from the internet, which the preview does not load, so it may look incomplete.",
 ]
 
 T = {
@@ -95,6 +97,7 @@ T = {
     "已添加 PDF",
     "请选中文字，然后按 Ctrl+C 复制。",
     "{0} 已在此对话中。请在下一条消息里询问它。",
+    "此页面需要从互联网加载文件，预览不会加载这些文件，所以看起来可能不完整。",
 ],
 "ja": [
     "は停止され、削除されます。",
@@ -140,6 +143,7 @@ T = {
     "PDF を追加しました",
     "テキストを選択して Ctrl+C でコピーしてください。",
     "{0} をこのチャットに追加しました。次のメッセージで質問してください。",
+    "このページはインターネット上のファイルを必要としますが、プレビューでは読み込まれないため、表示が不完全になることがあります。",
 ],
 "de": [
     "wird nicht mehr ausgeführt und entfernt.",
@@ -185,6 +189,7 @@ T = {
     "PDF hinzugefügt",
     "Markiere den Text und kopiere ihn mit Strg+C.",
     "{0} ist in diesem Chat. Frag in deiner nächsten Nachricht danach.",
+    "Diese Seite lädt Dateien aus dem Internet, was die Vorschau nicht tut. Sie kann deshalb unvollständig aussehen.",
 ],
 "es": [
     "dejará de ejecutarse y se eliminará.",
@@ -230,6 +235,7 @@ T = {
     "PDF añadido",
     "Selecciona el texto y cópialo con Ctrl+C.",
     "{0} está en este chat. Pregunta por él en tu próximo mensaje.",
+    "Esta página pide archivos de internet, que la vista previa no carga, así que puede verse incompleta.",
 ],
 "ru": [
     "перестанет работать и будет удалена.",
@@ -275,6 +281,7 @@ T = {
     "PDF добавлен",
     "Выделите текст и скопируйте его клавишами Ctrl+C.",
     "{0} добавлен в этот чат. Спросите о нём в следующем сообщении.",
+    "Эта страница запрашивает файлы из интернета, а предпросмотр их не загружает, поэтому она может выглядеть неполной.",
 ],
 "pt": [
     "vai parar de funcionar e será removido.",
@@ -320,6 +327,7 @@ T = {
     "PDF adicionado",
     "Selecione o texto e copie com Ctrl+C.",
     "{0} está neste chat. Pergunte sobre ele na próxima mensagem.",
+    "Esta página pede arquivos da internet, que a visualização não carrega, então pode parecer incompleta.",
 ],
 "ko": [
     "실행이 중지되고 제거됩니다.",
@@ -365,21 +373,58 @@ T = {
     "PDF를 추가했습니다",
     "텍스트를 선택한 뒤 Ctrl+C로 복사하세요.",
     "{0}이(가) 이 채팅에 있습니다. 다음 메시지에서 물어보세요.",
+    "이 페이지는 인터넷의 파일을 불러와야 하는데 미리보기는 이를 불러오지 않으므로 불완전하게 보일 수 있습니다.",
 ],
 }
 
 here = Path(__file__).resolve().parent.parent / "locales" if False else Path(__file__).resolve().parent.parent / "src" / "locales"
 
 
-def write(lang, values):
+def ids(values):
+    """The id each English string keeps or gets.
+
+    A position names its id (the first string is fx01), but a later string added by hand already owns that
+    id: fx45..fx85, fxec* and fxpr* were added after this list was last written. Such a string keeps its id
+    and its translation, and the new one takes the next free id instead, so a run never drops a key it does
+    not know. The list is append-only for the same reason: a string inserted in the middle would find its id
+    taken and move to the end of the numbering."""
+    path = here / "fix-en.json"
+    existing = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+    taken = set(existing)
+    free = max([int(key[2:]) for key in existing if key.startswith("fx") and key[2:].isdigit()] + [len(values)]) + 1
+    by_text = {}
+    for key, value in existing.items():
+        by_text.setdefault(value, key)          # the id the file already gives this text, so a second run keeps it
+    plan = []
+    for index, text in enumerate(values):
+        natural = f"fx{index + 1:02d}"
+        if existing.get(natural) == text:
+            plan.append(natural)
+            continue
+        if by_text.get(text) and by_text[text] not in plan:
+            plan.append(by_text[text])
+            continue
+        while f"fx{free:02d}" in taken:
+            free += 1
+        plan.append(f"fx{free:02d}")
+        taken.add(f"fx{free:02d}")
+        free += 1
+    return plan
+
+
+def write(lang, values, plan):
     assert len(values) == len(EN), (lang, len(values), len(EN))
     for source, text in zip(EN, values):
         assert sorted(__import__("re").findall(r"\{\d+\}", source)) == sorted(__import__("re").findall(r"\{\d+\}", text)), (lang, source, text)
-    data = {f"fx{i + 1:02d}": text for i, text in enumerate(values)}
-    (here / f"fix-{lang}.json").write_text(json.dumps(data, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    path = here / f"fix-{lang}.json"
+    data = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+    data.update(dict(zip(plan, values)))          # a string the file gained after this list keeps its id and text
+    ordered = {key: data[key] for key in sorted(data)}
+    path.write_text(json.dumps(ordered, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
 
 
-write("en", EN)
+plan = ids(EN)
+write("en", EN, plan)
 for lang, values in T.items():
-    write(lang, values)
+    write(lang, values, plan)
 print("written", len(EN), "strings in", len(T) + 1, "languages")

@@ -70,6 +70,7 @@
  "fx83": "Prefers the parts of the model already on the graphics card, which makes answers faster on 12 GB cards. Off by default: in long agent sessions it can repeat itself and give weaker results. Turn on if you mostly chat and want the speed.",
  "fx84": "The file was downloaded. Continue tries the install again.",
  "fx85": "Open Details to see why.",
+ "fx86": "This page asks for files from the internet, which the preview does not load, so it may look incomplete.",
  "fxec1": "A newer engine is available for this computer. Your models and settings stay as they are.",
  "fxec2": "Unload your running models first.",
  "fxpr1": "Picture reader",
