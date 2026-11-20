@@ -703,7 +703,7 @@ tables per token). The scaling is fixed for the whole run, because the KV cache 
         }
       }
     },
-    "model": "strata/strata"
+    "model": "nostroma/nostroma"
   }
   ```
 

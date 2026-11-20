@@ -74,6 +74,16 @@ Source setup does not make an unsupported model or backend compatible. Nostroma'
 - Tests: the Terminal and Control tests are in `tests/terminal` (`python -m pytest tests/terminal`). The app's UI
   tests run with `npm test` in `apps/host`. Setup's own tests run without a GPU or downloads:
   `python tools/test_setup_<name>.py` (for example `tools/test_setup_amd.py`, `tools/test_setup_choices.py`).
+- What `tests/terminal` needs on the machine, beyond Python 3.11 or newer:
+  - `regex`, `textual` and `numpy` installed for the Python that Control picks (plain `python3`). Some tests start a
+    child with `python3 -I -S`, and that child ignores `PYTHONPATH` and the user's `~/.local` site-packages, so install
+    them in the interpreter's own `site-packages` or `dist-packages` as well (on Linux,
+    `/usr/local/lib/python3.14/dist-packages`), not only in `~/.local`. Check with
+    `python3 -I -c "import regex, textual, numpy"`, which must print nothing.
+  - Node 20 or newer on the PATH: the screens and the generated policy start `node`, and a distribution's Node 10 fails
+    on the first `import`. Check with `node --version` (v20, v22 or v24).
+  - Nothing else. With no GPU and no `cargo` the whole suite passes (3061 passed, 61 skipped on the machine where this was
+    written); the tests that need Windows, a build tool or a network install skip themselves.
 - Keep the docs' style: plain words, short sentences, written for non-technical users first. Give measured numbers
   with what they were measured on. Make no claim without a measurement.
 
