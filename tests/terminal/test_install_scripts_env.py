@@ -3,6 +3,7 @@
 import os
 import shutil
 import subprocess
+import sys
 import unittest
 from pathlib import Path
 
@@ -43,7 +44,8 @@ class Text(unittest.TestCase):
         self.assertNotIn("is the disk full?", self.ps1)
 
 
-@unittest.skipUnless(shutil.which("powershell"), "no PowerShell")
+# The ARM check comes after install.ps1's own platform guard: elsewhere the script stops as "the Windows installer".
+@unittest.skipUnless(sys.platform == "win32" and shutil.which("powershell"), "needs Windows and PowerShell")
 class Run(unittest.TestCase):
     def test_native_arm_stops_before_any_download(self):
         env = dict(os.environ, PROCESSOR_ARCHITECTURE="ARM64", STRATA_FEED="http://127.0.0.1:9")
