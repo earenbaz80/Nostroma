@@ -1,4 +1,4 @@
-"""`strata connect <harness>`: the setup for an app that talks to a running Nostroma server.
+"""`nostroma connect <harness>`: the setup for an app that talks to a running Nostroma server.
 
 Every entry below comes from a config that was tested for real against a Nostroma server at 32K context (one simple prompt with the
 answer text checked and one tool call with its arguments checked, plus streaming, thinking and compaction at about 15K): the files in
@@ -170,7 +170,7 @@ def openclaw_file(t: Target) -> str:
 
 
 def _limits_opencode(t: Target) -> list[str]:
-    return ["The setup needs limit.input (strata connect sets it to %d); without it OpenCode never compacts its conversation." % t.input_limit,
+    return ["The setup needs limit.input (nostroma connect sets it to %d); without it OpenCode never compacts its conversation." % t.input_limit,
             "Its first start downloads a plug-in from npm (internet needed once; the first run can take over a minute).",
             "In a script or over ssh, run it as: opencode run \"...\" < /dev/null (it waits for typing otherwise).",
             "Its system prompt and tools take about 7.4K tokens of the window."]
