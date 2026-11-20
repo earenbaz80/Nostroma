@@ -39,8 +39,36 @@ establish a current default model or universal performance.
 | Coding demo thumbnail | [pagoda-preview.webp](media/pagoda-preview.webp) | A voxel garden generated locally. |
 | Coding demo video | [Pagoda.mp4](https://github.com/Niko1221/Strata/releases/download/v0.1.10/Pagoda.mp4) | Existing 49-second demo, documented with an RTX 5070, IQ3_S and 128K context. Keep it separate from the GUI and TUI screenshots. |
 | Engine explanation | [how-it-works.svg](media/how-it-works.svg), [guess-and-check.svg](media/guess-and-check.svg) | Illustrations of the documented Flash-Next engine path, not proof that every model uses the same path. |
+| Logo, high contrast | [strata-lockup-high-contrast.svg](../apps/host/public/brand/strata-lockup-high-contrast.svg) | Nostroma, for low-vision use on the light background. |
+| Logo in context, light | [lockup-in-context-light.png](media/lockup-in-context-light.png) | The lockup on the light theme's own background. |
+| Logo in context, dark | [lockup-in-context-dark.png](media/lockup-in-context-dark.png) | The lockup on the dark theme's own background. |
 
-**Lockup regeneration**: Los SVG `strata-lockup-light.svg` y `strata-lockup-dark.svg` se pueden regenear con `apps/host/scripts/prepare-brand-lockups.py`. Ejecutá `--check` para comparar los bytes contra los hashes registrados en `source-manifest.json`; si difieren, el script informa la versión de fontTools con la que fueron dibujados (por defecto `4.68.0`) frente a la instalada, para que un cambio de formato de `SVGPathPen` no se confunda con una edición. Los archivos del repo fueron dibujados con fontTools `4.68.0`.
+## Regenerating the lockups
+
+The lockups in `apps/host/public/brand` carry the wordmark as outlines, so a font change does not
+reach them. `apps/host/scripts/prepare-brand-lockups.py` draws them from
+`apps/host/public/fonts/Exo2-Variable.woff2`. Regenerate rather than edit.
+
+- `python3 apps/host/scripts/prepare-brand-lockups.py` rewrites the light, dark and high-contrast
+  SVGs and prints the contrast of each theme against the app's own background.
+- `--check` writes nothing: it compares the files on disk with what the script would draw and exits 1
+  if any differs. It names the fontTools release the committed files were drawn with (`4.68.0`) next
+  to the one that is running, because the way fontTools formats path numbers can change between
+  releases.
+- `--weights 400,700` draws every theme at each weight (`strata-lockup-light-400.svg` and so on;
+  weight 700 keeps the plain file name). `--themes` picks themes, and `--update-manifest` refreshes
+  the hashes and the method text in `source-manifest.json`.
+- `--png` writes `strata-lockup-*.png` and `--preview` writes the in-context pictures above. PNG
+  bytes depend on the Pillow build, so they are convenience exports and `--check` ignores them.
+- `--ink-left` is a trial offset for the wordmark. It needs `--out DIR`, so a trial never overwrites
+  the committed files.
+
+To change the word, edit `WORD` in the script, run it, run `--check`, then `--update-manifest`, and
+commit the SVGs together with the script. The `Brand lockups` GitHub job runs `--check` on every
+change to the brand folder, with fontTools pinned to `4.68.0`, so a stale SVG fails there too.
+
+The script needs fontTools and Brotli, because the face ships as WOFF2. Pillow is needed only for
+`--png` and `--preview`.
 
 ## Accuracy rules
 
