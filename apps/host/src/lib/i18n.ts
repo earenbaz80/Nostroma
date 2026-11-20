@@ -46,10 +46,11 @@ export function loadCatalog(value:Language):Promise<void>{
 }
 const entities:Record<string,string>={amp:'&',lt:'<',gt:'>',quot:'"',apos:"'",nbsp:'\u00a0'};
 const decode=(text:string)=>text.replace(/&(#x[\da-f]+|#\d+|amp|lt|gt|quot|apos|nbsp);/gi,(whole,key:string)=>key[0]==='#'?String.fromCodePoint(key[1].toLowerCase()==='x'?parseInt(key.slice(2),16):parseInt(key.slice(1),10)):entities[key]??whole);
-/* This checkout is Nostroma. The nine catalogues are upstream's and stay byte-identical, so the
+/* This checkout is Nostroma. The eight translations are upstream's and stay as they are, so the
    language tests keep their meaning and no translation goes missing: the brand is swapped on the way
-   out instead of in 1,850 translated strings. Paths and links keep the upstream name, because they
-   still point at the real folder (~/Documents/Strata/Models) or at the upstream repository. */
+   out instead of in 1,850 translated strings. English copy, the key of every string, says the name
+   itself. Paths and links keep the upstream name, because they still point at the real folder
+   (~/Documents/Strata/Models) or at the upstream repository. */
 const BRAND=/(?<![\/\\])\bStrata\b(?!\s*[\/\\])/g;
 const brandName=(text:string)=>text.replace(BRAND,'Nostroma');
 /* English is the key of a string, and the host now says the brand the other way round, so both

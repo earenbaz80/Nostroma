@@ -1781,7 +1781,7 @@
   "s1763": "Strata prepares all shards, the draft layer and shared files. Completed downloads are reused.",
   "s1764": "Strata sends no usage telemetry. Conversations stay on this computer, in Strata's data folder. When you choose an API model, that conversation and enabled skill instructions are sent to its provider. The UI request log keeps client, timing and token metadata in memory. Native API monitoring can retain request content in memory when enabled. Connected tools access the resources you configure.",
   "s1765": "Strata uses these files in place. You can load the model after adding it.",
-  "s1766": "Strata — open chat",
+  "s1766": "Nostroma — open chat",
   "s1767": "Strata’s budget",
   "s1768": "Stream failed ({0})",
   "s1769": "Stronger version kept",

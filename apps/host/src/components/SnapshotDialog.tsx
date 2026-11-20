@@ -17,7 +17,7 @@ export function downloadSnapshot(data: string) {
     const url = URL.createObjectURL(new Blob([bytes], { type: 'image/png' }));
     const link = document.createElement('a');
     link.href = url;
-    link.download = `Strata-Monitor-${new Date().toISOString().slice(0, 10)}.png`;
+    link.download = `Nostroma-Monitor-${new Date().toISOString().slice(0, 10)}.png`;
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -31,7 +31,7 @@ export function SnapshotDialog({ open, data, pending, error, onClose, onRetry }:
     onClose: () => void;
     onRetry: () => void;
 }) {
-    const caption = 'My local AI performance with Strata';
+    const caption = 'My local AI performance with Nostroma';
     const project = 'https://github.com/Niko1221/Strata';
     return <Dialog open={open} title={tr("Monitor screenshot")} onClose={onClose} actions={<><Btn onClick={onClose}>{tr("Close")}</Btn><Btn icon="download" variant="primary" disabled={!data || pending} onClick={() => saveSnapshotWithNotice(data)}>{tr("Download")}</Btn></>}>
     <div className="snapshot-preview" aria-busy={pending}>

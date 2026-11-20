@@ -98,14 +98,14 @@ pub fn clean_text(text: &str, max: usize) -> String {
 /// The tray menu: (open, quit, tooltip), in the app's language.
 pub fn tray_labels(language: &str) -> (&'static str, &'static str, &'static str) {
     match language {
-        "zh" => ("打开 Strata", "退出 Strata", "Strata"),
-        "ja" => ("Strata を開く", "Strata を終了", "Strata"),
-        "de" => ("Strata öffnen", "Strata beenden", "Strata"),
-        "es" => ("Abrir Strata", "Salir de Strata", "Strata"),
-        "ru" => ("Открыть Strata", "Выйти из Strata", "Strata"),
-        "pt" => ("Abrir o Strata", "Sair do Strata", "Strata"),
-        "ko" => ("Strata 열기", "Strata 종료", "Strata"),
-        _ => ("Open Strata", "Quit Strata", "Strata"),
+        "zh" => ("打开 Nostroma", "退出 Nostroma", "Nostroma"),
+        "ja" => ("Nostroma を開く", "Nostroma を終了", "Nostroma"),
+        "de" => ("Nostroma öffnen", "Nostroma beenden", "Nostroma"),
+        "es" => ("Abrir Nostroma", "Salir de Nostroma", "Nostroma"),
+        "ru" => ("Открыть Nostroma", "Выйти из Nostroma", "Nostroma"),
+        "pt" => ("Abrir o Nostroma", "Sair do Nostroma", "Nostroma"),
+        "ko" => ("Nostroma 열기", "Nostroma 종료", "Nostroma"),
+        _ => ("Open Nostroma", "Quit Nostroma", "Nostroma"),
     }
 }
 
