@@ -610,6 +610,7 @@ build_dmg() {   # app out.dmg volname
   ditto --norsrc --noextattr --noqtn "$app" "$mnt/$(basename "$app")" || return 1
   ln -s /Applications "$mnt/Applications"
   icon="$app/Contents/Resources/Nostroma.icns"
+  [ -f "$icon" ] || icon="$app/Contents/Resources/icon.icns"
   if [ -f "$icon" ] && command -v SetFile >/dev/null 2>&1; then cp "$icon" "$mnt/.VolumeIcon.icns" && SetFile -a C "$mnt" 2>/dev/null; fi
   sync
   until hdiutil detach "$mnt" >/dev/null 2>&1; do

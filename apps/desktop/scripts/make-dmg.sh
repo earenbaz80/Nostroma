@@ -44,10 +44,15 @@ fi
 mkdir -p "$(dirname "$OUT")"
 rm -f "$OUT"
 
+# The volume icon follows the product name, but Tauri's bundler also ships it as icon.icns; use
+# whichever is there so the volume does not lose its icon when the name changes.
+VOLICON="$BUNDLE/macos/Nostroma.app/Contents/Resources/Nostroma.icns"
+[ -f "$VOLICON" ] || VOLICON="$BUNDLE/macos/Nostroma.app/Contents/Resources/icon.icns"
+
 # --skip-jenkins: no Finder AppleScript. Everything else is the same code path Tauri uses.
 "$SCRIPT" \
   --volname "Nostroma $VERSION" \
-  --volicon "$BUNDLE/macos/Nostroma.app/Contents/Resources/Nostroma.icns" \
+  --volicon "$VOLICON" \
   --app-drop-link 400 200 \
   --skip-jenkins \
   --no-internet-enable \
