@@ -3,7 +3,7 @@
 ## Objective and completion criteria
 
 Achieve **at least 20 generated tokens/second in decode on the local Intel Arc
-A770 running Strata**, with reproducible benchmark evidence and correct output.
+A770 running Nostroma**, with reproducible benchmark evidence and correct output.
 This specification describes the next optimization campaign; it does not claim
 that the target has already been met.
 
@@ -30,7 +30,7 @@ Completion requires:
 
 ## Verified baseline and hardware
 
-- Worktree: a local Strata v0.1.40.3 checkout.
+- Worktree: a local Nostroma v0.1.40.3 checkout.
 - Current source baseline: `501f675727ae8a54abed3ec467de1cbfbecd03ea`, branch
   `a770-speed-upstream`, based on upstream `main` at `fb58e0d` when last checked.
 - Existing upstream work: correctness PR #1602 and draft performance PR #1710.
@@ -442,7 +442,7 @@ Portable build commands inside the existing image (run from the worktree):
 ```sh
 docker run --rm -u "$(id -u):$(id -g)" -v "$PWD/..:/work" strata-sycl-dev \
   "source /opt/intel/oneapi/setvars.sh >/dev/null 2>&1; \
-   cmake --build /work/strata-v0.1.40.3/build-sycl --target strata -j 8"
+   cmake --build /work/strata-v0.1.40.3/build-sycl --target nostroma -j 8"
 ```
 
 Use the actual `cmake --build` exit status. `sycl/tools/build.sh` from 0.2.7 on exits with it; older copies
@@ -488,7 +488,7 @@ Arcint reference checkout: a local temporary checkout, reviewed revision
 Arcint's headline A770 coder numbers use a different model/configuration.
 Its Flash-Next results are mainly on a B60. Treat those numbers as evidence for
 candidate techniques, not predictions for this A770 workload. Several arcint
-ideas already originated in Strata; audit existing equivalents before porting.
+ideas already originated in Nostroma; audit existing equivalents before porting.
 
 ## Execution record
 
@@ -533,7 +533,7 @@ Added `-DSTRATA_SYCL_BF16_GRF=0|128|256` (default 0), applied only to
 
 ### Where the decode time actually is
 
-Prior per-window timing (`strata decode timing`) at ~13 tok/s: about 180 ms per
+Prior per-window timing (`nostroma decode timing`) at ~13 tok/s: about 180 ms per
 window (T~2.2), of which verify ~171 ms = GPU-reach wait ~130 ms + per-layer
 host ~35 ms (CPU experts ~33 ms) + staging, plus ~8 ms draft. The **GPU-reach
 wait dominates**, i.e. the GPU expert/attention compute for VRAM-resident

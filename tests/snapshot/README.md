@@ -29,7 +29,7 @@ The same command works on Windows, Linux and macOS; the golden files hold no pat
 
 | entry | how it is driven | what is real | what is replaced |
 |---|---|---|---|
-| `launch` | `strata launch --model <set> --yes --no-tui` through `nostroma_cli.cli.main` | the whole command: settings, `Runner.run()`, the drafter step, config derivation and writing | the engine download, the model download (`ensure_model` returns the stand-in below), tuning, the server start, the drafter download |
+| `launch` | `nostroma launch --model <set> --yes --no-tui` through `nostroma_cli.cli.main` | the whole command: settings, `Runner.run()`, the drafter step, config derivation and writing | the engine download, the model download (`ensure_model` returns the stand-in below), tuning, the server start, the drafter download |
 | `app_plain` | `apps/host/server/native-control.mjs` `operation('load', {model})` in Node (`app_driver.mjs`) | the host's whole Load code, and Control's `drafting plan` / `drafting fetch` (run through `control_shim.py` on the same simulated machine) | the installer process (catalog, hardware), Control's model list / engine / profile save / start, the drafter download |
 | `app_models` | the same with `values: {drafting: 'auto'}` (what the Models screen's Load passes) | same | same |
 | `setup` | `nostroma_control.setup_config.config_for` (qwen / unsloth), the moved last stretch of `setup.py` main(), called with inputs built by `setup_driver.py` | the whole run-config construction: engine arguments, speed switches, cards, vision section | what `setup.py` decides before it (the cards and RAM come from the class, the context, budget, low-RAM, vision and resident choices from setup's own pure functions), the probes of the machine (`ProbeLib`), the model reader |
@@ -57,7 +57,7 @@ changes the launch and app goldens and is a separate decision.
 
 ## The gate: one launch policy (CLEAN-1A)
 
-In every machine class x model set, `strata launch`, the app's plain Load and the app's Models-screen Load start the engine with the same arguments and the same
+In every machine class x model set, `nostroma launch`, the app's plain Load and the app's Models-screen Load start the engine with the same arguments and the same
 environment, and ask for the same drafter downloads.  `test_entry_points_agree.py` applies the allow-list in `allowlist.py` to the golden files; the list is the
 only place a difference is allowed, and each entry has its reason.  Today:
 

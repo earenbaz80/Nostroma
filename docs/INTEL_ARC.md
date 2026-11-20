@@ -1,6 +1,6 @@
 # Intel Arc on Linux
 
-Strata runs on Intel Arc cards on Linux through its own engine ported to SYCL (Intel oneAPI). This page is for people with
+Nostroma runs on Intel Arc cards on Linux through its own engine ported to SYCL (Intel oneAPI). This page is for people with
 an Arc A-series (Alchemist) or B-series (Battlemage) card. It covers the released Terminal route, what you need, how to
 build the engine from source, and which cards were tested. The port's workflow and measurements are in [INTEL.md](INTEL.md).
 
@@ -10,12 +10,12 @@ driver); results from other cards are community reports. The Mac and Windows bui
 
 ## Quick start
 
-Install the [Terminal](INSTALL.md#the-terminal), then point `strata launch` at the folder that holds the model's `.gguf` files
+Install the [Terminal](INSTALL.md#the-terminal), then point `nostroma launch` at the folder that holds the model's `.gguf` files
 (the Qwen3.8-Flash-Next files from ISTA-DASLab, for example IQ3_S or IQ2_XS):
 
 ```sh
-strata launch --model-path /path/to/the/gguf/folder --plan    # shows what would happen, changes nothing
-strata launch --model-path /path/to/the/gguf/folder
+nostroma launch --model-path /path/to/the/gguf/folder --plan    # shows what would happen, changes nothing
+nostroma launch --model-path /path/to/the/gguf/folder
 ```
 
 The first launch does everything itself: it downloads the Intel engine package `linux-x86_64-sycl` from the signed feed, builds the
@@ -23,18 +23,18 @@ pack for your model from the GGUF files (a few minutes, once; it fetches llama.c
 internet that one time), writes the run settings and starts the server. Nothing is installed by hand.
 
 - **A PC with an NVIDIA or AMD card as well** uses that card by default, and `--plan` says the Intel cards exist. To use the Intel cards
-  add `--backend intel` once: the choice is remembered (in the settings file) for the next launch, `strata update` and the app's engine
-  check. `strata launch --backend auto` goes back to the PC's own choice. Nothing is refused either way.
-- **Models are not downloaded for Intel cards yet.** Give the folder with `--model-path`; Strata does not touch your files.
+  add `--backend intel` once: the choice is remembered (in the settings file) for the next launch, `nostroma update` and the app's engine
+  check. `nostroma launch --backend auto` goes back to the PC's own choice. Nothing is refused either way.
+- **Models are not downloaded for Intel cards yet.** Give the folder with `--model-path`; Nostroma does not touch your files.
 - **The draft layer (MTP) is not built for Intel cards**, so answers are a little slower than on a card with the full setup. An
   existing `mtp/rt` folder in the data folder is used.
-- `strata doctor --live` checks the driver, the render group and the card, and `strata update --check` shows the engine package.
+- `nostroma doctor --live` checks the driver, the render group and the card, and `nostroma update --check` shows the engine package.
 
-On Linux, `strata update` (Terminal) and Settings > Update (app) download the Intel engine package for a PC
+On Linux, `nostroma update` (Terminal) and Settings > Update (app) download the Intel engine package for a PC
 whose graphics card is made by Intel. One package serves Alchemist and Battlemage: the GPU code is compiled from SPIR-V at the
 first start, because the A-series cards have no FP64 units. The package carries oneAPI's runtime libraries. The Level Zero
 loader and the compute runtime stay the PC's own (see [What you need](#what-you-need)), and your user must be in the `render`
-group (`strata doctor` says so). It was tested on an Arc A750 and, in 0.2.10, on two Arc Pro B65 cards. The package is built by
+group (`nostroma doctor` says so). It was tested on an Arc A750 and, in 0.2.10, on two Arc Pro B65 cards. The package is built by
 `packaging/build_sycl_linux.sh`.
 
 The source and container workflow ([INTEL.md](INTEL.md#setup)) still exists for building the engine yourself; the Terminal does not need it.
@@ -51,14 +51,14 @@ engine package. Otherwise [build the image yourself](DOCKER.md#build-it-yourself
 - **The CPU and the model folder.** The CPU does not need AVX-512. A Ryzen 3000-5000 or an Intel Core 12th-14th generation runs the
   experts that do not fit on the card with AVX2 (measured on an A750 with a Ryzen 5 5600X, [INTEL.md](INTEL.md)). This applies to
   model folders that contain `native_experts.txt` (IQ3_XXS, IQ3_S, NVFP4, Unsloth). An older Q2_0 folder has no such file, and its
-  CPU kernel needs AVX-512. With that folder the engine stops with "this CPU cannot run the expert kernel", and `strata doctor`
-  warns about it before the start. Building the model folder again with `strata setup` (or `tools/iq_pack.py`) fixes it.
+  CPU kernel needs AVX-512. With that folder the engine stops with "this CPU cannot run the expert kernel", and `nostroma doctor`
+  warns about it before the start. Building the model folder again with `nostroma setup` (or `tools/iq_pack.py`) fixes it.
 - For a source build without Docker: **Intel oneAPI** with the DPC++ compiler (`icpx`, **2026.1 or newer**; 2025.3 does not build the engine) and **oneMKL**
   (about 5 GB), `cmake` 3.24+, `ninja`, `git`, Python 3. The build fetches ggml unless you point `STRATA_GGML_DIR` at a
   llama.cpp checkout.
 - For `./setup.sh --backend sycl`: **Docker** and the GPU driver, nothing else from the list above. `sycl/setup_intel.py`
   builds and runs the engine in the `strata-sycl-dev` image from `sycl/tools/Dockerfile`, which starts from a community
-  llama.cpp SYCL image (`ghcr.io/snailium/...`), not an Intel or Strata image. On Ubuntu:
+  llama.cpp SYCL image (`ghcr.io/snailium/...`), not an Intel or Nostroma image. On Ubuntu:
   `sudo apt install docker.io git`, then `sudo usermod -aG docker,render $USER` and log in again.
 - VRAM: the port keeps the experts on the card (`--stream-experts`). A 32 GB card holds the Coder IQ1_M or IQ2_XS. Smaller
   cards mirror part of the experts in RAM and are slower.
@@ -68,15 +68,15 @@ engine package. Otherwise [build the image yourself](DOCKER.md#build-it-yourself
 
 ## Build with Docker (what `setup --backend sycl` uses)
 
-About 10 minutes the first time. From the checkout, called `Strata` here:
+About 10 minutes the first time. From the checkout, called `Nostroma` here:
 
 ```sh
-cd Strata
+cd Nostroma
 docker build --pull -t strata-sycl-dev sycl/tools     # once: about 6 minutes, a 13 GB image
 H=$(basename "$PWD")
 # Arc B-series: bmg-g31 (Pro B70), bmg-g21 (B580, B570, Pro B60). Arc A-series (Alchemist): leave out AOT (JIT) and use build-sycl
 docker run --rm -u $(id -u):$(id -g) -v "$PWD/..:/work" -e AOT=bmg-g31 -e REPO=/work/$H \
-    -e BUILD_DIR=/work/$H/build-sycl-aot strata-sycl-dev "cd /work/$H && bash sycl/tools/build.sh strata"
+    -e BUILD_DIR=/work/$H/build-sycl-aot strata-sycl-dev "cd /work/$H && bash sycl/tools/build.sh nostroma"
 ```
 
 `--pull` matters: [INTEL.md](INTEL.md#how-to-build-it) says why. Then run `./setup.sh --backend sycl`. Do not run
@@ -103,7 +103,7 @@ Build the engine through the top-level CMake option or by configuring the `sycl/
 source /opt/intel/oneapi/setvars.sh
 cmake -S . -B build-sycl -G Ninja -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icpx -DSTRATA_ENABLE_SYCL=ON
 #   or: cmake -S sycl -B build-sycl -G Ninja -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icpx
-cmake --build build-sycl --target strata
+cmake --build build-sycl --target nostroma
 ```
 
 | Option | Effect |
@@ -195,7 +195,7 @@ stderr. Results from real cards are what move more cards from tested to validate
 ## History / older measurements
 
 The first port (0.1.39) compiled with 0 errors on Ubuntu 24.04 (WSL2) with oneAPI DPC++ 2026.1.1 and oneMKL 2026.1: the
-`strata` engine plus 157 targets, as SPIR-V (JIT). Kernel parity tests on a CPU (`ONEAPI_DEVICE_SELECTOR=opencl:cpu`, Ryzen 5
+`nostroma` engine plus 157 targets, as SPIR-V (JIT). Kernel parity tests on a CPU (`ONEAPI_DEVICE_SELECTOR=opencl:cpu`, Ryzen 5
 7600) passed 14 of 25, the same set as the 0.1.38 port; the failures were tight float tolerances, missing model fixtures and two
 CPU timeouts. That was a compile-and-compute check, not a test of an Arc. The CUDA engine's greedy output stayed byte-identical.
 

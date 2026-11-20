@@ -8,7 +8,7 @@ results. The last positions of the prompt are then read fully, exactly as before
 full path against the state KVA built.
 
 **It is off by default.** Unset, the engine is 0.2.6's, prompt path and draft layer included. Set `STRATA_KVA=1` to
-turn it on (the Strata app shows it as the "Faster long prompts" switch in Expert settings, off until the user turns
+turn it on (the Nostroma app shows it as the "Faster long prompts" switch in Expert settings, off until the user turns
 it on; the Terminal passes `STRATA_KVA=1`). Switched on, it uses the configuration the 0.2.7 quality runs found
 cleanest: **split 36** (only layers 36–47 of 48 are approximated) and a **2048-token exact tail**. Both can be
 changed with `STRATA_KVA_SPLIT` and `STRATA_KVA_SUFFIX`.
@@ -54,7 +54,7 @@ KVA runs when all of these hold, and says so in the engine log:
   more than the fully computed tail plus 64.
 
 Otherwise the prompt is read exactly. An engine started with `STRATA_KVA=1` logs the reason for every read it turned
-away (`strata prefill: KVA configured but NOT applied: <reason>`), and once at start-up when the engine configuration
+away (`nostroma prefill: KVA configured but NOT applied: <reason>`), and once at start-up when the engine configuration
 rules KVA out for the whole run. Without `STRATA_KVA=1` it logs nothing about KVA.
 
 ## The fully computed tail and the draft layer
@@ -124,8 +124,8 @@ there, with a line when it is set).
 
 Every read says what it did:
 
-- applied: `strata prefill: KVA on: split 36, suffix 2048, approximated 5120 of 7533 positions in 5 of 8 chunks, mode identity`
-- turned away: `strata prefill: KVA configured but NOT applied: <reason> (prompt … positions, min_prompt …, suffix …, split …)`
+- applied: `nostroma prefill: KVA on: split 36, suffix 2048, approximated 5120 of 7533 positions in 5 of 8 chunks, mode identity`
+- turned away: `nostroma prefill: KVA configured but NOT applied: <reason> (prompt … positions, min_prompt …, suffix …, split …)`
 
 A quality comparison needs the KVA arm to say `STRATA_KVA=1`; the control arm leaves it unset or says `STRATA_KVA=0`.
 
@@ -170,7 +170,7 @@ moved by routing and attention decisions a linear map cannot follow.
 
 ```sh
 STRATA_KVA_CAPTURE=/data/kva-cap STRATA_KVA_CAPTURE_FP32=1 \
-  strata --serve ... --prefill 1024 --tokens-file ids.txt --max-new 1
+  nostroma --serve ... --prefill 1024 --tokens-file ids.txt --max-new 1
 ```
 
 writes `L24.bin … L47.bin` in that directory: one row of `hc * n_embd` floats per prompt position per late

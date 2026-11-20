@@ -1,18 +1,18 @@
-# Is Strata safe and private?
+# Is Nostroma safe and private?
 
-This page says what Strata downloads, where from, when it uses the internet, what stays on your PC and how the downloads
+This page says what Nostroma downloads, where from, when it uses the internet, what stays on your PC and how the downloads
 are checked. Everything here comes from reading the code of this version. Each section names the files, so you or anyone
-you trust can check it. Where Strata does less than you might hope, the page says so.
+you trust can check it. Where Nostroma does less than you might hope, the page says so.
 
 ## At a glance
 
 - **Your chats, prompts, files, pictures and models stay on your PC.** They leave only when you choose it: you add an
   outside model service, you open the server to other devices or to the internet, or the agent searches the web or opens a page
   (see [What the agent can do](#what-the-coding-agent-can-do-on-your-pc)).
-- **There is no telemetry.** Strata sends no usage data, no crash reports and no analytics, and has no account to sign in to.
+- **There is no telemetry.** Nostroma sends no usage data, no crash reports and no analytics, and has no account to sign in to.
 - **Starting and running a model never downloads anything.** Downloads and updates are steps that you start.
 - **The server listens on your PC only.** Reaching it from another device needs an API key.
-- **Once a model is downloaded, Strata runs without internet.** Starting, loading, serving and chatting need no
+- **Once a model is downloaded, Nostroma runs without internet.** Starting, loading, serving and chatting need no
   connection. Only things you ask for use it: the agent's web search and web pages, an outside model service, the tunnel,
   and installs and updates (a first model install also fetches llama.cpp's preparation scripts).
 - **Downloads are checked.** Updates come from a signed feed. Every model file has a fixed SHA-256 and size, and an install
@@ -20,59 +20,59 @@ you trust can check it. Where Strata does less than you might hope, the page say
 - **In its default mode the coding agent asks before it changes anything**, and once per chat before its first web search or web page.
 - **The code is open.** Anyone can read it, and security problems go to [SECURITY.md](../SECURITY.md).
 
-## Does Strata phone home?
+## Does Nostroma phone home?
 
 No. A search of the app, the Terminal, the engine server and the installers found no analytics library, no crash
 reporter and no code that reports usage anywhere. The app's privacy notes say the same
-(`apps/host/src/components/PrivacyNotes.tsx`: "Strata sends no usage telemetry").
+(`apps/host/src/components/PrivacyNotes.tsx`: "Nostroma sends no usage telemetry").
 
 Some things sound similar and stay on your PC:
 
 - The Monitor, `/metrics` and `/v1/telemetry` show hardware readings (temperature, speed, memory) to you. They are served
   from your own PC, and they need your API key when you set one.
 - When the app window crashes (Linux) or the app fails to start (Windows, Mac), a crash log is written to a folder on your disk
-  (on Windows, `%LOCALAPPDATA%\Strata\logs`). Nothing sends it. **Save logs**
+  (on Windows, `%LOCALAPPDATA%\Nostroma\logs`). Nothing sends it. **Save logs**
   (Settings, Engine, Diagnostics) puts a text file in your Downloads folder, and you decide whether to attach it to a bug report.
-- The coding agent is a separate component (the DeepSeek Harness, MIT). It has its own telemetry switch, and Strata starts it
+- The coding agent is a separate component (the DeepSeek Harness, MIT). It has its own telemetry switch, and Nostroma starts it
   with that switch off (`apps/host/server/agent/harness-runtime.mjs`).
 
 Like any download, each connection below shows the other side your IP address and the file you asked for.
 
-## When Strata uses the internet
+## When Nostroma uses the internet
 
 | What | Where it goes | When |
 | --- | --- | --- |
 | Model files, the picture reader, the speed-up layer (MTP) | huggingface.co, or the mirror in `HF_ENDPOINT` if you set one | When you install a model |
-| The same files from ModelScope, for PCs that cannot reach Hugging Face | modelscope.cn | Only if you ask for it (`--source modelscope`). Strata never switches to it by itself |
-| Engine, Terminal and Control updates | The signed feed on GitHub Releases of Niko1221/Strata | When you install an engine, press **Update engine** or **Check for updates**, or run `strata update`. Opening **Settings, Engine** does not connect: it shows the result of your last check |
-| App updates | `latest.json` on the same GitHub Releases, through Tauri's updater | When you press **Check for updates** or **Update Strata** |
-| llama.cpp source code (a fixed commit) | github.com/ggml-org/llama.cpp | During a model install, if it is not on your PC yet. Strata uses only its model-preparation scripts |
+| The same files from ModelScope, for PCs that cannot reach Hugging Face | modelscope.cn | Only if you ask for it (`--source modelscope`). Nostroma never switches to it by itself |
+| Engine, Terminal and Control updates | The signed feed on GitHub Releases of Niko1221/Strata | When you install an engine, press **Update engine** or **Check for updates**, or run `nostroma update`. Opening **Settings, Engine** does not connect: it shows the result of your last check |
+| App updates | `latest.json` on the same GitHub Releases, through Tauri's updater | When you press **Check for updates** or **Update Nostroma** |
+| llama.cpp source code (a fixed commit) | github.com/ggml-org/llama.cpp | During a model install, if it is not on your PC yet. Nostroma uses only its model-preparation scripts |
 | Web search and web pages | DuckDuckGo, with Bing as the second source; or Exa, Perplexity or DeepSeek if you save a key for them. Any page the agent is asked to open goes to that page's site | When the agent uses its search or "open web pages" tool. In Manual mode it asks you first, once per chat |
 | Outside model services | The service you add (OpenAI, Anthropic, OpenRouter, a server on your network and others) | Only for chats with that model, and only after you add its key |
-| Cloudflare tunnel | Cloudflare, through the `cloudflared` program | Only while you have the tunnel on, and Strata makes an API key for it unless you pass `--no-api-key` (then it warns that anyone who finds the address can use your model) |
-| Tailscale, local network | Not Strata's traffic. Strata only reads Tailscale's status and shows the address | Only if you choose that access in `strata launch` |
+| Cloudflare tunnel | Cloudflare, through the `cloudflared` program | Only while you have the tunnel on, and Nostroma makes an API key for it unless you pass `--no-api-key` (then it warns that anyone who finds the address can use your model) |
+| Tailscale, local network | Not Nostroma's traffic. Nostroma only reads Tailscale's status and shows the address | Only if you choose that access in `nostroma launch` |
 | An image link in an API request | The address in the link | Only when a program sends your server a request with an `http(s)` image link. `--offline` refuses it |
 | Remote tool servers (MCP) | The address you put in the run config | Only when you add one |
 | A website you open in the app's preview pane | That website | Only when you type an address into **Open a website** |
-| Share to X or Reddit (Monitor screenshot) | Your browser opens x.com or reddit.com with a caption and a link to the Strata page | Only when you click it. The screenshot is saved to your disk, not uploaded |
+| Share to X or Reddit (Monitor screenshot) | Your browser opens x.com or reddit.com with a caption and a link to the Nostroma page | Only when you click it. The screenshot is saved to your disk, not uploaded |
 
 That is the full list found in the code. Some details:
 
 - **An engine is never updated by itself.** The app does not check when it starts, and not when you open Settings,
   Engine either: that screen shows the result of your last check, or nothing if you have not checked. The checks in the table
   run when you press a button or run a command. With no connection, the check says so and nothing else happens. The Terminal fetches an engine by itself only when none is
-  installed (and `strata launch` asks first when the one installed is older than the model needs). `strata launch`, setup and a
-  model download never fetch, replace or remove an engine that is installed. An update is `strata update`
+  installed (and `nostroma launch` asks first when the one installed is older than the model needs). `nostroma launch`, setup and a
+  model download never fetch, replace or remove an engine that is installed. An update is `nostroma update`
   or the app's Update engine: with a model loaded it names the model, asks before stopping it, and downloads while the model
   keeps serving; a script is refused (exit 7) unless it passes `--stop-model`. One quiet exception, the launch monitor only:
   once a day it reads the signed update feed (a few KB, no engine, a 5 second limit, nothing shown if it fails or there is no
   connection) so it can say "a new engine is available". `STRATA_UPDATE_CHECK=0` turns it off
   (`nostroma_control/engine_update.py`, `refresh_cache`).
-- **Starting and serving never download.** `strata serve` and the app's load button fetch nothing. The app sets
+- **Starting and serving never download.** `nostroma serve` and the app's load button fetch nothing. The app sets
   `STRATA_PACKAGED=1` and `STRATA_NO_ACQUIRE=1` for its parts (`apps/desktop/src-tauri/src/main.rs`), and the downloaders
   refuse to run under them (`nostroma_control/acquisition.py`, `apps/host/server/acquisition.mjs`). That is why the app
   never downloads `cloudflared` for you while it runs.
-- **The engine itself has no network code.** The part of Strata that runs the model (`src/`, `include/`, `sycl/`, `metal/`)
+- **The engine itself has no network code.** The part of Nostroma that runs the model (`src/`, `include/`, `sycl/`, `metal/`)
   contains no networking. The app's own pages load no fonts, scripts or trackers from the internet.
 - **Building from source** reaches more places. Python from python.org or winget (`START-HERE.bat`), a standalone Python
   from GitHub on a Mac (`setup.sh`), Python packages from PyPI (`requirements.txt`, pinned versions), NVIDIA's CUDA libraries
@@ -89,12 +89,12 @@ That is the full list found in the code. Some details:
   server's default is the same (`serve/server.py`, the `--host` option).
 - **Sharing needs a key.** The app's "Share with other devices" and the Cloudflare tunnel will not start without an API
   key, and the shared port answers only `/v1/models`, `/v1/chat/completions` and `/v1/messages`
-  (`apps/host/server/local-share.mjs`, `cloudflare.mjs`). `strata launch` makes a key for you when you pick anything wider than
+  (`apps/host/server/local-share.mjs`, `cloudflare.mjs`). `nostroma launch` makes a key for you when you pick anything wider than
   this computer. The bare engine server (`serve/server.py`) only prints a warning if you open it to your network without a key,
   so set one yourself in that case.
 - **When you use an outside model**, the conversation (and the instructions of skills you switched on) go to that service.
   The app says so in its privacy notes. The service's own rules then apply.
-- **Programs you connect** (Claude Code, Codex, and so on) are separate programs with their own network behaviour. Strata
+- **Programs you connect** (Claude Code, Codex, and so on) are separate programs with their own network behaviour. Nostroma
   does not control what they send.
 
 The server also has browser protections (a host check, an origin check, no CORS by default). They are in
@@ -105,18 +105,18 @@ The server also has browser protections (a host check, an origin check, no CORS 
 **Updates for the engine, the Terminal and Control.**
 
 1. The release publishes `strata-feed.json` and `strata-feed.json.sig`, signed with an Ed25519 key. The matching public key is
-   inside every installed Strata (`nostroma_control/update_keys.json`). The private key is kept offline by the owner.
+   inside every installed Nostroma (`nostroma_control/update_keys.json`). The private key is kept offline by the owner.
 2. Before it uses the feed, your PC checks the signature, that the feed has not expired and that it is not older than the
    last feed it accepted (so an old feed cannot be replayed).
 3. Each engine package is checked against its SHA-256 and its signed manifest, then every file in it against its own hash,
    then it is checked to fit your PC.
-4. The new engine is test-started before Strata switches to it. If anything fails, you keep the engine you had.
+4. The new engine is test-started before Nostroma switches to it. If anything fails, you keep the engine you had.
 
 Updates never replace your models or saved tuning. The full description is in [packaging/UPDATES.md](../packaging/UPDATES.md).
 
 **The app.** Its updates are signed with a separate key (Tauri's minisign), and the public half is in the app
 (`apps/desktop/src-tauri/tauri.conf.json`). The updater refuses an installer whose signature does not match. The Terminal
-checks the same signature when you run `strata update --app`.
+checks the same signature when you run `nostroma update --app`.
 
 **Model files.** Every model file that `setup.py` downloads has a fixed SHA-256 and size, written in the code, so the check
 needs no network: the main Qwen3.8-Flash-Next files (Q2_0, IQ2_XS, IQ3_XXS, IQ3_S), Swift 1.5, the Coder, the Unsloth sizes,
@@ -191,8 +191,8 @@ The agent runs on a loopback address with a random token, so other programs on t
 
 ## Open source and reporting a problem
 
-Strata is MIT-licensed and the whole code is at [github.com/Niko1221/Strata](https://github.com/Niko1221/Strata). Read it, build
-it and compare. Strata has not had an outside security audit yet.
+Nostroma is MIT-licensed and the whole code is at [github.com/Niko1221/Strata](https://github.com/Niko1221/Strata). Read it, build
+it and compare. Nostroma has not had an outside security audit yet.
 
 To report a security problem, use GitHub's private reporting (the repository's **Security** tab), as described in
 [SECURITY.md](../SECURITY.md). Ordinary questions and ideas can go to an

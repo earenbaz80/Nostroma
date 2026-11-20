@@ -1,6 +1,6 @@
 # Several requests at once (batch slots)
 
-By default Strata serves **one request at a time**: the others wait in the server's queue. With `"parallel": N`
+By default Nostroma serves **one request at a time**: the others wait in the server's queue. With `"parallel": N`
 (the engine's `--batch N`, also spelled `--slots N`) the engine keeps up to N conversations open and decodes them
 **together**: every verify window then carries one token of each conversation, so the dense weights, the shared
 expert, the head and every routed expert two conversations share are read once per window for all of them.
@@ -256,7 +256,7 @@ so the slots never wait for the read and the read is one run with no drain insid
   unbuffered source, `STRATA_IO_PREFETCH`): the experts come from the RAM arena or the mapped file. A prompt with
   pictures is read the usual way.
 
-One log line per read (`strata batch: read N tokens on a thread of its own in X ms (concurrent, to Q of T); the slots
+One log line per read (`nostroma batch: read N tokens on a thread of its own in X ms (concurrent, to Q of T); the slots
 decoded R rows meanwhile (S rows/s; stage k: W windows, H ms host each)`). Built for CUDA and HIP (HIP keeps the default
 stream priority, and is not run on a GPU here); SYCL does not have it.
 
@@ -340,7 +340,7 @@ for `STRATA_BATCH_DECODE_SHARE` x the chunk's time. These variables give the pip
   back - first gives the slots one decode budget (the same rule, from the previous read's last full piece); otherwise
   the slots would stop for both reads.
 
-With the variables unset the read is one run as before. One log line per piece (`strata batch: piped read N tokens in X
+With the variables unset the read is one run as before. One log line per piece (`nostroma batch: piped read N tokens in X
 ms (to Q of T)`, with `, then the slots decoded R rows in Y ms` when slots decode), per give-way (`the prompt read gives
 way at Q of T tokens; slot S holds it`) and per lead-in (`a read right after a read: the slots decoded R rows in Y ms
 first`).
@@ -395,7 +395,7 @@ most-routed experts that are not in VRAM into the cache in place of the least-ro
 solo path uses (`--adapt-swaps` and `--adapt-decay` apply too; on a layer split every GPU's cache adapts). It runs when the
 tier is not the whole model and both `--adapt-every` and `--adapt-swaps` are above 0. By default the round runs beside the
 window's commit and drafts and has landed before the next window starts. It stands still while a long prompt is read
-between decoding windows (the prompt may hold a loan of cache slots). The `strata batch:` log line shows the rounds and swaps, each stage's
+between decoding windows (the prompt may hold a loan of cache slots). The `nostroma batch:` log line shows the rounds and swaps, each stage's
 GPU-reach wait and pool time, and how many routed entries the VRAM tier, the PCIe share and the CPU served per window.
 Swaps move experts between the GPU and the CPU, which round differently, so greedy outputs can differ from run to run;
 `--adapt-every 1000000` keeps the tier fixed (as in the exactness settings below). The pipelined `--batch-groups` path
@@ -406,7 +406,7 @@ moves only when the slots go back to the solo path.
 windows it starts no new group, lets the groups in flight finish, runs one round as the serial batch loop does (nothing
 in flight reads a cache slot, and the swapped-in experts land before the next launch), and goes on. It stands still while
 a prompt is read beside the slots, and does nothing with `--adapt-async 1`. The engine says so at start, and the
-`strata batch (pipelined ...)` line adds the rounds, the experts swapped in and the time spent. Measured on 2x RTX 5090
+`nostroma batch (pipelined ...)` line adds the rounds, the experts swapped in and the time spent. Measured on 2x RTX 5090
 (layer split 25, Swift-Qwen3.8-Flash-Next IQ3_S, `--batch 6 --batch-groups 2`, resident experts, a profile-filled cache,
 `--adapt-every 16`), six streams of 1,024 greedy tokens from `tools/serve_load.py`, the engine's rows/s of eight bursts
 right after start, two fresh engines per setting:
@@ -661,7 +661,7 @@ On this card the slots buy **waiting time, not speed**: the fourth of four reque
 11.2 s, but together they decode 11-24 % slower than one after the other, and a request alone loses 11 % (2 slots)
 or 24 % (4 slots), because the slots' sessions (0.56 GiB each) come out of the expert cache and most experts run
 on the CPU: a batch window over 4 conversations reads 24 CPU experts per layer against ~8 for one, so it costs about
-what the 4 tokens cost one after the other (`strata batch:` in the engine log: 54 ms per 4-row window, ~20 ms per
+what the 4 tokens cost one after the other (`nostroma batch:` in the engine log: 54 ms per 4-row window, ~20 ms per
 1-row window). This is why setup leaves a 12 GB card at one at a time. Cards that hold most experts in VRAM, and a
 layer split, are where the slots also add speed (below).
 
@@ -709,7 +709,7 @@ One RTX PRO 6000 Blackwell (96 GB), IQ3_S, all 24,576 experts in VRAM, `--kv int
 | 6 | | | 297.7 | 354.8 |
 | 8 | | | 308.4 | 374.8 |
 
-The window (`strata batch:` in the engine log) costs 14.3 ms for 4 rows and 24.6 ms for 8 rows without them, and
+The window (`nostroma batch:` in the engine log) costs 14.3 ms for 4 rows and 24.6 ms for 8 rows without them, and
 12.2 ms and 19.9 ms with them: about 1.7-1.9 ms per added row instead of 2.4 ms.
 
 ## Together with conversation parking

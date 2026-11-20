@@ -8,7 +8,7 @@ MCP image results are cached by SHA-256 next to the run configuration, in `<conf
 
 When the server has a vision encoder, tool images enter its existing image preparation path. Subsequent browser turns send `strata-tool-media:<basename>` references; the authenticated server resolves these only inside its cache. With no vision encoder, images remain visible to the user and the model receives the existing text-only fallback. This adds image transport, not a vision model.
 
-Search and image generation are supplied by configured MCP servers. Strata does not bundle a paid search provider or a ComfyUI installation. Machine-specific adapters and lifecycle hooks are not included in this change.
+Search and image generation are supplied by configured MCP servers. Nostroma does not bundle a paid search provider or a ComfyUI installation. Machine-specific adapters and lifecycle hooks are not included in this change.
 
 ## Validation without a GPU
 

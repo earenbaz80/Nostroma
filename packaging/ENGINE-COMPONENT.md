@@ -3,19 +3,19 @@
 This page is for developers who build or check engine packages. It defines the manifest that every engine package carries:
 Windows CUDA 13 and 12, Windows HIP, Linux CUDA, Linux HIP, Linux SYCL and macOS Metal. Control (`nostroma_control/engine_component.py`) reads it, checks it, and only then starts the engine.
 `packaging/package_engine.py` writes it. A package you make locally is unsigned and loads. A package in the release feed is signed with the
-feed key (an Ed25519 key the owner keeps offline), and `strata update` / "Update engine" install it only when that signature verifies
+feed key (an Ed25519 key the owner keeps offline), and `nostroma update` / "Update engine" install it only when that signature verifies
 ([UPDATES.md](UPDATES.md)). The installers carry an engine of their own, so a new install needs no download to start a model.
 
 ## Folder
 
     <components>/engine/<version>-<platform>-<backend>[-<variant>]/
         engine-component.json
-        strata | strata.exe              the entrypoint
+        nostroma | strata.exe              the entrypoint
         lib*.so* | *.dll | *.dylib       the GPU runtime libraries it loads from beside itself
         BUILD.json  LICENSE*             optional records
         rocm/**  strata-vision.exe  ...  anything else the build needs, listed in the manifest like the rest
 
-`<components>` is `%LOCALAPPDATA%\Strata\components`, `$XDG_DATA_HOME/strata/components` or `STRATA_COMPONENTS_DIR`.
+`<components>` is `%LOCALAPPDATA%\Nostroma\components`, `$XDG_DATA_HOME/nostroma/components` or `STRATA_COMPONENTS_DIR`.
 A package folder is immutable: a new build is a new folder.
 
 ## `engine-component.json`
@@ -42,8 +42,8 @@ Example (shortened):
 ```json
 {"schema_version": 2, "id": "strata-engine", "name": "strata-engine", "version": "0.1.60",
  "platform": "linux-x86_64", "backend": "cuda", "archs": ["sm_86"], "min_driver": {"nvidia": "580.65"},
- "build_id": "be885026f96a-cuda13.0", "entrypoint": "strata",
- "files": [{"path": "strata", "sha256": "<64 hex>", "bytes": 191000000}], "signature": null}
+ "build_id": "be885026f96a-cuda13.0", "entrypoint": "nostroma",
+ "files": [{"path": "nostroma", "sha256": "<64 hex>", "bytes": 191000000}], "signature": null}
 ```
 
 ## What Control checks before a start
@@ -55,15 +55,15 @@ In this order, each refusal names the cause; none of them starts anything and no
 3. `min_runtime`, CUDA archs vs. the card, `min_driver` vs. the driver;
 4. the **signature policy** (below);
 5. **every file** exists, is a regular file inside the folder (no symlinks), has the listed size, **and matches its SHA-256**
-   (a start hashes the whole package; the listing commands `strata components engine` hash only the entrypoint unless given `--full`);
+   (a start hashes the whole package; the listing commands `nostroma components engine` hash only the entrypoint unless given `--full`);
 6. on POSIX the entrypoint is executable.
 
 If a package fails (5) or (4) and no other package fits this PC, the start ends with `EngineIntegrityError`
 (exit code 5): "The engine package failed its integrity check, so it was not started: 0.1.50 linux-x86_64-cuda:
 libcudart.so.13 does not match its recorded SHA-256. Repair or reinstall the engine component with Update engine in the app's
-Settings or `strata update` in the Terminal". A package
+Settings or `nostroma update` in the Terminal". A package
 for another GPU or an older driver is `EngineMissing` with its reason. A tampered newer package never falls back silently
-to nothing: a good older package is used and the tampered one is listed under `problems` in `strata components engine`.
+to nothing: a good older package is used and the tampered one is listed under `problems` in `nostroma components engine`.
 
 ## Signature
 
@@ -91,7 +91,7 @@ UTF-8). It contains every file hash, so one signature covers the whole package. 
 Without `--include`/`--tree` it takes the entrypoint, the libraries beside it, `BUILD.json`, `LICENSE*`, the picture reader
 `strata-vision` when the build has one.
 `--shape q4_lite` makes the package of a Qwen4 model shape (the engine compiled with `-DSTRATA_GEOMETRY=q4_lite`): the
-manifest's `id` and `name` are `strata-q4-lite` and it has `"shape": "q4_lite"`, so it is never read as the Strata engine (and an older Control refuses it); it installs in
+manifest's `id` and `name` are `strata-q4-lite` and it has `"shape": "q4_lite"`, so it is never read as the Nostroma engine (and an older Control refuses it); it installs in
 `<components>/shapes/q4_lite/engine/`, beside `<components>/engine/` (`nostroma_control/shape_engine.py`, packaging/UPDATES.md). `--verify` reads either kind. The build id
 defaults to the checkout's commit (`-dirty` when the tree has changes). It prints the size, file count and the SHA-256 of
 the manifest file (which holds every file's hash), used as the package's digest in notes.
@@ -106,14 +106,14 @@ the SYCL and Metal packages, and (0.2.7.1) Linux ARM64 `cuda13` for the NVIDIA D
 | `windows-x86_64` cuda, variant `cuda13` | the owner PC, the same cmake line as the release zips (CUDA 13.0, `75;86;89;120` real + `120` PTX, `STRATA_PORTABLE=ON`) | `strata.exe`, `strata_kq.dll`, `strata-vision.exe` (built for this variant's archs by `packaging/build_vision_windows.bat cuda13 <stage>`, which writes `vision_archs` into BUILD.json), `BUILD.json` | `min_driver` nvidia 580.65 |
 | `windows-x86_64` cuda, variant `cuda12` | the owner PC (CUDA 12.9, `60;61;70;75;80;86;89` real + `89` PTX, `STRATA_EXPERIMENTAL_SM60=ON`) | the same four files, with its own `strata-vision.exe` (`packaging/build_vision_windows.bat cuda12 <stage>`: sm_60 .. sm_89; the CUDA 13 reader has no Pascal code) | experimental, `min_driver` nvidia 575.51; the CUDA 13 build wins when both fit |
 | `windows-x86_64` hip | the owner PC, `tools/hip/build_windows.bat` (ROCm 10.2 nightly wheels) then `tools/hip/package_windows.py` | `strata.exe`, `strata-device.exe`, the ROCm DLLs and the rocBLAS/hipBLASLt kernels of the zip (`--tree`) | with `STRATA_NO_VISION` unset it also builds the two picture readers (`strata-vision.exe` on the CPU, `strata-vision-hip.exe` on the GPU) |
-| `linux-x86_64` cuda, variant `cuda13` | a Linux box with the CUDA 13 toolkit, `VARIANT=cuda13 packaging/build_cuda_linux.sh` | `strata`, `libstrata_kq.so`, `strata-vision` (built by the same script for the same archs, `BUILD_VISION=0` for a text-only package), `libcudart/libcublas/libcublasLt` (13.x) | the GPU driver's `libcuda` stays the PC's |
+| `linux-x86_64` cuda, variant `cuda13` | a Linux box with the CUDA 13 toolkit, `VARIANT=cuda13 packaging/build_cuda_linux.sh` | `nostroma`, `libstrata_kq.so`, `strata-vision` (built by the same script for the same archs, `BUILD_VISION=0` for a text-only package), `libcudart/libcublas/libcublasLt` (13.x) | the GPU driver's `libcuda` stays the PC's |
 | `linux-x86_64` cuda, variant `cuda12` | a Linux box with CUDA 12.9, `VARIANT=cuda12 packaging/build_cuda_linux.sh` (`60;61;70;75;80;86;89` real + `89` PTX, `STRATA_EXPERIMENTAL_SM60=ON`) | the same files with the 12.x libraries (the reader has sm_60 / 61 / 70 too) | experimental, `min_driver` nvidia 575.51; the Pascal and Volta package; `package_engine.py` refuses a cuda12 package without them |
-| `linux-aarch64` cuda, variant `cuda13` (NVIDIA DGX Spark, GB10, `sm_121` + `compute_121`) | the Spark itself (Ubuntu 24.04, CUDA 13.0; glibc 2.39), `COMMIT=<hex> packaging/build_cuda_linux_aarch64.sh` (runs `spark/build_engine.sh`: `STRATA_PORTABLE=ON`, ggml-cpu `armv8.2-a+dotprod+fp16+i8mm`, RUNPATH `$ORIGIN`) | `strata`, `libstrata_kq.so`, `strata-vision`, cuBLAS / cuBLASLt / cudart. Driver 580.65 or newer | built and tested on one DGX Spark only; no other arm64 box has been tried. No HIP, SYCL or CPU engine and no desktop app for arm64 Linux |
-| `linux-x86_64` hip | a box with ROCm (the Python wheels are enough) | `strata`, the HIP runtime, hipBLAS/hipBLASLt/rocBLAS, comgr + libLLVM, `rocblas/library` and `hipblaslt/library` for the listed gfx archs; `packaging/build_hip_linux.sh` builds it with both picture readers |
+| `linux-aarch64` cuda, variant `cuda13` (NVIDIA DGX Spark, GB10, `sm_121` + `compute_121`) | the Spark itself (Ubuntu 24.04, CUDA 13.0; glibc 2.39), `COMMIT=<hex> packaging/build_cuda_linux_aarch64.sh` (runs `spark/build_engine.sh`: `STRATA_PORTABLE=ON`, ggml-cpu `armv8.2-a+dotprod+fp16+i8mm`, RUNPATH `$ORIGIN`) | `nostroma`, `libstrata_kq.so`, `strata-vision`, cuBLAS / cuBLASLt / cudart. Driver 580.65 or newer | built and tested on one DGX Spark only; no other arm64 box has been tried. No HIP, SYCL or CPU engine and no desktop app for arm64 Linux |
+| `linux-x86_64` hip | a box with ROCm (the Python wheels are enough) | `nostroma`, the HIP runtime, hipBLAS/hipBLASLt/rocBLAS, comgr + libLLVM, `rocblas/library` and `hipblaslt/library` for the listed gfx archs; `packaging/build_hip_linux.sh` builds it with both picture readers |
 | `linux-x86_64` hip, variant `rx6000` (RX 6000, gfx1030 / gfx1031) | `VARIANT=rx6000 packaging/build_hip_linux.sh` in the jammy chroot, ROCm 7.13.0a20260515 `gfx103X-all` wheels | the same set as the other HIP packages, with `rocblas/library` for gfx1030 / gfx1031; no `hipblaslt/library` kernels exist for them and no `tuning/` table | built, not tested on a real RX 6000 card (the manifest notes say so). `windows-x86_64` hip, variant `rdna2`: the same archs from `tools/hip/build_windows.bat` with `STRATA_HIP_ARCHS=gfx1030;gfx1031`, packaged with `--variant rdna2`. A PC with an RX 7000 / 9000 card beside an RX 6000 one never takes it (`engine_component.hip_preference`) |
 | `linux-x86_64` hip, gfx1103 (Radeon 780M / Phoenix iGPU) | `packaging/build_hip_gfx1103.sh` on the mini PC (TheRock gfx110X-all SDK) | the same set as the gfx1200/1201 package, with `rocblas/library` and `hipblaslt/library` for gfx1103 (600 MiB) | experimental, unvalidated: the iGPU resets now and then (MES REMOVE_QUEUE); never kill the engine mid-request; run configs set `STRATA_NO_ARENA_THP=1`. `engine_component.resolve` picks a HIP package only when its `archs` list a gfx target the Linux kfd topology reports |
-| `linux-x86_64` sycl, `archs` `intel-arc` | a Linux box with oneAPI DPC++ 2026.1 and `patchelf`, `packaging/build_sycl_linux.sh` (JIT from SPIR-V; ocloc cannot build the Alchemist FP64 kernels ahead of time, so one JIT package serves A-series and B-series) | `strata`, libsycl, the Unified Runtime adapters, the oneMKL SYCL libraries, libimf / libsvml / libirng / libintlc (about 650 MiB); every ELF file has RUNPATH `$ORIGIN` (Intel's libraries ship without it), so `env -i ./strata --version` runs | the Level Zero loader and compute runtime are the PC's driver; the user must be in the `render` group (`strata doctor` warns). No Windows package: `BACKEND_MATRIX` allows sycl on `linux-x86_64` only |
-| `macos-arm64` metal | an Apple Silicon Mac | `strata`, `strata-vision` (`packaging/build_vision_mac.sh`; `package_engine.py` refuses a macOS package without it), `metal/kernels/*.metal`, `metal/engine-msl/*.metal`, `metal/strata-quant-common.h` (the quant header's text; the same text also as `metal/ggml-common.h` for two releases), `metal/data/*.bin` | the Metal engine compiles its kernel sources when it starts; it finds them beside the executable (`metal/src/resource_path.h`: environment variable, then `<exe dir>/metal/`, then the compiled-in source path) |
+| `linux-x86_64` sycl, `archs` `intel-arc` | a Linux box with oneAPI DPC++ 2026.1 and `patchelf`, `packaging/build_sycl_linux.sh` (JIT from SPIR-V; ocloc cannot build the Alchemist FP64 kernels ahead of time, so one JIT package serves A-series and B-series) | `nostroma`, libsycl, the Unified Runtime adapters, the oneMKL SYCL libraries, libimf / libsvml / libirng / libintlc (about 650 MiB); every ELF file has RUNPATH `$ORIGIN` (Intel's libraries ship without it), so `env -i ./strata --version` runs | the Level Zero loader and compute runtime are the PC's driver; the user must be in the `render` group (`nostroma doctor` warns). No Windows package: `BACKEND_MATRIX` allows sycl on `linux-x86_64` only |
+| `macos-arm64` metal | an Apple Silicon Mac | `nostroma`, `strata-vision` (`packaging/build_vision_mac.sh`; `package_engine.py` refuses a macOS package without it), `metal/kernels/*.metal`, `metal/engine-msl/*.metal`, `metal/strata-quant-common.h` (the quant header's text; the same text also as `metal/ggml-common.h` for two releases), `metal/data/*.bin` | the Metal engine compiles its kernel sources when it starts; it finds them beside the executable (`metal/src/resource_path.h`: environment variable, then `<exe dir>/metal/`, then the compiled-in source path) |
 
 `packaging/collect_libs.py` gathers the Linux libraries (an `ldd` closure with the dlopen'd extras named, kernel data filtered by
 GPU architecture) into the folder `package_engine.py` packages; libraries the distribution provides are listed in
@@ -144,7 +144,7 @@ At run time a reader that still cannot start tells why (stderr tail, exit status
 
 ## Picture readers in an AMD package
 
-A HIP package carries two programs for pictures next to `strata` (`vision` in its BUILD.json): `strata-vision` is the CPU reader, which
+A HIP package carries two programs for pictures next to `nostroma` (`vision` in its BUILD.json): `strata-vision` is the CPU reader, which
 needs nothing of the GPU runtime and starts on every PC, and `strata-vision-hip` is the same reader on the card (llama.cpp's HIP
 backend, built for the package's `archs`; BUILD.json `vision_archs`). Pictures are on by default. The reader runs on the CPU for a card under 24 GB and on the card from 24 GB, on every make of card (the rule is
 `nostroma_control/vision_reader.py`; `--vision gpu` or `--vision cpu` picks the other one for a model). When the run config names the GPU reader first

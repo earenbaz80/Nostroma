@@ -38,7 +38,7 @@ kernel although the micro-bench alone had it at 0.78x). The `IQ4_NL` down projec
 on all architectures.
 
 The first time `STRATA_EXPDEC=1` meets a (role, format) the engine writes one line, e.g.
-`strata expdec: CUDA1 gate/up type 21: expdec_gu_kernel R 1 MINB 4, 16 rows per block, grid 80 x 10 (cap 10 groups), captured into a graph`
+`nostroma expdec: CUDA1 gate/up type 21: expdec_gu_kernel R 1 MINB 4, 16 rows per block, grid 80 x 10 (cap 10 groups), captured into a graph`
 (or `... not covered: the default kernel runs`).
 
 API (`include/strata/kernels/iq_kernels.hpp`): `native_expert_set_expdec`, `native_expert_set_expdec_params` /

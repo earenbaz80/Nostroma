@@ -1,6 +1,6 @@
 # Signing and notarising the Mac builds
 
-`sign-and-notarize.sh` signs the Strata Mac app (a `.dmg` or a `.app`) and the Mac Terminal archive with the Developer ID Application
+`sign-and-notarize.sh` signs the Nostroma Mac app (a `.dmg` or a `.app`) and the Mac Terminal archive with the Developer ID Application
 certificate, sends them to Apple's notary service, staples the ticket where that is possible, and checks the result. After it, macOS
 opens the app without the "damaged" / "unidentified developer" warning.
 
@@ -82,7 +82,7 @@ by somebody else, and every library in these bundles is re-signed with the one i
 error for a library that is not in the bundle (for example an addon an MCP server installs and loads with this node), add that key to
 `entitlements-node.plist` and run the script again.
 
-The engine components the app downloads later (`strata update`) are unpacked by Control without the download mark, run as their own
+The engine components the app downloads later (`nostroma update`) are unpacked by Control without the download mark, run as their own
 processes, and are not hardened by the app's runtime (a child process is not bound by its parent's hardened runtime), so unsigned
 components keep working. The engine copied out of the app's bundle keeps our signature; it needs no entitlement (Metal compiles the
 kernel sources through the system compiler service, tested under the hardened runtime).

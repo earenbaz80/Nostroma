@@ -3,13 +3,13 @@
 The model preparation tools (`tools/iq_pack.py`, `mtp_pack.py`, `mtp_rt.py`, `strata_tokenizer.py`, `embd_bf16_pack.py`, `nvfp4_local_pack.py`,
 `nvfp4_convert.py`, ...) read and write GGUF files with llama.cpp's `gguf-py` package, and the NVFP4-local preparation runs llama.cpp's own
 Hugging Face converter. This folder holds exactly those Python files, copied unchanged from llama.cpp, so setup, the Terminal and the tests need no
-llama.cpp download. Phase 2 of the own-stack plan replaces gguf-py with Strata's own reader/writer; the converter goes with the NVFP4-local tool.
+llama.cpp download. Phase 2 of the own-stack plan replaces gguf-py with Nostroma's own reader/writer; the converter goes with the NVFP4-local tool.
 
 pin: 3cf03257f219afbe7334045ff7c6a06ac68c627d
 
 Upstream: https://github.com/ggml-org/llama.cpp at that commit (the same pin as `third_party/strata-ggml` and `third_party/ggml/VERSION.txt`).
 Licence: MIT. `LICENSE` is gguf-py's (Copyright (c) 2023 Georgi Gerganov); `converter/LICENSE` is llama.cpp's (Copyright (c) 2023-2026 The ggml authors).
-Every file is byte-identical to upstream (LF line ends): there are no Strata edits.
+Every file is byte-identical to upstream (LF line ends): there are no Nostroma edits.
 
 ## Layout (this folder <- llama.cpp)
 
@@ -20,7 +20,7 @@ Every file is byte-identical to upstream (LF line ends): there are no Strata edi
 | `converter/convert_hf_to_gguf.py`, `converter/conversion/**`, `converter/LICENSE` | `convert_hf_to_gguf.py`, `conversion/**`, `LICENSE` (the converter; `tools/nvfp4_convert.py` puts this folder and `converter/` on `sys.path`) |
 
 Not here: gguf-py's `tests/`, `examples/` and `README.md`, and llama.cpp's `models/ggml-vocab-*.gguf` (the converter's built-in vocab fallback is not used
-by Strata's models). `gguf/scripts/` is part of the package and is kept.
+by Nostroma's models). `gguf/scripts/` is part of the package and is kept.
 
 `STRATA_GGUF_PY=<folder holding gguf/>` overrides the vendored package (kept as before).
 

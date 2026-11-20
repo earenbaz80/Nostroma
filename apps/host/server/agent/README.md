@@ -1,4 +1,4 @@
-# Agent bridge (Strata chats as DeepSeek Harness sessions)
+# Agent bridge (Nostroma chats as DeepSeek Harness sessions)
 
 This page is for developers who work on the app host's agent code. It lists the files, the frames and routes, and the rules the
 bridge enforces. Tests are listed at the end.
@@ -56,7 +56,7 @@ The chat's Mode menu is real Harness behaviour. Each turn the page sends the cha
 
 | Menu | Preset | Sandbox | Approval | What it means |
 | --- | --- | --- | --- | --- |
-| Manual (default) | `strata-manual` | open (`danger-full-access`) | `ask` | The Strata gate (`plugins/strata-gate.mjs`) asks BEFORE any change runs: one Approve/Deny card, nothing has happened when it appears, no blocked attempt, no sandbox or PowerShell error. Reads and read-only commands run without a question; anything the gate cannot prove read-only asks. |
+| Manual (default) | `strata-manual` | open (`danger-full-access`) | `ask` | The Nostroma gate (`plugins/strata-gate.mjs`) asks BEFORE any change runs: one Approve/Deny card, nothing has happened when it appears, no blocked attempt, no sandbox or PowerShell error. Reads and read-only commands run without a question; anything the gate cannot prove read-only asks. |
 | Plan | `strata-plan` | `read-only` | `never` | Nothing can change. A request is rejected without asking anyone, so no Approve card is shown; the card ends "Not allowed in this mode". |
 | Bypass | `strata-bypass` | `danger-full-access` | `never` | Full access without prompts, as before. |
 
@@ -93,14 +93,14 @@ What the person chose is saved by `tools-settings.mjs` (inside the host's settin
 
 ## Thinking and the output budget
 
-The Harness staging script (`apps/desktop/scripts/stage-harness.mjs`) applies Strata's guarded pi-ai 1.1.0 patch to its staged copy
+The Harness staging script (`apps/desktop/scripts/stage-harness.mjs`) applies Nostroma's guarded pi-ai 1.1.0 patch to its staged copy
 (`harness-budget.mjs`, #3684): below 64K the context safety room is at most `min(4096, floor(contextWindow / 16))` and never more
 than half the estimated remaining room, so an 8K window keeps output room after a tool result instead of ending with a one-token
 cap. The caller's output cap and the one-token floor remain; windows of 64K or more keep the previous calculation. `BUNDLE.json.patches`
 records the patch identity, the dependency version and the before/after SHA-256. Unknown dependency bytes stop staging for review.
 Source and already-installed Harness copies are not changed.
 
-- A local route is reasoning-capable (`reasoning: true`) with `compat.thinkingFormat: 'chat-template'`: the request carries `chat_template_kwargs {enable_thinking, reasoning_effort}`, which the Strata server reads (a top-level `enable_thinking` is ignored by it, which is why pi-ai's `qwen` format left the model thinking). The chat's Reasoning menu travels as `thinking` in the stream body; the bridge sends it with `session/selectModel` (`reasoningEffort`) whenever the model or the level changed; a level a route does not have is dropped (never an error). API routes keep the provider default (the menu is disabled for them in the UI).
+- A local route is reasoning-capable (`reasoning: true`) with `compat.thinkingFormat: 'chat-template'`: the request carries `chat_template_kwargs {enable_thinking, reasoning_effort}`, which the Nostroma server reads (a top-level `enable_thinking` is ignored by it, which is why pi-ai's `qwen` format left the model thinking). The chat's Reasoning menu travels as `thinking` in the stream body; the bridge sends it with `session/selectModel` (`reasoningEffort`) whenever the model or the level changed; a level a route does not have is dropped (never an error). API routes keep the provider default (the menu is disabled for them in the UI).
 - `localOutputBudget(context)` is 30 percent of the window, at least 4096 and at most 32768 (9,830 tokens at 32K, 19,660 at 64K). The Harness's automatic compaction reads it as the room a reply reserves (the request header), and it is NOT the ceiling of a request: `plugins/strata-context.mjs` raises what the adapter sends to half the window, at most 64K tokens (`reply-cut.mjs` `replyCap`; pi-ai clamps it to the window minus the prompt), because a thinking model that writes a whole file in one call was cut inside the call at 19,660 and lost it (AGENT-LOST). A reply that is cut anyway is announced in the chat, the agent is asked to go on in smaller pieces (twice at most), and the file being written is streamed to the page as `agent-tool-draft` frames (name, size, lines, tail of the text). App-loaded models get `fit_max_tokens: true` so the engine clamps instead of answering 400. Sampling is not set here: the Harness sends none, so the server's own defaults apply.
 
 ## Tasks

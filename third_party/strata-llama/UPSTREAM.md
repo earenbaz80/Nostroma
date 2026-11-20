@@ -11,7 +11,7 @@ Upstream: https://github.com/ggml-org/llama.cpp at that commit (the same pin as 
 lists are in `licenses/` and in the headers of `vendor/` (miniaudio: MIT-0 / public domain, stb: MIT / public domain, nlohmann json: MIT, sheredom
 subprocess.h: public domain, hash: see its files).
 
-**Every file is byte-identical to the pin (LF line ends): there are no Strata edits, and the CMake files are llama.cpp's own.** That is what keeps the
+**Every file is byte-identical to the pin (LF line ends): there are no Nostroma edits, and the CMake files are llama.cpp's own.** That is what keeps the
 strata-vision binaries identical to the ones built from the downloaded tree. The tree keeps llama.cpp's layout, so `tools/vision/CMakeLists.txt` takes it
 as `LLAMA_DIR` (default `third_party/strata-llama`); `-DLLAMA_DIR=<llama.cpp checkout>` (in scripts: `STRATA_GGML_DIR`) still builds from such a checkout
 instead (an override kept for two releases, then removed).

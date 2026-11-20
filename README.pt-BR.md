@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="apps/host/public/brand/strata-lockup-dark.svg">
-    <img src="apps/host/public/brand/strata-lockup-light.svg" alt="Nostroma" width="340">
+    <source media="(prefers-color-scheme: dark)" srcset="apps/host/public/brand/nostroma-lockup-dark.svg">
+    <img src="apps/host/public/brand/nostroma-lockup-light.svg" alt="Nostroma" width="340">
   </picture>
 </p>
 
@@ -11,7 +11,7 @@
 <p align="center">
   <a href="#modelos">Modelos</a> · <a href="#instalação"><b>Instalação</b></a> ·
   <a href="#hardware">Hardware</a> · <a href="#ferramentas">Ferramentas</a> ·
-  <a href="#ajuda">Ajuda</a> · <a href="#apoie-o-strata">Apoiar</a>
+  <a href="#ajuda">Ajuda</a> · <a href="#apoie-o-nostroma">Apoiar</a>
 </p>
 
 <p align="center">
@@ -58,7 +58,7 @@ Não sabe o que cabe? [Escolha um modelo para o seu computador](docs/MODELS.md#p
 
 ## Instalação
 
-<a id="option-a-the-strata-app"></a>
+<a id="option-a-the-nostroma-app"></a>
 
 ### Aplicativo de desktop
 
@@ -77,7 +77,7 @@ Instale o aplicativo, escolha um modelo e comece a conversar. Há um instalador 
 
 ### Aplicativo de Terminal
 
-Prefere o terminal? Instale o Nostroma e execute **`strata launch`**.
+Prefere o terminal? Instale o Nostroma e execute **`nostroma launch`**.
 
 <details open>
 <summary><b>Comandos de instalação</b></summary>
@@ -97,7 +97,7 @@ irm -TimeoutSec 120 https://github.com/Niko1221/Strata/releases/latest/download/
 No Windows, abra um novo terminal depois. Em seguida:
 
 ```sh
-strata launch
+nostroma launch
 ```
 
 Siga as instruções para baixar e iniciar um modelo. [Guia do Terminal](docs/TERMINAL_LAUNCH.md).
@@ -132,7 +132,7 @@ Siga as instruções para baixar e iniciar um modelo. [Guia do Terminal](docs/TE
 
 **Claude Code · Codex CLI · OpenCode · oh-my-pi · pi.dev · Hermes Agent · OpenClaw**, e outras, pelas APIs compatíveis com OpenAI e Anthropic.
 
-Execute **`strata connect`** para ver as instruções da sua ferramenta. [Guia de conexão](docs/TERMINAL_LAUNCH.md#connect-your-apps-strata-connect).
+Execute **`nostroma connect`** para ver as instruções da sua ferramenta. [Guia de conexão](docs/TERMINAL_LAUNCH.md#connect-your-apps-nostroma-connect).
 
 <a id="guides"></a>
 <a id="how-fast-is-it"></a>

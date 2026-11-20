@@ -1,8 +1,8 @@
-# Strata guides
+# Nostroma guides
 
-**New here? Start with [Install Strata](INSTALL.md).** Download the one installer for your system (Windows, Linux or Mac), or install the Terminal with one line. Both use released engine packages. This documentation is for version 0.2.15.
+**New here? Start with [Install Nostroma](INSTALL.md).** Download the one installer for your system (Windows, Linux or Mac), or install the Terminal with one line. Both use released engine packages. This documentation is for version 0.2.15.
 
-## Use Strata
+## Use Nostroma
 
 | I want to… | Guide |
 | --- | --- |
@@ -10,7 +10,7 @@
 | Choose a model and check memory | [Models and quantizations](MODELS.md) |
 | See which model runs on which hardware | [Model and hardware table](CAPABILITIES.md) |
 | Start from the command line | [Terminal launch](TERMINAL_LAUNCH.md) |
-| Connect a coding tool | [Tool connections](TERMINAL_LAUNCH.md#connect-your-apps-strata-connect) |
+| Connect a coding tool | [Tool connections](TERMINAL_LAUNCH.md#connect-your-apps-nostroma-connect) |
 | Fix an install or startup problem | [Troubleshooting](TROUBLESHOOTING.md) |
 | Check privacy, downloads and network access | [Safety and privacy](SAFETY.md) |
 
@@ -48,7 +48,7 @@ Use the guide for your GPU and operating system. Model and feature support can d
 
 ## Which instructions apply?
 
-`strata launch` belongs to the installed Terminal. `START-HERE.bat`, `SETUP.bat`, `UPDATE.bat` and `setup.sh`
+`nostroma launch` belongs to the installed Terminal. `START-HERE.bat`, `SETUP.bat`, `UPDATE.bat` and `setup.sh`
 belong to a **source checkout**. Raw engine commands are a third interface. Their flags are not interchangeable:
 Terminal launch uses `--gpu` and `--vision on|off`; source setup uses `--gpus` and `--vision yes|no`.
 
@@ -75,4 +75,4 @@ Every guide page has this shape:
 
 Label every measurement the same way, directly above the number or table:
 
-> **Measured on:** hardware (GPU, CPU, RAM), model or set, Strata version, workload.
+> **Measured on:** hardware (GPU, CPU, RAM), model or set, Nostroma version, workload.

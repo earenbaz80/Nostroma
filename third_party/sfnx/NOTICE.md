@@ -8,8 +8,8 @@ giving each card some layers.
 
 Copyright (c) 2026 John Fink. MIT License, the full text is in `LICENSE` beside this file. The notice stays with every copy.
 
-sFNX's own front end (`front/`) was ported from Strata's `serve/` (MIT, Niko1221 and the Strata contributors). It is not part of
-this copy: Strata's own front end drives the engine process.
+sFNX's own front end (`front/`) was ported from Nostroma's `serve/` (MIT, Niko1221 and the Nostroma contributors). It is not part of
+this copy: Nostroma's own front end drives the engine process.
 
-Changes made while porting into Strata are listed in the git history of the `src/split` directory (the first commit of each
+Changes made while porting into Nostroma are listed in the git history of the `src/split` directory (the first commit of each
 file is the unmodified upstream copy).

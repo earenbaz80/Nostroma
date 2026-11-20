@@ -1,6 +1,6 @@
-# Strata on a Mac (Apple Silicon, Metal)
+# Nostroma on a Mac (Apple Silicon, Metal)
 
-This page is for people with an Apple Silicon Mac (M1 or newer). Strata runs there on its own Metal engine: the NVIDIA kernels
+This page is for people with an Apple Silicon Mac (M1 or newer). Nostroma runs there on its own Metal engine: the NVIDIA kernels
 are replaced by Metal ones (`metal/`), and the host code and the server are the PC's. Intel Macs cannot run it.
 
 > **On this page:** [What you need](#what-you-need) · [Install](#install) · [Defaults](#defaults-and-options) ·
@@ -11,7 +11,7 @@ are replaced by Metal ones (`metal/`), and the host code and the server are the 
 
 There are two ways in:
 
-- **The Strata app (`.dmg`) and the Terminal (`strata launch`).** The Metal engine comes ready-made: the `.dmg` has it inside and
+- **The Nostroma app (`.dmg`) and the Terminal (`nostroma launch`).** The Metal engine comes ready-made: the `.dmg` has it inside and
   the Terminal fetches it as an engine component. Nothing is built on your Mac and you need no Command Line Tools. If macOS says
   the app is "damaged", see [Troubleshooting](TROUBLESHOOTING.md#the-desktop-app-and-the-terminal). How the builds are signed:
   [packaging/mac/README.md](../packaging/mac/README.md).
@@ -79,7 +79,7 @@ For everyday use follow [the app or Terminal installation](INSTALL.md). The comm
 builds the Metal engine locally.
 
 ```sh
-git clone https://github.com/Niko1221/Strata && cd Strata
+git clone https://github.com/Niko1221/Strata && cd Nostroma
 ./setup.sh                 # asks the size; --yes takes the recommended answers
 ```
 
@@ -94,8 +94,8 @@ What the first run does (each step is skipped when it is already done):
 5. **Downloads the model.** The download resumes if interrupted. `--gguf-dir` uses files you already have.
 6. **Prepares the model:** the pack (seconds) and the MTP draft layer (about 5 GB of the original checkpoint). On a Mac that
    streams, the experts' copy takes the draft layer's place (about 3 minutes on the M4).
-   For UD-Q4_K_XL and UD-IQ4_XS-v31 it also downloads the DFlash2 drafter (0.34 GB, from Strata's signed update feed): the server then drafts
-   with DFlash2 instead of the MTP layer (`--spec 6`, `--draft-conf 0.7`; Apache-2.0, a copy of incoai/Qwen3.8-Flash-Next-DFlash2 that Strata
+   For UD-Q4_K_XL and UD-IQ4_XS-v31 it also downloads the DFlash2 drafter (0.34 GB, from Nostroma's signed update feed): the server then drafts
+   with DFlash2 instead of the MTP layer (`--spec 6`, `--draft-conf 0.7`; Apache-2.0, a copy of incoai/Qwen3.8-Flash-Next-DFlash2 that Nostroma
    tuned, notice in `data/dflash2-tuned/`). With no internet the download is skipped without a word and the MTP runs as before;
    `./setup.sh --setup` fetches it later. IQ3_S and the other sets keep the MTP.
 7. **Writes `strata-<model>.json` and `run-<model>.sh`, then starts the server.**
@@ -113,9 +113,9 @@ API on `http://127.0.0.1:8080/v1`, the Anthropic API on `/v1/messages`, and the 
 | `--data-dir`, `--models-dir`, `--gguf-dir` | Where files go, or where yours are. |
 | `--setup`, `--no-start`, `--check`, `--build` | Choose another model or settings; install only; only check the Mac; build the engine again. |
 
-### The desktop app and `strata launch` on a Mac
+### The desktop app and `nostroma launch` on a Mac
 
-The app and `strata launch` build nothing. The Metal engine comes ready-made as an engine component, from the update feed or
+The app and `nostroma launch` build nothing. The Metal engine comes ready-made as an engine component, from the update feed or
 inside the app's installer. The model install is `setup.py` in its Control mode (`STRATA_CONTROL_INSTALL=1`). It downloads, or
 uses with `--gguf-dir`, and prepares the model files, and writes a run config whose engine is `component:strata-engine`. It does
 not run `metal/setup_mac.py`, needs no Command Line Tools, and writes the same Metal flags.
@@ -151,7 +151,7 @@ checks the decoder against the format definition and the expert kernels against 
 
 ## Measured (M5 Max, 128 GB)
 
-**Measured on:** Apple M5 Max, 128 GB, macOS 27.2, Qwen3.8-Flash-Next packs, greedy, 200 generated tokens, Strata engine version
+**Measured on:** Apple M5 Max, 128 GB, macOS 27.2, Qwen3.8-Flash-Next packs, greedy, 200 generated tokens, Nostroma engine version
 not recorded. Decode tok/s for a short question and a story ("prompt1 / story").
 
 | | Q2_0 | IQ3_XXS | IQ3_S |
@@ -210,7 +210,7 @@ from each other: top-1 agreement 95.4% against 95.8%, mean KL 0.0207 against 0.0
 
 ## Limits (this version)
 
-- **Images (vision):** on by default. The app and the Terminal use the `strata-vision` that sits beside `strata` in the engine
+- **Images (vision):** on by default. The app and the Terminal use the `strata-vision` that sits beside `nostroma` in the engine
   package; `./setup.sh` builds it and asks "Should the model also read images?" (default yes). With `--gpu` it reads on the Mac's
   GPU (ggml's Metal backend), without it on the CPU. A Mac always gets the GPU reader, whatever its memory. The footprint is about
   1.18 GB on the GPU and 1.05 GB on the CPU. `--vision cpu` is still allowed and prints a note. The CPU reader is slow because

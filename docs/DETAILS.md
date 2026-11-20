@@ -1,7 +1,7 @@
-# Strata engine and server reference
+# Nostroma engine and server reference
 
 This page is the technical reference for the Qwen engine and its server: measured speed, the HTTP API, the settings in
-`strata-<model>.json`, memory modes and the speed switches. It is for people who run Strata from a source checkout, tune
+`strata-<model>.json`, memory modes and the speed switches. It is for people who run Nostroma from a source checkout, tune
 an installation or connect their own software. It describes the current release. Dated measurements are in
 [History / older measurements](#history--older-measurements) at the end.
 
@@ -10,13 +10,13 @@ New here? Start with the [README](../README.md). Installing is in [INSTALL.md](I
 
 > **On this page:** [Quick start](#quick-start) · [Speed](#speed-measured) · [Which model?](#which-model) ·
 > [Windows](#windows) · [Linux](#linux) · [Memory modes](#memory-modes) · [Sharing the GPU](#sharing-the-gpu-with-other-programs-optional) ·
-> [API](#using-it) · [MCP tools](#tools-from-mcp-servers) · [MCP server](#manage-strata-from-your-ai-assistant-mcp-server) ·
+> [API](#using-it) · [MCP tools](#tools-from-mcp-servers) · [MCP server](#manage-nostroma-from-your-ai-assistant-mcp-server) ·
 > [Images](#images-vision) · [Speed settings](#speed-settings) · [CPU workers](#cpu-workers-and-thread-placement) ·
 > [Per-card defaults](#rtx-30-series-sm_86-and-tesla-p100-sm_60-bitwise-decode-switches-on-by-default) ·
 > [Troubleshooting](#troubleshooting) · [How it works](#how-it-works) · [Credits](#credits-and-licenses) ·
 > [History](#history--older-measurements)
 
-**Which flags go where.** `strata launch` has its own flags (`strata launch --help`). The engine and server flags below go
+**Which flags go where.** `nostroma launch` has its own flags (`nostroma launch --help`). The engine and server flags below go
 in the `"args"` list of `strata-<model>.json` (source setup writes it) or on the `serve/server.py` command line.
 `START-HERE.bat`, `SETUP.bat`, `./setup.sh` and `run-<model>` exist only in a [source checkout](SOURCE_INSTALL.md). An
 installed app has none of them.
@@ -29,10 +29,10 @@ installed app has none of them.
    ```sh
    curl http://127.0.0.1:8080/health
    curl http://127.0.0.1:8080/v1/chat/completions -H "Content-Type: application/json" \
-     -d '{"model": "strata", "messages": [{"role": "user", "content": "Write a haiku about GPUs."}], "max_tokens": 512}'
+     -d '{"model": "nostroma", "messages": [{"role": "user", "content": "Write a haiku about GPUs."}], "max_tokens": 512}'
    ```
 
-3. Point your app at `http://127.0.0.1:8080/v1` with any API key, or run `strata connect` to list the apps Strata can configure.
+3. Point your app at `http://127.0.0.1:8080/v1` with any API key, or run `nostroma connect` to list the apps Nostroma can configure.
 4. Change a setting by editing `strata-<model>.json` and restarting. Setup rewrites the file when you run it again and
    keeps the keys it does not manage.
 
@@ -105,14 +105,14 @@ for IQ3_XXS and keep its context at 128K or less). With 48 GB only Q2_0 and IQ2_
 
 [ISTA-DASLab's expert-pruned release](https://huggingface.co/ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-Coder-GGUF) keeps 256 of
 each layer's 512 experts (10 still active per token), chosen on code, agent and vision data. Shard 1 is 29.6 GB (23 GB of
-experts in RAM), so it runs on 32 GB of RAM. Images work. Install it with `strata launch --family coder`
+experts in RAM), so it runs on 32 GB of RAM. Images work. Install it with `nostroma launch --family coder`
 (from a source checkout: `START-HERE.bat --setup --family coder`). Details: [MODELS.md](MODELS.md#coder).
 
 ### Or: Swift 1.5 (a fine-tune that thinks shorter)
 
 [Swift 1.5](https://huggingface.co/ukisai/Swift-1.5-Qwen3.8-Flash-Next-GSQ-RCO-GGUF) is UkisAI's fine-tune. It has the same
 architecture and speed as the original, its own vision encoder, and thinks for fewer tokens. Its authors recommend IQ2_XS.
-The license is the Swift Open License 1.0. Install it with `strata launch --family swift --model iq2_xs`
+The license is the Swift Open License 1.0. Install it with `nostroma launch --family swift --model iq2_xs`
 (from a source checkout: `START-HERE.bat --setup --family swift --model IQ2_XS`). Details: [MODELS.md](MODELS.md#swift-15).
 
 <a id="experimental-unsloths-ud-q4_k_xl"></a>
@@ -128,7 +128,7 @@ A 4-bit quantization of the same model (111 GB, 72 GiB of experts). Install it w
 ## Windows
 
 On Windows the source wrapper is `START-HERE.bat` ([source installation](SOURCE_INSTALL.md#from-source-windows)). For a
-released app, run its installer and open Strata from the Start menu. For the Terminal, use `strata launch`. Watch the
+released app, run its installer and open Nostroma from the Start menu. For the Terminal, use `nostroma launch`. Watch the
 setup plan and the startup log for what is actually chosen on your machine, and see [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
 if a component is missing.
 
@@ -213,13 +213,13 @@ not faster by itself. Hugging Face limits anonymous requests per IP address and 
 you can fetch the file with the `hf` command, optionally after `hf auth login`, and give the folder to setup:
 
 ```bash
-uvx hf auth login            # optional: your own Hugging Face account; Strata does not read or send this token
+uvx hf auth login            # optional: your own Hugging Face account; Nostroma does not read or send this token
 uvx hf download agentionai/Qwen3.8-Flash-Next-Gyro-GGUF Qwen3.8-Flash-Next-Gyro-S-TQ1_0.gguf \
     --revision 1ada08422e404aca51ab9df665f089f34c419c6b --local-dir /data/gyro-s
 ./setup.sh --gguf-dir /data/gyro-s       # Windows: SETUP.bat --gguf-dir D:\gyro-s
 ```
 
-Use the file names and the revision setup shows for your model (the revision above is the one this version pins for Gyro-S: another version of Strata may pin another).
+Use the file names and the revision setup shows for your model (the revision above is the one this version pins for Gyro-S: another version of Nostroma may pin another).
 Keep the file's original name. Setup finds the files in `--gguf-dir`, checks their SHA-256 and does not download them again; a file that does not match the published one is
 reported and, for files in your own folder, never deleted. Without `uvx`, `pip install -U huggingface_hub` gives the same `hf` command.
 
@@ -320,7 +320,7 @@ again, so it is the fresh tokens (`prompt_tokens` minus `reused`) over the promp
 new token shows no number.
 
 Profiling: start the server with `STRATA_DECODE_TIMING=1` (and `STRATA_VERIFY_PROFILE=1` for the GPU side). After each request
-the engine log has a `strata decode timing:` line and a `strata decode GPU stages (ms/window):` line. The GPU profile slows
+the engine log has a `nostroma decode timing:` line and a `nostroma decode GPU stages (ms/window):` line. The GPU profile slows
 decoding a little: use it to compare, not to measure speed. `STRATA_LOOKAHEAD_STATS=1` scores the next-layer expert
 prediction every 100 windows and costs CPU. `tools/replay_cache_policy.py` replays a `--dump-routing` trace through the
 adaptive tier's swap policy offline.
@@ -337,7 +337,7 @@ that reads this line must accept `ms/window = adapt wait` for a serial run.
 | --- | --- |
 | `--mtp` | Use the model's MTP draft layer (setup passes it). The server also runs without it: drafts then come from the suffix and prompt-lookup drafter only, every token is still verified, and the draft layer's ~0.7-1 GiB of VRAM goes to the expert cache. |
 | `--spec N`, `--spec-min-p P` | Draft depth and the confidence needed to add a guess. Setup's default is `--spec 4 --spec-min-p 0.5`. |
-| `--draft-vocab en\|cyrillic\|fr\|latin` (setup) | The draft layer can only propose tokens from a subset of the vocabulary. The default subset includes every Chinese, Japanese and Korean token. `en` keeps the English and code subset (~110 MiB less VRAM, English 1-2% faster, CJK gets almost no drafts). `cyrillic` and `fr` add those scripts; `latin` adds German, Spanish, French and Polish together. With no choice, Strata picks `cyrillic` or `latin` by itself when the languages of this computer (display language, regional format, keyboards) are Cyrillic or Latin-script and none of them is Chinese, Japanese or Korean; the pick is made at every start and written nowhere, and a choice you make always wins. On an RTX PRO 5000 (IQ3_S), default file -> chosen file, tok/s: Russian 180.0 -> 227.6 (`cyrillic`); German 211.7 -> 233.6, Spanish 220.1 -> 244.5, French 221.9 -> 249.1, Polish 188.4 -> 203.2 (`latin`); English 265.2 with the default, 266.0 with `latin`, 266.6 with `cyrillic`; Chinese 238.4 -> 199.2 and Japanese 222.2 -> 194.4 with `latin`, which is why any Chinese, Japanese or Korean signal keeps the default. `tools/draft_vocab.py` builds and inspects subsets. |
+| `--draft-vocab en\|cyrillic\|fr\|latin` (setup) | The draft layer can only propose tokens from a subset of the vocabulary. The default subset includes every Chinese, Japanese and Korean token. `en` keeps the English and code subset (~110 MiB less VRAM, English 1-2% faster, CJK gets almost no drafts). `cyrillic` and `fr` add those scripts; `latin` adds German, Spanish, French and Polish together. With no choice, Nostroma picks `cyrillic` or `latin` by itself when the languages of this computer (display language, regional format, keyboards) are Cyrillic or Latin-script and none of them is Chinese, Japanese or Korean; the pick is made at every start and written nowhere, and a choice you make always wins. On an RTX PRO 5000 (IQ3_S), default file -> chosen file, tok/s: Russian 180.0 -> 227.6 (`cyrillic`); German 211.7 -> 233.6, Spanish 220.1 -> 244.5, French 221.9 -> 249.1, Polish 188.4 -> 203.2 (`latin`); English 265.2 with the default, 266.0 with `latin`, 266.6 with `cyrillic`; Chinese 238.4 -> 199.2 and Japanese 222.2 -> 194.4 with `latin`, which is why any Chinese, Japanese or Korean signal keeps the default. `tools/draft_vocab.py` builds and inspects subsets. |
 | `--lookup-chain-min M`, `--mtp-hnorm stream`, `--mtp-draft-vocab FILE` | Finer controls: the shortest context match `--lookup-chain` extends (default 3), one norm per stream, and a token subset of your own. |
 
 When the start stops with "the draft head does not fit" (a 12 GB card with a long context), the engine says how much it needs
@@ -374,7 +374,7 @@ curl -X POST -H "Content-Type: application/json" localhost:8080/unload
 Monitor shows the state. Unloading ends the engine process and the image encoder, so their VRAM and RAM return at once. The
 model files stay in the OS file cache, so loading again takes seconds while that RAM is not needed elsewhere.
 
-**Lazy start.** `serve/server.py --engine strata --config strata-<model>.json --lazy` (or `"lazy_load": true`) starts the HTTP
+**Lazy start.** `serve/server.py --engine nostroma --config strata-<model>.json --lazy` (or `"lazy_load": true`) starts the HTTP
 API without the engine or the vision encoder. The first generation request or `POST /load` loads them, including
 `before_load` and `min_free_vram_mib`. `POST /v1/load` and `/v1/unload` are JSON control aliases (they need the API key,
 `application/json` and no foreign browser Origin, and return **409** while a request is active or queued). `/api/health`
@@ -390,7 +390,7 @@ split, the helper caches, `--peer-device` or the resident low-RAM mode.
 **Keep what the expert cache learned across restarts** (opt-in). `"expert_profile_save": "expert-profile-learned.bin"` saves
 the experts in VRAM, then the counted routing, then the shipped order, on a clean exit and every 10 minutes between
 requests (`"expert_profile_save_every": 5` for another interval, `0` for exit only). The next start begins from it when it
-is a profile of the same model. A relative path is in the Strata folder. The file is a fingerprint of what you used the model
+is a profile of the same model. A relative path is in the Nostroma folder. The file is a fingerprint of what you used the model
 for and stays on your PC. A profile learned from one kind of text speeds that kind up and can slow others, so keep one file
 per kind of work. Setup rewrites the config when run again, so add the key again then.
 
@@ -440,17 +440,17 @@ The server listens on `http://127.0.0.1:8080` (`--port` in setup, or edit the ru
 ```python
 from openai import OpenAI
 client = OpenAI(base_url="http://127.0.0.1:8080/v1", api_key="none")
-r = client.chat.completions.create(model="strata", messages=[{"role": "user", "content": "Hello!"}])
+r = client.chat.completions.create(model="nostroma", messages=[{"role": "user", "content": "Hello!"}])
 print(r.choices[0].message.content)
 ```
 
 - **Prometheus.** With `Accept: text/plain` the metrics use vLLM's names (`vllm:num_requests_running`, `vllm:kv_cache_usage_perc`,
   token and request counters, `vllm:prefix_cache_queries_total` and `_hits_total`, `vllm:spec_decode_num_draft_tokens_total`
   and `_accepted_tokens_total`, and the time-to-first-token, inter-token and end-to-end histograms), so dashboards written
-  for vLLM read this server. Strata's own facts come under `strata:` and are named after their JSON key (for example
-  `strata:live_tok_s`, `strata:last_hit_rate`, `strata:gpu_util`, `strata:ram_used_bytes`). A value the server does not have
+  for vLLM read this server. Nostroma's own facts come under `nostroma:` and are named after their JSON key (for example
+  `nostroma:live_tok_s`, `nostroma:last_hit_rate`, `nostroma:gpu_util`, `nostroma:ram_used_bytes`). A value the server does not have
   has no sample. With an API key, the scraper sends it as a bearer token. Ready-made files are in `docs/monitoring/`:
-  `prometheus.yml`, `servicemonitor.yaml` and `grafana-strata.json`.
+  `prometheus.yml`, `servicemonitor.yaml` and `grafana-nostroma.json`.
 - **Metadata.** `/models` and `/v1/models` list only the loaded model, with its context limit and input modalities. `/props` exposes
   the chat template, context limit, configured generation defaults, model path and engine version. `n_predict: -1` means no
   fixed output cap. `/slots` uses llama.cpp's names (`n_ctx`, `n_prompt_tokens`). `total_slots` is the number of `--batch` slots
@@ -526,7 +526,7 @@ applies at the next start. Network, key, MCP and program keys are not editable t
   answer and inside the thinking. An argument the tool declares as an array or an object, or declares nothing for, is read as
   written when it has a slip in it: a trailing or doubled comma, single quotes or `True`/`False`/`None`, a bare string between two
   members of an object (`"status": "pending", "in_progress", "pending": false`), brackets left open at the end. The server window
-  says `N tool call argument(s) repaired` and `/metrics/prometheus` counts them in `strata:tool_args_repaired_total`. Text that
+  says `N tool call argument(s) repaired` and `/metrics/prometheus` counts them in `nostroma:tool_args_repaired_total`. Text that
   is not an array or an object, a string cut short and a string-typed parameter are never touched. After the thinking has ended at
   a closing think tag, a second one at the start of a line in the answer is dropped (the model quoted the tag while thinking, #4077):
   the call that follows is kept. The reasoning between the two went out as the answer already, because a stream cannot take text
@@ -535,9 +535,9 @@ applies at the next start. Network, key, MCP and program keys are not editable t
   `finish_reason` stays `stop` (or `end_turn` on `/v1/messages`). Next to it the reply carries a list, only when there is something in it:
   `"strata_rejected_tool_calls": [{"name": "bash", "reason": "undeclared"}]` (at the top level of a Chat Completions reply, in
   its last streamed chunk, and in the `message_delta` event and the message of `/v1/messages`; up to five names). A client that
-  wants to recover can answer the model with the tool names it does have and ask again; Strata never runs or forwards a call for a
+  wants to recover can answer the model with the tool names it does have and ask again; Nostroma never runs or forwards a call for a
   tool the request did not declare. The server window prints the same names (`N <tool_call> block(s) ... went back as text`), and
-  `/metrics/prometheus` counts the blocks in `strata:tool_calls_unread_total`. A block that is malformed (not an undeclared name) is counted
+  `/metrics/prometheus` counts the blocks in `nostroma:tool_calls_unread_total`. A block that is malformed (not an undeclared name) is counted
   there and in the window, but has no name to list.
 - **Anthropic's tool search on `/v1/messages` (#4663).** A tool with `"defer_loading": true` is declared but not listed in the
   prompt; a `tool_reference` block in a `tool_result` (a tool search's result) puts that tool's definition into the prompt where it
@@ -646,7 +646,7 @@ tables per token). The scaling is fixed for the whole run, because the KV cache 
   For IPv6 use `--host ::` (or `"host": "::"`, all IPv6 interfaces) and put the address in brackets in URLs, for example
   `http://[2001:db8::7]:8080/v1`.
   On Windows allow the port in the firewall for private networks:
-  `New-NetFirewallRule -DisplayName "Strata 8080" -Direction Inbound -Protocol TCP -LocalPort 8080 -Action Allow -Profile Private`
+  `New-NetFirewallRule -DisplayName "Nostroma 8080" -Direction Inbound -Protocol TCP -LocalPort 8080 -Action Allow -Profile Private`
   (admin PowerShell).
 - **From the internet:** put a tunnel in front, for example `cloudflared tunnel --url http://127.0.0.1:8080`. Set a key first.
   Several keys (one per client, so one can be withdrawn): `--api-key key1,key2`, `"api_key": "key1,key2"` or
@@ -664,11 +664,11 @@ tables per token). The scaling is fixed for the whole run, because the KV cache 
   get **403** naming the setting. Add a name with `"allowed_hosts": ["strata.example.com"]` or
   `STRATA_ALLOWED_HOSTS=strata.example.com` (comma-separated). `".example.com"` allows every name below it and `["*"]`
   turns the check off, as does setting `api_key`.
-- **Web pages without a key:** a `POST` to `/v1/*` carrying an `Origin` header is answered only for Strata's own page, pages on
+- **Web pages without a key:** a `POST` to `/v1/*` carrying an `Origin` header is answered only for Nostroma's own page, pages on
   `localhost` or an allowed host, origins in `trusted_origins` or `cors_origins`, and browser extensions and desktop apps, and only with
   a JSON body. Other pages and `Origin: null` get **403**. Clients without an `Origin` (curl, the SDKs) are not affected. With
   an API key, the key decides. `POST /unload`, `/load` and `/slots/0?action=...` also take only JSON from no `Origin`,
-  Strata's own page or a trusted origin.
+  Nostroma's own page or a trusted origin.
 
 ### Connecting apps
 
@@ -676,7 +676,7 @@ tables per token). The scaling is fixed for the whole run, because the KV cache 
   and offers tools from `chat_template_caps`. Zed's generic OpenAI-compatible provider does not; add
   `"capabilities": {"tools": true, "chat_completions": true}` on that model in Zed's settings.
 - **Claude Code:** set `ANTHROPIC_BASE_URL=http://127.0.0.1:8080` and `ANTHROPIC_MODEL` to a Claude model name it knows
-  (Strata ignores the name), plus any `ANTHROPIC_AUTH_TOKEN` (or your `api_key`).
+  (Nostroma ignores the name), plus any `ANTHROPIC_AUTH_TOKEN` (or your `api_key`).
 - **OpenCode:** a starting point for `opencode.jsonc`. The field names are OpenCode's, so check its config docs if your version
   differs.
 
@@ -684,13 +684,13 @@ tables per token). The scaling is fixed for the whole run, because the KV cache 
   {
     "$schema": "https://opencode.ai/config.json",
     "provider": {
-      "strata": {
+      "nostroma": {
         "npm": "@ai-sdk/openai-compatible",
-        "name": "Strata (local)",
+        "name": "Nostroma (local)",
         "options": { "baseURL": "http://127.0.0.1:8080/v1", "apiKey": "none" },  // or your api_key
         "models": {
-          "strata": {
-            "name": "Qwen3.8-Flash-Next (Strata)",
+          "nostroma": {
+            "name": "Qwen3.8-Flash-Next (Nostroma)",
             // context: what you chose in setup; output: what one reply may use (prompt + output must fit)
             "limit": { "context": 262144, "output": 32768 },
             "options": { "reasoningEffort": "high" },
@@ -707,7 +707,7 @@ tables per token). The scaling is fixed for the whole run, because the KV cache 
   }
   ```
 
-  Set `limit.context` to the context you chose in setup and keep `limit.output` well under it. `strata connect` writes
+  Set `limit.context` to the context you chose in setup and keep `limit.output` well under it. `nostroma connect` writes
   configurations for these apps for you.
 - **Codex CLI:** [below](#the-responses-api-and-codex-cli).
 
@@ -735,7 +735,7 @@ system prompt with a billing header that changes on every request; the server pi
 
 The RAM figure the floor is checked against is the smallest of `MemAvailable`, the room under each cgroup limit visible to
 the engine (v2 `memory.max` and `memory.high`, v1 `memory.limit_in_bytes`, less clean inactive file cache) and the
-`--memory-limit-mib` cap. The startup line `strata generate: memory guard: limit X GiB (source: flag|cgroup|meminfo) ...` names
+`--memory-limit-mib` cap. The startup line `nostroma generate: memory guard: limit X GiB (source: flag|cgroup|meminfo) ...` names
 the source. It covers parking and session files only, not the startup sizing of the arena, the resident budget or the Windows commit check.
 
 **When the arena does not fit in the RAM that is free (#4051).** The engine checks the RAM before it reads the experts into the
@@ -761,7 +761,7 @@ in a RAM copy, as much as the RAM available at the start allows after a headroom
   fell to 0.9 GiB during the copy. `STRATA_RESIDENT_HEADROOM_GIB`, when set, decides the headroom instead of both (testers).
 - With W = 0 nothing about the fallback changes: the full system is used, the arena whenever it fits, with no margin, and the copy leaves
   the safety headroom. The explicit modes (`--resident-budget-gib N`, `--resident-experts`) leave `max(W, their own 4 GiB)`.
-- The app's "Leave 20% for my work" passes W = clamp(ceil(0.2 x RAM in GB), 5, 8) as `STRATA_RAM_KEEP_GIB` in the run config's env (not as the flag, so an older engine chosen in the Engine tab, which ignores an env variable, still starts); `strata serve` and full performance pass nothing.
+- The app's "Leave 20% for my work" passes W = clamp(ceil(0.2 x RAM in GB), 5, 8) as `STRATA_RAM_KEEP_GIB` in the run config's env (not as the flag, so an older engine chosen in the Engine tab, which ignores an env variable, still starts); `nostroma serve` and full performance pass nothing.
 - `STRATA_ARENA_FALLBACK_RESIDENT=0` keeps the plain file source for the fallback (testers).
 - The RAM copy is page-locked. `STRATA_RESIDENT_PIN=0` keeps it in ordinary pageable memory, as with `--resident-budget-gib`. Under a
   tight memory limit the system can then swap part of it out: with a 51.75 GiB limit on an R9700 PC (explicit 45.24 GiB budget, one run)
@@ -779,7 +779,7 @@ prompt tokens the cache gave back; `/metrics` has the same under `"conversation_
 
 The conversation the engine holds can be saved to a file and restored later, also after a restart of the same engine version,
 so a long prompt is not read again. Start the server with `--slot-save-path DIR` (or `"slot_save_path"` in the config). The
-file format is Strata's own, not llama.cpp's, and there is no erase action.
+file format is Nostroma's own, not llama.cpp's, and there is no erase action.
 
 ```bash
 curl -X POST "http://127.0.0.1:8080/slots/0?action=save"    -H "Content-Type: application/json" -d '{"filename": "chat1.bin"}'
@@ -805,7 +805,7 @@ curl -X POST "http://127.0.0.1:8080/slots/0?action=restore" -H "Content-Type: ap
 - Errors: `501` without `--slot-save-path` or with parallel requests; `400` for a slot other than 0, an unknown action, a refused
   file name or an invalid file; `404` for a missing file; `503` when the model is not loaded or RAM is short; `507` when the disk has
   no room; `500` for other I/O failures or an engine that ended. `error.published: true` means a save failed after its new
-  file had replaced the old one. Requests must be `application/json` (else `415`) and come from no browser page, Strata's own
+  file had replaced the old one. Requests must be `application/json` (else `415`) and come from no browser page, Nostroma's own
   page or a trusted origin.
 - Not supported with `--layer-split`, `--peer-device`, `--batch` or `--prompt-cache 0`. The engine has been run on Linux and CUDA
   only for this feature. Exact token replay across restarts is not guaranteed: expert residency and CPU/GPU rounding can
@@ -868,7 +868,7 @@ Off by default, because it keeps prompts and answers in memory. Turn it on with 
 controls, active and queued requests, request bodies, output, separate reasoning and response bodies, with load, queue,
 first-token and decode timings. `GET /api/requests` returns summaries and `GET /api/requests?id=<id>` one request. The
 monitor keeps the newest 100 requests in memory until restart, 262,144 characters per field, with visible truncation flags.
-Headers are not recorded. Treat the history as sensitive when Strata is reachable from a network, and set an API key.
+Headers are not recorded. Treat the history as sensitive when Nostroma is reachable from a network, and set an API key.
 
 ---
 
@@ -879,7 +879,7 @@ budgets, the conversation cache and the API key, Host and Origin checks apply. I
 conversation in `input` every time. `previous_response_id`, `conversation`, `background` and the retrieve, delete and cancel
 endpoints are refused with an error that says so.
 
-| Request | What Strata does |
+| Request | What Nostroma does |
 | --- | --- |
 | `input` as a string or items | `message` items (`user`, `assistant`, `system`, `developer`; text and images), `reasoning`, `function_call`, `function_call_output`, `custom_tool_call(_output)` |
 | `instructions` | The system message (with leading `developer` messages) |
@@ -902,14 +902,14 @@ events are the official ones, in order, ending in `response.completed`, `respons
 **Codex CLI.** In `~/.codex/config.toml` (Windows: `%USERPROFILE%\.codex\config.toml`):
 
 ```toml
-model = "strata"                        # any name; Strata answers with its model
-model_provider = "strata"
+model = "nostroma"                        # any name; Nostroma answers with its model
+model_provider = "nostroma"
 model_context_window = 32768            # the context you chose in setup: Codex compacts before it gets there
 show_raw_agent_reasoning = true         # show the model's thinking (it writes no summaries)
 # model_reasoning_effort = "medium"     # none, low, medium or high; default: the model's (high)
 
 [model_providers.strata]
-name = "Strata (local)"
+name = "Nostroma (local)"
 base_url = "http://127.0.0.1:8080/v1"
 wire_api = "responses"
 stream_idle_timeout_ms = 600000         # a first, long prompt can take minutes to read
@@ -918,11 +918,11 @@ stream_idle_timeout_ms = 600000         # a first, long prompt can take minutes 
 
 Run `codex` (or `codex exec "..."`). Codex warns `Model metadata for ... not found` for a local model name; that is expected.
 On Windows, Codex's own sandbox rejected shell commands until it was started with `-c 'windows.sandbox="unelevated"'` (a
-Codex setting, not Strata's).
+Codex setting, not Nostroma's).
 
 **Codex's compaction** (opt-in: `"codex_compaction_cache": true`). When the context fills up (or on `/compact`), Codex sends the
 conversation once more with a summarize request and `tools: []`. The template writes tools at the top of the prompt, so that
-prompt would be read again from the start. With the option on, Strata remembers which Codex conversation sent the last
+prompt would be read again from the start. With the option on, Nostroma remembers which Codex conversation sent the last
 non-compaction prompt (`session_id` and `thread_id`) and the tools it was rendered with, and renders a compaction request from
 that same conversation with them. It is one entry, replaced by each such prompt. A compaction of another conversation, a
 request without that metadata or a restart renders the request as sent. The prompt of a compaction then differs from the one
@@ -946,10 +946,10 @@ List the servers in `strata-<model>.json` under `"mcp_servers"`, the same shape 
 }
 ```
 
-Or keep them in their own file and start the server with `--mcp-config path\to\claude_desktop_config.json`. Restart Strata
+Or keep them in their own file and start the server with `--mcp-config path\to\claude_desktop_config.json`. Restart Nostroma
 after a change.
 
-- A **program** (`command`, `args`, optional `env` and `cwd`) is started by Strata and spoken to over stdin and stdout. Node.js is
+- A **program** (`command`, `args`, optional `env` and `cwd`) is started by Nostroma and spoken to over stdin and stdout. Node.js is
   needed for `npx` servers. An **address** (`url`, optional `headers`) uses MCP's Streamable HTTP transport (the older SSE-only
   transport is not supported). `"disabled": true` leaves an entry out.
 - Servers start with Strata. The server window says what each offers or why it did not start. The Monitor tab lists them, and
@@ -963,15 +963,15 @@ after a change.
 
 **Security.** MCP tools run on your PC with your user's rights, and the model decides when to call them, also because of what
 it reads (a web page or file can contain instructions). Give a filesystem server only the folders it needs, prefer read-only
-tools and add only servers you trust. If Strata is reachable from other devices, set an API key.
+tools and add only servers you trust. If Nostroma is reachable from other devices, set an API key.
 
-## Manage Strata from your AI assistant (MCP server)
+## Manage Nostroma from your AI assistant (MCP server)
 
 `tools/strata_mcp.py` is an MCP server for Claude Code, Claude Desktop, Cursor, VS Code, Codex and other assistants. Once it is
-added you can ask your assistant to install Strata, start it or check whether it is running. In Claude Code:
+added you can ask your assistant to install Nostroma, start it or check whether it is running. In Claude Code:
 
 ```bash
-claude mcp add strata -- python C:\Users\you\Strata\tools\strata_mcp.py
+claude mcp add nostroma -- python C:\Users\you\Nostroma\tools\strata_mcp.py
 ```
 
 It has tools for status, the model list, install, start, stop, logs, a speed test and connection settings. Install runs
@@ -985,7 +985,7 @@ uses only Python's standard library. Config snippets for every client, the tool 
 
 Qwen3.8-Flash-Next has a vision encoder (`mmproj-Qwen3.8-Flash-Next-BF16.gguf`, 0.9 GB). Qwen3.6-35B-A3B reads pictures the
 same way with its own `mmproj-F16.gguf` ([QWEN36.md](QWEN36.md)). Pictures are **on by default** wherever a model can read
-them. The app, `strata launch` and setup use one rule for the reader:
+them. The app, `nostroma launch` and setup use one rule for the reader:
 
 | Graphics memory | Default reader | Cost |
 | --- | --- | --- |
@@ -993,7 +993,7 @@ them. The app, `strata launch` and setup use one rule for the reader:
 | 24 GB or more | The card's reader, started by the first picture and stopped after 120 s without one (NVIDIA, one GPU) | 0.1-0.5 s per picture (up to 1,024 image tokens) once it runs, 1.2-1.4 s more for the first picture after a stop. It holds about 1.3 GB of VRAM only while pictures are being read; a start with no room is read on the CPU. On AMD, Intel and a Mac the reader stays on the card as before. |
 | Mac | The GPU (Metal) | Whatever its memory. |
 
-Switch pictures off with `--vision no` (or "No" in the app and `strata launch`), or pick the reader with `--vision gpu` or
+Switch pictures off with `--vision no` (or "No" in the app and `nostroma launch`), or pick the reader with `--vision gpu` or
 `--vision cpu`. Setup downloads the encoder and puts a small helper (`strata-vision`, from llama.cpp's `mtmd` library) beside
 the engine. Where no reader exists, pictures stay off and the screen says so (the Intel Arc engine has none yet). On AMD the
 card's reader is `strata-vision-hip`; if it cannot start, the server starts the CPU reader and prints one line ([AMD_HIP.md](AMD_HIP.md)).
@@ -1025,7 +1025,7 @@ import base64
 from openai import OpenAI
 client = OpenAI(base_url="http://127.0.0.1:8080/v1", api_key="none")
 img = base64.b64encode(open("photo.jpg", "rb").read()).decode()
-r = client.chat.completions.create(model="strata", messages=[{"role": "user", "content": [
+r = client.chat.completions.create(model="nostroma", messages=[{"role": "user", "content": [
     {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img}"}},
     {"type": "text", "text": "What is in this picture?"}]}])
 print(r.choices[0].message.content)
@@ -1034,7 +1034,7 @@ print(r.choices[0].message.content)
 Anthropic API: an `image` block with a `base64` (or `url`) source. JPEG, PNG, BMP, GIF, WebP, TIFF and AVIF work (the last
 ones are converted to PNG first). Chat apps with image upload work the same way.
 
-**How it works inside.** The encoder turns the picture into rows of the width of the model's word embeddings. Strata puts them
+**How it works inside.** The encoder turns the picture into rows of the width of the model's word embeddings. Nostroma puts them
 where the prompt has `<|image_pad|>` tokens and gives each its 2-D position (row and column; interleaved M-RoPE). Answers
 match llama.cpp's multimodal implementation token for token on our test images.
 
@@ -1076,7 +1076,7 @@ them on your own card.
 | --- | --- | --- | --- |
 | `STRATA_ADAPT_OVERLAP=1` | One GPU, the whole arena in RAM, no `--adapt-async`, `--pipeline-windows`, `STRATA_ADAPT_LAG`, `STRATA_ADAPT_NOWAIT`, `STRATA_DMA_BATCH`; never on a layer split | The adaptive tier's copies land while the next window runs, with the same tokens. The startup log names the state and why it cannot run. | Gains on RTX A4000 and Tesla P100 (+4 to +8%), loses on an RTX 5070 under Windows and an RTX 5090 Laptop. Opt-in on every backend. With the per-card defaults set `STRATA_ADAPT_LAG=1 STRATA_ADAPT_NOWAIT=0` beside it. |
 | `STRATA_ADAPT_LAG=2` | CUDA | The window takes the adaptive tier's swaps once they are two windows old. | Gains on a Tesla P100; on by default on sm_86 and sm_60. |
-| `STRATA_ADAPT_FETCH=1\|2` | CUDA, one GPU, serial windows, a PCIe share (`--pcie-frac`), no `--batch`, `--pipeline-windows`, `--adapt-async`, `--pcie-mode dma\|direct`, `STRATA_ADAPT_OVERLAP=1` | The PCIe share takes each layer's most-routed misses, and a fetched expert routed at least `STRATA_ADAPT_FETCH_MIN` (1) and `STRATA_ADAPT_FETCH_MARGIN` (0.5) more than the layer's least-routed resident expert that the window does not route is copied straight into that expert's slot and becomes resident. `=2` leaves the tier's own swaps out of a layer where an admission ran since the tier's last round. The startup log names the state and why it cannot run; `STRATA_ADAPT_FETCH_VERIFY=1` (`strata generate`) reads every admitted slot back. | IQ3_S on an RTX PRO 5000 with a 3,896-slot cache (16% of the experts) and `--pcie-frac 0.25`: decode `=2` +10.2%, `=1` +5.0% (4 rounds, same-arm spread -0.8%), hit rate 54-61% to 71-78%; token forcing over 14,167 tokens: mismatch 2.73% against 2.53% and 2.53% for two unset arms, +0.19 pt (90% CI -0.02 to +0.42), PASS. Opt-in; the PR's NVFP4 pack gave -5.6% a round. |
+| `STRATA_ADAPT_FETCH=1\|2` | CUDA, one GPU, serial windows, a PCIe share (`--pcie-frac`), no `--batch`, `--pipeline-windows`, `--adapt-async`, `--pcie-mode dma\|direct`, `STRATA_ADAPT_OVERLAP=1` | The PCIe share takes each layer's most-routed misses, and a fetched expert routed at least `STRATA_ADAPT_FETCH_MIN` (1) and `STRATA_ADAPT_FETCH_MARGIN` (0.5) more than the layer's least-routed resident expert that the window does not route is copied straight into that expert's slot and becomes resident. `=2` leaves the tier's own swaps out of a layer where an admission ran since the tier's last round. The startup log names the state and why it cannot run; `STRATA_ADAPT_FETCH_VERIFY=1` (`nostroma generate`) reads every admitted slot back. | IQ3_S on an RTX PRO 5000 with a 3,896-slot cache (16% of the experts) and `--pcie-frac 0.25`: decode `=2` +10.2%, `=1` +5.0% (4 rounds, same-arm spread -0.8%), hit rate 54-61% to 71-78%; token forcing over 14,167 tokens: mismatch 2.73% against 2.53% and 2.53% for two unset arms, +0.19 pt (90% CI -0.02 to +0.42), PASS. Opt-in; the PR's NVFP4 pack gave -5.6% a round. |
 | `STRATA_STAGE_PIN=1` | GGUF read in place | Page-locks the stage buffers the cache fill copies from. Unset, it stays off: with it on, IQ3_S decode was corrupted after a 4096-token prompt in an earlier release gate. | Keep off until that is fixed. |
 | `STRATA_PCIE_BALANCE=1` | CUDA, one GPU, no `--batch`, no `--pcie-frac` | Each verify layer reads over PCIe the number of its missed experts that balances the two sides. | Helps an RTX A4000 arena (+5.6%), hurts others slightly. |
 | `STRATA_GDN_CHUNKED=1` | CUDA, 128 or more SMs by itself (`=2` forces it); HIP gfx1100-gfx1102, gfx1150, gfx1151 | The DeltaNet recurrence of the prompt in chunks of 32 tokens (CUDA) or 16-token WMMA chunks (HIP). Changes rounding. | 1.8x on the recurrence on an RTX 5090; slower on smaller cards. See [AMD_HIP.md](AMD_HIP.md#opt-in-chunked-prompt-gdn-on-gfx11). |
@@ -1086,7 +1086,7 @@ them on your own card.
 | `--prefill-head-alias` | `--serve`, one GPU | The output head's VRAM holds the prompt buffers while a prompt is read ([PREFILL_HEAD_ALIAS.md](PREFILL_HEAD_ALIAS.md)). | For 8 GB cards. |
 | `STRATA_EMB_REUSE_ACCOUNT=1` | CUDA | The planner counts the VRAM saved because the half-output buffer `bo` reuses the embedding buffer `emb`, so the auto chunk can grow. Changes prompt rounding. | Prompt about +3.9% on an RTX 3060, no KL measurement yet. |
 | `STRATA_VERIFY_ASYNC_LAUNCH=1` | CUDA, single-request verifier | Runs the CUDA graph launch of a verify window on a separate host thread so the caller keeps serving CPU expert doorbells. A diagnostic for Compute Sanitizer runs. | |
-| `STRATA_CPU_IQ_ALL_EXACT1=1` | AVX2 CPUs without AVX-512 | Strata's AVX-2 decode for one-token i-quant gate/up rows, with ggml's float order, so the output does not change. On by default on sm_86. | End to end +0.4 to +2.5%, so left off elsewhere. |
+| `STRATA_CPU_IQ_ALL_EXACT1=1` | AVX2 CPUs without AVX-512 | Nostroma's AVX-2 decode for one-token i-quant gate/up rows, with ggml's float order, so the output does not change. On by default on sm_86. | End to end +0.4 to +2.5%, so left off elsewhere. |
 | `STRATA_Q2_BITPLANE=1` | AVX2 CPUs without AVX-512 | A bit-plane row kernel for Q2_0. Changes the last bits. | |
 | `STRATA_NO_AVXVNNI=1` | CPUs with AVX-VNNI | Turns the AVX-VNNI row forms off (they give the same bits, 4-25% faster rows). | A diagnostic. |
 | `STRATA_PREFILL_EQUAL=1` | CUDA | A prompt segment is read in chunks of equal size, not full chunks and a short last one. Changes rounding. | |
@@ -1096,7 +1096,7 @@ them on your own card.
 | `STRATA_PW_WITH_BATCH=1` | CUDA/HIP layer split with `--pipeline-windows 2` and `--batch` slots | A request that is alone keeps the pipelined windows beside the batch slots; batch windows run without them. | 2x RTX A6000 IQ3_S: lone request +14% on code, +9% on a file rewrite, +3% on a long decode; two requests at once not slower. The second verifier takes about 270 MiB of the first card. |
 | `STRATA_MTP_ROOM_MIN=TOKENS` | CUDA, `--serve` with `--mtp`, no `--batch` | A request that reads at least TOKENS prompt tokens uses the draft layer's 512 decode-only experts (about 675 MiB) as extra ring slots while it is read, then gets them back. | The author measured +17 to +23% prompt on an 8 GB RTX 2060 SUPER; on a P100 limited to 8 GB (ring 8 to 311 slots) it gave +0.5% (CPU share off) and nothing with defaults. Off by default. |
 | `STRATA_IQ_MT_MIN=1`, `STRATA_IQ3S_MT1=1` | CPU | See [Draft layer](#draft-layer) (reproducible output; the second gives IQ3_S the multi-token kernel for one token on Alder Lake and later without AVX-512). | |
-| `STRATA_ROUTE_PRIOR`, `STRATA_ROUTE_RESIDENT`, `STRATA_ROUTE_RESIDENT_MTP` | CUDA | Routing changes that add speed and also add KL. | Off by default. `STRATA_ROUTE_PRIOR=1.5` makes the router prefer experts that are already on the card; it is the one worth trying, on a discrete NVIDIA card of 13 GiB or less (an RTX 3060 12 GB, IQ3_XXS: story +15%, code +37% decode against off). It is an opt-in because it can repeat itself and give weaker results in long agent sessions (#4402; our own check on that card: out of 10 agent tasks 4.5 passed on average over 4 runs at 1.5, against 5.6 over 7 runs with the prior off, where the off runs alone ranged from 4 to 6; a stronger setting, 2.0, showed copy and code defects). Recommended for a 12 GB card used mostly for chat and short answers, not for long agent runs. 0.2.7 turned 1.5 on by itself on those cards and 0.2.8 took that back (owner decision of 2026-10-29): with nothing set, the engine routes exactly as 0.2.6 did (the same as `STRATA_ROUTE_PRIOR=0` and as `STRATA_DEFAULTS=026`). Turn it on: the Expert-settings row "Faster answers on 12 GB NVIDIA cards" (it writes `STRATA_ROUTE_PRIOR=1.5`; shown only for a discrete NVIDIA card of 13 GiB or less), `strata launch --set STRATA_ROUTE_PRIOR=1.5`, or the variable itself. Any value you set wins on every card; it is never on by itself. |
+| `STRATA_ROUTE_PRIOR`, `STRATA_ROUTE_RESIDENT`, `STRATA_ROUTE_RESIDENT_MTP` | CUDA | Routing changes that add speed and also add KL. | Off by default. `STRATA_ROUTE_PRIOR=1.5` makes the router prefer experts that are already on the card; it is the one worth trying, on a discrete NVIDIA card of 13 GiB or less (an RTX 3060 12 GB, IQ3_XXS: story +15%, code +37% decode against off). It is an opt-in because it can repeat itself and give weaker results in long agent sessions (#4402; our own check on that card: out of 10 agent tasks 4.5 passed on average over 4 runs at 1.5, against 5.6 over 7 runs with the prior off, where the off runs alone ranged from 4 to 6; a stronger setting, 2.0, showed copy and code defects). Recommended for a 12 GB card used mostly for chat and short answers, not for long agent runs. 0.2.7 turned 1.5 on by itself on those cards and 0.2.8 took that back (owner decision of 2026-10-29): with nothing set, the engine routes exactly as 0.2.6 did (the same as `STRATA_ROUTE_PRIOR=0` and as `STRATA_DEFAULTS=026`). Turn it on: the Expert-settings row "Faster answers on 12 GB NVIDIA cards" (it writes `STRATA_ROUTE_PRIOR=1.5`; shown only for a discrete NVIDIA card of 13 GiB or less), `nostroma launch --set STRATA_ROUTE_PRIOR=1.5`, or the variable itself. Any value you set wins on every card; it is never on by itself. |
 | `STRATA_HOST_CORE=last\|sibling` (or `--host-core`) | Windows | `last` puts the host thread on the last physical core, away from the core that gets the GPU's interrupts. `sibling` keeps it on the first core's other hardware thread, so the workers keep every core. The default `first` leaves a hybrid CPU as it is. | One layer-split box went from a ±6% swing to steady and 8% faster. |
 | `--pool-affinity measure` | Hybrid CPUs, native packs | Times the `all` and `p-cores` layouts at start (about a second) and takes the faster. The measurement is taken once; where the E-cores' speed changes while the engine runs, `--pool-affinity p-cores` is the steady choice. | |
 | `STRATA_KEEP_EMPTY_TURNS=1`, `STRATA_TOPK_STREAM=0` | | See [TROUBLESHOOTING.md](TROUBLESHOOTING.md). | |
@@ -1195,7 +1195,7 @@ allows, and on a hybrid CPU with more efficiency than performance cores the perf
 efficiency cores. The start line says what bounded the number (`CPU pool: 31 workers by default (32 physical cores, ...)`).
 Workers wait by spinning, so a worker without a core of its own takes time from the others. A count in the config is always
 used as given; when it is above what the CPU uses well, the engine prints a warning with the recommended number
-(`strata cpu pool: warning: ...`). Setup writes no worker count except the hybrid CPU's, and gives the CPU vision encoder at most 16
+(`nostroma cpu pool: warning: ...`). Setup writes no worker count except the hybrid CPU's, and gives the CPU vision encoder at most 16
 threads (`--threads` in the `vision` entry changes that).
 
 `--pool-tasks N` sets the target total number of row tasks in each batched CPU expert gate/up and down phase (the default `0` keeps
@@ -1229,7 +1229,7 @@ The engine starts one worker per physical core and keeps the first core for the 
 The start-up log says where everything sits:
 
 ```
-strata generate: CPU workers on logical processors 2,4,...,30 (15 workers, one per physical core; host on 0)
+nostroma generate: CPU workers on logical processors 2,4,...,30 (15 workers, one per physical core; host on 0)
 ```
 
 Windows numbers the two threads of a core next to each other, so the workers sit on the even numbers; Linux usually numbers the first
@@ -1239,7 +1239,7 @@ thread of every core first. The engine reads the pairing from the system (Window
 showing only the first logical processors busy does not mean the pool is misplaced. The CPU picture encoder is a separate process
 that the OS places.
 
-`--pool-cores LIST` (or `STRATA_POOL_CORES=LIST`, `"pool_cores": "2,4,6,8"` in the config, or `strata launch --pool-cores 2,4,6,8`)
+`--pool-cores LIST` (or `STRATA_POOL_CORES=LIST`, `"pool_cores": "2,4,6,8"` in the config, or `nostroma launch --pool-cores 2,4,6,8`)
 pins the workers to exactly these logical processors, in this order. Use it to leave cores for other programs, use one chiplet
 or test a layout. The list is numbers, ranges and `first-last:step` (`0,2,4,6`, `2-14:2`), as Task Manager and `lscpu` show them.
 The worker count is the length of the list; `--pool-workers N` takes the first N entries. Nothing is refused. The engine warns
@@ -1260,7 +1260,7 @@ moves threads only and never changes a result.
   `/proc/self/task` once the pool exists and again at the start of each request. An explicit `STRATA_ADAPT_JOB_CPU` wins for the
   adaptive tier's job thread. `STRATA_AUX_STAGER=0` leaves the prefill copy threads where they started.
 - Per request: `"strata_tune": {"aux_cpus": 1}` moves the threads to the set; `0` puts them back.
-- It prints `strata aux cpus: threads that are neither pool workers nor the host go to CPUs 24 (on; N threads placed so far)`.
+- It prints `nostroma aux cpus: threads that are neither pool workers nor the host go to CPUs 24 (on; N threads placed so far)`.
 - Not covered: other processes and the engine's host thread. The measurement is one machine: see [History](#history--older-measurements).
 
 ---
@@ -1268,7 +1268,7 @@ moves threads only and never changes a result.
 <a id="experimental-speed-projection"></a>
 ## Experimental speed projection (experimental, off by default)
 
-This is an experiment. It ships with Strata and stays off unless you turn it on. It is a 480 KB control vector for the original
+This is an experiment. It ships with Nostroma and stays off unless you turn it on. It is a 480 KB control vector for the original
 Qwen3.8-Flash-Next (`data/experimental-speed-projection/`, not Swift 1.5). After each of layers 4-44 the engine removes one
 direction from every hyper-connection stream: `h -= (h . v) v`.
 
@@ -1281,7 +1281,7 @@ your own prompts. The Monitor marks every request ESP or stock.
 `--experimental-speed-projection on` (`off`, or a path to another vector GGUF). It writes these engine flags into `strata-<model>.json`:
 
 ```
---control-vector-scaled <Strata>\data\experimental-speed-projection\Qwen3.8-Flash-Next-experimental-speed-projection.gguf:1.0
+--control-vector-scaled <Nostroma>\data\experimental-speed-projection\Qwen3.8-Flash-Next-experimental-speed-projection.gguf:1.0
 --control-vector-layer-range 4 44 --cvec-mode project --cvec-dir per-layer
 ```
 
@@ -1342,7 +1342,7 @@ never changed. `STRATA_ROUTE_PRIOR` raises KL and is an opt-in again in 0.2.8 (0
 | --- | --- |
 | `the NVIDIA driver is too old` | Update the driver, restart, run setup again. |
 | Python or the build tools could not be installed | Install what it names (links are printed), then run it again. Everything already done is kept. |
-| `port 8080 is already in use` | Strata is already running, or another program uses the port: `strata launch --port 8081` (source checkout: `START-HERE.bat --port 8081`). |
+| `port 8080 is already in use` | Nostroma is already running, or another program uses the port: `nostroma launch --port 8081` (source checkout: `START-HERE.bat --port 8081`). |
 | `cudaHostRegister ... out of memory` in the log | Normal on Windows: the engine pins the experts in per-layer slices instead. A problem only if the load then fails. |
 | `ExpertCache: cudaMalloc(...) failed: out of memory` although VRAM is free | Windows' page file is off or tiny. Every allocation on the card is also charged to Windows' commit (RAM + page file). Set a fixed page file size, the same initial and maximum (for example 65536 MB), and restart. The engine retries with a smaller cache, and setup warns about a page file under 4 GB. |
 | The first start takes minutes, or the PC freezes for a few minutes | The engine is reading 34-55 GB into RAM, pinning part of it and sizing the expert cache. Wait. The second start is faster while the files are in the OS cache. Still frozen after 10 minutes: restart, close other programs, or pick a smaller size. |
@@ -1351,7 +1351,7 @@ never changed. `STRATA_ROUTE_PRIOR` raises KL and is an opt-in again in 0.2.8 (0
 | `prompt ... exceeds the context` | The request is longer than the context you chose: run setup again with a bigger `--context`. |
 | Slower than the tables | A monitor plugged into the GPU and other GPU programs take VRAM from the expert cache. RAM below its rated speed (enable EXPO or XMP in the BIOS) slows the CPU half. |
 | `this server was started without the vision encoder` | The model was set up for text only: run setup again with `--vision gpu` or `--vision cpu`. |
-| Setup puts the model on an old drive after you moved or reinstalled Strata | Setup remembers the data folder in its settings file (`%APPDATA%\Strata\settings.json` on Windows, `~/.config/strata/settings.json` on Linux; the `data_dir` entry). Choose another place with `--data-dir DIR` (model files, packs, MTP layer) or `--models-dir DIR` (the GGUF files only), or delete the `data_dir` line. `--gguf-dir DIR` uses GGUF files you already have without copying. |
+| Setup puts the model on an old drive after you moved or reinstalled Nostroma | Setup remembers the data folder in its settings file (`%APPDATA%\Nostroma\settings.json` on Windows, `~/.config/nostroma/settings.json` on Linux; the `data_dir` entry). Choose another place with `--data-dir DIR` (model files, packs, MTP layer) or `--models-dir DIR` (the GGUF files only), or delete the `data_dir` line. `--gguf-dir DIR` uses GGUF files you already have without copying. |
 | A picture is refused or `cannot read the image` | The file is not a picture Pillow can open (JPEG, PNG, WebP, GIF, BMP, TIFF, AVIF work). |
 | Pictures are slow (3-30 s) | The encoder runs on the CPU, the default under 24 GB of graphics memory. Run setup again with `--vision gpu` (needs ~1.4 GB of VRAM, taken from the expert cache). |
 | Output much slower than the tables, only with a large `--context`, and the start shows a small `... MiB of VRAM free with everything loaded` | The expert cache does not fit the card at that context. Use `--expert-cache auto`, a smaller number, or a larger `--vram-reserve-mib`. See [The expert cache size is a budget](#the-expert-cache-size-is-a-budget). |
@@ -1360,7 +1360,7 @@ never changed. `STRATA_ROUTE_PRIOR` raises KL and is an opt-in again in 0.2.8 (0
 | `the engine said nothing for ... s during the request` | The engine and the server lost step. The server ends the engine after `engine_silence_s` (300 by default), the request ends with an error and the next request starts the engine again. If it repeats, add the end of the engine log to issue #481. |
 | `the engine said nothing for ... s and used no CPU or disk in that time (frozen ...)` | A quicker version of the check above for an engine that stopped, not slowed: after 90 s the server ends it. `STRATA_ENGINE_STALL_S=180` sets the time, `0` turns it off (needs `psutil`, which setup installs). |
 | The desktop app or the Terminal could not find an engine, or a Mac says an app is "damaged" | [TROUBLESHOOTING.md](TROUBLESHOOTING.md#the-desktop-app-and-the-terminal). |
-| Anything else | The engine log is `strata-<model>.log` in this folder. In the app: Settings, Engine, Diagnostics, View logs, Save logs. In the Terminal: `strata doctor`. |
+| Anything else | The engine log is `strata-<model>.log` in this folder. In the app: Settings, Engine, Diagnostics, View logs, Save logs. In the Terminal: `nostroma doctor`. |
 
 ---
 
@@ -1390,12 +1390,12 @@ The full story, with measurements, bottlenecks and what comes next: **[docs/pape
 
 ## Credits and licenses
 
-Strata itself: [MIT](../LICENSE). The model files are not part of it; their licenses apply to them.
+Nostroma itself: [MIT](../LICENSE). The model files are not part of it; their licenses apply to them.
 
 - Model: [Qwen/Qwen3.8-Flash-Next](https://huggingface.co/Qwen/Qwen3.8-Flash-Next) by the Qwen team; quantizations:
   [ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF](https://huggingface.co/ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF). The Coder:
   [ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-Coder-GGUF](https://huggingface.co/ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-Coder-GGUF)
-  (Apache-2.0 per its card); its support in Strata came from @pjgmobile's PR #54. Swift 1.5:
+  (Apache-2.0 per its card); its support in Nostroma came from @pjgmobile's PR #54. Swift 1.5:
   [ukisai/Swift-1.5-Qwen3.8-Flash-Next-GSQ-RCO-GGUF](https://huggingface.co/ukisai/Swift-1.5-Qwen3.8-Flash-Next-GSQ-RCO-GGUF) by UkisAI.
   Their licenses apply to the weights.
 - [llama.cpp / ggml](https://github.com/ggml-org/llama.cpp) (MIT): the i-quant formats, the GPU dot products and dequantizers
@@ -1405,9 +1405,9 @@ Strata itself: [MIT](../LICENSE). The model files are not part of it; their lice
   [HyperQwen](https://github.com/syv-ai/HyperQwen); references in the paper.
 - The DFlash2 drafter's Q4_0 selector (174 MiB less graphics memory, same drafts and same text) is nazeshinjite's idea:
   [nazeshinjite/Qwen3.8-Flash-Next-DFlash2-GGUF](https://huggingface.co/nazeshinjite/Qwen3.8-Flash-Next-DFlash2-GGUF) (Apache-2.0) stores the drafter's
-  two selector tables as Q4_0; Strata converts the checked pack on your computer (`tools/dflash2_pack.py --convert-selector`) and checks the bytes
+  two selector tables as Q4_0; Nostroma converts the checked pack on your computer (`tools/dflash2_pack.py --convert-selector`) and checks the bytes
   against the same pin.
-- Strata's tuned DFlash2 drafter (`data/dflash2-tuned/`, Apache-2.0, **modified by Strata**): a fine-tuned copy of the weights of [incoai/Qwen3.8-Flash-Next-DFlash2](https://huggingface.co/incoai/Qwen3.8-Flash-Next-DFlash2) (revision a22a1744, Apache-2.0, Inco AI); the original notices are kept, the licence text and a notice of the change are copied next to the file when it is fetched.
+- Nostroma's tuned DFlash2 drafter (`data/dflash2-tuned/`, Apache-2.0, **modified by Nostroma**): a fine-tuned copy of the weights of [incoai/Qwen3.8-Flash-Next-DFlash2](https://huggingface.co/incoai/Qwen3.8-Flash-Next-DFlash2) (revision a22a1744, Apache-2.0, Inco AI); the original notices are kept, the licence text and a notice of the change are copied next to the file when it is fetched.
 - The web app's font: [Outfit](https://github.com/Outfitio/Outfit-Fonts) (SIL Open Font License 1.1, see `serve/web/fonts/OFL.txt`). Its
   Monitor tab started from @code-martin's dashboard idea (PR #22).
   Math is drawn by [KaTeX](https://katex.org) (MIT, vendored in `serve/web/vendor/katex`). The chat page's wide-window layout, svg/html preview, math, Load/Unload, saved
@@ -1613,7 +1613,7 @@ The times below were measured by the author of the change (linxuhao, PR #3779) o
 
 An independent user (bitaccesscomau, one RTX 3090 on PCIe 3.0 x16) tried the `STRATA_CKPT_ASYNC=1` commit on its own on 0.2.6: the checkpoint save went from 73.2 to 62.4 ms, the first token of a short prompt came about 13 ms of 350 ms sooner (median of 4 pairs), and the answers were byte-identical. On a fast link the gain is small.
 
-The serve loop's `strata trace:` lines (`STRATA_TRACE`) now end with `@<ms>`, a steady-clock timestamp.
+The serve loop's `nostroma trace:` lines (`STRATA_TRACE`) now end with `@<ms>`, a steady-clock timestamp.
 
 ## CUDA opt-in decode switches measured on a CMP 170HX (sm_80; off unless you set them)
 

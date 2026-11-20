@@ -1,4 +1,4 @@
-# `strata launch`: set up, serve and watch
+# `nostroma launch`: set up, serve and watch
 
 This page is for anyone who uses the installed Terminal. One command chooses a model, tunes it, starts serving and
 opens a monitor. It also connects your coding apps. Text previews of the screens are in
@@ -7,16 +7,16 @@ opens a monitor. It also connects your coding apps. Text previews of the screens
 ## Quick start
 
 1. Install the Terminal with the one-line command in [INSTALL.md](INSTALL.md#the-terminal).
-2. Run `strata launch` and follow the screens, or run a command without screens:
+2. Run `nostroma launch` and follow the screens, or run a command without screens:
 
 ```sh
-strata launch --plan --family qwen --model q2_0            # what would happen; nothing changes
-strata launch --family qwen --model q2_0 --yes --no-tui    # download, serve, print the address, return
-strata launch --status                                     # what is serving now
-strata launch --stop
+nostroma launch --plan --family qwen --model q2_0            # what would happen; nothing changes
+nostroma launch --family qwen --model q2_0 --yes --no-tui    # download, serve, print the address, return
+nostroma launch --status                                     # what is serving now
+nostroma launch --stop
 ```
 
-`strata launch --help` lists every flag with examples. An unknown model or flag gets a plain message with the closest match.
+`nostroma launch --help` lists every flag with examples. An unknown model or flag gets a plain message with the closest match.
 
 ## Install (one line)
 
@@ -32,9 +32,9 @@ Windows PowerShell (then open a new terminal):
 irm -TimeoutSec 120 https://github.com/Niko1221/Strata/releases/latest/download/install.ps1 | iex
 ```
 
-More in [INSTALL.md](INSTALL.md#the-terminal). The installer needs no administrator rights and puts `strata` on your PATH.
+More in [INSTALL.md](INSTALL.md#the-terminal). The installer needs no administrator rights and puts `nostroma` on your PATH.
 How far to trust a piped installer is in [SECURITY.md](../SECURITY.md). The engine (the part that talks to your graphics
-card) comes with the first model: `strata launch` fetches the one for your card from the same release, checks its signature
+card) comes with the first model: `nostroma launch` fetches the one for your card from the same release, checks its signature
 and test-starts it before using it.
 
 ## The screens
@@ -58,10 +58,10 @@ and test-starts it before using it.
    command line skips tuning unless you add `--tune`.
 8. **Advanced** (optional): every engine setting with its default, tuned value and your value. You can edit, reset, or add a
    setting by name (checked against the engine's own list, with a warning instead of a refusal). It also shows the exact command and
-   the matching `strata launch` flags.
+   the matching `nostroma launch` flags.
 9. **Access:** this computer only (127.0.0.1), your network (LAN address and key), a Cloudflare quick tunnel (needs `cloudflared`)
    or Tailscale (needs it installed and connected). Also the port and an API key. Beyond this computer a key is recommended:
-   Strata makes one, and `t` turns it off. Without a key the server still starts and warns that anyone who can reach the port
+   Nostroma makes one, and `t` turns it off. Without a key the server still starts and warns that anyone who can reach the port
    can use the model and its tools; `--no-api-key` does the same without screens, and the warning is stronger on a Cloudflare tunnel.
 10. **Save as preset** and launch. Downloads show progress, then the engine starts and the monitor opens. No web page opens
     unless you pass `--open`.
@@ -74,14 +74,14 @@ line, `--gpu-roles 1=main,0=helper` does the same ([MULTI_GPU.md](MULTI_GPU.md))
 ## Flags
 
 ```sh
-strata launch --preset "IQ3_XXS 128K"                                  # a saved preset (opens the monitor)
-strata launch --family qwen --model iq3_xxs --context 128k --parallel 4 --vision off --tune quick \
+nostroma launch --preset "IQ3_XXS 128K"                                  # a saved preset (opens the monitor)
+nostroma launch --family qwen --model iq3_xxs --context 128k --parallel 4 --vision off --tune quick \
               --access lan --port 8080 --save-preset "Office" --no-tui
-strata launch --model-path /data/models/IQ3_XXS --no-tui               # files you already have
-strata launch --preset Office --set prefill=65536 --set STRATA_PIN_BY_NEED=1 --no-tui
-strata launch --family qwen --model q2_0 --context 64k --restart --no-tui
-strata launch --list-presets
-strata launch --show-key
+nostroma launch --model-path /data/models/IQ3_XXS --no-tui               # files you already have
+nostroma launch --preset Office --set prefill=65536 --set STRATA_PIN_BY_NEED=1 --no-tui
+nostroma launch --family qwen --model q2_0 --context 64k --restart --no-tui
+nostroma launch --list-presets
+nostroma launch --show-key
 ```
 
 | Flag | What it does |
@@ -113,15 +113,15 @@ strata launch --show-key
 | `--status`, `--stop`, `--show-key` | Show, stop, or print the key of the running launch (add `--preset NAME` to pick one). |
 
 Presets are small files in `launch-presets/` beside the profiles folder. A run uses the shared profile `launch-<name>` and the shared
-tuning presets (`strata presets`), so the app sees them too.
+tuning presets (`nostroma presets`), so the app sees them too.
 
 **Which value an engine option has.** The run config of a launch (`launch/<name>.json` in the state folder) is built again at every launch. For each
-option the first of these four that has it wins, and the file, `strata status` and the engine's command line show the same value:
+option the first of these four that has it wins, and the file, `nostroma status` and the engine's command line show the same value:
 
 1. **Explicit launch values:** what this command line says (`--set draft-conf=0.35`, `--context`, ...). They hold for this launch and any launch given the same flags
    (a saved preset keeps its `--set` values). Leave a flag out next time and it is gone. `--set KEY=off` removes the option.
 2. **Persisted overrides:** the options you set by hand: `user_args` in the model's run config and changes you made to `args` in the launch's file since it was written.
-3. **Calibrated values:** what `strata engine calibrate --apply-result` measured for this model and context (`calibrated` in the file). A different model or context drops them.
+3. **Calibrated values:** what `nostroma engine calibrate --apply-result` measured for this model and context (`calibrated` in the file). A different model or context drops them.
 4. **Auto:** what setup and the policies generate (drafter confidence from the card, cards, memory fit).
 
 The Auto drafter policy rebuilds its options at every start and keeps only layers 1 and 2, so `--set draft-conf=0.35` and `--set spec=3` reach the engine as given.
@@ -130,7 +130,7 @@ The Auto drafter policy rebuilds its options at every start and keeps only layer
 **Launching while a model is serving.** The same choices restart nothing and print the running addresses. Different choices
 (another context, pictures, access, or another model on the same port) make the screens ask once, "Restart the model with these
 settings? Answers in progress stop." With `--no-tui` the command refuses with one line naming the running model, its port and settings. Add
-`--restart` or run `strata launch --stop` first. A different `--port` runs beside the first server; two big models may not fit in graphics memory together, and the launch says so.
+`--restart` or run `nostroma launch --stop` first. A different `--port` runs beside the first server; two big models may not fit in graphics memory together, and the launch says so.
 
 ## After the start: the monitor
 
@@ -155,16 +155,16 @@ With two or more cards the Overview shows the busiest card's load, all cards' me
 and draws the full look. Otherwise it draws a solid-block look and shows one line suggesting Windows Terminal. Nothing is saved and
 Windows Terminal, Linux and macOS are never touched. `STRATA_GLYPHS=unicode|ascii|solid` forces a look.
 
-## Connect your apps: `strata connect`
+## Connect your apps: `nostroma connect`
 
-`strata connect` lists OpenCode, Codex CLI, Claude Code, oh-my-pi (`omp`), pi, Hermes Agent, OpenClaw and the DeepSeek Harness
+`nostroma connect` lists OpenCode, Codex CLI, Claude Code, oh-my-pi (`omp`), pi, Hermes Agent, OpenClaw and the DeepSeek Harness
 (built into the app).
 
 ```sh
-strata connect opencode           # print the file and environment, with address, key, model and context filled in
-strata connect opencode --write   # write it after asking; anything replaced is backed up
-strata connect opencode --check   # send one prompt and one tool call the way that app does
-strata connect opencode --check --output json
+nostroma connect opencode           # print the file and environment, with address, key, model and context filled in
+nostroma connect opencode --write   # write it after asking; anything replaced is backed up
+nostroma connect opencode --check   # send one prompt and one tool call the way that app does
+nostroma connect opencode --check --output json
 ```
 
 | Flag | What it does |
@@ -178,37 +178,37 @@ With `--output json` the object has the file and environment fields, `checks` (o
 `seconds`) and `checked_server`. `ok` is true only when both checks passed. The exit code is 0 when both worked and 1 otherwise;
 then `error` says which check failed or that the server could not be reached.
 
-Each configuration was tested against a Strata server at 32K context. Known limits are printed in plain words, for example:
+Each configuration was tested against a Nostroma server at 32K context. Known limits are printed in plain words, for example:
 Claude Code needs `CLAUDE_CODE_MAX_CONTEXT_TOKENS`; OpenCode needs `limit.input`; Hermes refuses windows under 64K unless set up
 as the config does; OpenClaw needs Node 24.16 or newer.
 
 ## Models you already have
 
-`strata models list` looks in these places (one function, `nostroma_control/discovery.py`):
+`nostroma models list` looks in these places (one function, `nostroma_control/discovery.py`):
 
 - the folder you name with `--install-dir` or `STRATA_INSTALL_DIR` (then only that one)
 - the Terminal's own folder
 - folders earlier installs remembered in `settings.json`
-- the desktop app's install folder, which the Terminal shares: `%LOCALAPPDATA%\Strata\install` on Windows,
-  `$XDG_DATA_HOME/strata/install` (normally `~/.local/share/strata/install`) on Linux and macOS
+- the desktop app's install folder, which the Terminal shares: `%LOCALAPPDATA%\Nostroma\install` on Windows,
+  `$XDG_DATA_HOME/nostroma/install` (normally `~/.local/share/strata/install`) on Linux and macOS
 
-The data folder is the one you set, else the app's (`app-settings.json` beside its install folder, else a `Documents/Strata` that holds
-models), else Strata's default.
+The data folder is the one you set, else the app's (`app-settings.json` beside its install folder, else a `Documents/Nostroma` that holds
+models), else Nostroma's default.
 
-`strata models import PATH --plan` recognises the Gyro-S and Gyro-M files (TQK6/TQK7 and TQ2_T experts) and every file set setup
+`nostroma models import PATH --plan` recognises the Gyro-S and Gyro-M files (TQK6/TQK7 and TQ2_T experts) and every file set setup
 installs, also under another name when the header matches. It says which run config, prepared pack, draft layer and picture reader
 already exist. Nothing is copied or moved.
 
 ## When there is no engine for this computer
 
-`strata launch` does not refuse. It says "Strata couldn't find an engine for this computer" with the reason, asks whether to go on
+`nostroma launch` does not refuse. It says "Nostroma couldn't find an engine for this computer" with the reason, asks whether to go on
 (Enter means yes; `--yes` skips the question), downloads the model, and ends with a message that names the problem and the next step.
 The exit code is 0 and nothing is started.
 
 ## Intel Arc and cards of different makes
 
 - **Intel Arc:** the Terminal downloads the released Linux SYCL engine, but its model preparation for Arc is a container build that it does not
-  run. If the model's files and prepared pack are already on disk, `strata launch` writes the run settings itself. Otherwise it reports the preparation problem. Use
+  run. If the model's files and prepared pack are already on disk, `nostroma launch` writes the run settings itself. Otherwise it reports the preparation problem. Use
   [Intel setup](INTEL_ARC.md) for the preparation route.
 - **Mixed makes:** one engine drives the cards of one make (CUDA: NVIDIA, HIP: AMD). Only those cards are offered, and a model is never
   split across makes. Two models at once, one per make, is not supported. If the other make has the bigger card, you get one line saying so.
@@ -216,4 +216,4 @@ The exit code is 0 and nothing is started.
 ## Limits
 
 - The model download uses `setup.py` in its control mode (no pip, no engine fetch, no compiler), as the desktop app does. It needs internet and room for the files.
-- The Linux SYCL package updates through `strata update`. Do not copy it into the components folder by hand.
+- The Linux SYCL package updates through `nostroma update`. Do not copy it into the components folder by hand.

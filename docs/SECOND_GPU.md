@@ -1,8 +1,8 @@
 # CUDA1-3 expert caches and the peer tier (experimental)
 
 This page is for people who tune the engine by hand and want a second, third or fourth card to hold extra experts. These are
-experimental engine settings. For ordinary multi-GPU use in the app or `strata launch`, see [MULTI_GPU.md](MULTI_GPU.md). The
-settings go into the run config (`strata-*.json`) as `"args"` entries; they are engine flags, not `strata launch` flags.
+experimental engine settings. For ordinary multi-GPU use in the app or `nostroma launch`, see [MULTI_GPU.md](MULTI_GPU.md). The
+settings go into the run config (`strata-*.json`) as `"args"` entries; they are engine flags, not `nostroma launch` flags.
 
 > **On this page:** [How it works](#how-it-works) · [Helper caches](#helper-caches) · [Faster helper decode](#faster-helper-decode---remote-expert-opt) ·
 > [Peer tier](#peer-tier---peer-device) · [Resident RAM mode](#the-resident-ram-mode-with-the-helper-caches) ·
@@ -94,8 +94,8 @@ Through the server, list both cards in the config's `"gpu"` (for example `[0, 1]
 `--layer-split` and `--expert-cache-device1..3`:
 
 ```text
-strata generate: --peer-device cannot be combined with --layer-split (use one or the other)
-strata generate: --peer-device cannot be combined with --expert-cache-device1..3 (the peer tier already caches experts there)
+nostroma generate: --peer-device cannot be combined with --layer-split (use one or the other)
+nostroma generate: --peer-device cannot be combined with --expert-cache-device1..3 (the peer tier already caches experts there)
 ```
 
 With a peer, the prompt path keeps the MMQ path (the fused int8 prompt path is not combined with the peer's rows). The tier size

@@ -5,7 +5,7 @@ For a normal install use the app installer for your hardware or the [Terminal](I
 CUDA 12 engine package. The `--cuda`, `--gpus`, `START-HERE.bat` and `UPDATE.bat` examples below are
 [source-setup](SOURCE_INSTALL.md) options, not Terminal launch flags.
 
-Strata's supported cards are NVIDIA RTX 20 / 30 / 40 / 50 and the AMD cards in [AMD_HIP.md](AMD_HIP.md). The cards below run
+Nostroma's supported cards are NVIDIA RTX 20 / 30 / 40 / 50 and the AMD cards in [AMD_HIP.md](AMD_HIP.md). The cards below run
 through opt-in, experimental paths that community members wrote and measured. The maintainers own one of these cards, a Tesla
 P100, and test on it. Every other path is compile-checked and unit-tested, and the ready-made engines and their output are
 unchanged. Numbers are the reporters' own, on one machine each, unless the text says the maintainers measured them.
@@ -44,7 +44,7 @@ too and cannot hold any of the model.
 
 ### Maxwell (sm_52)
 
-One reporter ran Strata v0.1.44.1 on two Quadro M6000 24 GB (Ubuntu, driver 580) with Qwen3.8-Flash-Next at IQ1 and saw about
+One reporter ran Nostroma v0.1.44.1 on two Quadro M6000 24 GB (Ubuntu, driver 580) with Qwen3.8-Flash-Next at IQ1 and saw about
 22 tokens a second. Nobody has checked the answer text on these cards yet, and Maxwell has no native half-precision arithmetic,
 so treat it as a test. The ready-made CUDA 12 engine holds no sm_52 code; build from source with a CUDA 12.x toolkit (CUDA 13
 cannot compile for Maxwell):
@@ -68,7 +68,7 @@ choice is made per model, by the oldest card that model runs on:
 - Every card the model uses is RTX 20 or newer: the ready-made CUDA 13 engine.
 - A card is Pascal or Volta: the CUDA 12 engine. Setup says so (`CUDA 12: sm_70 is older than CUDA 13 supports ...`).
 
-Release builds deliver engine components through the signed feed (`strata update`). For a source checkout, `--build` compiles with
+Release builds deliver engine components through the signed feed (`nostroma update`). For a source checkout, `--build` compiles with
 a CUDA 12.x toolkit ([source installation](SOURCE_INSTALL.md)).
 
 ### Opting in
@@ -87,11 +87,11 @@ The choice is kept in the model's config (`"cuda": 12`). Starts and `UPDATE.bat`
 Setting the model up again chooses again (add `--cuda 12` to keep a forced choice). A Pascal or Volta card added to a model at a
 start (`--gpus`) moves that model to the CUDA 12 engine.
 
-`--cuda 12` is also the way to run Strata with an NVIDIA driver older than 580. The oldest driver the CUDA 12 engine runs on is the
+`--cuda 12` is also the way to run Nostroma with an NVIDIA driver older than 580. The oldest driver the CUDA 12 engine runs on is the
 `min_driver` of its package (575.51 or newer at the moment, as in the Docker `cuda12` image, [DOCKER.md](DOCKER.md)). Setup reads it from
-the installed package or the signed update feed and says it in the "driver too old" stop; `strata update` enforces the same number. NVIDIA's
+the installed package or the signed update feed and says it in the "driver too old" stop; `nostroma update` enforces the same number. NVIDIA's
 own table lets CUDA 12 programs start on older drivers (525 on Linux, 527 on Windows), but the packages are built with CUDA 12.9 and were
-not tested on such drivers, so Strata does not promise that range.
+not tested on such drivers, so Nostroma does not promise that range.
 
 ### Mixed cards
 
@@ -110,7 +110,7 @@ other card or toolkit changes. Use CUDA 13.0 or newer for an RTX 50 card.
 # Linux (Windows: the same with the toolkit's nvcc.exe)
 cmake -S . -B build-cuda12 -DSTRATA_ENABLE_CUDA=ON -DSTRATA_BUILD_TESTS=OFF -DSTRATA_EXPERIMENTAL_SM60=ON \
       -DCMAKE_CUDA_ARCHITECTURES="61;70" -DCMAKE_CUDA_COMPILER=/usr/local/cuda-12.9/bin/nvcc
-cmake --build build-cuda12 --target strata -j
+cmake --build build-cuda12 --target nostroma -j
 ```
 
 Setup does the same when it compiles: it looks for the newest CUDA 12.x toolkit. `STRATA_NVCC=<path to nvcc>` picks one. On

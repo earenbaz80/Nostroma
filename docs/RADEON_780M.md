@@ -1,6 +1,6 @@
 # Radeon 780M / 760M (Ryzen 7040 / 8040, gfx1103): build from source on Linux
 
-The Radeon 780M (Phoenix / Hawk Point, RDNA3, `gfx1103`) runs Strata through the same HIP backend as the Radeon
+The Radeon 780M (Phoenix / Hawk Point, RDNA3, `gfx1103`) runs Nostroma through the same HIP backend as the Radeon
 cards in [AMD_HIP.md](AMD_HIP.md). **Status: experimental and opt-in** (`STRATA_EXPERIMENTAL_GFX1103=1`): the port
 is measured on one machine (the numbers below), the maintainers have not run one, and the chip is not Strix Halo.
 Everything here was measured on a Ryzen 7 8745HS (8 cores, AVX-512), Radeon 780M (12 CUs), 60 GB DDR5, GTT at
@@ -83,7 +83,7 @@ greedy tokens, 3 of 3 pairs), with the greedy token ids unchanged. They are the 
 
 On by default on the Radeon 780M (`gfx1103`, integrated, Linux; AMD_HIP.md, "Integrated GPUs"): the engine sets `STRATA_HIP_WMMA`, `STRATA_PF_GEMM`,
 `STRATA_PA_FAST`, `STRATA_SELECT_WMMA` and `STRATA_HC_UPMIX` itself. `STRATA_IGPU_PROMPT_SET=0` turns the whole set off, `NAME=0` one switch. The 880M / 890M
-(`gfx1150`) and Windows keep it off (no hardware / not tested); `STRATA_IGPU_PROMPT_SET=1` turns it on there. `STRATA_PF_FUSED` (the prompt experts on Strata's own int8 kernels instead of llama.cpp's MMQ) is on by itself on the 780M under Linux; `STRATA_PF_FUSED=0` keeps MMQ. Q2_0, 3 interleaved rounds: prompt x1.30 at 2K tokens and x1.13 at 8K, no change at 300 and 1,000 tokens; forced-token KL against the FP16 path 0.0060 against 0.0054 for MMQ (24 prompts, 64 tokens each, ratio 1.10, 95% CI 0.93 to 1.37).
+(`gfx1150`) and Windows keep it off (no hardware / not tested); `STRATA_IGPU_PROMPT_SET=1` turns it on there. `STRATA_PF_FUSED` (the prompt experts on Nostroma's own int8 kernels instead of llama.cpp's MMQ) is on by itself on the 780M under Linux; `STRATA_PF_FUSED=0` keeps MMQ. Q2_0, 3 interleaved rounds: prompt x1.30 at 2K tokens and x1.13 at 8K, no change at 300 and 1,000 tokens; forced-token KL against the FP16 path 0.0060 against 0.0054 for MMQ (24 prompts, 64 tokens each, ratio 1.10, 95% CI 0.93 to 1.37).
 
 Measured (021-minipc, P2006, Q2_0, fresh engine per run, 10 interleaved rounds, 6 complete pairs): prompt 1K 98.5 -> 157.3 tok/s (x1.60, 6/6 pairs faster),
 4K 115.1 -> 233.3 (x2.03, 6/6), decode 22.02 -> 21.99 (code) and 15.09 -> 15.05 (story) (x0.999), greedy token ids identical in 6 of 6 pairs.

@@ -1,27 +1,27 @@
-# Strata on the NVIDIA DGX Spark (Linux, ARM64)
+# Nostroma on the NVIDIA DGX Spark (Linux, ARM64)
 
 The DGX Spark is a small desktop box with a GB10 chip: a Blackwell GPU (compute capability 12.1, 48 SMs) and 20 Arm CPU cores that share
-128 GB of memory. Strata 0.2.7.1 runs Qwen3.8-Flash-Next on it. This page says what works, how to install it, what
+128 GB of memory. Nostroma 0.2.7.1 runs Qwen3.8-Flash-Next on it. This page says what works, how to install it, what
 the Spark does with its memory, and how the speeds were measured. It was tested on one Spark (Ubuntu 24.04, driver 580.173, CUDA 13.0).
 Nothing here is known to work on another ARM machine.
 
 ## What works, and what does not
 
 - **Works:** Qwen3.8-Flash-Next IQ3_S and the NVFP4 GPTQ pack (64K context, every expert in the GPU's cache),
-  the Terminal (`strata launch`, `strata update`, `strata serve`) and the engine packages of the signed feed.
+  the Terminal (`nostroma launch`, `nostroma update`, `nostroma serve`) and the engine packages of the signed feed.
 - **Not built for ARM:** the desktop app (no AppImage; use the Terminal), the HIP, SYCL and CPU-only engines, and the Q2_0 and Gyro packs,
   whose CPU kernels are x86-only (the engine refuses them at start). Picture reading is compiled in and was not tried on the Spark.
-- **Not tested:** contexts above 128K, more than eight chat slots (four and eight were measured: "Several chats at once" below), a long soak. `strata doctor --live` lists the GB10 with no memory
+- **Not tested:** contexts above 128K, more than eight chat slots (four and eight were measured: "Several chats at once" below), a long soak. `nostroma doctor --live` lists the GB10 with no memory
   figure, because `nvidia-smi` reports none for it.
 
 ## Install with the Terminal
 
 ```sh
 curl -fsSL --connect-timeout 15 --max-time 120 https://github.com/Niko1221/Strata/releases/latest/download/install.sh -o install.sh && sh install.sh
-strata launch
+nostroma launch
 ```
 
-`install.sh` unpacks the Terminal into `~/.local/share/strata` (no administrator rights) and checks the release's signed feed. `strata launch`
+`install.sh` unpacks the Terminal into `~/.local/share/strata` (no administrator rights) and checks the release's signed feed. `nostroma launch`
 fetches the `linux-aarch64` engine package, shows what each model needs, downloads the one you choose and starts it. Pick Qwen3.8-Flash-Next
 IQ3_S (84 GB download) or the NVFP4 pack. The engine package needs glibc 2.39 or newer
 (Ubuntu 24.04, DGX OS 7) and NVIDIA driver 580.65 or newer.
@@ -29,8 +29,8 @@ IQ3_S (84 GB download) or the NVFP4 pack. The engine package needs glibc 2.39 or
 ## Install from a source checkout
 
 ```sh
-./setup.sh --setup --family qwen --model IQ3_S --context 65536 --vision no --yes --no-start --data-dir ~/Strata-data
-./setup.sh --setup --family nvfp4 --model NVFP4 --context 65536 --vision no --yes --no-start --data-dir ~/Strata-data
+./setup.sh --setup --family qwen --model IQ3_S --context 65536 --vision no --yes --no-start --data-dir ~/Nostroma-data
+./setup.sh --setup --family nvfp4 --model NVFP4 --context 65536 --vision no --yes --no-start --data-dir ~/Nostroma-data
 ```
 
 `--data-dir` must be a folder you can write (the default, next to the checkout, may be under `/home`, which a normal user cannot create).
@@ -61,7 +61,7 @@ cp -r out-spark/engine ./engine
 ```
 
 About 3 minutes for the engine (the first run also fetches llama.cpp at the
-pinned commit). `out-spark/engine/` holds `strata`, `strata-vision`, `libstrata_kq.so`, the CUDA libraries and a `BUILD.json`.
+pinned commit). `out-spark/engine/` holds `nostroma`, `strata-vision`, `libstrata_kq.so`, the CUDA libraries and a `BUILD.json`.
 `BUILD_VISION=0` leaves the picture reader out. `packaging/build_cuda_linux_aarch64.sh` runs this build and makes the engine package
 for the feed ([packaging/README.md](../packaging/README.md)). A model on a Q2_0 pack cannot run: its CPU kernels need AVX-512.
 
@@ -98,7 +98,7 @@ The table makes prompts faster: IQ3_S 1.20x over the three sizes (90% interval 1
 1.24x (1.14 to 1.36). It does not change decode speed in this check: 0.996x (0.97 to 1.02) on IQ3_S, with the 4K cell 0.94x, and 1.02x (1.00 to
 1.05) on NVFP4. The first run of the port (26 October) had measured +5% each for the two decode switches; this check did not see it.
 
-Several chats at once (`"parallel"` is 4 on a Spark for `strata launch`; the setup script leaves it off): IQ3_S, 2K-token prompts, 128-token cap,
+Several chats at once (`"parallel"` is 4 on a Spark for `nostroma launch`; the setup script leaves it off): IQ3_S, 2K-token prompts, 128-token cap,
 the aggregate tokens per second over all clients: 8 clients 35.6, 16 clients 41.7, 32 clients 47.3 at 4 slots; 32 clients 54.2 at 8 slots. With
 a prompt of its own and a hidden code for each client, every answer named its own code and nobody else's (8 clients at 4 slots, 16 clients at 8
 slots), and none failed or hung.

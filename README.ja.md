@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="apps/host/public/brand/strata-lockup-dark.svg">
-    <img src="apps/host/public/brand/strata-lockup-light.svg" alt="Nostroma" width="340">
+    <source media="(prefers-color-scheme: dark)" srcset="apps/host/public/brand/nostroma-lockup-dark.svg">
+    <img src="apps/host/public/brand/nostroma-lockup-light.svg" alt="Nostroma" width="340">
   </picture>
 </p>
 
@@ -58,7 +58,7 @@
 
 ## インストール
 
-<a id="option-a-the-strata-app"></a>
+<a id="option-a-the-nostroma-app"></a>
 
 ### デスクトップアプリ
 
@@ -77,7 +77,7 @@
 
 ### ターミナルアプリ
 
-ターミナルのほうが好みですか？ Nostroma をインストールして、**`strata launch`** を実行します。
+ターミナルのほうが好みですか？ Nostroma をインストールして、**`nostroma launch`** を実行します。
 
 <details open>
 <summary><b>インストールコマンド</b></summary>
@@ -97,7 +97,7 @@ irm -TimeoutSec 120 https://github.com/Niko1221/Strata/releases/latest/download/
 Windows では、インストール後に新しいターミナルを開きます。そのあと:
 
 ```sh
-strata launch
+nostroma launch
 ```
 
 画面の案内に従って、モデルをダウンロードして起動します。[ターミナルガイド](docs/TERMINAL_LAUNCH.md)。
@@ -132,7 +132,7 @@ strata launch
 
 **Claude Code · Codex CLI · OpenCode · oh-my-pi · pi.dev · Hermes Agent · OpenClaw**。OpenAI 互換と Anthropic 互換の API を通じて、ほかのツールも使えます。
 
-**`strata connect`** を実行すると、お使いのツールの設定方法が表示されます。[接続ガイド](docs/TERMINAL_LAUNCH.md#connect-your-apps-strata-connect)。
+**`nostroma connect`** を実行すると、お使いのツールの設定方法が表示されます。[接続ガイド](docs/TERMINAL_LAUNCH.md#connect-your-apps-nostroma-connect)。
 
 <a id="guides"></a>
 <a id="how-fast-is-it"></a>

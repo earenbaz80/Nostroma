@@ -1,6 +1,6 @@
-# third_party/strata-ggml: the ggml sources Strata's engine builds, frozen
+# third_party/strata-ggml: the ggml sources Nostroma's engine builds, frozen
 
-Strata's engines build **ggml-base** and **ggml-cpu** (CPU expert pool, activation quantizers, start-up checks, the DeepSeek CPU lane) and,
+Nostroma's engines build **ggml-base** and **ggml-cpu** (CPU expert pool, activation quantizers, start-up checks, the DeepSeek CPU lane) and,
 on CUDA and HIP, **llama.cpp's ggml-cuda MMQ kernels** (the prompt path's expert products: `strata_mmq`, `libstrata_kq`, the split engine's
 dot-product headers). This folder holds exactly those sources, copied from llama.cpp, so an engine build needs no network and no
 llama.cpp download.
@@ -20,14 +20,14 @@ folder (an override kept for two releases, then removed).
 - **Here:** ggml-base (`ggml.c`, `ggml.cpp`, `ggml-alloc.c`, `ggml-backend.cpp`, `ggml-backend-meta.cpp`, `ggml-opt.cpp`, `ggml-threading.*`,
   `ggml-quants.*`, `gguf.cpp`, the headers); ggml-cpu for x86 and Arm (`ggml-cpu/*`, `ggml-cpu/amx`, `ggml-cpu/arch/{x86,arm}`); from ggml-cuda only
   what MMQ and the split engine compile: `common.cuh`, `mma.cuh`, `mmq*.cuh`, `quantize.cu/.cuh`, `vecdotq.cuh`, `vendors/{cuda,hip}.h` and the
-  MMQ instances for the formats Strata ships (Q2_0, IQ2_XXS/XS/S, IQ3_XXS/S, IQ4_NL/XS, Q8_0, Q5_0, Q4_K, Q5_K, Q5_1, Q6_K).
+  MMQ instances for the formats Nostroma ships (Q2_0, IQ2_XXS/XS/S, IQ3_XXS/S, IQ4_NL/XS, Q8_0, Q5_0, Q4_K, Q5_K, Q5_1, Q6_K).
 - **Not here:** every other backend (CUDA's other kernels, HIP, Metal, SYCL, Vulkan, ...), the backend registry (`ggml-backend-reg.cpp`), other CPU
   architectures (PowerPC, s390x, RISC-V, LoongArch, Wasm), KleidiAI, llamafile, the CPU feature probe for dynamic backends, tests, examples.
   Options for them (`GGML_CPU_KLEIDIAI`, `GGML_LLAMAFILE`, `GGML_BACKEND_DL`, `GGML_CPU_ALL_VARIANTS`) are not supported by this tree.
 - **llama.cpp itself** (the picture reader's mtmd, gguf-py for the pack tools) is not here: `strata-vision` and setup still use a llama.cpp
   checkout. Those are the next phase.
 
-## Strata edits (every file that differs from the pin is listed as `edited` in the manifest below)
+## Nostroma edits (every file that differs from the pin is listed as `edited` in the manifest below)
 
 1. `ggml/CMakeLists.txt` and `ggml/src/CMakeLists.txt`: trimmed to build ggml-base and the CPU backend only (the `ggml` umbrella library, the
    other backends' options and `ggml_add_backend` calls, the all-variants CPU build, tests, examples, install rules and the CMake package are removed;
@@ -55,7 +55,7 @@ folder (an override kept for two releases, then removed).
    STRATA_MMQ_TAB needs no fingerprint of it for this tree. A build with `-DSTRATA_GGML_DIR=<llama.cpp>` still gets the overlay (the script reads `tq.cuh` and
    `tq-mmq-tiles.cuh` from here); it goes with that override. `third_party/ggml-tq` is gone.
 
-3. **The quant header has Strata's name (phase 1B).** `strata-quant-common.h` holds the text: llama.cpp's `ggml/src/ggml-common.h` with one Strata edit
+3. **The quant header has Nostroma's name (phase 1B).** `strata-quant-common.h` holds the text: llama.cpp's `ggml/src/ggml-common.h` with one Nostroma edit
    (`GGML_COMMON_IMPL_METAL` also opens `iq1s_grid`; line 1134), row `edited` below. `third_party/ggml/ggml-common.h` is now a one-line forwarder to it, kept for two
    releases, so every `#include "ggml-common.h"` is unchanged. The Metal runtime reads this file's TEXT (`metal/src/resource_path.h`: `<exe>/metal/strata-quant-common.h`,
    else the old name beside the executable, else the compiled-in path) and the Mac package ships `metal/strata-quant-common.h` plus a full-text copy as

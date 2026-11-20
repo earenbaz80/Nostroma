@@ -126,7 +126,7 @@ g++ -std=c++20 -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer \
 With an existing CUDA build configured:
 
 ```bash
-cmake --build build --target strata exchange_storage_test file_expert_source_test
+cmake --build build --target nostroma exchange_storage_test file_expert_source_test
 ctest --test-dir build -R '^(exchange_storage_test|file_expert_source_test)$' --output-on-failure
 ./build/file_expert_source_test --rotation-gpu
 compute-sanitizer --tool memcheck --error-exitcode 71 ./build/file_expert_source_test --rotation-gpu

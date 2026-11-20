@@ -10,7 +10,7 @@ generated file below keeps that notice at the top.  Pin: llama.cpp `3cf03257f219
 | `arm/arm_dots.inc`, `arm/arm_act.inc`, `arm/arm_tables.inc` | `ggml/src/ggml-cpu/arch/arm/quants.c` | `own2n/gen_arm.py` |
 | `dot_generic.cpp`, `act_ref.cpp`, `dequant.cpp` | `ggml/src/ggml-cpu/quants.c`, `ggml/src/ggml-quants.c` | `own2a/gen_generic.py`, `own2a/gen_dequant.py` |
 
-The generators only saved typing: the output is Strata's from the commit that adds it, and is edited by hand afterwards (the `STRATA_NOFUSE` pins, the
+The generators only saved typing: the output is Nostroma's from the commit that adds it, and is edited by hand afterwards (the `STRATA_NOFUSE` pins, the
 `bs = bx = by = 0, nrc = 1` constants of the one-row call in the Arm dots).  The `#if __AVX2__` / `__AVX__` / `__ARM_FEATURE_*` branches are ggml's own and
 are kept verbatim: they are what makes a tier an arithmetic contract (`include/strata/quant/isa.hpp`).  Float contraction is part of that contract: see the
 comments in `cmake/backends/quant.cmake`.  `tests/quant/run_oracle.sh` checks every kernel bit for bit against ggml-cpu built in the matching flavour.

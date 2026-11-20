@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="apps/host/public/brand/strata-lockup-dark.svg">
-    <img src="apps/host/public/brand/strata-lockup-light.svg" alt="Nostroma" width="340">
+    <source media="(prefers-color-scheme: dark)" srcset="apps/host/public/brand/nostroma-lockup-dark.svg">
+    <img src="apps/host/public/brand/nostroma-lockup-light.svg" alt="Nostroma" width="340">
   </picture>
 </p>
 
@@ -11,7 +11,7 @@
 <p align="center">
   <a href="#模型">模型</a> · <a href="#安装"><b>安装</b></a> ·
   <a href="#硬件">硬件</a> · <a href="#工具">工具</a> ·
-  <a href="#帮助">帮助</a> · <a href="#支持-strata">支持</a>
+  <a href="#帮助">帮助</a> · <a href="#支持-nostroma">支持</a>
 </p>
 
 <p align="center">
@@ -58,7 +58,7 @@
 
 ## 安装
 
-<a id="option-a-the-strata-app"></a>
+<a id="option-a-the-nostroma-app"></a>
 
 ### 桌面应用
 
@@ -77,7 +77,7 @@
 
 ### 终端应用
 
-更喜欢终端？安装 Nostroma，然后运行 **`strata launch`**。
+更喜欢终端？安装 Nostroma，然后运行 **`nostroma launch`**。
 
 <details open>
 <summary><b>安装命令</b></summary>
@@ -97,7 +97,7 @@ irm -TimeoutSec 120 https://github.com/Niko1221/Strata/releases/latest/download/
 在 Windows 上，安装后请打开一个新的终端。然后运行：
 
 ```sh
-strata launch
+nostroma launch
 ```
 
 按提示下载并启动模型。[终端指南](docs/TERMINAL_LAUNCH.md)。
@@ -132,7 +132,7 @@ strata launch
 
 **Claude Code · Codex CLI · OpenCode · oh-my-pi · pi.dev · Hermes Agent · OpenClaw**，也可以通过兼容 OpenAI 和 Anthropic 的 API 使用更多工具。
 
-运行 **`strata connect`**，查看你所用工具的设置方法。[连接指南](docs/TERMINAL_LAUNCH.md#connect-your-apps-strata-connect)。
+运行 **`nostroma connect`**，查看你所用工具的设置方法。[连接指南](docs/TERMINAL_LAUNCH.md#connect-your-apps-nostroma-connect)。
 
 <a id="guides"></a>
 <a id="how-fast-is-it"></a>

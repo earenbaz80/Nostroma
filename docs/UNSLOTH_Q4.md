@@ -1,6 +1,6 @@
 # Unsloth UD-Q4_K_XL
 
-This page is for people who want to run Unsloth's 4-bit Qwen3.8-Flash-Next file (UD-Q4_K_XL) with Strata, and for
+This page is for people who want to run Unsloth's 4-bit Qwen3.8-Flash-Next file (UD-Q4_K_XL) with Nostroma, and for
 people who pack it by hand. It also covers UD-IQ4_XS and plain Q4_0 files. For UD-Q5_K_XL, UD-Q6_K_XL and Q8_0, see
 [UNSLOTH_Q6.md](UNSLOTH_Q6.md). Quality, speed and images across the Unsloth sizes are in [QUANTS.md](QUANTS.md).
 
@@ -15,10 +15,10 @@ The target is Unsloth's 4-bit quantization of the same model the other packs use
 
 ## Quick start
 
-Run `strata launch` and choose **Qwen3.8-Flash-Next (Unsloth)**, or:
+Run `nostroma launch` and choose **Qwen3.8-Flash-Next (Unsloth)**, or:
 
 ```sh
-strata launch --family unsloth --model UD-Q4_K_XL
+nostroma launch --family unsloth --model UD-Q4_K_XL
 ```
 
 ## What setup does
@@ -73,7 +73,7 @@ Windows). Hugging Face snapshot symlinks work if you pass the snapshot's file na
 
 ## The pack (by hand)
 
-Build Strata, then from the repository root, with gguf-py from the pinned llama.cpp (setup installs it;
+Build Nostroma, then from the repository root, with gguf-py from the pinned llama.cpp (setup installs it;
 `STRATA_GGUF_PY` can point to its `gguf-py` folder):
 
 ```sh
@@ -106,8 +106,8 @@ the same file ([Quality](#quality-against-llamacpp-on-the-same-file)).
 
 ## The MTP draft layer
 
-The draft layer is the base model's, the same one the other packs use. If setup installed Strata, you have it (`mtp/rt`
-in `Strata-data`). Otherwise build it as [ORCA.md](ORCA.md#preparation) shows (`tools/mtp_fetch.py`,
+The draft layer is the base model's, the same one the other packs use. If setup installed Nostroma, you have it (`mtp/rt`
+in `Nostroma-data`). Otherwise build it as [ORCA.md](ORCA.md#preparation) shows (`tools/mtp_fetch.py`,
 `tools/mtp_pack.py`, `tools/mtp_rt.py`, then copy `data/draft_vocab.bin` to `mtp/rt/`).
 
 ## The server
@@ -138,7 +138,7 @@ implies `--mmap-experts`).
 ```
 
 ```sh
-.venv/bin/python -m serve.server --engine strata --config strata-ud-q4_k_xl.json --port 8080
+.venv/bin/python -m serve.server --engine nostroma --config strata-ud-q4_k_xl.json --port 8080
 ```
 
 `engine/strata.exe` is setup's engine on Windows; a self-built one is `build/strata`. The expert profile is the base
@@ -161,33 +161,33 @@ start on 12 GB. `--kv int8` halves the KV cache's VRAM.
 
 ## Quality: against llama.cpp on the same file
 
-> **Measured on:** Strata 0.1.32 era engine against llama.cpp pinned commit `3cf0325` (CPU build, GGUF memory-mapped).
-> Strata ran with RAM budget 40 GiB, the MTP draft layer on, greedy and `--adapt-every 100000`. Hardware is not recorded
+> **Measured on:** Nostroma 0.1.32 era engine against llama.cpp pinned commit `3cf0325` (CPU build, GGUF memory-mapped).
+> Nostroma ran with RAM budget 40 GiB, the MTP draft layer on, greedy and `--adapt-every 100000`. Hardware is not recorded
 > on this page.
 
 Both were given the same token sequences, and at every position each wrote its 20 most likely next tokens with their
-log-probabilities. Strata used its verify windows (`STRATA_LOGPOS` with `STRATA_LOGPOS_TOPK=20`), llama.cpp used
+log-probabilities. Nostroma used its verify windows (`STRATA_LOGPOS` with `STRATA_LOGPOS_TOPK=20`), llama.cpp used
 `llama_get_logits_ith` over one batch. Per position: whether the most likely token is the same (argmax agreement), how
-many of the 5 and 10 most likely tokens both have, the KL divergence (llama.cpp's distribution against Strata's, over
+many of the 5 and 10 most likely tokens both have, the KL divergence (llama.cpp's distribution against Nostroma's, over
 llama.cpp's top 20 plus one bucket for the rest), and the perplexity of the sequence under each.
 
-| Token set | Positions | Argmax agreement | Top-5 / top-10 overlap | KL | Perplexity Strata / llama.cpp |
+| Token set | Positions | Argmax agreement | Top-5 / top-10 overlap | KL | Perplexity Nostroma / llama.cpp |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Code: Strata's greedy answer to a coding prompt (an LRU cache in Python, 56-token prompt) | 400 | **99.0%** | 95.6% / 95.3% | 0.0008 | 1.067 / 1.070 |
-| Thinking: Strata's greedy answer to a reasoning puzzle (with thinking, 55-token prompt) | 324 | **97.5%** | 96.2% / 96.4% | 0.0016 | 1.107 / 1.106 |
-| After a 16K prompt: Strata's greedy continuation (256 tokens) of the 16,384 real-text tokens below | 256 | 90.2% | 88.1% / 89.3% | 0.039 | 1.619 / 1.623 |
+| Code: Nostroma's greedy answer to a coding prompt (an LRU cache in Python, 56-token prompt) | 400 | **99.0%** | 95.6% / 95.3% | 0.0008 | 1.067 / 1.070 |
+| Thinking: Nostroma's greedy answer to a reasoning puzzle (with thinking, 55-token prompt) | 324 | **97.5%** | 96.2% / 96.4% | 0.0016 | 1.107 / 1.106 |
+| After a 16K prompt: Nostroma's greedy continuation (256 tokens) of the 16,384 real-text tokens below | 256 | 90.2% | 88.1% / 89.3% | 0.039 | 1.619 / 1.623 |
 | Real text after a 16K prompt: the last 510 tokens of 16,384 tokens of this repository's docs and code | 510 | 91.2% | 88.3% / 89.9% | 0.035 | 4.27 / 4.29 |
 | The same 511 positions with only 512 tokens before them | 511 | 89.2% | 86.0% / 86.3% | 0.061 | 8.99 / 8.87 |
 
 For comparison, [eddoursul/Strata](https://github.com/eddoursul/Strata) reported 98.2 to 99.3% (code), 95.6 to 95.8%
 (thinking) and 97.7% (after a 16K prompt) for the same file against llama.cpp on an RTX 3090.
 
-The two differ at near-ties. Where llama.cpp's own gap between its two most likely tokens is 0.2 or more, Strata picks
+The two differ at near-ties. Where llama.cpp's own gap between its two most likely tokens is 0.2 or more, Nostroma picks
 the same token at every position of the code and thinking answers (695 of 695). After the 16K prompt it does so at every
 position where the gap is 0.5 or more (144 of 144 in the continuation, 254 of 254 in the real text). Text after a long
 document has many more near-ties than a short answer (58 of the continuation's 256 positions and 135 of the real text's
 510 have a gap under 0.2, against 13 of the code answer's 400), which is why its agreement is lower. The perplexities
-match within 3% in every set. The 16K prompts were read by Strata's batched prompt path (15,872 tokens), the rest
+match within 3% in every set. The 16K prompts were read by Nostroma's batched prompt path (15,872 tokens), the rest
 through the verify windows. These numbers are the FP16 prompt path's. With the MMQ prompt path (`STRATA_MMQ_KQ=1`) the
 continuation after the 16K prompt agrees at 92.2% (KL 0.029, three runs, identical).
 
@@ -211,7 +211,7 @@ same top 20 per position.
 Unsloth's `UD-IQ4_XS` at the same revision is in setup as a regular choice, the Unsloth family's first size:
 
 ```sh
-strata launch --family unsloth --model UD-IQ4_XS
+nostroma launch --family unsloth --model UD-IQ4_XS
 ```
 
 It sits between IQ3_S and UD-Q4_K_XL. Its routed experts are IQ3_S gate/up (IQ4_XS in one layer) with IQ4_NL downs (Q8_0
@@ -253,7 +253,7 @@ gives a relative error against the float product of 1.1 to 1.3e-2 on the CPU and
 
 > **Measured on:** one RTX 3060 12 GB (PCIe 3.0 x16), Xeon E5-2696 v4, 121 GiB DDR4-2400, Linux, CUDA 12.4. Every
 > expert in RAM, `--max-context 131072 --kv int8 --kv-resident 20480`, expert cache `auto` (1,960 slots, 5.06 GiB),
-> prompt chunk `auto` (6,144 tokens), greedy, `reasoning_effort` medium, one request at a time. Strata version not
+> prompt chunk `auto` (6,144 tokens), greedy, `reasoning_effort` medium, one request at a time. Nostroma version not
 > recorded.
 
 | Prompt | Prompt read | Output |

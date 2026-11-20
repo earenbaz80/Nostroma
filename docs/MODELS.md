@@ -14,10 +14,10 @@ Qwen3.8-Flash-Next (and its variants) and Qwen3.6-35B-A3B. For installing, see [
 2. Print the plan. Nothing is downloaded or changed:
 
    ```sh
-   strata launch --plan --family qwen --model iq2_xs
+   nostroma launch --plan --family qwen --model iq2_xs
    ```
 
-3. Start it with `strata launch` (guided), or run the same command without `--plan` and add `--yes --no-tui`.
+3. Start it with `nostroma launch` (guided), or run the same command without `--plan` and add `--yes --no-tui`.
 
 **Provider order:** ISTA-DASLab, then Unsloth, then Gyro, then others, using the first compatible pack that fits the
 model and your hardware. ISTA-DASLab is the default recommendation. Gyro saves memory and is slower. Swift 1.5, NVFP4
@@ -79,7 +79,7 @@ card makes it faster and does not lower the RAM needed, except in low-RAM mode.
 files and keeps in RAM only what the card does not hold. A 32 GB PC with a 24 GB GPU runs Q2_0, IQ2_XS and the Coder
 this way, and a 32 GB PC with a 12 to 16 GB GPU runs the Coder. With a small card most experts come from the SSD and it
 is much slower; setup says so. A source checkout can force the mode with `--low-ram on|off`
-([SOURCE_INSTALL.md](SOURCE_INSTALL.md)). `strata launch` has no `--low-ram` flag.
+([SOURCE_INSTALL.md](SOURCE_INSTALL.md)). `nostroma launch` has no `--low-ram` flag.
 
 The download is 66 to 76 GB for the three smaller sizes ([details](DETAILS.md#which-model)). The first start also
 fetches the MTP draft layer (about 6 GB, 1 GB more with pictures).
@@ -92,10 +92,10 @@ picture). The rule is the same on NVIDIA and AMD.
 
 | Setting | Effect |
 | --- | --- |
-| `--vision off` | no pictures (also "No" in the app and in `strata launch`) |
+| `--vision off` | no pictures (also "No" in the app and in `nostroma launch`) |
 | `--vision cpu` / `--vision gpu` | choose the reader |
 
-- **AMD:** `strata-vision-hip` is the card's reader. If it cannot start, Strata uses the CPU reader ([AMD_HIP.md](AMD_HIP.md)).
+- **AMD:** `strata-vision-hip` is the card's reader. If it cannot start, Nostroma uses the CPU reader ([AMD_HIP.md](AMD_HIP.md)).
 - **Mac:** pictures run on the GPU ([MAC.md](MAC.md)).
 - **Intel Arc:** an Arc with 24 GB or more keeps the CPU reader unless you pass `--vision gpu`. A Battlemage card (B580, B70) has pictures off until you pass `--vision on` ([INTEL.md](INTEL.md)).
 
@@ -113,7 +113,7 @@ It is weaker outside code and in languages other than English, Chinese and other
 or whenever RAM allows, take a size that keeps every expert. More: [details](DETAILS.md#or-the-coder-half-the-experts-for-code).
 
 ```sh
-strata launch --family coder --model IQ1_M
+nostroma launch --family coder --model IQ1_M
 ```
 
 ### Swift 1.5
@@ -123,7 +123,7 @@ thinks much shorter before answering, with about the same quality. Speed per tok
 original. Its own license applies. More: [details](DETAILS.md#or-swift-15-a-fine-tune-that-thinks-shorter).
 
 ```sh
-strata launch --family swift --model IQ2_XS
+nostroma launch --family swift --model IQ2_XS
 ```
 
 <a id="unsloth-ud-iq4_xs"></a><a id="unsloth-ud-q4_k_xl-experimental"></a>
@@ -147,7 +147,7 @@ NVIDIA, AMD and Intel details are in [QUANTS.md](QUANTS.md); the files are descr
 [UD-Q6_K_XL](UNSLOTH_Q6.md). Older AMD speeds are in [History](#history--older-measurements).
 
 ```sh
-strata launch --family unsloth --model UD-Q5_K_XL
+nostroma launch --family unsloth --model UD-Q5_K_XL
 ```
 
 <a id="gyro"></a>
@@ -167,7 +167,7 @@ On an RTX 3060 12 GB and an R9700, Gyro-M decodes 16 to 21% slower than Q2_0. De
 [GYRO.md](GYRO.md). Intel Arc: [INTEL_ARC.md](INTEL_ARC.md). Mac: [MAC.md](MAC.md#gyro-s-and-gyro-m-agentionais-trellis-experts).
 
 ```sh
-strata launch --family gyro --model Gyro-S
+nostroma launch --family gyro --model Gyro-S
 ```
 
 <a id="nvfp4"></a><a id="nvfp4-qad"></a>
@@ -178,7 +178,7 @@ strata launch --family gyro --model Gyro-S
 
 | App name | `--model` | What it is | Download |
 | --- | --- | --- | ---: |
-| **NVFP4 (Strata's version)** | `NVFP4` | Strata's own conversion (GPTQ; the ready pack is sergqwer's strata-nvfp4). Best quality of the three | 128 GB |
+| **NVFP4 (Nostroma's version)** | `NVFP4` | Nostroma's own conversion (GPTQ; the ready pack is sergqwer's strata-nvfp4). Best quality of the three | 128 GB |
 | **NVFP4 (NVIDIA's version)** | `NVFP4-NVIDIA` | NVIDIA's own checkpoint (plain rounding), converted for Strata. Same size and speed as the first | 128 GB |
 | **NVFP4 (NVIDIA, trained for FP4)** | `NVFP4-QAD` | NVIDIA's retrained model, slightly faster on short prompts | 102 GB (+110 GB of disk to prepare) |
 
@@ -187,13 +187,13 @@ have FP4 tensor cores; other NVIDIA cards run NVFP4 at 8-bit precision. Details 
 
 **NVFP4-QAD** is NVIDIA's [Qwen3.8-Flash-Next-FP4-Local](https://huggingface.co/nvidia/Qwen3.8-Flash-Next-FP4-Local),
 retrained for 4-bit experts (quantization-aware distillation). Setup downloads NVIDIA's files as they are (102 GB) and
-turns them into a Strata pack on your PC once (20 to 40 minutes, about 110 GB more disk while it runs; the 102 GB can be
-deleted afterwards). Strata does not redistribute NVIDIA's weights. Pictures use the original model's reader file, which
+turns them into a Nostroma pack on your PC once (20 to 40 minutes, about 110 GB more disk while it runs; the 102 GB can be
+deleted afterwards). Nostroma does not redistribute NVIDIA's weights. Pictures use the original model's reader file, which
 setup downloads with it. Licenses: NVIDIA Open Model Agreement and Qwen's Community License.
 More: [NVFP4.md](NVFP4.md#nvidias-fp4-local-checkpoint).
 
 ```sh
-strata launch --family nvfp4 --model NVFP4
+nostroma launch --family nvfp4 --model NVFP4
 ```
 
 ### OrcaRouter Uncensored IQ3_XXS
@@ -204,7 +204,7 @@ packing conversion and is not an installer menu option.
 ## Qwen3.6-35B-A3B
 
 A smaller model from the same maker: [Qwen3.6-35B-A3B](https://huggingface.co/Qwen/Qwen3.6-35B-A3B) (35 billion
-parameters, 3 billion active per token, 256 experts, Apache 2.0). Strata runs
+parameters, 3 billion active per token, 256 experts, Apache 2.0). Nostroma runs
 [Unsloth's GGUFs with the MTP draft layer](https://huggingface.co/unsloth/Qwen3.6-35B-A3B-MTP-GGUF) on its own engine
 path, chosen by the file. It is in the app's model list and in setup (`--family qwen36`). It runs on NVIDIA and AMD
 cards; the Intel Arc engine and the Mac engine do not run it. It reads pictures and serves several requests at once.
@@ -228,18 +228,18 @@ the CPU.
 Pictures, parallel requests, full measurements and limits: [QWEN36.md](QWEN36.md).
 
 ```sh
-strata launch --family qwen36 --model UD-Q4_K_XL
+nostroma launch --family qwen36 --model UD-Q4_K_XL
 ```
 
 ## Adding or switching models
 
 - **In the app:** the Models page lists every model with its size and whether it fits your computer. Pick one and press the install button.
-- **In the Terminal:** `strata launch` has a Model step with the same list and "Use model files I already have".
-  `strata models list` shows what is installed. `strata models import <folder or .gguf> --plan` shows what a set of
+- **In the Terminal:** `nostroma launch` has a Model step with the same list and "Use model files I already have".
+  `nostroma models list` shows what is installed. `nostroma models import <folder or .gguf> --plan` shows what a set of
   files you already have would become, without changing anything.
 - **From a source checkout only:** `SETUP.bat` or `./setup.sh --setup` adds another model ([SOURCE_INSTALL.md](SOURCE_INSTALL.md)).
 
-Shared files are reused. In the Terminal, choose a model in `strata launch`, pass an explicit family and model, or use a
+Shared files are reused. In the Terminal, choose a model in `nostroma launch`, pass an explicit family and model, or use a
 saved `--preset`. Add `--restart` when replacing a running launch. Generated `run-<model>` scripts belong to a source
 checkout, not to the installed app.
 
@@ -248,7 +248,7 @@ checkout, not to the installed app.
 `--tune quick` and `--tune thorough` measure settings for the selected model, and the app offers tuning too. Results
 depend on the backend and machine. All speed measurements, long-context numbers and estimates for other cards are in
 [DETAILS.md](DETAILS.md#speed-measured). AMD measurements per card are in [AMD_HIP.md](AMD_HIP.md#rdna4-gfx1201).
-Measured Strata on your own PC? See [Community benchmark results](COMMUNITY_BENCHMARKS.md).
+Measured Nostroma on your own PC? See [Community benchmark results](COMMUNITY_BENCHMARKS.md).
 
 <a id="how-fast-is-each-size"></a>
 

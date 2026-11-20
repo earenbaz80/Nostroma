@@ -1,7 +1,7 @@
 # DFlash2 acceptance experiment
 
 Research tooling, not shipped with the app. It measures how many tokens per round the incoai DFlash2 drafter for
-Qwen3.8-Flash-Next would accept on Strata's quantized target. The measurement is offline, from hidden states the
+Qwen3.8-Flash-Next would accept on Nostroma's quantized target. The measurement is offline, from hidden states the
 engine dumps. It is for developers who want to repeat or extend the experiment.
 
 The scripts keep the paths of the original run (`C:\dflash2-work` on the development PC, `C:\strata-test\dflash2` on

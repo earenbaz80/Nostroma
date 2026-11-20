@@ -1,6 +1,6 @@
 # Trellis encoder (research, branch f-dsv41-enc)
 
-An encoder for the trellis expert formats that Strata already decodes (TQ2_T, TQK6, TQK7 of agentionai's llama.cpp fork)
+An encoder for the trellis expert formats that Nostroma already decodes (TQ2_T, TQK6, TQK7 of agentionai's llama.cpp fork)
 and for two experimental lower rates, K5 (22 bytes per 128 weights, 1.375 bpw) and K4 (18 bytes, 1.125 bpw), in two versions:
 TQK5X / TQK4X (ids 224 / 225, experimental version 2) use a computed codebook, two LCG words per state masked into four fp16
 (`src/kernels/cpu/tq_computed.hpp`, from the z440 lab's "3single"), and TQK5T / TQK4T (226 / 227, version 1) the fork's

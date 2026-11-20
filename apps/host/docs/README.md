@@ -13,7 +13,7 @@ This replaces the 14 October 2026 native-engine handover (kept in [history](../.
 
 | Module | Responsibility |
 | --- | --- |
-| `server/native-control.mjs` | The bridge to Strata Control and the installed engine: catalog, status, install jobs, saved job state, per-instance config copies, process start and stop, benchmark, calibration and updates. |
+| `server/native-control.mjs` | The bridge to Nostroma Control and the installed engine: catalog, status, install jobs, saved job state, per-instance config copies, process start and stop, benchmark, calibration and updates. |
 | `server/native-settings.mjs` | Allowed per-model settings, their bounds, MCP configuration validation and credential masking. |
 | `server/native-gateway.mjs` | Forwards Chat Completions, Anthropic and Responses requests to the selected instance. |
 | `server/chat-images.mjs` | Validation of attached pictures. |
@@ -26,9 +26,9 @@ Contracts that still hold:
 
 - Each loaded instance runs `serve/server.py` on its own private loopback port with a random API key, from a config copy in the app's data folder.
   The one public URL shown in Serving forwards to it; the public model id is an alias in that config, and unknown or ambiguous ids fail before streaming.
-- A source checkout finds a Strata installation through `STRATA_NATIVE_REPO` (it must contain `setup.py`, `tools/strata_mcp.py` and `serve/server.py`) and a Python through
+- A source checkout finds a Nostroma installation through `STRATA_NATIVE_REPO` (it must contain `setup.py`, `tools/strata_mcp.py` and `serve/server.py`) and a Python through
   `STRATA_PYTHON` or `STRATA_NATIVE_PYTHON` (`server/python-resolver.mjs`). The installed app uses the Control that ships beside it instead.
-- Saving settings validates first, keeps unrelated keys and non-Strata environment values, writes a `.bak` and replaces the config atomically. New settings apply on the next load.
+- Saving settings validates first, keeps unrelated keys and non-Nostroma environment values, writes a `.bak` and replaces the config atomically. New settings apply on the next load.
 
 ## Moved to history
 

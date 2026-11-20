@@ -1,20 +1,20 @@
 # Closing: what ends the engine, and when
 
-The rule: **a Strata server, and the engine it started, end when whatever started them ends, however that ends.** There is a
+The rule: **a Nostroma server, and the engine it started, end when whatever started them ends, however that ends.** There is a
 clean path (the engine finishes or cancels its request, frees its memory, exits) and, behind it, a guarantee that does not
-need any Strata code to run (a crash, `kill -9`, the console closed, logoff). The clean path is tried first; if the engine
+need any Nostroma code to run (a crash, `kill -9`, the console closed, logoff). The clean path is tried first; if the engine
 does not exit in time it is killed. After either, the port and the GPU memory are free.
 
 ## The two ways to run an engine
 
 | | Started by | Ends with | Stop it with |
 |---|---|---|---|
-| **Foreground** | `strata serve --profile NAME` (or `python serve/server.py`) | the terminal / the command | Ctrl+C, closing the window, `kill` |
-| **Background service** (on purpose) | `strata runtime start --profile NAME` | nothing: it keeps serving after the terminal closes | `strata runtime stop --profile NAME` |
+| **Foreground** | `nostroma serve --profile NAME` (or `python serve/server.py`) | the terminal / the command | Ctrl+C, closing the window, `kill` |
+| **Background service** (on purpose) | `nostroma runtime start --profile NAME` | nothing: it keeps serving after the terminal closes | `nostroma runtime stop --profile NAME` |
 | **The Desktop app's engines** | the app (profiles `app-1`, `app-2`, ...) | the app: its window, its process, its host | closing the app, or the app's unload |
 
 The background service is a deliberate choice and stays one: `runtime start` starts an owner host that is not tied to the
-terminal that ran it. It is documented in `strata runtime --help`. If you want it to follow a process, `--die-with-pid PID`
+terminal that ran it. It is documented in `nostroma runtime --help`. If you want it to follow a process, `--die-with-pid PID`
 ties it to that process (the app does this for every engine it starts). Engines the Terminal starts are never stopped by the
 app, and the app's `app-N` engines are not stopped by the Terminal unless you run `runtime stop --profile app-1`.
 
@@ -44,18 +44,18 @@ in that order instead of the engine dying under a request.
 
 ## Leftovers, and how they are found
 
-Every engine, image encoder and server Strata starts writes a small private record (`<state>/procs/<pid>.json`: PID, start
+Every engine, image encoder and server Nostroma starts writes a small private record (`<state>/procs/<pid>.json`: PID, start
 time, command line, and the same for its parent). Records are removed when the process ends. If everything dies anyway and a
 process is left, the next of these ends it, after the check above:
 
-* the next engine start (`strata serve`, `runtime start`, the app loading a model), for any leftover on the machine whose
+* the next engine start (`nostroma serve`, `runtime start`, the app loading a model), for any leftover on the machine whose
   parent is gone;
-* `strata runtime stop --profile NAME` when the owner host is lost (it ends the recorded server and engine and clears the
+* `nostroma runtime stop --profile NAME` when the owner host is lost (it ends the recorded server and engine and clears the
   private state, instead of failing with "runtime control is unavailable");
-* `strata runtime cleanup [--profile NAME]`, on demand (`--json` for scripts); a running instance is never touched;
+* `nostroma runtime cleanup [--profile NAME]`, on demand (`--json` for scripts); a running instance is never touched;
 * the app host, once at start.
 
-Engines older Strata versions left behind wrote no record. At an engine start, an **orphan of exactly the executable about to
+Engines older Nostroma versions left behind wrote no record. At an engine start, an **orphan of exactly the executable about to
 be started** (`--serve` on its command line, no live parent: its server is gone) is ended the same way; another
 installation's engine, or any process whose parent is alive, is not. Set `STRATA_KEEP_LEFTOVERS=1` to turn both checks off.
 

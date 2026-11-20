@@ -1,26 +1,26 @@
-# Strata terminal commands
+# Nostroma terminal commands
 
-`strata launch` (guided setup, serve and monitor) and `strata connect` (setup for your coding apps): see [TERMINAL_LAUNCH.md](TERMINAL_LAUNCH.md).
+`nostroma launch` (guided setup, serve and monitor) and `nostroma connect` (setup for your coding apps): see [TERMINAL_LAUNCH.md](TERMINAL_LAUNCH.md).
 
-For the shortest path, use the [terminal quick start](TERMINAL_QUICKSTART.md). The Terminal installs with one line (see [TERMINAL_LAUNCH.md](TERMINAL_LAUNCH.md#install-one-line)) and gives you the `strata` command; every command below is typed as `strata ...`. In a source checkout, run `python strata.py ...` from the repository root instead (use `python3` where there is no `python`).
+For the shortest path, use the [terminal quick start](TERMINAL_QUICKSTART.md). The Terminal installs with one line (see [TERMINAL_LAUNCH.md](TERMINAL_LAUNCH.md#install-one-line)) and gives you the `nostroma` command; every command below is typed as `nostroma ...`. In a source checkout, run `python strata.py ...` from the repository root instead (use `python3` where there is no `python`).
 
 Read a server, watch it and start one:
 
 ```sh
-strata status --url http://127.0.0.1:8095
-strata status --url http://127.0.0.1:8095 --json
-strata monitor --url http://127.0.0.1:8095 --once
-strata serve --profile path/to/strata-model.json --port 8095
+nostroma status --url http://127.0.0.1:8095
+nostroma status --url http://127.0.0.1:8095 --json
+nostroma monitor --url http://127.0.0.1:8095 --once
+nostroma serve --profile path/to/strata-model.json --port 8095
 ```
 
 Discover setup-written model run configs in an installation without loading the engine:
 
 ```sh
-strata models list --installed --output json
-strata models inspect MODEL_ID --output json
-strata models list --installed --install-dir /absolute/Strata/install --output json
-strata models list --served --connection work --output json
-strata models import /absolute/path/to/GGUF-directory --plan --output json
+nostroma models list --installed --output json
+nostroma models inspect MODEL_ID --output json
+nostroma models list --installed --install-dir /absolute/Strata/install --output json
+nostroma models list --served --connection work --output json
+nostroma models import /absolute/path/to/GGUF-directory --plan --output json
 ```
 
 Installed discovery scans only top-level `strata-*.json` files in the install folders it knows (the Terminal's own folder, the desktop app's install folder and folders earlier installs remembered; in a source checkout, the folder containing `strata.py`), or only in the existing absolute directory chosen by `--install-dir`/`STRATA_INSTALL_DIR`. It checks the local engine, tokenizer and referenced pack files using the same read-only component inventory as `doctor`. Invalid config candidates stay visible with an error. `models inspect` returns the component report and source-config SHA-256. `component_status: present` means required files exist, while `execution_compatibility: unverified` means model/backend support and real loading have not been proven.
@@ -30,15 +30,15 @@ Installed discovery scans only top-level `strata-*.json` files in the install fo
 Save a monitor endpoint separately from the model's serving profile. A connection stores the server root, an optional reverse-proxy prefix and the **name** of a credential environment variable; it never stores the secret:
 
 ```sh
-strata connection create work --url https://inference.example --prefix /strata --credential-env STRATA_TELEMETRY_KEY
-strata connection list --output json
-strata connection show work --output json
-strata connection set work prefix=/new-strata --plan --output json
-strata connection set work prefix=/new-strata --if-revision CONNECTION_REVISION
-strata config show --effective --connection work --output json
-strata status --connection work --json
-strata monitor --connection work
-strata logs --connection work --source runtime --follow --output jsonl
+nostroma connection create work --url https://inference.example --prefix /strata --credential-env STRATA_TELEMETRY_KEY
+nostroma connection list --output json
+nostroma connection show work --output json
+nostroma connection set work prefix=/new-nostroma --plan --output json
+nostroma connection set work prefix=/new-nostroma --if-revision CONNECTION_REVISION
+nostroma config show --effective --connection work --output json
+nostroma status --connection work --json
+nostroma monitor --connection work
+nostroma logs --connection work --source runtime --follow --output jsonl
 ```
 
 `config show` reports the source of each effective setting and whether the referenced credential is present, without printing its value or connecting to the server. An explicit `--url` or `--connection` wins over `STRATA_CONNECTION`, then `STRATA_URL`, then the local default. `--credential-env` overrides the selected reference. Direct URL use retains the legacy `STRATA_API_KEY` default; new saved connections default to `STRATA_TELEMETRY_KEY` so a read-only key can be used. Remote roots require HTTPS, and a saved proxy prefix accepts only simple path segments. The source CLI and portable monitor bundle use the same owner-private connection files in `${XDG_CONFIG_HOME:-~/.config}/strata/connections` or `%APPDATA%/Strata/connections`; `STRATA_CONNECTION_DIR` can select an absolute directory. On POSIX, the directory and records must be owner-only. Windows ACL qualification remains open.
@@ -46,49 +46,49 @@ strata logs --connection work --source runtime --follow --output jsonl
 Operator profiles are separate from setup's run config. Save one from an installed config, preview edits, and use its name for serving:
 
 ```sh
-strata profile create four-gpu --from-config path/to/strata-model.json
-strata profile set four-gpu parallel=8 batch_groups=auto max_queue=32 queue_timeout=15 batch_telemetry=true --plan
-strata profile set four-gpu parallel=8 batch_groups=auto max_queue=32 queue_timeout=15 batch_telemetry=true
-strata profile show four-gpu --effective --output json
-strata serve --profile four-gpu --plan --output json
-strata serve --profile four-gpu --output jsonl
-strata doctor --profile four-gpu --components --output json
-strata doctor --profile four-gpu --live --output json
-strata engine calibrate --profile four-gpu --plan --output json
-strata serve --profile four-gpu --ready-file /absolute/path/strata-ready.json
+nostroma profile create four-gpu --from-config path/to/strata-model.json
+nostroma profile set four-gpu parallel=8 batch_groups=auto max_queue=32 queue_timeout=15 batch_telemetry=true --plan
+nostroma profile set four-gpu parallel=8 batch_groups=auto max_queue=32 queue_timeout=15 batch_telemetry=true
+nostroma profile show four-gpu --effective --output json
+nostroma serve --profile four-gpu --plan --output json
+nostroma serve --profile four-gpu --output jsonl
+nostroma doctor --profile four-gpu --components --output json
+nostroma doctor --profile four-gpu --live --output json
+nostroma engine calibrate --profile four-gpu --plan --output json
+nostroma serve --profile four-gpu --ready-file /absolute/path/strata-ready.json
 ```
 
-`strata serve` is the foreground form: Ctrl+C, a closing terminal, `kill` and a killed parent all end the server and its engine. `strata runtime start` is the background form: a service that keeps serving after the terminal closes and until `strata runtime stop` (`strata runtime cleanup` ends what a lost owner left behind). See [CLOSING.md](CLOSING.md) for every way of ending and what each one does on each OS.
+`nostroma serve` is the foreground form: Ctrl+C, a closing terminal, `kill` and a killed parent all end the server and its engine. `nostroma runtime start` is the background form: a service that keeps serving after the terminal closes and until `nostroma runtime stop` (`nostroma runtime cleanup` ends what a lost owner left behind). See [CLOSING.md](CLOSING.md) for every way of ending and what each one does on each OS.
 
 For a saved profile, an owner-only local host can keep the server running and provide repeatable rerun commands:
 
 ```sh
-strata runtime start --profile four-gpu --plan --output json
-strata runtime start --profile four-gpu --shutdown-timeout 30
-strata runtime status --profile four-gpu --output json
-strata runtime verify --profile four-gpu --wait 300 --output json
-strata runtime verify --profile four-gpu --load --wait 300 --output json
-strata profile set four-gpu parallel=8 batch_groups=auto --plan
-strata profile set four-gpu parallel=8 batch_groups=auto
-strata runtime restart --profile four-gpu --plan --output json
-strata runtime restart --profile four-gpu --startup-wait 300
-strata runtime stop --profile four-gpu
+nostroma runtime start --profile four-gpu --plan --output json
+nostroma runtime start --profile four-gpu --shutdown-timeout 30
+nostroma runtime status --profile four-gpu --output json
+nostroma runtime verify --profile four-gpu --wait 300 --output json
+nostroma runtime verify --profile four-gpu --load --wait 300 --output json
+nostroma profile set four-gpu parallel=8 batch_groups=auto --plan
+nostroma profile set four-gpu parallel=8 batch_groups=auto
+nostroma runtime restart --profile four-gpu --plan --output json
+nostroma runtime restart --profile four-gpu --startup-wait 300
+nostroma runtime stop --profile four-gpu
 ```
 
 To switch a managed model to a separate run config file, select the file in the saved profile, preview the owned restart, then pass its candidate digest when restarting:
 
 ```sh
-strata profile use-config four-gpu --from-config /absolute/path/next-model.json --plan --output json
-strata profile use-config four-gpu --from-config /absolute/path/next-model.json --if-revision PROFILE_REVISION --output json
-strata runtime restart --profile four-gpu --allow-source-switch --plan --output json
-strata runtime restart --profile four-gpu --allow-source-switch --if-profile-revision NEW_PROFILE_REVISION --if-source-sha256 CANDIDATE_SOURCE_SHA256
+nostroma profile use-config four-gpu --from-config /absolute/path/next-model.json --plan --output json
+nostroma profile use-config four-gpu --from-config /absolute/path/next-model.json --if-revision PROFILE_REVISION --output json
+nostroma runtime restart --profile four-gpu --allow-source-switch --plan --output json
+nostroma runtime restart --profile four-gpu --allow-source-switch --if-profile-revision NEW_PROFILE_REVISION --if-source-sha256 CANDIDATE_SOURCE_SHA256
 ```
 
 If an operator edits the **same run config file** while its managed server is running, use the separate migration preview and pin the edited bytes before restart:
 
 ```sh
-strata runtime restart --profile four-gpu --allow-source-migration --plan --output json
-strata runtime restart --profile four-gpu --allow-source-migration --if-profile-revision PROFILE_REVISION --if-source-sha256 CANDIDATE_SOURCE_SHA256
+nostroma runtime restart --profile four-gpu --allow-source-migration --plan --output json
+nostroma runtime restart --profile four-gpu --allow-source-migration --if-profile-revision PROFILE_REVISION --if-source-sha256 CANDIDATE_SOURCE_SHA256
 ```
 
 The local host owns its server child. On macOS and Linux it uses a private Unix control socket and token file; on Windows it uses a loopback-only TCP listener (127.0.0.1, never a network address) that answers only requests carrying the owner's 256-bit token, kept in an owner-only folder (that is a weaker guarantee than a socket the other users cannot open, and the token is what protects it); the CLI never signals a PID read from a ready file. Restart drains the current instance, applies the saved profile revision, waits for the new ready file, and launches the previous arguments again if activation fails. Switching the saved profile to a distinct, regular source file is explicit and requires the preview's source digest. The old source file must still contain its launch bytes for ordinary rollback. An in-place edit requires `--allow-source-migration`; before drain the host copies the running config bytes to a mode-0600 file in its private runtime directory. If the old file was edited and the saved profile now points to a new file, preview and run with both source flags. A failed activation restarts from the snapshot, leaving the operator's edited file untouched. The rollback status reports the snapshot path; after the operator fixes the candidate file, retry it as a distinct source with `--allow-source-switch`. A successful activation removes the unneeded snapshot. A hard link to the old file or a source change after preview is rejected before draining; a source change during activation fails attestation and attempts rollback. The host stores private logs and state under `${XDG_STATE_HOME:-~/.local/state}/strata/runtime` or `STRATA_RUNTIME_DIR` (which must be an absolute, owner-only directory). `runtime start` and `runtime restart` verify the ready-file instance ID against authenticated local telemetry, compare a private MAC of the config bytes and launch arguments actually read by the server, and run a one-token generation before reporting generation readiness. A launch mismatch fails before generation. The MAC is scoped to the owner-managed process; it is not a publisher signature or a model-file hash. An intentionally lazy model remains `unloaded` with `generation_ready=false`; `runtime verify --load` opts into loading and generating. `runtime status` reports the last successful startup or explicit verification, not continuous engine liveness; use `runtime verify` to recheck. The probe validates the bound endpoint and model ID, requires at least one completion token, uses a configured API key only in memory, and puts neither generated text nor credentials in the operation journal. If the optional API monitor is enabled, it can capture the fixed probe request like other inference calls. This one-token smoke check does not establish sustained throughput, answer quality or four-card stability. On macOS and Linux, an inherited pipe makes the server stop its dedicated process group when the owner host dies, including after a hard kill. `runtime status` then reports `stale`; a new `runtime start` waits for the recorded child to exit, verifies the host's file lease is gone and the child has exited, and reclaims private state and any orphaned rollback snapshots without signaling a saved PID. If the child is still present, its ownership record is missing, or the socket has an active listener, recovery refuses and requires inspection. The desktop app starts its models through this host on all three systems. Multi-GPU workloads have not been qualified on this path.
@@ -96,25 +96,25 @@ The local host owns its server child. On macOS and Linux it uses a private Unix 
 Owner-editable operation recipes save typed actions next to profiles. Initialize three examples, preview the exact action and its effects, then run it explicitly:
 
 ```sh
-strata ops init --profile four-gpu
-strata ops list --profile four-gpu
-strata ops set restart --profile four-gpu startup_wait_s=45 --plan
-strata ops set restart --profile four-gpu startup_wait_s=45
-strata ops edit restart --profile four-gpu
-strata ops plan restart --profile four-gpu --output json
-strata ops run restart --profile four-gpu --if-revision RECIPE_REVISION --if-profile-revision PROFILE_REVISION
-strata ops run check --profile four-gpu --output json
-strata ops set check --profile four-gpu live=true --plan
-strata ops set check --profile four-gpu live=true
-strata ops plan check --profile four-gpu --output json
-strata ops run check --profile four-gpu --output json
-strata ops set calibrate --profile four-gpu report_dir=/private/path/reports
-strata ops plan calibrate --profile four-gpu --output json
-strata ops run calibrate --profile four-gpu --exclusive --output json
-strata ops runs --profile four-gpu --limit 20 --output json
-strata ops result OPERATION_ID --profile four-gpu --output json
-strata ops history restart --profile four-gpu
-strata ops rollback restart --profile four-gpu --to REVISION
+nostroma ops init --profile four-gpu
+nostroma ops list --profile four-gpu
+nostroma ops set restart --profile four-gpu startup_wait_s=45 --plan
+nostroma ops set restart --profile four-gpu startup_wait_s=45
+nostroma ops edit restart --profile four-gpu
+nostroma ops plan restart --profile four-gpu --output json
+nostroma ops run restart --profile four-gpu --if-revision RECIPE_REVISION --if-profile-revision PROFILE_REVISION
+nostroma ops run check --profile four-gpu --output json
+nostroma ops set check --profile four-gpu live=true --plan
+nostroma ops set check --profile four-gpu live=true
+nostroma ops plan check --profile four-gpu --output json
+nostroma ops run check --profile four-gpu --output json
+nostroma ops set calibrate --profile four-gpu report_dir=/private/path/reports
+nostroma ops plan calibrate --profile four-gpu --output json
+nostroma ops run calibrate --profile four-gpu --exclusive --output json
+nostroma ops runs --profile four-gpu --limit 20 --output json
+nostroma ops result OPERATION_ID --profile four-gpu --output json
+nostroma ops history restart --profile four-gpu
+nostroma ops rollback restart --profile four-gpu --to REVISION
 ```
 
 `ops create NAME --profile four-gpu --kind runtime.restart|engine.calibrate.measure|components.verify` adds another typed recipe. `ops edit` opens a temporary JSON copy in `VISUAL` or `EDITOR`; invalid drafts are kept for repair. Recipe revisions are saved atomically with history. `--if-revision` and `--if-profile-revision` prevent an edited recipe or profile from running after a preview; the runtime host checks the profile revision again before draining. `ops plan` is read-only and distinguishes preview effects from the effects of a subsequent run. The calibration recipe runs the existing decode-speed sweep, creates a new report filename under its saved absolute `report_dir`, and requires a fresh `--exclusive` assertion every time. Review and apply that report with the separate `engine calibrate --review-result` and `--apply-result` commands above; a recipe run never applies tuning automatically. The component recipe reads installed files; its optional typed `live=true` setting also queries the host's GPU inventory during both preview and run. Recipes contain known kinds and typed values, never arbitrary shell command text.
@@ -124,29 +124,29 @@ Each accepted `ops run` creates a local operation record with recipe/profile rev
 To tune an installed engine, stop all instances using its devices, then measure and review a separate report before applying it:
 
 ```sh
-strata engine calibrate --profile four-gpu --measure --exclusive --out calibration.json
-strata engine calibrate --profile four-gpu --review-result calibration.json --output json
-strata engine calibrate --profile four-gpu --apply-result calibration.json --exclusive
-strata engine calibrate --profile four-gpu --review-rollback calibration.json --output json
-strata engine calibrate --profile four-gpu --rollback-result calibration.json --exclusive
+nostroma engine calibrate --profile four-gpu --measure --exclusive --out calibration.json
+nostroma engine calibrate --profile four-gpu --review-result calibration.json --output json
+nostroma engine calibrate --profile four-gpu --apply-result calibration.json --exclusive
+nostroma engine calibrate --profile four-gpu --review-rollback calibration.json --output json
+nostroma engine calibrate --profile four-gpu --rollback-result calibration.json --exclusive
 ```
 
 To measure the **running** server after selecting the intended model and batching profile, run an explicit serving workload and keep its local evidence:
 
 ```sh
-strata bench run --profile four-gpu                  # the standard benchmark (docs/BENCHMARK_PROTOCOL.md)
-strata bench run --profile four-gpu --suite serving-smoke --concurrency 8 --out ./bench-smoke-01
-strata bench report ./bench-smoke-01 --output json
-strata bench run --url http://127.0.0.1:8095 --suite parallel-mixed-v1 --concurrency 8 --repeat 3 --out ./bench-mixed-01
-strata bench run --profile four-gpu --suite parallel-overload-v1 --concurrency 48 --out ./bench-overload-01
-strata bench run --profile four-gpu --suite parallel-cancel-v1 --concurrency 8 --out ./bench-cancel-01
-strata bench run --profile four-gpu --suite parallel-prefill-cancel-v1 --concurrency 8 --out ./bench-prefill-cancel-01
-strata runtime start --profile four-gpu
-strata bench run --profile four-gpu --require-managed-match --suite parallel-mixed-v1 --concurrency 8 --repeat 3 --condition baseline --out ./bench-baseline
+nostroma bench run --profile four-gpu                  # the standard benchmark (docs/BENCHMARK_PROTOCOL.md)
+nostroma bench run --profile four-gpu --suite serving-smoke --concurrency 8 --out ./bench-smoke-01
+nostroma bench report ./bench-smoke-01 --output json
+nostroma bench run --url http://127.0.0.1:8095 --suite parallel-mixed-v1 --concurrency 8 --repeat 3 --out ./bench-mixed-01
+nostroma bench run --profile four-gpu --suite parallel-overload-v1 --concurrency 48 --out ./bench-overload-01
+nostroma bench run --profile four-gpu --suite parallel-cancel-v1 --concurrency 8 --out ./bench-cancel-01
+nostroma bench run --profile four-gpu --suite parallel-prefill-cancel-v1 --concurrency 8 --out ./bench-prefill-cancel-01
+nostroma runtime start --profile four-gpu
+nostroma bench run --profile four-gpu --require-managed-match --suite parallel-mixed-v1 --concurrency 8 --repeat 3 --condition baseline --out ./bench-baseline
 # Attach the read-only monitor in a separate terminal, then repeat the same workload.
-# strata monitor --url http://127.0.0.1:8095 --interval 2
-strata bench run --profile four-gpu --require-managed-match --suite parallel-mixed-v1 --concurrency 8 --repeat 3 --condition monitor-default --out ./bench-monitored
-strata bench compare ./bench-baseline ./bench-monitored --output json
+# nostroma monitor --url http://127.0.0.1:8095 --interval 2
+nostroma bench run --profile four-gpu --require-managed-match --suite parallel-mixed-v1 --concurrency 8 --repeat 3 --condition monitor-default --out ./bench-monitored
+nostroma bench compare ./bench-baseline ./bench-monitored --output json
 ```
 
 `bench run` without `--suite` runs the standard benchmark ([BENCHMARK_PROTOCOL.md](BENCHMARK_PROTOCOL.md), `--suite standard-v1`): the frozen requests, thinking on, the model card's sampling, twelve sanity checks, and a result other people can compare with. It works against a running server (`--url`, or a `--profile` that is already serving) or starts the profile's engine and stops it afterwards (`--no-start` forbids that). It rejects `--concurrency`, `--repeat`, `--request-timeout`, `--condition` and `--require-managed-match`, which belong to the serving suites, and `--out` is optional for it. The serving suites below are for your own tuning and comparisons, their output is not a standard submission, and they need `--out`. A serving suite requires a loaded instance and versioned telemetry. It sends one warmup request, a two-request serial phase and a mixed short/long streaming phase; `parallel-mixed-v1` repeats the mixed phase twice per trial. `parallel-overload-v1` instead sends one warmup, a synchronized short/long burst and a recovery request. It requires configured `max_queue` and `queue_timeout`, and `--concurrency` must exceed the reported admission limit; use up to 64 workers for this explicit suite, or up to 16 for the others. The example of 48 workers only fits a server whose reported admission limit is below 48. Expected `admission_full` and `queue_wait_timeout` responses are counted separately from unexpected errors; the suite passes only if some calls run, some are refused or time out, and recovery works. `parallel-cancel-v1` closes one active stream after its first content, then fills the effective slots and closes a queued stream, followed by a recovery request. It requires at least one queue place, a queue timeout of at least two seconds, disconnect telemetry and `--concurrency` at least the effective slot count. It checks that the target was visible, the server observed a client disconnect, companions completed and admission and slots settled. `parallel-prefill-cancel-v1` separately closes a target while the engine reports partial prompt reading in a batch slot, with one companion decoding; it requires at least two effective slots, concurrency at least two and disconnect telemetry. Both cancellation suites verify companion completion, settled resources and recovery. Run them without unrelated client traffic because the disconnect counter is server-wide. `--concurrency` is a client-worker count, not the engine's effective slot count. Supply an inference key through `STRATA_API_KEY`; if monitoring has a separate key, add `--telemetry-credential-env STRATA_TELEMETRY_KEY`. The new output directory contains `results.json`, with request latency, first-token time, output token counts when the API provides them, and sampled active/queued/occupied slots, groups and per-card readings. Prompts, answer text and credentials are excluded. The report records null when a backend signal is unavailable and labels the limits of client-observed timing. `bench run --profile NAME --require-managed-match` is an opt-in gate for a server launched by the POSIX owner host. It rejects a changed profile, changed source config, unverified owner launch, wrong telemetry instance or endpoint before creating benchmark output. It checks again after the workload and retains a failed report if the match was lost. Reports label the result `managed_launch_checked`; default, foreground and remote runs label it `unverified`. This is a beginning/end check of the owner's startup attestation, not continuous verification of running files. These source-run suites do not verify model artifact hashes or driver versions or establish four-GPU throughput on the target host.
@@ -157,17 +157,17 @@ strata bench compare ./bench-baseline ./bench-monitored --output json
 
 `doctor` and `components verify` inspect local engine, tokenizer, pack, model-shard and optional vision paths without starting the engine. Missing required files return exit 5. Their optional `--live` flag queries `nvidia-smi` once, with a five-second timeout, and compares selected NVIDIA device indices with the visible card inventory. The JSON report lists each card's name, UUID, memory and driver version. A live check requires `--profile`. Missing selected cards, an unavailable probe for an explicitly selected NVIDIA profile, or a HIP/other backend without a qualified live probe return exit 5. With no selected device, a successful card inventory is labelled `selection_unverified`; an unavailable probe is a warning when the backend is also unknown. The default command does not run external tools. This read-only inventory does not launch the engine or establish CUDA/HIP compatibility, PCIe topology, four-card throughput or model-file integrity. Artifact integrity still needs trusted signed manifests. `doctor` makes no repairs or downloads.
 
-`engine calibrate --plan` is a read-only preflight that names the source config digest, selected model/devices, measured settings, expected duration and component results. `--measure` runs the existing **decode-speed** sweep and writes a report with raw trials, selected settings, source/engine/tool digests and a local hardware key; it does not change the run config. `--review-result` shows the candidate and refuses a changed profile, config, engine, required model file metadata, hardware key or report contents. `--apply-result` starts a short candidate smoke generation first, saves the previous run config and setup settings with an owner-only application record, then writes calibrated args and setup's remembered calibration. A failed smoke test or settings write leaves or restores the previous config. `--review-rollback` checks that the applied config and setup settings still match that record; `--rollback-result` smoke-tests the previous config and restores both stores only when they are unchanged since application. An application made before this record existed needs manual recovery from its backup. Each action that starts the engine requires `--exclusive`; this remains the owner's assertion that other processes using those devices have stopped. On POSIX, the managed runtime host and foreground `strata serve` hold a shared local activity lease, while calibration measure, apply and rollback take its exclusive lease for the full engine action. Calibration also refuses stale or uncertain managed owner records. This blocks Strata instances launched through these paths even on a different port. The configured port is checked too, including for rollback. Direct legacy server launches, unrelated GPU processes and Windows control are not covered by this lease and still need operator verification. Report integrity is a checksum and local identity binding, not a publisher signature; full model-file hash verification is still pending. This suite does not measure multi-request throughput, TTFT or four-GPU tail latency.
+`engine calibrate --plan` is a read-only preflight that names the source config digest, selected model/devices, measured settings, expected duration and component results. `--measure` runs the existing **decode-speed** sweep and writes a report with raw trials, selected settings, source/engine/tool digests and a local hardware key; it does not change the run config. `--review-result` shows the candidate and refuses a changed profile, config, engine, required model file metadata, hardware key or report contents. `--apply-result` starts a short candidate smoke generation first, saves the previous run config and setup settings with an owner-only application record, then writes calibrated args and setup's remembered calibration. A failed smoke test or settings write leaves or restores the previous config. `--review-rollback` checks that the applied config and setup settings still match that record; `--rollback-result` smoke-tests the previous config and restores both stores only when they are unchanged since application. An application made before this record existed needs manual recovery from its backup. Each action that starts the engine requires `--exclusive`; this remains the owner's assertion that other processes using those devices have stopped. On POSIX, the managed runtime host and foreground `nostroma serve` hold a shared local activity lease, while calibration measure, apply and rollback take its exclusive lease for the full engine action. Calibration also refuses stale or uncertain managed owner records. This blocks Nostroma instances launched through these paths even on a different port. The configured port is checked too, including for rollback. Direct legacy server launches, unrelated GPU processes and Windows control are not covered by this lease and still need operator verification. Report integrity is a checksum and local identity binding, not a publisher signature; full model-file hash verification is still pending. This suite does not measure multi-request throughput, TTFT or four-GPU tail latency.
 
 The basic CLI and status command use Python's standard library. The interactive monitor is an optional component:
 
 ```sh
 python -m pip install -r requirements-monitor.txt
-strata monitor --url http://127.0.0.1:8095
+nostroma monitor --url http://127.0.0.1:8095
 ```
 
-Use the same Python environment that runs Strata. Strata's runtime dependencies are listed separately in `requirements.txt`; the monitor dependency is not needed for `serve` or `status`.
-`strata doctor --output json` reports the optional monitor as missing, present at the pinned Textual version, or
+Use the same Python environment that runs Strata. Nostroma's runtime dependencies are listed separately in `requirements.txt`; the monitor dependency is not needed for `serve` or `status`.
+`nostroma doctor --output json` reports the optional monitor as missing, present at the pinned Textual version, or
 unverified when its version differs or package metadata is absent. This is a package-version check, not a terminal
 rendering test; an unverified monitor never blocks serving.
 
@@ -185,7 +185,7 @@ python dist/strata-monitor.pyz monitor --url https://HOST --once --json
 python dist/strata-monitor.pyz logs --url https://HOST --output json
 ```
 
-The `.pyz` contains only the bounded telemetry client, connection store, renderers for the Overview and five detail pages, optional TUI module, the same status/monitor/logs command implementation used by `strata`, and Strata's MIT license notice. It has no server, engine, model, setup code or bundled framework. One-shot status, request activity and saved connections work with Python's standard library alone; interactive mode needs an explicit `python -m pip install textual==8.2.8` in that Python environment. The adjacent version-6 `.manifest.json` records a SHA-256 checksum, exact bundle members, Python 3.10 minimum and telemetry schema 1 compatibility. The verifier still accepts older version-1 through version-5 source bundles so a local update can retain and roll back to one. The manifest has no publisher signature, so it is a source-run artifact, not a signed release component. A remote URL still requires HTTPS or a local SSH tunnel; credentials come from an environment variable through `--credential-env` or a saved reference.
+The `.pyz` contains only the bounded telemetry client, connection store, renderers for the Overview and five detail pages, optional TUI module, the same status/monitor/logs command implementation used by `nostroma`, and Nostroma's MIT license notice. It has no server, engine, model, setup code or bundled framework. One-shot status, request activity and saved connections work with Python's standard library alone; interactive mode needs an explicit `python -m pip install textual==8.2.8` in that Python environment. The adjacent version-6 `.manifest.json` records a SHA-256 checksum, exact bundle members, Python 3.10 minimum and telemetry schema 1 compatibility. The verifier still accepts older version-1 through version-5 source bundles so a local update can retain and roll back to one. The manifest has no publisher signature, so it is a source-run artifact, not a signed release component. A remote URL still requires HTTPS or a local SSH tunnel; credentials come from an environment variable through `--credential-env` or a saved reference.
 
 Before distributing a candidate to an operator, run its standard-library smoke on each target Python and OS:
 
@@ -241,7 +241,7 @@ Remote model, device and request labels are stripped of terminal controls and bi
 
 Interactive Monitor opens immediately in `CONNECTING` and fetches in the background. It labels a failed poll `STALE` while retaining the last snapshot, then `DISCONNECTED` after repeated transport failures; snapshot age remains visible and answer, prompt and aggregate output rates show `--` until a fresh sample arrives. Authorization and telemetry-schema failures show `AUTH REQUIRED` or `INCOMPATIBLE` and stop automatic retry; correct the connection or server and press `r`. Other failures retry with bounded exponential backoff and jitter. If an older server has no `/v1/telemetry` or `/metrics` but still answers `/v1/status`, the client displays `NO TELEMETRY` and the available model/status fields without inventing live work or rates. `status` and `monitor --once` still fetch once and return an error code when even status is unavailable.
 
-Logs shows recent **redacted request transitions** from the versioned telemetry snapshot: queued, admitted, prompt reading, first engine token and final outcome. Each row has an instance-scoped sequence number, time and pseudonymous request ID; it contains no prompt, answer, tool content or credential. The server retains at most 128 transitions in memory and sends only the newest 32 in a snapshot, so older events can disappear during a burst or while the monitor is detached. This is a sampled activity view, not a durable audit log or a raw runtime log. Older servers show “Request activity unavailable”; an empty supported feed says no transitions are retained. The same read-only telemetry key protects the feed, and `/` filters its visible rows. `strata logs --source runtime` reads that same bounded activity: one shot uses `--output human|json` (`--json` is an alias), and `--follow` polls every two seconds by default with `--output human|jsonl`. Follow prints explicit sequence gaps when transitions are absent from consecutive bounded snapshots and resets its cursor on a serving instance change. It stops after three consecutive connection failures; Ctrl+C detaches with exit 0. `--source harness` reports the missing shared local harness component. A separate authorized raw runtime log and push event stream remain future work.
+Logs shows recent **redacted request transitions** from the versioned telemetry snapshot: queued, admitted, prompt reading, first engine token and final outcome. Each row has an instance-scoped sequence number, time and pseudonymous request ID; it contains no prompt, answer, tool content or credential. The server retains at most 128 transitions in memory and sends only the newest 32 in a snapshot, so older events can disappear during a burst or while the monitor is detached. This is a sampled activity view, not a durable audit log or a raw runtime log. Older servers show “Request activity unavailable”; an empty supported feed says no transitions are retained. The same read-only telemetry key protects the feed, and `/` filters its visible rows. `nostroma logs --source runtime` reads that same bounded activity: one shot uses `--output human|json` (`--json` is an alias), and `--follow` polls every two seconds by default with `--output human|jsonl`. Follow prints explicit sequence gaps when transitions are absent from consecutive bounded snapshots and resets its cursor on a serving instance change. It stops after three consecutive connection failures; Ctrl+C detaches with exit 0. `--source harness` reports the missing shared local harness component. A separate authorized raw runtime log and push event stream remain future work.
 
 The [wide four-GPU Serving preview](terminal-previews/serving-110-color.png), [80-column parallel-request preview](terminal-previews/serving-80-light.png), [80-column recent-request detail preview](terminal-previews/requests-80-detail.png), [80-column slot detail preview](terminal-previews/serving-80-slot-detail.png) and [wide four-stage mapping preview](terminal-previews/serving-110-stages.png) and [wide sampled batching preview](terminal-previews/serving-110-batch-sample.png) are **layout fixtures**, with illustrative values. They are not hardware runs or benchmark results.
 
@@ -266,12 +266,12 @@ On POSIX with Textual installed, run `python3 tools/portable_monitor_pty_smoke.p
 - **Total output:** the interactive monitor computes the difference in server output-token counters over one common poll interval. The first sample and the first after a restart show `--`.
 - **Prompt read:** a live batch slot reports newly read prompt tokens while it is reading. The request row shows `read N new`; the total prompt-token count can include cached tokens and is therefore displayed separately. Queue wait is measured from the same server snapshot, so freezing the display freezes the wait value.
 - **First engine token:** the server measures elapsed monotonic time from entering its engine queue until that request's first generated engine token, including queue, model load and prompt reading. The live request detail and Overview's last-completed summary show this value when observed. It is **not client-observed TTFT**: HTTP ingress, tokenization before queue entry, streaming/rendering and network time are excluded. Client TTFT is measured separately by `bench run`; `--` means this server has not reported the engine value.
-- **Layer ranges and card mapping:** when an installed run records the engine startup log, Strata reads at most 2 MiB from this engine start and accepts the final contiguous `strata serve: layer split: layers ...` line. The inclusive layer ranges come from the engine after automatic split resolution. Engine GPU ordinals map to physical card indices only when the child process has an unambiguous numeric visibility list. Otherwise the ranges are shown without a claimed card mapping. An unloaded model has no current resolved stage plan. This reports allocation, not live occupancy.
-- **Batch rows/window:** opt in with `strata serve --batch-telemetry` or `profile set NAME batch_telemetry=true` before starting the server. A supporting engine emits one bounded `BSTAT` sample about once per second while batch windows complete, plus a final partial sample at idle; its counters reset after each emission. The monitor shows average **processed verifier rows/window** and **active request slots/window** over that sample, its window count, elapsed span from the first included window start to the last completion, and age. Overlapping pipeline windows can share that span; it is not a sum of window times. Pipelined groups may process idle padding rows, and batch MTP may process two rows for one active slot, so the averages can differ. A single request on the solo path has no batch sample. The Overview and wide visual detail pages show `--` for a retained sample older than five seconds and omit it from the trend; compact Serving and Engine keep the last sample with its age. Older engines and the default-disabled path show `--`. This source-run implementation has not yet been built or qualified on CUDA, HIP or SYCL hardware.
+- **Layer ranges and card mapping:** when an installed run records the engine startup log, Nostroma reads at most 2 MiB from this engine start and accepts the final contiguous `nostroma serve: layer split: layers ...` line. The inclusive layer ranges come from the engine after automatic split resolution. Engine GPU ordinals map to physical card indices only when the child process has an unambiguous numeric visibility list. Otherwise the ranges are shown without a claimed card mapping. An unloaded model has no current resolved stage plan. This reports allocation, not live occupancy.
+- **Batch rows/window:** opt in with `nostroma serve --batch-telemetry` or `profile set NAME batch_telemetry=true` before starting the server. A supporting engine emits one bounded `BSTAT` sample about once per second while batch windows complete, plus a final partial sample at idle; its counters reset after each emission. The monitor shows average **processed verifier rows/window** and **active request slots/window** over that sample, its window count, elapsed span from the first included window start to the last completion, and age. Overlapping pipeline windows can share that span; it is not a sum of window times. Pipelined groups may process idle padding rows, and batch MTP may process two rows for one active slot, so the averages can differ. A single request on the solo path has no batch sample. The Overview and wide visual detail pages show `--` for a retained sample older than five seconds and omit it from the trend; compact Serving and Engine keep the last sample with its age. Older engines and the default-disabled path show `--`. This source-run implementation has not yet been built or qualified on CUDA, HIP or SYCL hardware.
 - **Pipeline stage in-flight time:** the same opt-in engine mode emits bounded `PSTAT` host spans for grouped pipeline execution. About once per second and at idle, each stage reports how much of the sample interval elapsed between its window launch and completed poll. The wide Engine page shows that in-flight fraction per stage only for a recent sample; an older retained sample becomes `--`. Compact Serving and Engine retain the last value with its reported age. It includes host polling delay and is **not GPU kernel utilization or hardware occupancy**. Non-grouped batch mode, older engines and the default-disabled path show `--`. Without a usable startup log, exact layer ranges and card mapping stay unavailable; a stage number alone does not prove physical placement. This source path still needs native-backend and four-card qualification.
 
 For a four-card run, record the exact GPU model/VRAM, driver, selected device IDs, layer split, model revision, context, requested/effective slots and groups before comparing throughput or latency. The UI is not a benchmark. Use the current `docs/BATCHING.md` and `docs/MULTI_GPU.md` for supported engine modes and limitations.
 
 ## Current limits
 
-`strata code` is not available in this version: it exits with code 5 and says the shared Desktop harness component is not installed. To use a coding app with a Strata server, run `strata connect` (see [TERMINAL_LAUNCH.md](TERMINAL_LAUNCH.md#connect-your-apps-strata-connect)); the desktop app has its own coding harness. Calibration and serving benchmarks (`strata bench run`) are explicit, separate steps; this page does not report results from a real model. Nothing here establishes four-RTX-6000 performance.
+`nostroma code` is not available in this version: it exits with code 5 and says the shared Desktop harness component is not installed. To use a coding app with a Nostroma server, run `nostroma connect` (see [TERMINAL_LAUNCH.md](TERMINAL_LAUNCH.md#connect-your-apps-nostroma-connect)); the desktop app has its own coding harness. Calibration and serving benchmarks (`nostroma bench run`) are explicit, separate steps; this page does not report results from a real model. Nothing here establishes four-RTX-6000 performance.

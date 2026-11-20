@@ -1,7 +1,7 @@
-# Strata app: developer guide
+# Nostroma app: developer guide
 
 This folder is the app's Node host (`server/`) and its web interface (`src/`, React and Vite). The desktop shell that wraps
-them is [`../desktop`](../desktop) (Tauri). The engine and Strata Control are Python and C++ and live elsewhere in the
+them is [`../desktop`](../desktop) (Tauri). The engine and Nostroma Control are Python and C++ and live elsewhere in the
 repository; see [docs/SOURCE_INSTALL.md](../../docs/SOURCE_INSTALL.md) and [packaging/README.md](../../packaging/README.md).
 
 ## Start from a fresh clone
@@ -32,9 +32,9 @@ is real: no engine is started, no model is loaded, no files outside its temporar
 
 - **Simulated preview** (`npm run preview:ui`): fixtures only. Use it to look at screens.
 - **Source host** (`npm run dev`, `npm run serve`): the real host code from this checkout. Without `STRATA_REAL_ENGINE=1` it
-  runs a clearly labelled example engine; with it, the host looks for a Strata installation as a source checkout does.
+  runs a clearly labelled example engine; with it, the host looks for a Nostroma installation as a source checkout does.
   Loading a real model needs an engine and model files; none of the commands above do that.
-- **Packaged app**: the installer ships the host next to Strata Control (Python plus `nostroma_control`), which does installs,
+- **Packaged app**: the installer ships the host next to Nostroma Control (Python plus `nostroma_control`), which does installs,
   updates and engine starts. A source checkout has no Control, so those paths keep their older behaviour; how Control is
   packaged is in [packaging/README.md](../../packaging/README.md).
 

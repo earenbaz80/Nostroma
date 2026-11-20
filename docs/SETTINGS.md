@@ -7,7 +7,7 @@ your hardware needs, so most people never set one. This page lists the ones mean
 turn them on, and switches that take a newer default back to the earlier behaviour. The other settings are for measuring and
 debugging and are kept in `data/settings-register.json`.
 
-A number or a word is set like any environment variable, for example `STRATA_KVA=1`. In the Terminal, `strata launch --set NAME=value`
+A number or a word is set like any environment variable, for example `STRATA_KVA=1`. In the Terminal, `nostroma launch --set NAME=value`
 puts it in the model's run configuration.
 
 ## Switches you can turn on (272)

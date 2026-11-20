@@ -1,6 +1,6 @@
 # gufo (gufo contributors), MIT
 
-Strata adapts routed-expert GEMM kernels for gfx11 from gufo (https://github.com/gufo-org/gufo), MIT License:
+Nostroma adapts routed-expert GEMM kernels for gfx11 from gufo (https://github.com/gufo-org/gufo), MIT License:
 
 - `src/prefill/moe_f16_kq.cu` and `src/prefill/moe_f16_common.cuh`: gufo 97b8645f, `src/models/qwen38_flash_next/kernels/rocm/kernels.hip.cpp`
   (RoutedF16GEMMKernel and its helpers).

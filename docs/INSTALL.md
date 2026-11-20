@@ -1,7 +1,7 @@
-# Install Strata
+# Install Nostroma
 
-This page is for anyone installing or updating Strata (version 0.2.15). Use the **desktop app** for a graphical
-interface, or the **Terminal** for `strata launch` and coding tools. Both use released engine packages. A normal
+This page is for anyone installing or updating Nostroma (version 0.2.15). Use the **desktop app** for a graphical
+interface, or the **Terminal** for `nostroma launch` and coding tools. Both use released engine packages. A normal
 install does not need a source checkout or a startup `.bat` file.
 
 ## Quick start
@@ -9,7 +9,7 @@ install does not need a source checkout or a startup `.bat` file.
 | I want | Do this |
 | --- | --- |
 | A window with chat | Download the installer from the [latest release](https://github.com/Niko1221/Strata/releases/latest) ([steps](#the-app)) |
-| The terminal, or my coding tool | Run the one-line install, then `strata launch` ([steps](#the-terminal)) |
+| The terminal, or my coding tool | Run the one-line install, then `nostroma launch` ([steps](#the-terminal)) |
 
 [Requirements](#what-you-need) · [Desktop app](#the-app) · [Terminal](#the-terminal) ·
 [Update](#updating) · [Files and folders](#where-things-are-stored) · [Build from source](SOURCE_INSTALL.md)
@@ -40,7 +40,7 @@ hardware drivers. Models and updates need an internet connection to download.
    - **Windows:** run `Strata-0.2.15-windows-x64-setup.exe`. It installs for your user and needs no administrator rights.
    - **Linux:** make `Strata-0.2.15-linux-x86_64.AppImage` executable, then open it. If FUSE is unavailable, run the
      downloaded file with `--appimage-extract-and-run`. [Linux help](TROUBLESHOOTING.md).
-   - **Mac:** open `Strata-0.2.15-macos-arm64.dmg`, drag Strata into Applications, then open it. [Mac help](MAC.md).
+   - **Mac:** open `Strata-0.2.15-macos-arm64.dmg`, drag Nostroma into Applications, then open it. [Mac help](MAC.md).
 3. On Windows and Linux the installer has no engine inside. On first start the app shows the engine for your
    graphics card with its size and one **Download** button, with progress and resume. If you already downloaded the
    engine file, choose **I already have the file** and it installs without internet. The Mac file keeps its small
@@ -59,7 +59,7 @@ Current app recommendations can differ; choose the model explicitly when you wan
 
 ## The Terminal
 
-Install once, then use `strata launch`. The Terminal includes Python and downloads the engine for your computer.
+Install once, then use `nostroma launch`. The Terminal includes Python and downloads the engine for your computer.
 
 **Linux / Mac**
 
@@ -73,30 +73,30 @@ curl -fsSL --connect-timeout 15 --max-time 120 https://github.com/Niko1221/Strat
 irm -TimeoutSec 120 https://github.com/Niko1221/Strata/releases/latest/download/install.ps1 | iex
 ```
 
-On Windows, open a **new terminal** afterwards. On Linux and Mac, if `strata` is not found, use the full path printed
+On Windows, open a **new terminal** afterwards. On Linux and Mac, if `nostroma` is not found, use the full path printed
 by the installer (normally `~/.local/bin/strata`) or add that folder to your shell's PATH.
 
 ```sh
-strata launch
+nostroma launch
 ```
 
 Follow the screens to choose a model, context, storage folder and access settings. The monitor opens after startup.
-Use the address printed by Strata; the default local endpoint is `http://127.0.0.1:8080`.
+Use the address printed by Nostroma; the default local endpoint is `http://127.0.0.1:8080`.
 The Terminal opens a browser only when you add `--open`.
 
 For a script or AI agent, inspect a plan before downloading. This example selects ISTA-DASLab Q2_0 explicitly:
 
 ```sh
-strata launch --family qwen --model q2_0 --plan
-strata launch --family qwen --model q2_0 --yes --no-tui
+nostroma launch --family qwen --model q2_0 --plan
+nostroma launch --family qwen --model q2_0 --yes --no-tui
 ```
 
 `--no-tui` leaves the server running in the background. Check it, connect a tool, or stop it:
 
 ```sh
-strata launch --status
-strata connect
-strata launch --stop
+nostroma launch --status
+nostroma connect
+nostroma launch --stop
 ```
 
 If a model is already running with different settings, add `--restart` to replace that run; `--yes` alone does not
@@ -111,12 +111,12 @@ Unload running models before replacing the engine. Your model files and settings
 **Terminal:**
 
 ```sh
-strata update --check
-strata update
-strata --version
+nostroma update --check
+nostroma update
+nostroma --version
 ```
 
-With a model loaded, `strata update` says which model, asks before it stops it, downloads the new engine while the model keeps
+With a model loaded, `nostroma update` says which model, asks before it stops it, downloads the new engine while the model keeps
 serving, stops it cleanly, updates, and asks whether to start it again with the same settings (answer no and it stays stopped;
 the start line is printed). If the update fails the old engine stays in use and the model can be started again. The launch
 monitor and the start screen show one quiet line when a newer engine is available; press `u` in the monitor to update.
@@ -124,21 +124,21 @@ In a script nothing is asked: `--yes` alone never stops a model (exit 7, nothing
 and `--start-again` starts it again afterwards (exit 8 if it did not start again). The next Terminal command uses the updated
 Control component. The app, Control and engine have separate version numbers, so they can differ.
 
-Use `strata components rollback` to return to the previous engine. See [update details](../packaging/UPDATES.md).
+Use `nostroma components rollback` to return to the previous engine. See [update details](../packaging/UPDATES.md).
 Source checkouts have a [separate update workflow](SOURCE_INSTALL.md#updating).
 
 ## Where things are stored
 
 | Item | Default location |
 | --- | --- |
-| Desktop chats and host state | `~/.strata` (or `STRATA_HOME`) |
-| Engine components, Windows | `%LOCALAPPDATA%\Strata\components` |
-| Engine components, Linux / Mac | `$XDG_DATA_HOME/strata/components`, normally `~/.local/share/strata/components` |
+| Desktop chats and host state | `~/.nostroma` (or `STRATA_HOME`) |
+| Engine components, Windows | `%LOCALAPPDATA%\Nostroma\components` |
+| Engine components, Linux / Mac | `$XDG_DATA_HOME/nostroma/components`, normally `~/.local/share/strata/components` |
 | Terminal files | The `terminal` folder beside `components`; the installer prints the exact path |
 | Models | The folder chosen in the app or launch screens; an existing model library is reused |
 
-The desktop app normally proposes `Documents/Strata/Models` for a new library. The Terminal discovers saved
-folders from earlier installs. Use the path shown by the app or `strata models list`, not an assumed folder name.
+The desktop app normally proposes `Documents/Nostroma/Models` for a new library. The Terminal discovers saved
+folders from earlier installs. Use the path shown by the app or `nostroma models list`, not an assumed folder name.
 `--data-dir` changes where new downloads go; it does not move existing models unless you add `--move-data`.
 See [model discovery](TERMINAL_LAUNCH.md#models-you-already-have).
 

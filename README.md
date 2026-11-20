@@ -11,7 +11,7 @@
 <p align="center">
   <a href="#models">Models</a> · <a href="#install"><b>Install</b></a> ·
   <a href="#hardware">Hardware</a> · <a href="#tools">Tools</a> ·
-  <a href="#help">Help</a> · <a href="#support-strata">Support</a>
+  <a href="#help">Help</a> · <a href="#support-nostroma">Support</a>
 </p>
 
 <p align="center">
@@ -58,7 +58,7 @@ Not sure what fits? [Choose a model for your computer](docs/MODELS.md#pick-by-me
 
 ## Install
 
-<a id="option-a-the-strata-app"></a>
+<a id="option-a-the-nostroma-app"></a>
 
 ### Desktop app
 
@@ -78,7 +78,7 @@ downloads the engine for your graphics card. [Help with the installer](docs/INST
 
 ### Terminal app
 
-Prefer the terminal? Install Nostroma, then run **`strata launch`**.
+Prefer the terminal? Install Nostroma, then run **`nostroma launch`**.
 
 <details open>
 <summary><b>Install commands</b></summary>
@@ -98,7 +98,7 @@ irm -TimeoutSec 120 https://github.com/Niko1221/Strata/releases/latest/download/
 On Windows, open a new terminal afterwards. Then:
 
 ```sh
-strata launch
+nostroma launch
 ```
 
 Follow the prompts to download and start a model. [Terminal guide](docs/TERMINAL_LAUNCH.md).
@@ -134,7 +134,7 @@ Follow the prompts to download and start a model. [Terminal guide](docs/TERMINAL
 
 **Claude Code · Codex CLI · OpenCode · oh-my-pi · pi.dev · Hermes Agent · OpenClaw**, and more through the OpenAI- and Anthropic-compatible APIs.
 
-Run **`strata connect`** to see setup instructions for your tool. [Connection guide](docs/TERMINAL_LAUNCH.md#connect-your-apps-strata-connect).
+Run **`nostroma connect`** to see setup instructions for your tool. [Connection guide](docs/TERMINAL_LAUNCH.md#connect-your-apps-nostroma-connect).
 
 <a id="guides"></a>
 <a id="how-fast-is-it"></a>

@@ -1,6 +1,6 @@
 # Terminal work against the 10 October 2026 implementation plan
 
-> **Historical record (11 October 2026).** This page was written while the Terminal was being built, before Strata 0.2.0. It is kept for the record and is not kept up to date: it describes six views, source-run commands and checks that had not yet been run on target hardware. For what the Terminal does now, see [TERMINAL.md](TERMINAL.md), [TERMINAL_LAUNCH.md](TERMINAL_LAUNCH.md) and [TERMINAL_QUICKSTART.md](TERMINAL_QUICKSTART.md).
+> **Historical record (11 October 2026).** This page was written while the Terminal was being built, before Nostroma 0.2.0. It is kept for the record and is not kept up to date: it describes six views, source-run commands and checks that had not yet been run on target hardware. For what the Terminal does now, see [TERMINAL.md](TERMINAL.md), [TERMINAL_LAUNCH.md](TERMINAL_LAUNCH.md) and [TERMINAL_QUICKSTART.md](TERMINAL_QUICKSTART.md).
 
 Source baseline for the original milestone: `Niko1221/Strata` at `fb58e0dbc8399662c0e47c76578c6e878b14f6cf`. Branch `feat/terminal-cli-monitor-current` merges the public `main` fetched on 11 October 2026 at `61b3fb5dd3f1e8ec09cf7e4e05208bc6d3c46406`. The plan lives at `../output/strata-terminal-implementation-plan.md` in the parent design workspace. This is a working implementation, not a qualified release.
 

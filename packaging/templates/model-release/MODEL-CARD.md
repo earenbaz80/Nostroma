@@ -3,7 +3,7 @@
 
 **Made by:** [FILL: model authors]; GGUF files by [FILL: who made the GGUFs].
 **Licence:** {{licence}} ({{licence_url}}).
-**Family in Strata:** {{family}}.
+**Family in Nostroma:** {{family}}.
 **Source:** {{repo}} at revision {{revision}}.
 
 ## In one line
@@ -32,6 +32,6 @@ Needs engine {{engine_version}} or newer.
 
 ## Run it
 
-    strata launch --family [FILL: family] --model [FILL: name]
+    nostroma launch --family [FILL: family] --model [FILL: name]
 
-From a folder you downloaded yourself: `strata launch --model-path <first file>`. In the app: Models, then "Use a local GGUF".
+From a folder you downloaded yourself: `nostroma launch --model-path <first file>`. In the app: Models, then "Use a local GGUF".

@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="apps/host/public/brand/strata-lockup-dark.svg">
-    <img src="apps/host/public/brand/strata-lockup-light.svg" alt="Nostroma" width="340">
+    <source media="(prefers-color-scheme: dark)" srcset="apps/host/public/brand/nostroma-lockup-dark.svg">
+    <img src="apps/host/public/brand/nostroma-lockup-light.svg" alt="Nostroma" width="340">
   </picture>
 </p>
 
@@ -58,7 +58,7 @@ Unsicher, was passt? [Wähle ein Modell für deinen Computer](docs/MODELS.md#pic
 
 ## Installation
 
-<a id="option-a-the-strata-app"></a>
+<a id="option-a-the-nostroma-app"></a>
 
 ### Desktop-App
 
@@ -77,7 +77,7 @@ Installiere die App, wähle ein Modell und leg mit dem Chat los. Es gibt einen I
 
 ### Terminal-App
 
-Lieber im Terminal? Installiere Nostroma und starte dann **`strata launch`**.
+Lieber im Terminal? Installiere Nostroma und starte dann **`nostroma launch`**.
 
 <details open>
 <summary><b>Installationsbefehle</b></summary>
@@ -97,7 +97,7 @@ irm -TimeoutSec 120 https://github.com/Niko1221/Strata/releases/latest/download/
 Öffne unter Windows danach ein neues Terminal. Dann:
 
 ```sh
-strata launch
+nostroma launch
 ```
 
 Folge den Anweisungen, um ein Modell herunterzuladen und zu starten. [Terminal-Anleitung](docs/TERMINAL_LAUNCH.md).
@@ -132,7 +132,7 @@ Folge den Anweisungen, um ein Modell herunterzuladen und zu starten. [Terminal-A
 
 **Claude Code · Codex CLI · OpenCode · oh-my-pi · pi.dev · Hermes Agent · OpenClaw**, und weitere über die OpenAI- und Anthropic-kompatiblen APIs.
 
-Führe **`strata connect`** aus, um die Einrichtung für dein Tool zu sehen. [Verbindungsanleitung](docs/TERMINAL_LAUNCH.md#connect-your-apps-strata-connect).
+Führe **`nostroma connect`** aus, um die Einrichtung für dein Tool zu sehen. [Verbindungsanleitung](docs/TERMINAL_LAUNCH.md#connect-your-apps-nostroma-connect).
 
 <a id="guides"></a>
 <a id="how-fast-is-it"></a>

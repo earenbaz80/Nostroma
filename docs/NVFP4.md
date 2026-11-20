@@ -12,12 +12,12 @@ Everything else (attention, GDN, shared experts, routers, the head) stays in the
 Choose a ready-made pack with the Terminal. Manual conversion below needs a source checkout.
 
 ```sh
-strata launch --family nvfp4 --model NVFP4
+nostroma launch --family nvfp4 --model NVFP4
 ```
 
 | Size in setup and the app | Name | Source |
 | --- | --- | --- |
-| `NVFP4` | NVFP4 (Strata's version) | GPTQ-quantized pack, `Maximilian228/Qwen3.8-Flash-Next-NVFP4-GPTQ-Strata` |
+| `NVFP4` | NVFP4 (Nostroma's version) | GPTQ-quantized pack, `Maximilian228/Qwen3.8-Flash-Next-NVFP4-GPTQ-Strata` |
 | `NVFP4-NVIDIA` | NVFP4 (NVIDIA's version) | `nvidia/Qwen3.8-Flash-Next-NVFP4` quantizes the routed experts the same way (NVFP4, group 16; other layers BF16, PLE table FP8, MTP experts FP8). Setup offers it as the ready-made pack `Maximilian228/Qwen3.8-Flash-Next-NVIDIA-NVFP4-Strata`. |
 | `NVFP4-QAD` | NVFP4 (NVIDIA, trained for FP4) | `nvidia/Qwen3.8-Flash-Next-FP4-Local`, converted on your PC ([below](#nvidias-fp4-local-checkpoint)) |
 
@@ -48,7 +48,7 @@ python tools/iq_pack.py --gguf <model>.gguf --out <pack dir>
 Run it like an IQ pack, with the GGUF as its own dense-weight source and the PLE table from an IQ GGUF's PLE shard:
 
 ```sh
-strata --pack <pack dir> --native <model>.gguf --native-dense-gguf <model>.gguf \
+nostroma --pack <pack dir> --native <model>.gguf --native-dense-gguf <model>.gguf \
        --ple-gguf <an IQ model's shard with per_layer_token_embd> --mtp <mtp/rt> \
        --expert-profile data/expert-profile.bin --expert-cache auto --prefill auto --spec 4 ...
 ```
@@ -98,7 +98,7 @@ the architectures as given and runs on sm_121 too. A card without that unit's im
 against a 120a build) falls back to `w4a8` with a note.
 
 > **Measured on:** first-token KL divergence against `fp16`, 8 prompts (code and prose, 1K to 8K tokens). Hardware and
-> Strata version not recorded. The noise floor is the same `fp16` path cut into 4096-token chunks instead of 8192.
+> Nostroma version not recorded. The noise floor is the same `fp16` path cut into 4096-token chunks instead of 8192.
 
 | Mode | KL mean | KL median | KL max | Top-1 agreement | Prefill, 4-8K prompts |
 | --- | --- | --- | --- | --- | --- |
@@ -136,7 +136,7 @@ to ggml-cpu's (`nvfp4_cpu_parity`, 0 of 1280x9 and 2560x9 rows differ on a Ryzen
 `native_experts.txt`), so the engine starts on such a CPU. The AVX-512 requirement belongs to the canonical Q2_0 pack
 only; a `--pack` folder without `native_experts.txt` is read as that pack, and the engine says so before it refuses.
 
-> **Measured on:** one expert's gate+up (1280 rows of 2560, cache-resident), AVX-512 CPU, Strata version not recorded.
+> **Measured on:** one expert's gate+up (1280 rows of 2560, cache-resident), AVX-512 CPU, Nostroma version not recorded.
 > The pool itself is bound by DRAM.
 
 | Tokens | ggml-cpu | AVX-512 | Speedup |
@@ -188,7 +188,7 @@ HIP: the decode kernels use no CUDA-only intrinsics. The NVFP4 MMQ instance and 
 ## NVIDIA's FP4-Local checkpoint
 
 `nvidia/Qwen3.8-Flash-Next-FP4-Local` (setup size **NVFP4-QAD**) is NVIDIA's own retrained 4-bit model: ModelOpt 0.47
-safetensors, experts retrained by quantization-aware distillation. Strata reads it by converting it on the user's PC.
+safetensors, experts retrained by quantization-aware distillation. Nostroma reads it by converting it on the user's PC.
 Nothing of NVIDIA's weights is redistributed (licenses: NVIDIA Open Model Agreement and Qwen Community License 1.0).
 
 What the checkpoint holds, and what `tools/nvfp4_local_pack.py` does with it:
@@ -207,7 +207,7 @@ about 110 GB of free disk beside the 102 GB download, which can be deleted after
 files on NVMe it took about 12 minutes.
 
 > **Measured on:** RTX PRO 5000 72 GB (Blackwell), 128K context, int8 KV, every expert in VRAM
-> (`tools/strata_bench.py`). Strata version not recorded.
+> (`tools/strata_bench.py`). Nostroma version not recorded.
 
 | Measure | Result |
 | --- | --- |
@@ -242,9 +242,9 @@ PCIe share sweep at 262K context (decode tok/s):
 | 0.25 | 117 | 124 |
 | 0.10 | 112 | 118 |
 
-### Measured in Strata (2026-10-13)
+### Measured in Nostroma (2026-10-13)
 
-> **Measured on:** the ready-made GPTQ pack (`--family nvfp4 --model NVFP4`), Strata 0.1.44 era. Quality on an RTX 3060
+> **Measured on:** the ready-made GPTQ pack (`--family nvfp4 --model NVFP4`), Nostroma 0.1.44 era. Quality on an RTX 3060
 > box with `tools/quant_quality.py`: 4,995 teacher-forced positions of code, docs, English, other languages and an agent
 > transcript, against Unsloth's Q8_0.
 

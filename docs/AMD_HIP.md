@@ -1,6 +1,6 @@
 # AMD Radeon: the HIP backend
 
-Strata runs on AMD Radeon cards through its HIP backend, the same engine as on NVIDIA compiled for AMD. This page is for
+Nostroma runs on AMD Radeon cards through its HIP backend, the same engine as on NVIDIA compiled for AMD. This page is for
 people with an RX 6000, 7000 or 9000 card or a Radeon AI PRO R9700, and for anyone building the engine from source.
 The Ryzen AI Max "Strix Halo" APU has its own page: [STRIX_HALO.md](STRIX_HALO.md). Integrated Radeon chips in mini PCs are
 covered under [Integrated GPUs](#integrated-gpus-mini-pcs).
@@ -12,8 +12,8 @@ graphics driver must be installed (Windows: [AMD Software: Adrenalin Edition](ht
 Linux: the kernel's amdgpu driver, no ROCm install). Terminal:
 
 ```sh
-strata launch --plan       # shows what would happen, changes nothing
-strata launch              # sets up and serves
+nostroma launch --plan       # shows what would happen, changes nothing
+nostroma launch              # sets up and serves
 ```
 
 Source checkout on Linux ([SOURCE_INSTALL.md](SOURCE_INSTALL.md#amd-cards)):
@@ -22,7 +22,7 @@ Source checkout on Linux ([SOURCE_INSTALL.md](SOURCE_INSTALL.md#amd-cards)):
 ./setup.sh --backend hip
 ```
 
-Setup picks `--backend hip` by itself on a PC with no NVIDIA card Strata can use. Other AMD architectures and mixed AMD/NVIDIA
+Setup picks `--backend hip` by itself on a PC with no NVIDIA card Nostroma can use. Other AMD architectures and mixed AMD/NVIDIA
 runs are not supported. Use the [package table](#ready-made-packages) to match your card.
 
 ## Supported cards
@@ -45,9 +45,9 @@ Strix Point (890M / 880M, gfx1150) and Krackan (860M / 840M, gfx1152) are named 
 <a id="ready-made-packages-023"></a>
 ## Ready-made packages
 
-The Terminal one-liner and `strata update` pick the package whose GPU code covers the card. The app installer
+The Terminal one-liner and `nostroma update` pick the package whose GPU code covers the card. The app installer
 (`Strata-0.2.15-windows-x64-setup.exe`, `Strata-0.2.15-linux-x86_64.AppImage`) has no engine inside: on its first start the app
-downloads the matching package for the card. You can also press **Update engine** in Settings (or run `strata update`).
+downloads the matching package for the card. You can also press **Update engine** in Settings (or run `nostroma update`).
 
 | Package (variant) | OS | GPU code inside | ROCm |
 | --- | --- | --- | --- |
@@ -130,7 +130,7 @@ reused. The Monitor shows the card's load, VRAM, temperature and power from Linu
 
 Install the [app](INSTALL.md) (`Strata-0.2.15-windows-x64-setup.exe` from the
 [release page](https://github.com/Niko1221/Strata/releases/latest); it downloads the engine for the card), or
-install the [Terminal](INSTALL.md#the-terminal) and run `strata launch`. You need Windows 10 or 11 (64-bit), a supported card
+install the [Terminal](INSTALL.md#the-terminal) and run `nostroma launch`. You need Windows 10 or 11 (64-bit), a supported card
 and a current AMD driver. No ROCm or HIP SDK, no compiler, no admin rights. `START-HERE.bat --backend hip` is a
 source-checkout option for developers, not a way to start the released app.
 
@@ -139,11 +139,11 @@ source-checkout option for developers, not a way to start the released app.
   opt-in build ([RADEON_780M.md](RADEON_780M.md)).
 - **HIP runtime:** the engine folder holds its own `amdhip64_7.dll` and `amd_comgr.dll`, because Windows looks in the
   program's folder before System32, where some AMD drivers install an `amdhip64_7.dll` that crashes the bundled libraries. The
-  engine log names the runtime it loaded (`strata generate: HIP runtime ...`).
+  engine log names the runtime it loaded (`nostroma generate: HIP runtime ...`).
 - **Before the model download,** setup runs `engine\strata-device.exe --list-devices`. If the HIP runtime does not see the
   card, setup stops and points to the driver. With an integrated Radeon, a discrete card is HIP device 1, not 0; `--gpu N` and
   the config's `"gpu"` are HIP numbers.
-- **Several cards:** use the app's card selector or `strata launch --gpu 0,1`. [MULTI_GPU.md](MULTI_GPU.md) lists the
+- **Several cards:** use the app's card selector or `nostroma launch --gpu 0,1`. [MULTI_GPU.md](MULTI_GPU.md) lists the
   combinations measured. A tested Linux pair does not validate the same pair on Windows.
 - **VRAM budget:** `hipMemGetInfo` on Windows does not subtract what the desktop and other programs hold. The engine lowers
   the free figure by what Windows' video memory budget for the process withholds (logged once). `STRATA_WDDM_BUDGET=0` turns
@@ -154,12 +154,12 @@ source-checkout option for developers, not a way to start the released app.
   wrong until a restart, with no error (the log shows `KV streaming: 100.00% of 0 block reads` for each long prompt). The
   engine now keeps the address space below 1 TiB reserved, so its stacks and other memory are placed above the GPU addresses,
   and it reserves each GPU address range while the arena is pinned. When a range's GPU address still covers memory in use,
-  that range and the ones after it stay unpinned and the log says so (`strata pin: ... (#3431)`); that start reads prompts more
+  that range and the ones after it stay unpinned and the log says so (`nostroma pin: ... (#3431)`); that start reads prompts more
   slowly but correctly. `STRATA_STACK_ISOLATE=0` runs the engine as before, without the reservation below 1 TiB.
 - **WMMA prompt attention** is opt-in on Windows (`STRATA_HIP_WMMA=1`); it is the default on gfx12 on Linux.
 
 **Reporting a Windows AMD run.** Give your card, the driver version (AMD Software > System), the output of the two commands
-below (from the Strata folder, after `set PATH=%CD%\engine\rocm\bin;%PATH%`), the end of `strata-<model>.log`, and the speed
+below (from the Nostroma folder, after `set PATH=%CD%\engine\rocm\bin;%PATH%`), the end of `strata-<model>.log`, and the speed
 lines the server window prints for a first answer.
 
 ```bat
@@ -184,7 +184,7 @@ cmake -S . -B build-hip \
   -DCMAKE_BUILD_TYPE=Release \
   -DSTRATA_ENABLE_HIP=ON -DSTRATA_ENABLE_CUDA=OFF \
   -DCMAKE_HIP_ARCHITECTURES=gfx1100
-cmake --build build-hip --target strata -j2
+cmake --build build-hip --target nostroma -j2
 ```
 
 `CMAKE_HIP_ARCHITECTURES` is `gfx1100`, `gfx1101`, `gfx1200`, `gfx1201`, or a list such as `"gfx1100;gfx1201"` (one binary
@@ -203,7 +203,7 @@ the card's name, its architecture and the build's list.
   through `serve/server.py` has none, and the prompt GEMMs fall back to plain hipBLAS. On Strix Halo (gfx1151) that read prompts
   20-25% slower in one report (1,043 against 826 tok/s at 8K, hipBLASLt 1.4.1, a single run per arm, not a paired A/B). Point
   `STRATA_HIPBLASLT_TUNING` at the file in `tools/hip/` (`gfx1151-hipblaslt-100401.txt` for hipBLASLt 1.4.1), or copy it into a
-  `tuning/` folder next to the `strata` binary. The start log then has the line `prefill gemm: hipBLASLt tuning enabled (N rows,
+  `tuning/` folder next to the `nostroma` binary. The start log then has the line `prefill gemm: hipBLASLt tuning enabled (N rows,
   gfx1151, version 100401)`; without it, no table was taken.
 
 Run the registered checks with:
@@ -240,7 +240,7 @@ build-hip/strata --serve \
 directory:
 
 ```sh
-.venv/bin/python -m serve.server --engine strata --config strata-hip.json --port 8080
+.venv/bin/python -m serve.server --engine nostroma --config strata-hip.json --port 8080
 ```
 
 - Select the AMD device with `ROCR_VISIBLE_DEVICES` or `HIP_VISIBLE_DEVICES` if needed.
@@ -284,7 +284,7 @@ without `--kv-resident`, the same setup answered normally. Removing the other sw
 `STRATA_HIP_ADAPT_KERNEL_COPY`, `STRATA_PREFILL_CPU_SHARE`, `STRATA_PIPED_CONCURRENT`, `STRATA_PREFILL_STREAM_MIN`, `STRATA_IO_THREADS`, a rocBLAS
 table) did not clear it; removing `STRATA_SH_STREAM` did. Two RX 6900 XT under Linux (layer split, the same model, the fork and `--kv-resident
 32768`) have served without the fault since 0.1.40. It is one PC and one card, and the faulting kernel was not isolated. So `--calibrate` does
-not measure the fork on Windows when KV streaming is on, `strata tune` never picks it there, and a config that sets it by hand gets a warning
+not measure the fork on Windows when KV streaming is on, `nostroma tune` never picks it there, and a config that sets it by hand gets a warning
 line at the start; nothing is refused. If you have an RX 6000 card on Windows and want to help, run it once with `STRATA_SH_STREAM=1` and
 `--kv-resident` and tell us in [#3895](https://github.com/Niko1221/Strata/pull/3895) whether the first request answered, with the card and the driver.
 
@@ -554,7 +554,7 @@ on any other card.
 The gfx906 build is community-tested: the maintainers have no gfx906 card, and the engine here is checked to compile for
 gfx906 and nothing more. The attention switches `STRATA_GFX906_ATTN_QUERY_SWIZZLE=1` and `STRATA_GFX906_ATTN_REDUCE12=1` are
 off by default and compiled only into this build. A wave32 card seen by this build is refused at start. The Qwen3.6 family
-is not part of this build; `strata --families` lists what the binary runs. Please report how it runs on your card.
+is not part of this build; `nostroma --families` lists what the binary runs. Please report how it runs on your card.
 
 **ROCm.** AMD's current ROCm releases no longer ship gfx906 libraries. The build used HIP 7.14 from the community image
 [`mixa3607/rocm-gfx906:7.14-complete`](https://hub.docker.com/r/mixa3607/rocm-gfx906) (rocBLAS/hipBLAS with gfx906 kernels)
@@ -566,7 +566,7 @@ apt-get update && apt-get install -y cmake ninja-build git python3 build-essenti
 cmake -S . -B build-906 -G Ninja -DSTRATA_HIP_GFX906=ON -DCMAKE_HIP_ARCHITECTURES=gfx906 \
   -DSTRATA_GGML_DIR=/src/third_party/llama.cpp \
   -DCMAKE_C_COMPILER=/opt/rocm/llvm/bin/clang -DCMAKE_CXX_COMPILER=/opt/rocm/llvm/bin/clang++
-ninja -C build-906 strata
+ninja -C build-906 nostroma
 ```
 
 `STRATA_HIP_GFX906` turns on the CUDA targets and refuses `STRATA_ENABLE_HIP` (one HIP build at a time). Run the container with
@@ -783,7 +783,7 @@ STRATA_PF_SWITCH_MIN_T=4096` 925 -> 1,092 tok/s; `--resident-experts` 1,092 -> 2
 | `STRATA_PF_PAD`/`STRATA_PF_GEMM` on RX 9070 (gfx1201), ROCm 7.2.4, Coder IQ1_M | 4K prompt 1,247 vs 1,243 tok/s, 8K 1,330 vs 1,321 (noise); an earlier crash with padded GEMMs on RDNA4 was fixed in 0.1.46 |
 
 **Package checks (0.2.1 to 0.2.3).** Initial package checks (build, link, `package_engine.py --verify`, GPU code listing,
-`strata --version` in a clean environment, feed selection by architecture) passed without an RX 7000 or Strix Halo card.
+`nostroma --version` in a clean environment, feed selection by architecture) passed without an RX 7000 or Strix Halo card.
 Later evidence: [release 0.2.3](release-notes-0.2.3.md) records Windows Strix Halo inference with engine 0.1.48. An RX 7900 XTX
 on Windows 11 ran the 0.1.40 Windows engine ([report #1173](../bench/results/2026-10-06-community-rx-7900-xtx/README.md));
 other RX 7900 owners ran Linux builds ([COMMUNITY.md](../bench/results/COMMUNITY.md)).

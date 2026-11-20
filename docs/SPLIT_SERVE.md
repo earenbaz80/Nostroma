@@ -51,7 +51,7 @@ server stops at start and says which).
 The startup line says what was chosen, including when the arena cannot be shared:
 
 ```
-[strata] split serving: the prompt is read on card 0, the answer is made on card 1 (prompts with 2048+ new tokens are handed over); one shared expert arena in /dev/shm (32.0 GiB)
+[nostroma] split serving: the prompt is read on card 0, the answer is made on card 1 (prompts with 2048+ new tokens are handed over); one shared expert arena in /dev/shm (32.0 GiB)
 ```
 
 `/metrics` has a `split_serve` block: requests, hand-overs, fallbacks, bytes moved and the time spent saving and restoring.

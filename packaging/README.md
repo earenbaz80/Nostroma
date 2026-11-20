@@ -1,6 +1,6 @@
-# Strata packaging: targets, recipes and locks
+# Nostroma packaging: targets, recipes and locks
 
-This page is for developers who build the desktop app, the Terminal archive and the engine packages. To install Strata, use
+This page is for developers who build the desktop app, the Terminal archive and the engine packages. To install Nostroma, use
 [docs/INSTALL.md](../docs/INSTALL.md). It describes the current release (app and Terminal 0.2.15, Control 0.1.61, engines 0.1.60).
 How packages are signed and published is in [UPDATES.md](UPDATES.md), and the package format is in [ENGINE-COMPONENT.md](ENGINE-COMPONENT.md).
 
@@ -24,7 +24,7 @@ Each row is an OS, CPU ABI and backend. A row is `qualified` only after the acce
 
 | Target | App artifact | Engine package recipe | Status |
 | --- | --- | --- | --- |
-| `macos-arm64-metal` | `.app` and `.dmg` (Tauri) | Metal `strata`, bundled with `strata-vision` (`packaging/build_vision_mac.sh`) | Built. Self-test passes from the mounted DMG. Inference measurements are in [MAC.md](../docs/MAC.md). Signing: `packaging/mac/sign-and-notarize.sh` ([mac/README.md](mac/README.md)). |
+| `macos-arm64-metal` | `.app` and `.dmg` (Tauri) | Metal `nostroma`, bundled with `strata-vision` (`packaging/build_vision_mac.sh`) | Built. Self-test passes from the mounted DMG. Inference measurements are in [MAC.md](../docs/MAC.md). Signing: `packaging/mac/sign-and-notarize.sh` ([mac/README.md](mac/README.md)). |
 | `darwin-arm64` Terminal | self-contained `.tar.gz` | any | Built and verified. Runs from a moved directory with no system Python. |
 | `windows-x86_64-cuda` | NSIS `.exe` (Tauri) | `cuda13` and `cuda12` | Built and tested on a Windows PC with an NVIDIA card: silent install with a System32-only PATH, a real model, an agent chat. |
 | `windows-x86_64-hip` | NSIS `.exe` (Tauri) | `tools/hip/build_windows.bat` | Published. Strix Halo inference is recorded in [STRIX_HALO.md](../docs/STRIX_HALO.md). This does not qualify every discrete Radeon card ([AMD_HIP.md](../docs/AMD_HIP.md)). |
@@ -66,20 +66,20 @@ cargo tauri build --bundles appimage deb                                     # L
 ```
 
 The Windows installer is per-user and needs no elevation (`installMode: currentUser` in `tauri.conf.json`). Models, profiles and
-sessions live outside the install directory (`~/.strata` and the platform state directories), so uninstalling the app does not remove them.
+sessions live outside the install directory (`~/.nostroma` and the platform state directories), so uninstalling the app does not remove them.
 
 Build boxes build without a signing key: the default `tauri.conf.json` has `createUpdaterArtifacts: false`. Signing happens on the
 release PC ([UPDATES.md](UPDATES.md#releasing)).
 
-## Strata Control and the engine in the installed app
+## Nostroma Control and the engine in the installed app
 
 The installer carries Control, and on a Mac the Metal engine too. Neither fetches anything when it runs.
 
 **Control** (`<install>/control`, built by `apps/desktop/scripts/stage-control.py`) is the same bundle as the Terminal archive:
 the pinned CPython 3.12.15, the hash-locked wheels, `nostroma_control`, `nostroma_cli` and `serve`, plus a `BUNDLE.json` with the
 interpreter and lock digests. The host finds it beside itself or through `STRATA_CONTROL_DIR`, runs it on its own interpreter
-(`PYTHONNOUSERSITE=1`, no `PYTHONHOME` or `PYTHONPATH`) and starts a model with `strata profile create|use-config` and
-`strata runtime start`. The engine then runs under the owner runtime (loopback TCP and a 256-bit token on Windows, a private
+(`PYTHONNOUSERSITE=1`, no `PYTHONHOME` or `PYTHONPATH`) and starts a model with `nostroma profile create|use-config` and
+`nostroma runtime start`. The engine then runs under the owner runtime (loopback TCP and a 256-bit token on Windows, a private
 socket elsewhere; a Job Object or process group; leases), and a second client such as the Terminal can attach to the same instance.
 
 The app starts each engine with `runtime start --die-with-pid <host>`, so the engine ends with the host. The host ends with the shell
@@ -89,19 +89,19 @@ the open window. One app can run several engines (profiles `app-1`, `app-2`, ...
 **The engine.** The Windows and Linux installers carry no engine. On the first start the app shows the engine for the card with its size
 and one Download button (with progress and resume), or installs an engine file the person already has ("I already have the file").
 The Mac dmg keeps its small Metal engine in `<install>/engine-bundle/<package folder>`. Either way the engine ends up in the per-user
-component folder, after the package is checked against its manifest (`%LOCALAPPDATA%\Strata\components`, `$XDG_DATA_HOME/strata/components`, or `STRATA_COMPONENTS_DIR`),
-where Control finds it like any engine that `strata update` installed:
+component folder, after the package is checked against its manifest (`%LOCALAPPDATA%\Nostroma\components`, `$XDG_DATA_HOME/nostroma/components`, or `STRATA_COMPONENTS_DIR`),
+where Control finds it like any engine that `nostroma update` installed:
 
     components/engine/<version>-<platform>-<backend>[-<variant>]/
         engine-component.json     the manifest (see ENGINE-COMPONENT.md)
-        strata[.exe]  *.dll | *.so   the binary and the GPU runtime libraries beside it
+        nostroma[.exe]  *.dll | *.so   the binary and the GPU runtime libraries beside it
 
 A run config names it as `"exe": "component:strata-engine"`. At start, `nostroma_control/engine_component.py` picks the package for this PC
 (platform, then the backend its GPU needs, found with nvidia-smi, rocminfo or sycl-ls, or `STRATA_ENGINE_BACKEND`), checks every
 file's size and SHA-256 and puts the package folder first on the library path. A mismatch is `EngineIntegrityError` and nothing starts.
 
-When no package matches, `strata serve` ends with exit 5 and "No engine for this PC was found". It never fetches. Before that point
-everything is a warning: `strata launch` says it could not find an engine, asks whether to go on, downloads the model and ends with
+When no package matches, `nostroma serve` ends with exit 5 and "No engine for this PC was found". It never fetches. Before that point
+everything is a warning: `nostroma launch` says it could not find an engine, asks whether to go on, downloads the model and ends with
 the next step (exit 0, nothing started). The app shows the same warning with an "Update engine" button in Settings.
 `packaging/package_engine.py` makes a local package from a build folder.
 

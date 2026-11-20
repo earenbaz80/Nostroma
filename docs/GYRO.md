@@ -1,9 +1,9 @@
-# Gyro (agentionai rotor quants) on Strata
+# Gyro (agentionai rotor quants) on Nostroma
 
 This page is for people who want to run Gyro-S or Gyro-M, the smallest Qwen3.8-Flash-Next options, or who want to know
 how they compare with the other sizes. They are quantizations by agentionai
 ([agentionai/Qwen3.8-Flash-Next-Gyro-GGUF](https://huggingface.co/agentionai/Qwen3.8-Flash-Next-Gyro-GGUF)). The
-routed experts are stored as trellis-coded blocks (ggml types TQ2_T, TQK6, TQK7) in a Hadamard-rotated basis. Strata
+routed experts are stored as trellis-coded blocks (ggml types TQ2_T, TQK6, TQK7) in a Hadamard-rotated basis. Nostroma
 reads the published files unchanged.
 
 Setup lists them as a model family of their own, "Qwen3.8-Flash-Next (Gyro)". They are not the first recommendation
@@ -18,12 +18,12 @@ you care.
 ## Quick start
 
 ```sh
-strata launch --family gyro --model Gyro-S      # or Gyro-M
+nostroma launch --family gyro --model Gyro-S      # or Gyro-M
 ```
 
 Setup downloads the pinned revision of the file (size and SHA-256 checked) and prepares the pack
 (`tools/iq_pack.py --compat-bf16`: the Hadamard table and the dense weights, 1.5 GB). It also prepares the draft head
-(Strata's own MTP head, made from the original model as for every Qwen3.8-Flash-Next file) and the start script. If the
+(Nostroma's own MTP head, made from the original model as for every Qwen3.8-Flash-Next file) and the start script. If the
 ready-made engine is too old for the pack, setup replaces it or the app offers Update engine.
 
 ## Sizes
@@ -92,9 +92,9 @@ time in a decode profile.
 If Gyro misbehaves on an RTX 50 card, update the engine.
 
 **Prompt speed and the ggml build.** The trellis prompt kernels (MMQ) are agentionai's, from their llama.cpp fork (MIT).
-Strata builds against upstream ggml, which does not have them, so it adds them at configure time.
+Nostroma builds against upstream ggml, which does not have them, so it adds them at configure time.
 `cmake/strata_ggml_tq_overlay.cmake` writes a copy of the pinned ggml-cuda headers into the build folder with the
-three trellis types routed like IQ2_XS. The tile loader is the fork's (`third_party/ggml-tq/`). Only Strata's own MMQ
+three trellis types routed like IQ2_XS. The tile loader is the fork's (`third_party/ggml-tq/`). Only Nostroma's own MMQ
 library sees the copy; every other type is compiled from the untouched files. The ready-made engines read Gyro prompts
 through it. If the pinned ggml changes and an anchor of the script no longer matches, the overlay switches itself off
 with a message and prompts take the slower FP16 path. A build against the fork (`-DSTRATA_GGML_DIR=<agentionai/llama.cpp>`)
@@ -114,7 +114,7 @@ together are short.
 the first-release files of Gyro-S and Gyro-M (same size as the pinned ones, different SHA-256). The pinned Gyro-S passes
 the same parity run (16 cases, 0 failures) and answers correctly through the server. It was not compared with CUDA.
 
-**Not tested by us:** a B-series card (`strata launch` says it is new and how to report a problem), two Arc cards (the
+**Not tested by us:** a B-series card (`nostroma launch` says it is new and how to report a problem), two Arc cards (the
 second-card expert helper refuses a Gyro pack and says so) and an Arc on the xe driver. The Battlemage AOT build
 (`bmg-g31`) compiles with the trellis kernels but was not run.
 
@@ -181,7 +181,7 @@ Hadamard-folded pack. What a Mac needs, the measured speeds on a 32 GB Mac mini 
 ./setup.sh --family gyro --model Gyro-S
 ```
 
-The app and `strata launch` list it under Gyro models.
+The app and `nostroma launch` list it under Gyro models.
 
 ## Install by hand
 
@@ -189,7 +189,7 @@ Setup does these steps for you. By hand, from a [source checkout](SOURCE_INSTALL
 
 ### 1. Build
 
-For the fast prompt path, Strata's GGML dependency can be the agentionai llama.cpp fork, which has the trellis types:
+For the fast prompt path, Nostroma's GGML dependency can be the agentionai llama.cpp fork, which has the trellis types:
 
 ```sh
 git clone --depth 1 https://github.com/agentionai/llama.cpp ../agention-llama.cpp
@@ -243,7 +243,7 @@ Save as `strata-gyro-s.json` at the repository root:
   ],
   "cwd": ".",
   "tokenizer": "packs/gyro-s/tokenizer",
-  "model_name": "gyro-s-strata",
+  "model_name": "gyro-s-nostroma",
   "log": "strata-gyro-s.log",
   "host": "127.0.0.1",
   "port": 8080
@@ -251,7 +251,7 @@ Save as `strata-gyro-s.json` at the repository root:
 ```
 
 ```sh
-.venv/bin/python -m serve.server --engine strata --config strata-gyro-s.json --port 8080
+.venv/bin/python -m serve.server --engine nostroma --config strata-gyro-s.json --port 8080
 ```
 
 The web interface is at `http://127.0.0.1:8080`. API clients use `http://127.0.0.1:8080/v1` (OpenAI) or `/v1/messages`
@@ -260,16 +260,16 @@ The web interface is at `http://127.0.0.1:8080`. API clients use `http://127.0.0
 
 ## Numerics
 
-- **Decode** (Strata's own expert kernels) reads the trellis weights through an int8 copy of the codebook with one
+- **Decode** (Nostroma's own expert kernels) reads the trellis weights through an int8 copy of the codebook with one
   global scale (`tq_lut_i8`, relative RMS error 0.85% of the codebook's standard deviation, far below the quantization
   error itself), against q8_1 activations.
 - **Prompt processing** decodes them differently. The FP16 path uses the fp16 codebook (`tq_lut_f16`, what GGML's own
   dequantizer reads). The MMQ path uses the llama.cpp fork's kernels, which read the int8 codebook as well.
 - Decode and prompt results therefore agree within tolerance, not bit for bit. `native_expert_parity` checks one expert
   on the decode kernels against GGML's float dequantizer and a float SwiGLU: relative L1 error below 3e-2, the bound
-  every expert type gets there. Its "bitwise equal" lines compare Strata's decode-once and per-entry decode kernels with
+  every expert type gets there. Its "bitwise equal" lines compare Nostroma's decode-once and per-entry decode kernels with
   each other, not with a float reference.
-- Strata's own CPU kernels for the trellis types (`src/kernels/cpu/tq_*.cpp`, AVX2 and AVX-512, picked at run time)
+- Nostroma's own CPU kernels for the trellis types (`src/kernels/cpu/tq_*.cpp`, AVX2 and AVX-512, picked at run time)
   take about 45% of ggml-cpu's time per expert on AVX2 and decode a block once for all the tokens of a verify window
   (`build/tq_cpu_parity --bench` measures them on your CPU). `STRATA_NO_TQ_KERNELS=1` goes back to ggml-cpu.
   `STRATA_TQ_ISA=avx2` or `scalar` caps the instruction set.
@@ -280,7 +280,7 @@ The web interface is at `http://127.0.0.1:8080`. API clients use `http://127.0.0
   decode peer. The prompt peer says it is not used for a Hadamard-folded pack, and the prompt stays on the first card.
   Prompt processing on a peer GPU over P2P is not validated end to end.
 - Token parity against llama.cpp has not been measured.
-- `strata --tokens-file ... --max-new N` (benchmark mode) decodes N tokens past the end of the answer. Compare speeds
+- `nostroma --tokens-file ... --max-new N` (benchmark mode) decodes N tokens past the end of the answer. Compare speeds
   only up to the answer's end.
 - AMD: the trellis kernels pass parity on gfx1151 (ROCm 7.2.1) and a short end-to-end run there generated correctly
   (28 to 31 tokens/s). There was no speed tuning or RDNA4 speed run. An AMD GPU other than gfx1151 runs with a warning.
@@ -323,7 +323,7 @@ Gyro-S gained +30% on a Tesla P100 from the `STRATA_TQ_STAGE` variant (5 pairs).
 
 > **Measured on:** one AMD Radeon AI PRO R9700 (gfx1201, ROCm 7), one card of four, `--prefill auto --spec 4
 > --spec-min-p 0.5 --mtp --kv int8`, 22K context, interleaved pairs, medians, the first Gyro release files (2026-10-07).
-> A = agentionai/Strata rc2, B = this port (Strata 0.1.45 base).
+> A = agentionai/Strata rc2, B = this port (Nostroma 0.1.45 base).
 
 | B's ggml | File | Decode tok/s A / B | Pairs B faster | Prompt 4K ms A / B | Prompt 20K ms A / B |
 | --- | --- | ---: | --- | ---: | ---: |
@@ -349,18 +349,18 @@ min-p 0.05, 512 new tokens, 3 repetitions):
 
 | GPU and file | Experts cached | Prose | JSON | Code | Copy | Prefill 4K | Prefill 16K |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| RTX 5090 32 GB, Gyro-S, Strata | 23,463 | 131.7 | 200.1 | 195.2 | 201.8 | 3,456 | 4,883 |
+| RTX 5090 32 GB, Gyro-S, Nostroma | 23,463 | 131.7 | 200.1 | 195.2 | 201.8 | 3,456 | 4,883 |
 | RTX 5090, Gyro-S, llama.cpp with MTP draft | | 116.8 | 213.0 | 179.0 | 220.7 | 2,520 | 2,471 |
 | RTX 5090, Gyro-S, llama.cpp no draft | | 121.8 | 123.2 | 122.5 | 121.2 | | |
-| RTX 5090, Gyro-M, Strata | 18,007 | 113.8 | 170.8 | 153.0 | 175.7 | 3,369 | 4,854 |
-| RTX 3090 24 GB, Gyro-S, Strata | 15,756 | 31.8 | 45.2 | 42.2 | 45.1 | 1,402 | 1,863 |
-| RTX 3090, Gyro-M, Strata | 11,811 | 27.8 | 39.4 | 34.4 | 37.7 | 1,363 | 1,910 |
+| RTX 5090, Gyro-M, Nostroma | 18,007 | 113.8 | 170.8 | 153.0 | 175.7 | 3,369 | 4,854 |
+| RTX 3090 24 GB, Gyro-S, Nostroma | 15,756 | 31.8 | 45.2 | 42.2 | 45.1 | 1,402 | 1,863 |
+| RTX 3090, Gyro-M, Nostroma | 11,811 | 27.8 | 39.4 | 34.4 | 37.7 | 1,363 | 1,910 |
 | RTX 3090, Gyro-S, llama.cpp `-ncmoe 10`, 32K, no draft | | 16.0 | 16.2 | 16.2 | 16.5 | 468 | 479 |
 
 Single prompts of 34 to 177 tokens, 384 new tokens, `--max-context 16384`, Gyro-S, RTX 5090, all experts cached
 (2026-10-03): prose 139.9, JSON 221.3, code 209.0 tok/s. Gyro-M on the same card with llama.cpp needs `-ncmoe 8` and
 decodes at 70.8 tok/s without a draft. A single RTX 4090 smoke run (Gyro-S, MTP draft, greedy): code 107.5, prose 84.3,
-JSON 76.3 tok/s. On 24 GB the CPU matters (the box had a Zen 2 EPYC, AVX2 only). These Strata rows predate Strata's
+JSON 76.3 tok/s. On 24 GB the CPU matters (the box had a Zen 2 EPYC, AVX2 only). These Nostroma rows predate Nostroma's
 own trellis CPU kernels.
 
 Smaller expert caches, emulated on the RTX 5090 (2026-10-02, before the int8 decode kernels). A real 8 or 16 GB card is
@@ -376,4 +376,4 @@ a slower GPU, often on a slower link: read these rows as "it stays usable", not 
 Two RTX 4090 without NVLink or P2P (2026-10-04): the layer split works with Gyro, including the idle-card prompt helper
 (`STRATA_PREFILL_HELP=1`), and repeated runs give identical output. Decode with a second card (`--peer-device 1` or
 `--expert-cache-device1 auto`) matches single-GPU output. Prompt processing on the peer card needs GPU-to-GPU access
-(NVLink or data-centre GPUs). Without it Strata keeps the prompt on the first GPU and logs `no P2P`.
+(NVLink or data-centre GPUs). Without it Nostroma keeps the prompt on the first GPU and logs `no P2P`.

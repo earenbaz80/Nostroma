@@ -1,9 +1,9 @@
-# Strata on an Intel Arc: the SYCL engine
+# Nostroma on an Intel Arc: the SYCL engine
 
 This page is for people who build the Intel Arc engine from source or run it in a container, and for those who maintain the
 port. For the released Linux engine package, start with [INTEL_ARC.md](INTEL_ARC.md).
 
-Strata's engine is CUDA. On an Intel Arc it runs as Strata's own engine ported to SYCL (`sycl/`), behind the same server:
+Nostroma's engine is CUDA. On an Intel Arc it runs as Nostroma's own engine ported to SYCL (`sycl/`), behind the same server:
 OpenAI and Anthropic APIs, streaming, tool calls, MCP and the web app are unchanged. Everything Intel-specific lives in `sycl/`;
 no shared upstream file is changed. `sycl/setup_intel.py` and `sycl/serve/server_intel.py` wrap upstream's `setup.py` and
 `serve/server.py` from outside. llama.cpp's SYCL backend runs the same GGUF at about a third of the speed.
@@ -18,7 +18,7 @@ On Ubuntu 24.04 or newer, with Intel's GPU driver installed (`ls /dev/dri` shows
 ```sh
 sudo apt install docker.io git
 sudo usermod -aG docker,render $USER     # log out and in; `docker ps` must work without sudo
-cd Strata
+cd Nostroma
 docker build --pull -t strata-sycl-dev sycl/tools                 # once, about 6 minutes, 13 GB
 # build the engine: see "How to build it", then
 ./setup.sh --backend sycl [setup's options, e.g. --model IQ3_S --context 32768 --port 8085]
@@ -45,8 +45,8 @@ MTP draft layer and the context and KV questions are setup's own.
 | Engine settings | The config's `"env"` block reaches the engine. `strata-sycl.sh` forwards every `STRATA_`, `ONEAPI_`, `UR_`, `IGC_`, `SYCL_` and `ZES_` variable and sets `STRATA_VERIFY_DEVICE_PLAN=1`, `STRATA_VERIFY_NO_HOST=1` and `STRATA_STAGER_THREADS=12` unless the environment says otherwise (for example `"env": {"STRATA_VERIFY_NO_HOST": "0"}`). A value of `0` is not passed on, because the engine tests these switches by presence. |
 
 The models, packs and checkout must sit under the folder `strata-sycl.sh` mounts at `/work` (the one above the checkout, or
-`STRATA_SYCL_ROOT`). An earlier Strata install on the same PC keeps its data folder in `~/.config/strata/settings.json`; pass
-`--data-dir <folder above the checkout>/Strata-data` to put this one under the mount. A symlink to a folder outside the mount does
+`STRATA_SYCL_ROOT`). An earlier Nostroma install on the same PC keeps its data folder in `~/.config/nostroma/settings.json`; pass
+`--data-dir <folder above the checkout>/Nostroma-data` to put this one under the mount. A symlink to a folder outside the mount does
 not work in the container; a hard link does. If a future `setup.py` drops a step this relies on, setup stops with a message
 instead of writing a wrong config.
 
@@ -57,7 +57,7 @@ llama.cpp SYCL image), so the PC needs no oneAPI. From the checkout (the folder 
 `/work`):
 
 ```sh
-cd Strata
+cd Nostroma
 docker build --pull -t strata-sycl-dev sycl/tools     # once: about 6 minutes, a 13 GB image
 H=$(basename "$PWD")
 ```
@@ -67,7 +67,7 @@ Ahead-of-time code, no compile at the first start:
 
 ```sh
 docker run --rm -u $(id -u):$(id -g) -v "$PWD/..:/work" -e AOT=bmg-g31 -e REPO=/work/$H \
-    -e BUILD_DIR=/work/$H/build-sycl-aot strata-sycl-dev "cd /work/$H && bash sycl/tools/build.sh strata"
+    -e BUILD_DIR=/work/$H/build-sycl-aot strata-sycl-dev "cd /work/$H && bash sycl/tools/build.sh nostroma"
 ```
 
 **Arc A-series** (Alchemist: A750, A770, A580, A380): no `AOT=`. The code is compiled from SPIR-V at the first start (JIT, about
@@ -75,7 +75,7 @@ a minute). Nobody has run an AOT build for these cards.
 
 ```sh
 docker run --rm -u $(id -u):$(id -g) -v "$PWD/..:/work" -e REPO=/work/$H \
-    -e BUILD_DIR=/work/$H/build-sycl strata-sycl-dev "cd /work/$H && bash sycl/tools/build.sh strata"
+    -e BUILD_DIR=/work/$H/build-sycl strata-sycl-dev "cd /work/$H && bash sycl/tools/build.sh nostroma"
 ```
 
 The build takes about 3 minutes and ends with `BUILD EXIT 0` and `errors: 0`. Setup finds `build-sycl-aot/strata` or
@@ -115,11 +115,11 @@ build-sycl/strata --pack <iq pack> --native <shard1> --ple-gguf <shard2> \
 With `--tokens-file` instead of `--tokens` for long prompts (80K ids exceed Linux's single-argument limit). With a native pack
 `--prefill-until N` skips the token loop, so compare output tokens between paths, never only timings.
 
-Serve the port with `serve/server.py --engine strata` and `sycl/serve/strata-sycl.sh` as the `exe`, which starts the binary inside
+Serve the port with `serve/server.py --engine nostroma` and `sycl/serve/strata-sycl.sh` as the `exe`, which starts the binary inside
 the oneAPI runtime image with the serve pipes attached. Paths in the config's `args` are the container's. A config:
 
 ```json
-{"engine": "strata", "exe": "<repo>/sycl/serve/strata-sycl.sh",
+{"engine": "nostroma", "exe": "<repo>/sycl/serve/strata-sycl.sh",
  "args": ["--pack", "/work/pack", "--native", "<shard 1>", "--ple-gguf", "<shard 2>",
           "--expert-profile", "data/expert-profile-coder.bin", "--expert-cache", "auto", "--stream-experts",
           "--prefill", "auto", "--spec", "4", "--spec-min-p", "0.5", "--mtp", "/work/mtp/rt",
@@ -153,7 +153,7 @@ with Coder IQ1_M 1,024 MiB fits all 12,288 experts with 2 GB of VRAM free.
   oneMKL's own precompiled kernels do not get it; the GEMM stages an operand past 4 GiB (`STRATA_SYCL_GEMM_STAGE=1` forces
   that on Battlemage).
 - **Aliased pages in big allocations (xe).** The driver can return a large arena with two 2 MiB pages mapped onto the same
-  memory. Every allocation of 32 MiB or more goes through `strata::malloc_device_guarded`, which checks the range and allocates
+  memory. Every allocation of 32 MiB or more goes through `nostroma::malloc_device_guarded`, which checks the range and allocates
   again behind a spacer until it is clean (a warning names each retry; under 0.5 s at startup; `STRATA_ARENA_ALIAS_CHECK=0`
   skips it). `STRATA_VERIFY_ALL_SLOTS=1` reads every filled cache slot back and compares it with the GGUF.
 - **Monitor tab.** `server_intel.py` plugs `sycl/serve/xe_telemetry.py` into the Monitor (temperature, power, PCIe link from
@@ -312,8 +312,8 @@ the GPU reader.
   has run it on a card of 24 GB or more.
 - **Known risk on Battlemage.** The first picture on the Arc Pro B70 (engine 0.1.45, IQ3_S, CPU reader) logged an xe engine
   reset (ccs + bcs) and `Fault response: Unsuccessful -EINVAL`, and the request ended 503. It has not been looked at since.
-  Setup and `strata launch` print one plain line that the card is new to Strata and how to report a problem. `--vision no`
-  (setup) or `--vision off` (`strata launch`) turns pictures off.
+  Setup and `nostroma launch` print one plain line that the card is new to Nostroma and how to report a problem. `--vision no`
+  (setup) or `--vision off` (`nostroma launch`) turns pictures off.
 
 > **Measured on:** Arc A750 (8 GB), IQ3_XXS, 8K context, JIT build, 448x448 picture.
 
@@ -337,11 +337,11 @@ other source from the original location. `sycl/include/dpct/` is the vendored SY
    headers that `sycl/tools/get-cuda-headers.sh` pulls from NVIDIA's pip wheels (dpct parses CUDA; it needs headers, not the toolkit).
 2. `sycl/tools/migrate.sh` writes a compilation database for the CUDA-touching translation units and runs dpct over them.
 3. `sycl/tools/fixups.py` fixes what dpct got wrong, as an idempotent script with a reason per item. Examples: CUDA's null stream
-   becomes the default stream (every stream cast goes through `strata::q_of()`), `__ldg` and `__fadd_rn` translations that lost
+   becomes the default stream (every stream cast goes through `nostroma::q_of()`), `__ldg` and `__fadd_rn` translations that lost
    their meaning, ggml lookup tables as plain `static const` arrays.
 4. `sycl/tools/build.sh` configures and builds with icpx inside the image. Two compiler flags are load-bearing:
    `-fp-model=precise` (icpx defaults to a fast model) and `-cl-fp32-correctly-rounded-divide-sqrt` for the device compiler. The
-   Arc's fp32 divide is not correctly rounded by default, and Strata's quantizers are byte-exact against ggml through `amax / 127`.
+   Arc's fp32 divide is not correctly rounded by default, and Nostroma's quantizers are byte-exact against ggml through `amax / 127`.
 
 **What the port had to get right.**
 
@@ -411,7 +411,7 @@ log (debugging stories, per-merge notes, planned-item lists) was dropped; the nu
 > **Measured on:** Arc Pro B70 32 GB (xe), PCIe 3.0 x8, Ubuntu 24.04, Coder IQ1_M, 32K context, INT8 KV, the SYCL port,
 > engine 0.1.31-sycl (2026-10-01), against llama.cpp SYCL (2026-09-29, q8_0 KV).
 
-| | NVIDIA (RTX 5070, Strata) | Intel Arc, SYCL port | Intel Arc, llama.cpp |
+| | NVIDIA (RTX 5070, Nostroma) | Intel Arc, SYCL port | Intel Arc, llama.cpp |
 | --- | --- | --- | --- |
 | Decode, Coder IQ1_M | 44-51 tok/s | 78.2 tok/s (19-token prompt), 75.7 (2,184-token prompt); 48-72 through the API | 23-25 tok/s |
 | Prompt | about 1,870 tok/s | 790 tok/s at 2,184 tokens, 1,117 at 40K, 888 at 128K, 757 at 256K | about 150 tok/s (424 at 105K) |

@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="apps/host/public/brand/strata-lockup-dark.svg">
-    <img src="apps/host/public/brand/strata-lockup-light.svg" alt="Nostroma" width="340">
+    <source media="(prefers-color-scheme: dark)" srcset="apps/host/public/brand/nostroma-lockup-dark.svg">
+    <img src="apps/host/public/brand/nostroma-lockup-light.svg" alt="Nostroma" width="340">
   </picture>
 </p>
 
@@ -58,7 +58,7 @@ Nie wiesz, co się zmieści? [Wybierz model do swojego komputera](docs/MODELS.md
 
 ## Instalacja
 
-<a id="option-a-the-strata-app"></a>
+<a id="option-a-the-nostroma-app"></a>
 
 ### Aplikacja na komputer
 
@@ -78,7 +78,7 @@ uruchomieniu aplikacja pobiera silnik dla twojej karty graficznej. [Pomoc z inst
 
 ### Aplikacja Terminal
 
-Wolisz terminal? Zainstaluj Nostromę, a potem uruchom **`strata launch`**.
+Wolisz terminal? Zainstaluj Nostromę, a potem uruchom **`nostroma launch`**.
 
 <details open>
 <summary><b>Polecenia instalacji</b></summary>
@@ -98,7 +98,7 @@ irm -TimeoutSec 120 https://github.com/Niko1221/Strata/releases/latest/download/
 W Windows otwórz potem nowe okno terminala. Następnie:
 
 ```sh
-strata launch
+nostroma launch
 ```
 
 Postępuj zgodnie z podpowiedziami, aby pobrać i uruchomić model. [Przewodnik po Terminalu](docs/TERMINAL_LAUNCH.md).
@@ -133,7 +133,7 @@ Postępuj zgodnie z podpowiedziami, aby pobrać i uruchomić model. [Przewodnik 
 
 **Claude Code · Codex CLI · OpenCode · oh-my-pi · pi.dev · Hermes Agent · OpenClaw** i inne — przez API zgodne z OpenAI i Anthropic.
 
-Uruchom **`strata connect`**, aby zobaczyć instrukcję konfiguracji dla swojego narzędzia. [Przewodnik po połączeniach](docs/TERMINAL_LAUNCH.md#connect-your-apps-strata-connect).
+Uruchom **`nostroma connect`**, aby zobaczyć instrukcję konfiguracji dla swojego narzędzia. [Przewodnik po połączeniach](docs/TERMINAL_LAUNCH.md#connect-your-apps-nostroma-connect).
 
 <a id="guides"></a>
 <a id="how-fast-is-it"></a>

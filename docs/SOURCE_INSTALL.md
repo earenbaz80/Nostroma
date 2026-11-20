@@ -1,7 +1,7 @@
 # Install and build from a source checkout
 
-Use this guide to work on Strata's code or maintain a source-based installation. It is for developers.
-To just use Strata (version 0.2.15), install the [desktop app or the Terminal](INSTALL.md). Installed apps do not use `START-HERE.bat`.
+Use this guide to work on Nostroma's code or maintain a source-based installation. It is for developers.
+To just use Nostroma (version 0.2.15), install the [desktop app or the Terminal](INSTALL.md). Installed apps do not use `START-HERE.bat`.
 
 The repository includes `START-HERE.bat`, `SETUP.bat`, `UPDATE.bat`, `setup.sh` and `update.sh`.
 Run them from a cloned or extracted **source folder**. They may install dependencies, prepare model files and
@@ -65,7 +65,7 @@ nix develop -c ./setup.sh
 
 ```bash
 git clone https://github.com/Niko1221/Strata.git
-cd Strata
+cd Nostroma
 ./setup.sh --build --no-start
 ```
 
@@ -77,7 +77,7 @@ For a direct NVIDIA build, with the required compiler and CUDA toolkit installed
 
 ```bash
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DSTRATA_ENABLE_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES=native
-cmake --build build --target strata -j8
+cmake --build build --target nostroma -j8
 ```
 
 `native` builds for the GPUs in this PC. Name the card instead for another one: `75` (RTX 20), `86` (RTX 30), `89` (RTX 40),
@@ -124,7 +124,7 @@ Source setup uses `--gpus` to select multiple cards of the same supported backen
 ```
 
 Windows equivalent: `START-HERE.bat --gpus 0,1`. The installed Terminal instead uses
-`strata launch --gpu 0,1`. Main/Helper roles, memory limits and measurements are in [MULTI_GPU.md](MULTI_GPU.md).
+`nostroma launch --gpu 0,1`. Main/Helper roles, memory limits and measurements are in [MULTI_GPU.md](MULTI_GPU.md).
 Several cards are not always faster than one; measure the workload you care about.
 
 ## Docker (Linux)
@@ -153,7 +153,7 @@ separately in [INSTALL.md](INSTALL.md#updating).
 ## Where things are stored
 
 Source setup writes model run configs (`strata-<model>.json`), launch scripts (`run-<model>.bat` / `.sh`) and
-logs in the checkout. Models, packs and draft data normally go in `Strata-data` beside it, or the location selected
+logs in the checkout. Models, packs and draft data normally go in `Nostroma-data` beside it, or the location selected
 with `--data-dir`. Dependencies and build products stay in the source installation.
 
 These are source paths. The desktop app and installed Terminal use the [release data locations](INSTALL.md#where-things-are-stored).
@@ -169,7 +169,7 @@ Executable defaults may differ, so select the family explicitly when that choice
 ## Tuning for your PC
 
 Use source setup's `--calibrate` only where that backend supports it. Terminal tuning instead uses
-`strata launch --tune quick` or `--tune thorough`; those are separate interfaces. Tuning can take a substantial
+`nostroma launch --tune quick` or `--tune thorough`; those are separate interfaces. Tuning can take a substantial
 amount of time and should use the same hardware and model configuration as the intended workload.
 
 ## Options without questions

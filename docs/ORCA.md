@@ -6,14 +6,14 @@ not an installer menu entry, and there is no `--family orca` command.
 
 ## Quick start
 
-1. Build Strata normally, then pack the model ([Preparation](#preparation)).
+1. Build Nostroma normally, then pack the model ([Preparation](#preparation)).
 2. Prepare the optional draft head (MTP) with the same section's commands.
 3. Save the config from [Local server](#local-server) and start the server.
 
 ## How it works
 
-The model has Strata's Qwen4Exp geometry. Ordinary quantization also compresses the hyperconnection, small attention
-and PLE projections, which Strata's kernels read as BF16. `tools/iq_pack.py --compat-bf16` expands only those
+The model has Nostroma's Qwen4Exp geometry. Ordinary quantization also compresses the hyperconnection, small attention
+and PLE projections, which Nostroma's kernels read as BF16. `tools/iq_pack.py --compat-bf16` expands only those
 projections, rounding to BF16 with nearest-even. This adds rounding relative to the GGUF's dequantized weights. It does
 not recover the original BF16 checkpoint or its quality.
 
@@ -77,7 +77,7 @@ RAM, plus draft and runtime buffers and your other applications.
 Run it from the repository root:
 
 ```sh
-.venv/bin/python -m serve.server --engine strata --config strata-orca-iq3_xxs.json --port 8080
+.venv/bin/python -m serve.server --engine nostroma --config strata-orca-iq3_xxs.json --port 8080
 ```
 
 The web interface is at `http://127.0.0.1:8080`. API clients use `http://127.0.0.1:8080/v1`. This example is text-only;
