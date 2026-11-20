@@ -23,7 +23,7 @@ ENV = {      # what each switch writes outside its default
     "faster_long_prompts": {"STRATA_KVA": "1"},
     "faster_12gb_nvidia": {"STRATA_ROUTE_PRIOR": "1.5"},
     "faster_radeon_9000": {"STRATA_PCIE_FRAC_DEFAULT": "old"},
-    "picture_reader": {"STRATA_VISION_TOWER": "mtmd"},       # llama.cpp's picture reader instead of Strata's own (owner 11-11)
+    "picture_reader": {"STRATA_VISION_TOWER": "mtmd"},       # llama.cpp's picture reader instead of Nostroma's own (owner 11-11)
     "qwen_defaults_026": {"STRATA_DEFAULTS": "026"},         # the Terminal's troubleshooting switch: not in the app
 }
 DEFAULT = {"faster_long_prompts": "off", "faster_12gb_nvidia": "off", "faster_radeon_9000": "on", "picture_reader": "on",
@@ -218,7 +218,7 @@ class Terminal(unittest.TestCase):
 
 
 class PictureReader(unittest.TestCase):
-    """The picture reader (owner 11-11: "Our tower, the other selectable"): Strata's own by default, llama.cpp's chosen in the settings.  The choice is the run
+    """The picture reader (owner 11-11: "Our tower, the other selectable"): Nostroma's own by default, llama.cpp's chosen in the settings.  The choice is the run
     config's env entry STRATA_VISION_TOWER=mtmd, which the server hands to strata-vision (an older reader ignores it); a default file carries nothing."""
     PICS = {**QWEN, "vision": {"exe": "strata-vision", "mmproj": "mm.gguf", "model": "m.gguf", "gpu": True}}
 
@@ -232,7 +232,7 @@ class PictureReader(unittest.TestCase):
     def test_the_app_shows_it_in_image_reading_with_two_named_options(self):
         sw = W.BY_ID["picture_reader"]
         self.assertEqual((sw.label, sw.group, sw.default, dict(sw.words)), ("Picture reader", "Image reading", "on",
-                                                                            {"on": "Strata's own (recommended)", "off": "llama.cpp's"}))
+                                                                            {"on": "Nostroma's own (recommended)", "off": "llama.cpp's"}))
         self.assertTrue(all(s.group == "Speed" for s in W.SWITCHES if s.id != "picture_reader"))
         self.assertLess(len(sw.effect), 300)   # the owner's approved help line (11-11) is 275 characters; the other switches keep 260
 
@@ -251,7 +251,7 @@ class PictureReader(unittest.TestCase):
         rows = P.build_rows(None, self.PICS["args"], None, self.PICS["env"], None, {}, P.switch_params(W.applicable(self.PICS, [RTX])))
         row = next(r for r in rows if r.name == "STRATA_VISION_TOWER")
         self.assertEqual((row.default, row.yours, row.known), ("auto", "", True))
-        self.assertIn("Picture reader (Strata's own by default; set mtmd to use llama.cpp's).", row.description)
+        self.assertIn("Picture reader (Nostroma's own by default; set mtmd to use llama.cpp's).", row.description)
         self.assertIn("Choose llama.cpp's if pictures look misread.", row.description)
 
 

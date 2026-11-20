@@ -48,13 +48,13 @@ SWITCHES: tuple[Switch, ...] = (
            "Shares the work between the graphics card and the processor in a way that makes answers faster on these cards. "
            "Turn off to go back to the previous setting, which is slower.",
            (("STRATA_PCIE_FRAC_DEFAULT", "old"),), "qwen-radeon-9000"),
-    # The picture reader (owner 11-11: "Our tower, the other selectable"): Strata's own by default (strata-vision's `auto`: ours where it was measured no slower
+    # The picture reader (owner 11-11: "Our tower, the other selectable"): Nostroma's own by default (strata-vision's `auto`: ours where it was measured no slower
     # and correct, llama.cpp's by itself where it was measured slower or does not start); STRATA_VISION_TOWER=mtmd picks llama.cpp's mtmd reader.  The server
     # hands the run config's env to the reader, and an older strata-vision ignores the name.  Label, options and help line approved by the owner 11-11 morning
     # (par/OWNER-WORDING-1111.md); the Terminal row's frame (env_words) is still [DRAFT].
     Switch("picture_reader", "Picture reader",
            "Which program turns pictures into something the model can read. Nostroma's own is faster on most computers and reads very large pictures correctly; "
-           "on a few graphics cards where it is still slower, Strata uses llama.cpp's by itself. Choose llama.cpp's if pictures look misread.",
+           "on a few graphics cards where it is still slower, Nostroma uses llama.cpp's by itself. Choose llama.cpp's if pictures look misread.",
            (("STRATA_VISION_TOWER", "mtmd"),), "qwen-pictures", group="Image reading",
            words=(("on", "Nostroma's own (recommended)"), ("off", "llama.cpp's")), terminal_default="auto"),
     # Troubleshooting only, in the Terminal's Advanced table and nowhere else: every Qwen 0.2.7 default back to its 0.2.6 behaviour.
@@ -98,7 +98,7 @@ def applies(switch: Switch | str, cfg: Mapping[str, Any] | None, gpus: Iterable[
     "Faster long prompts" is for Qwen3.8-Flash-Next models only (a config without an "arch")."""
     sw = BY_ID[switch] if isinstance(switch, str) else switch
     from nostroma_control import retired
-    if retired.config_reason(cfg):                   # a DeepSeek config (nostroma_control/retired.py): this Strata does not run it
+    if retired.config_reason(cfg):                   # a DeepSeek config (nostroma_control/retired.py): this Nostroma does not run it
         return False
     if sw.only == "qwen-any":
         return True

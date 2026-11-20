@@ -128,7 +128,7 @@ class Endpoint:
         except (ValueError, UnicodeDecodeError, RecursionError) as e:
             raise ClientError("server returned malformed JSON telemetry") from e
         if not isinstance(data, dict):
-            raise ClientError("server returned a non-object telemetry response")
+            raise ClientError("server returned malformed JSON telemetry")
         return data
 
     def snapshot(self) -> dict[str, Any]:
