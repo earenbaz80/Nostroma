@@ -535,8 +535,8 @@ class Catalog:
         return None
 
     def data_dir_choice(self) -> tuple[Path, str]:
-        """(the data folder, where it came from): the person's own setting, the desktop app's folder, a Documents/Strata that holds models,
-        else the default beside the install. The same rule for every command."""
+        """(the data folder, where it came from): the person's own setting, the desktop app's folder, a Documents/Nostroma that holds models
+        (or a Documents/Strata from before the rename), else the default beside the install. The same rule for every command."""
         from nostroma_control import discovery
         return discovery.data_dir(Path(self._mcp_data_dir()))
 

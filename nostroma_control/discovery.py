@@ -14,8 +14,10 @@ The desktop app itself (it sets STRATA_SETTINGS_FILE) never adopts an older comm
 own install folder and its own settings file count. Everything here is read-only: nothing is created, copied or moved.
 
 The data folder (models, packs, mtp) is found the same way: the person's own setting first, then the app's data folder, then a
-``Documents/Strata`` folder that holds models, then the default beside the install. A model that is installed tells where it really is
-(its run config names its files), which beats all of these.
+``Documents/Nostroma`` folder that holds models (a ``Documents/Strata`` written before the rename counts as the same, and the new name
+wins when both have models), then the default beside the install. Nothing creates either folder: making ``Documents/Nostroma/Models``
+is the host's job (apps/host/server/store.mjs), and this module only reads. A model that is installed tells where it really is (its run
+config names its files), which beats all of these.
 """
 
 from __future__ import annotations
@@ -64,7 +66,7 @@ def in_app_mode(environ=None) -> bool:
 
 
 def documents_dirs(environ=None, *, windows: bool | None = None, home: Path | None = None) -> list[Path]:
-    """The person's Documents folder(s): where the desktop app keeps ``Strata`` by default (Windows may redirect Documents to OneDrive)."""
+    """The person's Documents folder(s): where the desktop app keeps ``Nostroma`` by default (Windows may redirect Documents to OneDrive)."""
     environ = os.environ if environ is None else environ
     home = _home(home)
     out: list[Path] = []
@@ -272,13 +274,15 @@ def data_dir_choices(*, environ=None, windows: bool | None = None, home: Path | 
     out.extend((p, src) for p, src, _ in entries)
     if not in_app_mode(environ):
         for d in documents_dirs(environ, windows=windows, home=home):
-            out.append((d / "Strata", "documents"))
+            # The app's folder now, and the name installs made before the rename keep their models in.
+            for name in ("Nostroma", "Strata"):
+                out.append((d / name, "documents"))
     return out
 
 
 def data_dir(default: Path, *, environ=None, windows: bool | None = None, home: Path | None = None) -> tuple[Path, str]:
     """(the data folder, source). Of the Terminal's own setting and the app's folder the one changed last wins (the other file is brought up
-    to date); then a ``Documents/Strata`` that holds models; else `default`."""
+    to date); then a ``Documents/Nostroma`` (or a ``Documents/Strata`` from before the rename) that holds models; else `default`."""
     sync_data_dir(environ=environ, windows=windows, home=home)
     choices = data_dir_choices(environ=environ, windows=windows, home=home)
     for path, source in choices:
