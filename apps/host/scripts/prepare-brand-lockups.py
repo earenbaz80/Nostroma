@@ -25,6 +25,8 @@ weight 700. Options:
                            and reported, so the manifest cannot keep dead rows
     --png                  also write brand/strata-lockup-*.png, transparent and
                            --png-scale times larger (default 4)
+    --png-chromium         draw those PNGs in Chromium from the SVG instead of
+                           in Pillow; prototype, needs Node 24 and a browser
     --preview              also write docs/media/lockup-in-context-<theme>.png,
                            the lockup on the theme's own background
     --ink-left 60          trial offset for the wordmark; needs --out DIR, so a
@@ -58,6 +60,8 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import shutil
+import subprocess
 import sys
 import tempfile
 from functools import lru_cache
@@ -494,8 +498,60 @@ def update_manifest(drawn: list[tuple[Path, str, int]]) -> None:
     )
 
 
+def node_major(node: str) -> int | None:
+    """The major version of a node binary, or None when it will not answer."""
+    try:
+        reported = subprocess.run([node, "--version"], capture_output=True, text=True).stdout.strip()
+    except OSError:
+        return None
+    if not reported.startswith("v"):
+        return None
+    try:
+        return int(reported[1:].split(".")[0])
+    except ValueError:
+        return None
+
+
+def require_chromium_tools() -> str:
+    """The node binary to drive, or a clear exit when there cannot be one.
+
+    Checked before anything is written, so a missing runtime does not leave half
+    a set of files behind."""
+    node = shutil.which("node")
+    if node is None:
+        sys.exit("Error: --png-chromium needs Node 24 or newer on PATH; apps/host already requires it.")
+    major = node_major(node)
+    if major is None or major < 24:
+        found = f"v{major}" if major else "a node that would not answer"
+        sys.exit(
+            f"Error: --png-chromium needs Node 24 or newer; this machine has {found}.\n"
+            "apps/host already requires Node 24, so install that first."
+        )
+    helper = Path(__file__).with_name("render-svg.mjs")
+    if not helper.is_file():
+        sys.exit(f"Error: {helper.name} is missing next to this script.")
+    return node
+
+
+def render_with_chromium(jobs: list[dict], node: str) -> None:
+    """Render the SVGs to PNG in one Chromium, through scripts/render-svg.mjs."""
+    helper = Path(__file__).with_name("render-svg.mjs")
+    with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8") as handle:
+        json.dump(jobs, handle)
+        listing = Path(handle.name)
+    try:
+        finished = subprocess.run([node, str(helper), str(listing)], text=True)
+    finally:
+        listing.unlink(missing_ok=True)
+    if finished.returncode == 2:
+        sys.exit("Error: --png-chromium found no browser. Install Chrome, Edge, Chromium or Brave,\n"
+                 "or set STRATA_CHROME to one.")
+    if finished.returncode != 0:
+        sys.exit("Error: the Chromium render failed; see the message above.")
+
+
 def needs_pillow(args: argparse.Namespace) -> None:
-    if args.png or args.preview:
+    if (args.png and not args.png_chromium) or args.preview:
         _pillow()
 
 
@@ -507,6 +563,11 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--out", default=str(BRAND), help="where the SVGs go")
     parser.add_argument("--ink-left", type=float, default=None, help="trial offset for the wordmark")
     parser.add_argument("--png", action="store_true", help="also write PNG copies")
+    parser.add_argument(
+        "--png-chromium",
+        action="store_true",
+        help="draw the PNGs in Chromium from the SVG instead of in Pillow (prototype)",
+    )
     parser.add_argument("--png-scale", type=int, default=4, help="PNG size multiplier")
     parser.add_argument("--preview", action="store_true", help="also write in-context previews")
     parser.add_argument("--update-manifest", action="store_true", help="refresh source-manifest.json")
@@ -532,6 +593,9 @@ def main(argv: list[str] | None = None) -> None:
         sys.exit(1)
 
     needs_pillow(args)
+    node = require_chromium_tools() if args.png_chromium else None
+    want_png = args.png or args.png_chromium
+    png_jobs: list[dict] = []
     status = 0
     drawn: list[tuple[Path, str, int]] = []
     for weight in weights:
@@ -560,11 +624,22 @@ def main(argv: list[str] | None = None) -> None:
             drawn.append((target, theme, weight))
             print(f"wrote {shown(target)} ({len(text)} bytes)")
 
-            if args.png:
-                image = raster(theme, weight, ink_left, args.png_scale)
+            if want_png:
                 png = target.with_suffix(".png")
-                image.save(png)
-                print(f"wrote {shown(png)} ({png.stat().st_size} bytes)")
+                if args.png_chromium:
+                    width, _, _, _ = frame(weight, ink_left)
+                    png_jobs.append(
+                        {
+                            "svg": str(target),
+                            "png": str(png),
+                            "width": round(width * args.png_scale),
+                            "height": round(HEIGHT * args.png_scale),
+                        }
+                    )
+                else:
+                    image = raster(theme, weight, ink_left, args.png_scale)
+                    image.save(png)
+                    print(f"wrote {shown(png)} ({png.stat().st_size} bytes)")
 
             if args.preview:
                 image = preview(theme, weight, ink_left)
@@ -572,6 +647,12 @@ def main(argv: list[str] | None = None) -> None:
                 shot.parent.mkdir(parents=True, exist_ok=True)
                 image.save(shot)
                 print(f"wrote {shown(shot)} ({shot.stat().st_size} bytes)")
+
+    if png_jobs:
+        render_with_chromium(png_jobs, node)
+        for job in png_jobs:
+            png = Path(job["png"])
+            print(f"wrote {shown(png)} ({png.stat().st_size} bytes, Chromium)")
 
     if args.update_manifest and drawn and not args.check:
         update_manifest(drawn)
