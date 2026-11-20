@@ -28,6 +28,6 @@ test('a usable Documents folder is used and says nothing', t => {
   const home = fixture(t);
   const docs = join(home, 'Documents'); mkdirSync(docs);
   const { dir, notice } = load({ STRATA_HOME: join(home, 'h'), STRATA_MODELS_DIR: '', STRATA_DOCUMENTS_DIR: docs });
-  assert.equal(dir, realpathSync(join(docs, 'Strata', 'Models')));
+  assert.equal(dir, realpathSync(join(docs, 'Nostroma', 'Models')));
   assert.equal(notice, '');
 });

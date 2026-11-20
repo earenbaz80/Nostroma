@@ -29,7 +29,7 @@ import { join, resolve } from 'node:path';
 import { findChromium } from './browser.mjs';
 
 const BRAND = resolve('public/brand');
-const PREFIX = 'strata-lockup-';
+const PREFIX = 'nostroma-lockup-';
 
 function options(argv) {
   const parsed = { maxChannel: 64, maxShare: 0.01 };

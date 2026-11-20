@@ -6,34 +6,53 @@ import {spawnSync} from 'node:child_process';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {defaultModelDirectory} from '../server/model-directory-default.mjs';
-test('macOS and Linux default to Documents/Strata/Models',()=>{
- for(const platform of ['darwin','linux'])assert.equal(defaultModelDirectory({platform,home:'/home/me',env:{},read:()=>{throw new Error('no configuration');}}),'/home/me/Documents/Strata/Models');
+test('macOS and Linux default to Documents/Nostroma/Models',()=>{
+ for(const platform of ['darwin','linux'])assert.equal(defaultModelDirectory({platform,home:'/home/me',env:{},read:()=>{throw new Error('no configuration');}}),'/home/me/Documents/Nostroma/Models');
 });
 test('Windows uses the known Documents folder including OneDrive redirection',()=>{
- assert.equal(defaultModelDirectory({platform:'win32',home:'C:\\Users\\Me',env:{},windowsDocuments:()=> 'C:\\Users\\Me\\OneDrive\\Documents'}),'C:\\Users\\Me\\OneDrive\\Documents\\Strata\\Models');
- assert.equal(defaultModelDirectory({platform:'win32',home:'C:\\Users\\Me',env:{},windowsDocuments:()=>{throw new Error('unavailable');}}),'C:\\Users\\Me\\Documents\\Strata\\Models');
+ assert.equal(defaultModelDirectory({platform:'win32',home:'C:\\Users\\Me',env:{},windowsDocuments:()=> 'C:\\Users\\Me\\OneDrive\\Documents'}),'C:\\Users\\Me\\OneDrive\\Documents\\Nostroma\\Models');
+ assert.equal(defaultModelDirectory({platform:'win32',home:'C:\\Users\\Me',env:{},windowsDocuments:()=>{throw new Error('unavailable');}}),'C:\\Users\\Me\\Documents\\Nostroma\\Models');
 });
 test('Linux respects localized XDG Documents and rejects shell expressions',()=>{
- assert.equal(defaultModelDirectory({platform:'linux',home:'/home/me',env:{XDG_CONFIG_HOME:'/custom'},read:path=>{assert.equal(path,'/custom/user-dirs.dirs');return 'XDG_DOCUMENTS_DIR="$HOME/Dokumente"';}}),'/home/me/Dokumente/Strata/Models');
- assert.equal(defaultModelDirectory({platform:'linux',home:'/home/me',env:{XDG_DOCUMENTS_DIR:'${HOME}/Work'},read:()=>''}),'/home/me/Work/Strata/Models');
- assert.equal(defaultModelDirectory({platform:'linux',home:'/home/me',env:{XDG_DOCUMENTS_DIR:'$(echo /private)'},read:()=>''}),'/home/me/Documents/Strata/Models');
+ assert.equal(defaultModelDirectory({platform:'linux',home:'/home/me',env:{XDG_CONFIG_HOME:'/custom'},read:path=>{assert.equal(path,'/custom/user-dirs.dirs');return 'XDG_DOCUMENTS_DIR="$HOME/Dokumente"';}}),'/home/me/Dokumente/Nostroma/Models');
+ assert.equal(defaultModelDirectory({platform:'linux',home:'/home/me',env:{XDG_DOCUMENTS_DIR:'${HOME}/Work'},read:()=>''}),'/home/me/Work/Nostroma/Models');
+ assert.equal(defaultModelDirectory({platform:'linux',home:'/home/me',env:{XDG_DOCUMENTS_DIR:'$(echo /private)'},read:()=>''}),'/home/me/Documents/Nostroma/Models');
 });
 test('new hosts create the default; custom folders and legacy weights remain in place',t=>{
  const root=realpathSync(mkdtempSync(join(tmpdir(),'strata-documents-')));t.after(()=>rmSync(root,{recursive:true,force:true}));
- function boot(name,state,weights=false){const home=join(root,name),documents=join(root,name+'-documents');mkdirSync(join(home,'data'),{recursive:true});mkdirSync(join(home,'models'),{recursive:true});if(state)writeFileSync(join(home,'data','state.json'),JSON.stringify(state));if(weights){mkdirSync(join(home,'models','native','qwen'),{recursive:true});writeFileSync(join(home,'models','native','qwen','model.gguf'),'GGUFfixture');}const env={...process.env,STRATA_HOME:home,STRATA_DOCUMENTS_DIR:documents,STRATA_TEST_NATIVE:'1',STRATA_TEST_DEFAULT:join(documents,'Strata','Models')};delete env.STRATA_MODELS_DIR;const result=spawnSync(process.execPath,['--input-type=module','-e',"const store=await import('./server/store.mjs');if(process.env.STRATA_TEST_NATIVE==='1'&&store.MODELS_DIR===process.env.STRATA_TEST_DEFAULT){const {statSync}=await import('node:fs');const {join}=await import('node:path');const native=store.nativeDataDirectory(store.MODELS_DIR);const a=statSync(join(native,'models')),b=statSync(store.MODELS_DIR);if(a.ino!==b.ino||a.dev!==b.dev)throw new Error('Native weights miss requested model folder');}console.log(store.MODELS_DIR);"],{cwd:fileURLToPath(new URL('..',import.meta.url)),env,encoding:'utf8',windowsHide:true});assert.equal(result.status,0,result.stderr);return {path:result.stdout.trim(),home,documents};}
- const fresh=boot('fresh');assert.equal(fresh.path,join(fresh.documents,'Strata','Models'));
- const target=join(root,'redirected-target');mkdirSync(target);symlinkSync(target,join(root,'redirected-documents'),process.platform==='win32'?'junction':'dir');assert.equal(boot('redirected').path,join(target,'Strata','Models'));
+ function boot(name,state,weights=false){const home=join(root,name),documents=join(root,name+'-documents');mkdirSync(join(home,'data'),{recursive:true});mkdirSync(join(home,'models'),{recursive:true});if(state)writeFileSync(join(home,'data','state.json'),JSON.stringify(state));if(weights){mkdirSync(join(home,'models','native','qwen'),{recursive:true});writeFileSync(join(home,'models','native','qwen','model.gguf'),'GGUFfixture');}const env={...process.env,STRATA_HOME:home,STRATA_DOCUMENTS_DIR:documents,STRATA_TEST_NATIVE:'1',STRATA_TEST_DEFAULT:join(documents,'Nostroma','Models')};delete env.STRATA_MODELS_DIR;const result=spawnSync(process.execPath,['--input-type=module','-e',"const store=await import('./server/store.mjs');if(process.env.STRATA_TEST_NATIVE==='1'&&store.MODELS_DIR===process.env.STRATA_TEST_DEFAULT){const {statSync}=await import('node:fs');const {join}=await import('node:path');const native=store.nativeDataDirectory(store.MODELS_DIR);const a=statSync(join(native,'models')),b=statSync(store.MODELS_DIR);if(a.ino!==b.ino||a.dev!==b.dev)throw new Error('Native weights miss requested model folder');}console.log(store.MODELS_DIR);"],{cwd:fileURLToPath(new URL('..',import.meta.url)),env,encoding:'utf8',windowsHide:true});assert.equal(result.status,0,result.stderr);return {path:result.stdout.trim(),home,documents};}
+ const fresh=boot('fresh');assert.equal(fresh.path,join(fresh.documents,'Nostroma','Models'));
+ const target=join(root,'redirected-target');mkdirSync(target);symlinkSync(target,join(root,'redirected-documents'),process.platform==='win32'?'junction':'dir');assert.equal(boot('redirected').path,join(target,'Nostroma','Models'));
  const custom=join(root,'custom');mkdirSync(custom);assert.equal(boot('custom-host',{modelsDir:custom}).path,custom);
  const legacy=boot('legacy',{},true);assert.equal(legacy.path,join(legacy.home,'models'));
 });
 
+
+test('a data folder and model library from the Strata days move to their Nostroma names',t=>{
+ const root=realpathSync(mkdtempSync(join(tmpdir(),'strata-rename-')));t.after(()=>rmSync(root,{recursive:true,force:true}));
+ const home=join(root,'home'),documents=join(root,'documents');
+ mkdirSync(join(home,'.strata','data'),{recursive:true});writeFileSync(join(home,'.strata','data','state.json'),'{"version":1}');
+ mkdirSync(join(documents,'Strata','Models'),{recursive:true});writeFileSync(join(documents,'Strata','Models','keep.gguf'),'GGUFfixture');
+ const env={...process.env,HOME:home,USERPROFILE:home,STRATA_DOCUMENTS_DIR:documents};
+ delete env.STRATA_HOME;delete env.NOSTROMA_HOME;delete env.STRATA_MODELS_DIR;delete env.NOSTROMA_MODELS_DIR;
+ const result=spawnSync(process.execPath,['--input-type=module','-e',`
+  import assert from 'node:assert/strict';import {join} from 'node:path';import {existsSync,readFileSync} from 'node:fs';
+  const store=await import('./server/store.mjs');
+  assert.equal(store.HOME,join(process.env.HOME,'.nostroma'),'the state folder moved');
+  assert.equal(readFileSync(join(store.HOME,'data','state.json'),'utf8'),'{"version":1}','settings survived');
+  assert.equal(existsSync(join(process.env.HOME,'.strata')),false,'nothing is left under the old name');
+  assert.equal(store.MODELS_DIR,join(process.env.STRATA_DOCUMENTS_DIR,'Nostroma','Models'),'the library moved');
+  assert.equal(readFileSync(join(store.MODELS_DIR,'keep.gguf'),'utf8'),'GGUFfixture','models survived');
+ `],{cwd:fileURLToPath(new URL('..',import.meta.url)),env,encoding:'utf8',windowsHide:true});
+ assert.equal(result.status,0,result.stderr);
+});
 
 test('legacy model libraries resolve to a guarded native data root without moving weights',t=>{
  const root=realpathSync(mkdtempSync(join(tmpdir(),'strata-legacy-models-')));t.after(()=>rmSync(root,{recursive:true,force:true}));
  for(const choice of ['detected','saved','environment']){
   const home=join(root,choice),models=join(home,'models');mkdirSync(join(home,'data'),{recursive:true});mkdirSync(models);
   mkdirSync(join(models,'IQ3_XXS'));writeFileSync(join(models,'IQ3_XXS','model.gguf'),Buffer.from([71,71,85,70,0,255,128,1]));
-  mkdirSync(join(root,'documents','Strata','Models'),{recursive:true});
+  mkdirSync(join(root,'documents','Nostroma','Models'),{recursive:true});
   if(choice==='saved')writeFileSync(join(home,'data','state.json'),JSON.stringify({modelsDir:models}));
   const env={...process.env,STRATA_HOME:home,STRATA_DOCUMENTS_DIR:join(root,'documents')};delete env.STRATA_MODELS_DIR;
   if(choice==='environment')env.STRATA_MODELS_DIR=models;
@@ -43,7 +62,7 @@ test('legacy model libraries resolve to a guarded native data root without movin
    const store=await import('./server/store.mjs');const models=realpathSync(join(store.HOME,'models'));
    assert.equal(store.MODELS_DIR,models);
    const data=store.nativeDataDirectory(models);
-   assert.match(basename(data),/^strata/i,'a new native data root must satisfy the installer guard');
+   assert.match(basename(data),/^nostroma/i,'a new native data root must satisfy the installer guard');
    assert.equal(realpathSync(join(data,'models')),models,'native setup must write to the existing library');
    const weight=join(models,'IQ3_XXS','model.gguf'),nativeWeight=join(data,'models','IQ3_XXS','model.gguf');
    assert.deepEqual(readFileSync(nativeWeight),Buffer.from([71,71,85,70,0,255,128,1]),'native setup sees the original weight bytes');
@@ -69,8 +88,8 @@ test('native data roots leave explicit custom libraries and new installer folder
    import assert from 'node:assert/strict';import {join} from 'node:path';import {existsSync,readFileSync} from 'node:fs';
    const store=await import('./server/store.mjs'),custom=process.env.STRATA_TEST_CUSTOM;
    assert.equal(store.MODELS_DIR,custom);assert.equal(store.nativeDataDirectory(custom),custom);
-   const requested=join(store.HOME,'Strata-new');assert.equal(store.nativeDataDirectory(requested),requested);
-   assert.equal(existsSync(requested),false);assert.equal(existsSync(join(store.HOME,'Strata-data')),false);
+   const requested=join(store.HOME,'Nostroma-new');assert.equal(store.nativeDataDirectory(requested),requested);
+   assert.equal(existsSync(requested),false);assert.equal(existsSync(join(store.HOME,'Nostroma-data')),false);
    assert.equal(readFileSync(join(custom,'keep.gguf'),'utf8'),'GGUFfixture');
   `],{cwd:fileURLToPath(new URL('..',import.meta.url)),env,encoding:'utf8',windowsHide:true});
   assert.equal(result.status,0,result.stderr);
@@ -80,7 +99,7 @@ test('native data roots leave explicit custom libraries and new installer folder
 test('legacy native aliases never overwrite a conflicting library',t=>{
  const root=realpathSync(mkdtempSync(join(tmpdir(),'strata-conflicting-models-')));t.after(()=>rmSync(root,{recursive:true,force:true}));
  for(const kind of ['directory','link']){
- const home=join(root,kind),original=join(home,'models'),other=join(home,'other-library'),alias=join(home,'Strata-data','models');mkdirSync(original,{recursive:true});mkdirSync(other);mkdirSync(join(home,'Strata-data'));
+ const home=join(root,kind),original=join(home,'models'),other=join(home,'other-library'),alias=join(home,'Nostroma-data','models');mkdirSync(original,{recursive:true});mkdirSync(other);mkdirSync(join(home,'Nostroma-data'));
  if(kind==='link')symlinkSync(other,alias,process.platform==='win32'?'junction':'dir');else mkdirSync(alias);
  writeFileSync(join(original,'original.gguf'),'GGUForiginal');writeFileSync(join(other,'other.gguf'),'GGUFother');
  if(kind==='directory')writeFileSync(join(alias,'other.gguf'),'GGUFconflict');
@@ -92,7 +111,7 @@ test('legacy native aliases never overwrite a conflicting library',t=>{
   assert.equal(realpathSync(store.MODELS_DIR),realpathSync(join(store.HOME,'models')));
   assert.equal(readFileSync(join(store.MODELS_DIR,'original.gguf'),'utf8'),'GGUForiginal');
   assert.equal(readFileSync(join(store.HOME,'other-library','other.gguf'),'utf8'),'GGUFother');
-  assert.equal(readFileSync(join(store.HOME,'Strata-data','models','other.gguf'),'utf8'),${JSON.stringify(kind==='link'?'GGUFother':'GGUFconflict')});
+  assert.equal(readFileSync(join(store.HOME,'Nostroma-data','models','other.gguf'),'utf8'),${JSON.stringify(kind==='link'?'GGUFother':'GGUFconflict')});
  `],{cwd:fileURLToPath(new URL('..',import.meta.url)),env,encoding:'utf8',windowsHide:true});
  assert.equal(result.status,0,result.stderr);
  }
@@ -107,7 +126,7 @@ test('an unavailable Documents default retains the upstream fallback without cre
   const store=await import('./server/store.mjs');
   assert.match(store.MODELS_DIR_NOTICE,/Nostroma could not use/);
   assert.equal(store.nativeDataDirectory(store.MODELS_DIR),store.MODELS_DIR);
-  assert.equal(existsSync(join(store.HOME,'Strata-data')),false);
+  assert.equal(existsSync(join(store.HOME,'Nostroma-data')),false);
  `],{cwd:fileURLToPath(new URL('..',import.meta.url)),env,encoding:'utf8',windowsHide:true});
  assert.equal(result.status,0,result.stderr);
 });

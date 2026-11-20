@@ -15,7 +15,7 @@ export function Brand({ variant, height, decorative = false, className = '', }: 
     /* The mark is artwork, and it is the N of the name: the word beside it starts at "ostroma",
        the same word the lockup SVGs draw (prepare-brand-lockups.py, WORD). The wordmark is text in
        the app's own face, so it follows the app instead of letters baked into a picture. */
-    const src = `/brand/strata-mark-${theme}.svg`;
+    const src = `/brand/nostroma-mark-${theme}.svg`;
     const [failed, setFailed] = useState(false);
     useEffect(() => setFailed(false), [src]);
     const style = { height, '--brand-h': `${height}px`, ...(variant === 'mark' ? { width: height } : {}) } as CSSProperties;

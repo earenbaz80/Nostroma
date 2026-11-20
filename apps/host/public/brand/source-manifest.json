@@ -12,28 +12,28 @@
     {
       "source": "logo/strata-mark-light.svg",
       "source_sha256": "5e8be1beff8b552b17fcb0364481d077c8628339be5caffd1375228afb47dfe7",
-      "output": "brand/strata-mark-light.svg",
+      "output": "brand/nostroma-mark-light.svg",
       "output_sha256": "f829410186fc6b9a84b4dbd1a2ab56583f558147308dc971a20a97c653c418af",
       "method": "redrawn N monogram in a 48-unit box (viewBox 4 6 40 36); no longer derived from the master"
     },
     {
       "source": "logo/strata-mark-dark.svg",
       "source_sha256": "1d10d244c6ea2209bd77a640b35609a644019d288fd2a83ad28bc858617d8e32",
-      "output": "brand/strata-mark-dark.svg",
+      "output": "brand/nostroma-mark-dark.svg",
       "output_sha256": "ba1e44e44438f2c89f9d50f0e2b707f3f075956b51903c9b6f5dcf0cb3b4c416",
       "method": "redrawn N monogram in a 48-unit box (viewBox 4 6 40 36); no longer derived from the master"
     },
     {
       "source": "logo/strata-lockup-light.svg",
       "source_sha256": "b9b077df326da8c0bdb5505ee7a6659ab3de986d481354c8d216722c673370f1",
-      "output": "brand/strata-lockup-light.svg",
+      "output": "brand/nostroma-lockup-light.svg",
       "output_sha256": "f7095b70d3ed81cce78f335b9d0241cf12965c45ebf3690de0ce55ff8de4165a",
       "method": "mark kept 3.556/30.222 as supplied, word 'ostroma' outlined from public/fonts/Exo2-Variable.woff2 at weight 700 with cap height 21.8, baseline 37.75 and -0.01em tracking; scripts/prepare-brand-lockups.py regenerates this file byte for byte"
     },
     {
       "source": "logo/strata-lockup-dark.svg",
       "source_sha256": "ec689b25498bf177eb8dd50f980d34ba05cd7f38403fca73c1bf9d231fde5e3b",
-      "output": "brand/strata-lockup-dark.svg",
+      "output": "brand/nostroma-lockup-dark.svg",
       "output_sha256": "d72e0bf0214e1200e877c0805991493fa89a133ee1d40f96e227f1143721de50",
       "method": "mark kept 3.556/30.222 as supplied, word 'ostroma' outlined from public/fonts/Exo2-Variable.woff2 at weight 700 with cap height 21.8, baseline 37.75 and -0.01em tracking; scripts/prepare-brand-lockups.py regenerates this file byte for byte"
     },
@@ -117,7 +117,7 @@
     {
       "source": "logo/strata-lockup-light.svg",
       "source_sha256": "b9b077df326da8c0bdb5505ee7a6659ab3de986d481354c8d216722c673370f1",
-      "output": "brand/strata-lockup-high-contrast.svg",
+      "output": "brand/nostroma-lockup-high-contrast.svg",
       "output_sha256": "3a032ac19f4931c7a4a8ab0d01a2e44233fa75f6c0b18e126fe9f296627dbe4d",
       "method": "mark kept 3.556/30.222 as supplied, word 'ostroma' outlined from public/fonts/Exo2-Variable.woff2 at weight 700 with cap height 21.8, baseline 37.75 and -0.01em tracking, in the high-contrast palette (#000000 on #f3e8d2); scripts/prepare-brand-lockups.py regenerates this file byte for byte"
     }

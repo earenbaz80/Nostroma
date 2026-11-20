@@ -118,10 +118,10 @@ test('the finished-work sound is opt-in, quiet for quick answers in front, and n
   assert.equal(A.shouldPlayDone(base), true, 'work that took a while');
   const played = [];
   assert.equal(A.playDoneSound(url => ({ volume: 0, play() { played.push(url); return Promise.resolve(); } })), true);
-  assert.deepEqual(played, ['/strata-done-sound.wav']);
+  assert.deepEqual(played, ['/nostroma-done-sound.wav']);
   assert.equal(A.shouldPlayDone({ ...base, now: Date.now() + 100 }), false, 'a second chime within two seconds is skipped');
   assert.equal(A.playDoneSound(() => { throw new Error('no audio'); }), false, 'a missing audio device is not an error');
-  const wav = readFileSync(new URL('../public/strata-done-sound.wav', import.meta.url));
+  const wav = readFileSync(new URL('../public/nostroma-done-sound.wav', import.meta.url));
   assert.equal(wav.toString('latin1', 0, 4), 'RIFF');
   assert.equal(wav.toString('latin1', 8, 12), 'WAVE');
 });

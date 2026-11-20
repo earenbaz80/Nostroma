@@ -32,14 +32,14 @@ establish a current default model or universal performance.
 
 | Asset | File | Suggested caption / context |
 | --- | --- | --- |
-| Logo, light background | [strata-lockup-light.svg](../apps/host/public/brand/strata-lockup-light.svg) | Nostroma |
-| Logo, dark background | [strata-lockup-dark.svg](../apps/host/public/brand/strata-lockup-dark.svg) | Nostroma |
+| Logo, light background | [nostroma-lockup-light.svg](../apps/host/public/brand/nostroma-lockup-light.svg) | Nostroma |
+| Logo, dark background | [nostroma-lockup-dark.svg](../apps/host/public/brand/nostroma-lockup-dark.svg) | Nostroma |
 | Desktop app | [app-chat.png](media/app-chat.png) | Chat, files and a live preview in one window. The capture shows a Gyro model; do not relabel it as an ISTA run. |
 | Terminal app | [terminal-monitor.png](media/terminal-monitor.png) | Model activity and hardware use. The capture shows a Gyro-S session; its live counters are not a standardized benchmark. |
 | Coding demo thumbnail | [pagoda-preview.webp](media/pagoda-preview.webp) | A voxel garden generated locally. |
 | Coding demo video | [Pagoda.mp4](https://github.com/Niko1221/Strata/releases/download/v0.1.10/Pagoda.mp4) | Existing 49-second demo, documented with an RTX 5070, IQ3_S and 128K context. Keep it separate from the GUI and TUI screenshots. |
 | Engine explanation | [how-it-works.svg](media/how-it-works.svg), [guess-and-check.svg](media/guess-and-check.svg) | Illustrations of the documented Flash-Next engine path, not proof that every model uses the same path. |
-| Logo, high contrast | [strata-lockup-high-contrast.svg](../apps/host/public/brand/strata-lockup-high-contrast.svg) | Nostroma, for low-vision use on the light background. |
+| Logo, high contrast | [nostroma-lockup-high-contrast.svg](../apps/host/public/brand/nostroma-lockup-high-contrast.svg) | Nostroma, for low-vision use on the light background. |
 | Logo in context, light | [lockup-in-context-light.png](media/lockup-in-context-light.png) | The lockup on the light theme's own background. |
 | Logo in context, dark | [lockup-in-context-dark.png](media/lockup-in-context-dark.png) | The lockup on the dark theme's own background. |
 
@@ -55,11 +55,11 @@ reach them. `apps/host/scripts/prepare-brand-lockups.py` draws them from
   if any differs. It names the fontTools release the committed files were drawn with (`4.68.0`) next
   to the one that is running, because the way fontTools formats path numbers can change between
   releases.
-- `--weights 400,700` draws every theme at each weight (`strata-lockup-light-400.svg` and so on;
+- `--weights 400,700` draws every theme at each weight (`nostroma-lockup-light-400.svg` and so on;
   weight 700 keeps the plain file name). `--themes` picks themes, and `--update-manifest` refreshes
   the hashes and the method text in `source-manifest.json`. It also drops a lockup row whose file is
   gone, or whose name no longer matches a theme the script knows, and prints each one it drops.
-- `--png` writes `strata-lockup-*.png` and `--preview` writes the in-context pictures above. PNG
+- `--png` writes `nostroma-lockup-*.png` and `--preview` writes the in-context pictures above. PNG
   bytes depend on the Pillow build, so they are convenience exports and `--check` ignores them.
 - `npm run brand:png-vs-svg` in `apps/host` renders each committed SVG in the local Chromium and
   diffs it against its PNG, so a picture that stopped matching its SVG fails here. It prints a skip

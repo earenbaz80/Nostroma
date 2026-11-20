@@ -11,7 +11,7 @@ export function OnboardingResources({ profile }: {
    <div className="onboard-sharing-screen">
     <div className="onboard-sharing-toolbar"><span /><span /><span /><small>{tr("Your computer")}</small></div>
     <div className="onboard-sharing-panes">
-     <div className="onboard-sharing-model"><span className="onboard-sharing-app-label"><Icon name="models" size={16}/>{tr("Strata")}<span className="onboard-sharing-dot"/></span><div className="onboard-sharing-document"><Icon name="file" size={21}/><div><i /><i /><i /></div></div><div className="onboard-sharing-tokens"><i /><i /><i /><i /><i /></div></div>
+     <div className="onboard-sharing-model"><span className="onboard-sharing-app-label"><Icon name="models" size={16}/>{tr("Nostroma")}<span className="onboard-sharing-dot"/></span><div className="onboard-sharing-document"><Icon name="file" size={21}/><div><i /><i /><i /></div></div><div className="onboard-sharing-tokens"><i /><i /><i /><i /><i /></div></div>
      <div className="onboard-sharing-apps"><span>{tr("Other apps")}</span><div><Icon name="search" size={17}/></div><div><Icon name="file" size={17}/></div></div>
     </div>
    </div><div className="onboard-sharing-base"/>

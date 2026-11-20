@@ -199,7 +199,7 @@ test('the notice for a newer engine stays an ordinary quiet card: no toast, no b
 
 test('offline, the update says nothing by itself: the dialog opens only from a button and shows only what the host reports', () => {
   const settings = src('src/components/SettingsUpdates.tsx');
-  assert.match(settings, /onClick=\{\(\) => setConfirm\(name === 'Strata' \? 'update-strata' : 'update-engine'\)\}/, 'the button opens the confirmation; nothing opens it on a timer or on a failed check');
+  assert.match(settings, /onClick=\{\(\) => setConfirm\(name === 'Nostroma' \? 'update-strata' : 'update-engine'\)\}/, 'the button opens the confirmation; nothing opens it on a timer or on a failed check');
 });
 
 test('all nine languages carry the dialog\'s words with the same slots', () => {

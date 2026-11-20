@@ -1,20 +1,36 @@
 import { migrateSetup } from './setup.mjs';
 /** Tiny persisted state for the host: one JSON file under STRATA_HOME. */
-import { accessSync, constants, mkdirSync, readFileSync, writeFileSync, existsSync, realpathSync, readdirSync, statSync, statfsSync, symlinkSync } from 'node:fs';
+import { accessSync, constants, mkdirSync, readFileSync, writeFileSync, existsSync, realpathSync, readdirSync, renameSync, statSync, statfsSync, symlinkSync } from 'node:fs';
 import { alignModels, isDriveRoot, libraryFolderFromPick, makeFolder } from './model-folder.mjs';
 import { dirname, isAbsolute, join, parse, relative, resolve } from 'node:path';
 import { homedir } from 'node:os';
 import { defaultModelDirectory } from './model-directory-default.mjs';
 
 /**
- * Prefer ~/.strata, the way the packaged app stores its data. Sandboxes and
- * locked-down accounts cannot write to the home directory, so fall back to a
- * folder next to the checkout rather than failing to boot.
+ * Prefer ~/.nostroma, the way the packaged app stores its data. A folder from the Strata days is moved once so chats and
+ * settings survive the rename; when it cannot be moved (another volume, no permission) it is used where it is, and nothing
+ * is lost. NOSTROMA_HOME names another folder (the older STRATA_HOME still works), and sandboxes or locked-down accounts
+ * that cannot write to the home directory fall back to a folder next to the checkout rather than failing to boot.
  */
+export function migrateOldHome(home = homedir()) {
+  if (process.env.NOSTROMA_HOME || process.env.STRATA_HOME) return false;
+  const from = join(home, '.strata');
+  const to = join(home, '.nostroma');
+  try {
+    if (!existsSync(from) || existsSync(to)) return false;
+    renameSync(from, to);
+    return true;
+  } catch {
+    return false; /* the old folder is still a candidate below */
+  }
+}
+migrateOldHome();
 function resolveHome() {
-  const candidates = [process.env.STRATA_HOME, join(homedir(), '.strata'), join(process.cwd(), '.strata')].filter(
-    Boolean,
-  );
+  const candidates = [
+    process.env.NOSTROMA_HOME, process.env.STRATA_HOME,
+    join(homedir(), '.nostroma'), join(homedir(), '.strata'),
+    join(process.cwd(), '.nostroma'), join(process.cwd(), '.strata'),
+  ].filter(Boolean);
   for (const dir of candidates) {
     try {
       mkdirSync(join(dir, 'models'), { recursive: true });
@@ -24,7 +40,7 @@ function resolveHome() {
       /* try the next candidate */
     }
   }
-  throw new Error('No writable data directory found — set STRATA_HOME to a writable path');
+  throw new Error('No writable data directory found — set NOSTROMA_HOME to a writable path');
 }
 
 export const HOME = resolveHome();
@@ -60,7 +76,7 @@ function read() {
 let state = read();
 const DEFAULT_MODELS_DIRECTORY=defaultModelDirectory();
 /**
- * The model folder for a new install: the saved one, an existing library inside STRATA_HOME, else Documents/Strata/Models. A Documents folder
+ * The model folder for a new install: the saved one, an existing library inside STRATA_HOME, else Documents/Nostroma/Models. A Documents folder
  * that cannot be made (Controlled folder access, a disconnected share, an offline OneDrive known folder) must not stop the host from starting:
  * the models go to STRATA_HOME/models instead, and `notice` says so in plain words.
  */
@@ -70,7 +86,7 @@ export function pickModelsDirectory({ saved, home, preferred, fixedByEnv = false
  let legacy = fallback;
  try { legacy = realpathSync(fallback); } catch { /* the folder is made at start; keep the plain path */ }
  function hasWeights(folder,depth=0){try{return readdirSync(folder,{withFileTypes:true}).some(entry=>entry.isFile()&&/\.gguf(?:\.part|\.partial)?$/i.test(entry.name)||entry.isDirectory()&&depth<4&&hasWeights(join(folder,entry.name),depth+1));}catch{return false;}}
- // Keep an existing library in place. A new install uses Documents/Strata/Models.
+ // Keep an existing library in place. A new install uses Documents/Nostroma/Models.
  if (!fixedByEnv && hasWeights(legacy)) return { directory: legacy, notice: '' };
  try {
   mkdirSync(preferred, { recursive: true });
@@ -83,7 +99,7 @@ export function pickModelsDirectory({ saved, home, preferred, fixedByEnv = false
 const MODELS_PICK = pickModelsDirectory({ saved: state.modelsDir, home: HOME, preferred: DEFAULT_MODELS_DIRECTORY, fixedByEnv: !!process.env.STRATA_MODELS_DIR });
 /** Plain words for the person when the usual model folder could not be used (empty otherwise). */
 export const MODELS_DIR_NOTICE = MODELS_PICK.notice;
-if (MODELS_DIR_NOTICE) console.warn(`[strata] ${MODELS_DIR_NOTICE}`);
+if (MODELS_DIR_NOTICE) console.warn(`[nostroma] ${MODELS_DIR_NOTICE}`);
 export let MODELS_DIR = MODELS_PICK.directory;
 
 /** Native setup writes weights to data_dir/models. Keep its data root one level up. */
@@ -94,7 +110,8 @@ export function nativeDataDirectory(input) {
  // Retained legacy libraries are model folders too, not native data roots.
  // A named data root satisfies the installer's guard; its alias leaves weights in place.
  if(root===legacy){
-  const data=join(HOME,'Strata-data'),nativeModels=join(data,'models');
+  const data=join(HOME,'Nostroma-data'),nativeModels=join(data,'models');
+  try{if(!existsSync(data)&&existsSync(join(HOME,'Strata-data')))renameSync(join(HOME,'Strata-data'),data);}catch{/* a fresh root is made below */}
   mkdirSync(data,{recursive:true});
   // Unlike a fresh default, a retained library must not fall back to an empty folder if linking fails.
   if(!existsSync(nativeModels))symlinkSync(process.platform==='win32'?root:relative(data,root),nativeModels,process.platform==='win32'?'junction':'dir');
@@ -147,7 +164,7 @@ export function save() {
   try {
     writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
   } catch (err) {
-    console.error('[strata] could not persist state:', err.message);
+    console.error('[nostroma] could not persist state:', err.message);
   }
 }
 

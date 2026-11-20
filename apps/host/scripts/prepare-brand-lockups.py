@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Draw the brand lockups: the N mark plus the wordmark as real outlines.
 
-The wordmark in public/brand/strata-lockup-*.svg is not text, so a font change
+The wordmark in public/brand/nostroma-lockup-*.svg is not text, so a font change
 does not reach it. This script re-outlines the name from the app's own face so
 the picture and .brand__word stay the same word:
 
@@ -23,7 +23,7 @@ weight 700. Options:
                            a lockup row whose file is gone, or whose name no
                            longer matches a theme the script knows, is dropped
                            and reported, so the manifest cannot keep dead rows
-    --png                  also write brand/strata-lockup-*.png, transparent and
+    --png                  also write brand/nostroma-lockup-*.png, transparent and
                            --png-scale times larger (default 4)
     --preview              also write docs/media/lockup-in-context-<theme>.png,
                            the lockup on the theme's own background
@@ -375,7 +375,7 @@ def weight_suffix(weight: int) -> str:
 
 
 def svg_path(out_dir: Path, theme: str, weight: int) -> Path:
-    return out_dir / f"strata-lockup-{theme}{weight_suffix(weight)}.svg"
+    return out_dir / f"nostroma-lockup-{theme}{weight_suffix(weight)}.svg"
 
 
 @lru_cache(maxsize=None)
@@ -462,7 +462,7 @@ def method_for(theme: str, weight: int) -> str:
 
 def parse_lockup_name(path: Path) -> tuple[str, int] | None:
     """The theme and weight in a lockup file name, or None if it cannot be one."""
-    prefix = "strata-lockup-"
+    prefix = "nostroma-lockup-"
     if not path.stem.startswith(prefix):
         return None
     rest = path.stem[len(prefix) :]
@@ -510,7 +510,7 @@ def update_manifest(drawn: list[tuple[Path, str, int]]) -> None:
     kept, dropped = [], 0
     for entry in files:
         path = BRAND.parent / entry["output"]
-        if path in drawn_paths or not path.name.startswith("strata-lockup-"):
+        if path in drawn_paths or not path.name.startswith("nostroma-lockup-"):
             kept.append(entry)
             continue
         if parse_lockup_name(path) is None:

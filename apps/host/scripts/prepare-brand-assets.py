@@ -123,7 +123,7 @@ def pair_kerning(font: TTFont, left: str, right: str) -> int:
 
 def prepare_lockup(entries: list[dict[str, str]], theme: str, font: TTFont) -> None:
     master = f"logo/strata-lockup-{theme}.svg"
-    output = BRAND / f"strata-lockup-{theme}.svg"
+    output = BRAND / f"nostroma-lockup-{theme}.svg"
     output.write_text(
         '<svg xmlns="http://www.w3.org/2000/svg" width="182" height="48" '
         'viewBox="0 0 182 48" role="img">\n'
@@ -172,7 +172,7 @@ def main() -> None:
     BRAND.mkdir(parents=True, exist_ok=True)
     entries: list[dict[str, str]] = []
     for theme in ("light", "dark"):
-        copy(entries, f"logo/strata-mark-{theme}.svg", BRAND / f"strata-mark-{theme}.svg")
+        copy(entries, f"logo/strata-mark-{theme}.svg", BRAND / f"nostroma-mark-{theme}.svg")
     font = TTFont(FONT)
     for theme in ("light", "dark"):
         prepare_lockup(entries, theme, font)

@@ -8,7 +8,7 @@ import { useEffect, useId, useLayoutEffect, useRef, useState, type RefObject } f
 import { createPortal } from 'react-dom';
 import { FloatingMenu } from '../components/FloatingMenu';
 import { measureFrame } from '../lib/overlay-place';
-import { QuitStrataDialog } from '../components/QuitStrata';
+import { QuitNostromaDialog } from '../components/QuitNostroma';
 import { useAppMode } from '../lib/app-mode';
 import { href, useLocation, type Route } from '../lib/router';
 import { cx, relTime, relTimeShort } from '../lib/format';
@@ -199,5 +199,5 @@ function MoreMenu({ current }: {
     const [quitOpen, setQuitOpen] = useState(false);
     const appMode = useAppMode();
     const ref = useRef<HTMLButtonElement>(null);
-    return <><button ref={ref} className="navitem nav__more" title={tr("More — Serving and Settings")} aria-label={tr("More — Serving and Settings")} aria-haspopup="menu" aria-expanded={open} data-active={['serving', 'settings'].includes(current) || undefined} aria-current={['serving', 'settings'].includes(current) ? 'page' : undefined} onClick={() => setOpen(v => !v)}><Icon name="ellipsis"/><span className="navitem__text">{tr("More")}</span></button>{tr(open ? <FloatingMenu anchor={ref.current} title={tr("More")} onClose={() => { setOpen(false); ref.current?.focus(); }}>{tr(([{ route: 'serving', label: 'Serving', icon: 'link' }, { route: 'settings', label: 'Settings', icon: 'settings' }] as const).map(d => <a key={d.route} role="menuitem" className="menu__item" href={href(d.route)} onClick={() => setOpen(false)}><Icon name={d.icon}/>{tr(d.label)}</a>))}{appMode.canQuit ? <button type="button" role="menuitem" className="menu__item" onClick={() => { setOpen(false); setNavOpen(false); setQuitOpen(true); }}><Icon name="x"/>{tr("Quit Strata")}</button> : null}</FloatingMenu> : null)}<QuitStrataDialog open={quitOpen} onClose={() => setQuitOpen(false)}/></>;
+    return <><button ref={ref} className="navitem nav__more" title={tr("More — Serving and Settings")} aria-label={tr("More — Serving and Settings")} aria-haspopup="menu" aria-expanded={open} data-active={['serving', 'settings'].includes(current) || undefined} aria-current={['serving', 'settings'].includes(current) ? 'page' : undefined} onClick={() => setOpen(v => !v)}><Icon name="ellipsis"/><span className="navitem__text">{tr("More")}</span></button>{tr(open ? <FloatingMenu anchor={ref.current} title={tr("More")} onClose={() => { setOpen(false); ref.current?.focus(); }}>{tr(([{ route: 'serving', label: 'Serving', icon: 'link' }, { route: 'settings', label: 'Settings', icon: 'settings' }] as const).map(d => <a key={d.route} role="menuitem" className="menu__item" href={href(d.route)} onClick={() => setOpen(false)}><Icon name={d.icon}/>{tr(d.label)}</a>))}{appMode.canQuit ? <button type="button" role="menuitem" className="menu__item" onClick={() => { setOpen(false); setNavOpen(false); setQuitOpen(true); }}><Icon name="x"/>{tr("Quit Nostroma")}</button> : null}</FloatingMenu> : null)}<QuitNostromaDialog open={quitOpen} onClose={() => setQuitOpen(false)}/></>;
 }

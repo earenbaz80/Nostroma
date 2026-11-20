@@ -1,7 +1,7 @@
 /**
  * Telling the person that Strata needs them or has finished (#3586, #3477). Both are opt-in and off by default.
  *
- * - A short sound when an answer or task that took a while is finished, or when Strata is in the background (public/strata-done-sound.wav,
+ * - A short sound when an answer or task that took a while is finished, or when Nostroma is in the background (public/nostroma-done-sound.wav,
  *   made for Strata from sine waves, no sample).
  * - A desktop notification when Manual mode waits for an approval and Strata is in the background. The desktop app shows it through its own
  *   shell (the host passes it on, so it also works while the window is hidden in the tray); a browser uses the page's notifications.
@@ -11,7 +11,7 @@ import { tr } from './i18n';
 
 /** An answer that came back faster than this does not chime while the person is looking at the window. */
 export const QUICK_MS = 8000;
-const SOUND_URL = '/strata-done-sound.wav';
+const SOUND_URL = '/nostroma-done-sound.wav';
 const MIN_GAP_MS = 2000;
 let lastPlayed = 0;
 

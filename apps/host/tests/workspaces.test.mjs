@@ -37,14 +37,14 @@ async function start(t, { user, home }) {
 
 const scratch = () => { const dir = mkdtempSync(join(tmpdir(), 'strata-ws-')); const user = join(dir, 'user'); const home = join(dir, 'home'); mkdirSync(user, { recursive: true }); mkdirSync(home, { recursive: true }); return { dir, user, home }; };
 
-test('item 6: with nothing chosen the first workspace is Documents\\Strata, never the app folder', async t => {
+test('item 6: with nothing chosen the first workspace is Documents\\Nostroma, never the app folder', async t => {
   const s = scratch(); t.after(() => rmSync(s.dir, { recursive: true, force: true }));
   const host = await start(t, s);
   const { body } = await host.call('GET', '/api/workspaces');
   const first = body.workspaces[0];
   assert.equal(first.id, 'root');
-  assert.equal(resolve(first.path), join(s.user, 'Documents', 'Strata', 'Workspace'));
-  assert.equal(first.name, 'Strata');
+  assert.equal(resolve(first.path), join(s.user, 'Documents', 'Nostroma', 'Workspace'));
+  assert.equal(first.name, 'Nostroma');
   assert.ok(existsSync(first.path), 'the folder is created');
   assert.notEqual(resolve(first.path), HOST_DIR);
 });
@@ -55,8 +55,8 @@ test('item 6: a saved first workspace that is the app folder moves to the defaul
   writeFileSync(join(s.home, 'data', 'workspaces.json'), JSON.stringify([{ id: 'root', name: 'host', path: HOST_DIR }, { id: 'ws_a', name: 'Mine', path: s.user }]));
   const host = await start(t, s);
   const { body } = await host.call('GET', '/api/workspaces');
-  assert.equal(resolve(body.workspaces[0].path), join(s.user, 'Documents', 'Strata', 'Workspace'));
-  assert.equal(body.workspaces[0].name, 'Strata');
+  assert.equal(resolve(body.workspaces[0].path), join(s.user, 'Documents', 'Nostroma', 'Workspace'));
+  assert.equal(body.workspaces[0].name, 'Nostroma');
   assert.deepEqual(body.workspaces[0].aliases, [HOST_DIR]);
   assert.equal(body.workspaces[1].path, s.user, 'a folder the person added is left alone');
 });

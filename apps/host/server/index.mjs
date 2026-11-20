@@ -32,7 +32,7 @@ import { findBrowser, findPlaywrightMcp } from './agent/browser-probe.mjs';
  */
 import http from 'node:http';
 import { homedir, hostname as machineName } from 'node:os';
-import { statfsSync, cpSync, createReadStream, createWriteStream, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { statfsSync, cpSync, createReadStream, createWriteStream, existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { pipeline } from 'node:stream/promises';
 import { spawn } from 'node:child_process';
 import { execFile } from 'node:child_process';
@@ -125,18 +125,24 @@ function hostNamesForApp(bind) {
 const HOST_NAMES = hostNamesForApp(HOST);
 /* The folder chats work in when nothing else is chosen. It is never the app's own folder (the host is started inside its install
    directory, so `process.cwd()` was "host" in the sidebar and the agent could read and write the app): the person's own
-   Documents\Strata\Workspace (the models folder is next to it, not in it), created on first use, unless STRATA_WORKSPACE names one. */
+   Documents\Nostroma\Workspace (the models folder is next to it, not in it), created on first use, unless NOSTROMA_WORKSPACE
+   names one. A workspace from the Strata days moves once, so the chats' files are where the person left them. */
+const namedWorkspace = () => process.env.NOSTROMA_WORKSPACE ?? process.env.STRATA_WORKSPACE;
 function defaultWorkspace() {
-  if (process.env.STRATA_WORKSPACE) return resolve(process.env.STRATA_WORKSPACE);
+  if (namedWorkspace()) return resolve(namedWorkspace());
   const user = process.env.USERPROFILE ?? process.env.HOME ?? homedir();
   for (const base of [join(user, 'Documents'), user]) {
-    const dir = join(base, 'Strata', 'Workspace');
-    try { mkdirSync(dir, { recursive: true }); return dir; } catch { /* try the next place */ }
+    const dir = join(base, 'Nostroma', 'Workspace');
+    const previous = join(base, 'Strata', 'Workspace');
+    try {
+      if (!existsSync(dir) && existsSync(previous)) { mkdirSync(join(base, 'Nostroma'), { recursive: true }); renameSync(previous, dir); }
+      mkdirSync(dir, { recursive: true }); return dir;
+    } catch { /* try the next place */ }
   }
   return user;
 }
 const WORKSPACE = defaultWorkspace();
-const WORKSPACE_NAME = process.env.STRATA_WORKSPACE ? basename(WORKSPACE) : 'Strata';
+const WORKSPACE_NAME = namedWorkspace() ? basename(WORKSPACE) : 'Nostroma';
 /** True for the app's own install/source folder or anything inside it. */
 const insideApp = path => { const rel = relative(ROOT, resolve(path)); return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel)); };
 
@@ -1077,7 +1083,7 @@ async function api(req, res, path, method, url) {
    try{const logs=join(dirname(componentsDirectory()),'logs');const names=readdirSync(logs).filter(n=>/^desktop-.*\.log$/.test(n)).sort();const crash=names.filter(n=>n.startsWith('desktop-crash-')).slice(-3).reverse();const runs=names.filter(n=>!n.startsWith('desktop-crash-')).slice(-2).reverse();lines.push('',`== Desktop shell: window crash logs (${crash.length} newest) ==`);for(const n of crash)lines.push('',`-- ${n}`,readFileSync(join(logs,n),'utf8'));lines.push('',`== Desktop shell: last lines of the newest ${runs.length} run logs ==`);for(const n of runs)lines.push('',`-- ${n}`,...readFileSync(join(logs,n),'utf8').split(NL).slice(-300));}catch{/* no desktop logs (not the Linux app, or no crash) */}
    try{const runtime=process.env.STRATA_RUNTIME_DIR??join(dirname(componentsDirectory()),'runtime');for(const name of readdirSync(runtime).filter(n=>n.endsWith('.server.log'))){lines.push('',`== ${name} (last lines) ==`,...readFileSync(join(runtime,name),'utf8').split(NL).slice(-200));}}catch{/* no server logs yet */}
    const folder=join(process.env.USERPROFILE??process.env.HOME??homedir(),'Downloads');mkdirSync(folder,{recursive:true});
-   const file=join(folder,`strata-diagnostics-${new Date().toISOString().replace(/[:.]/g,'-').slice(0,19)}.txt`);writeFileSync(file,lines.join(NL),'utf8');
+   const file=join(folder,`nostroma-diagnostics-${new Date().toISOString().replace(/[:.]/g,'-').slice(0,19)}.txt`);writeFileSync(file,lines.join(NL),'utf8');
    return json(res,200,{path:file});}
   if(path==='/api/native/local/preview'&&method==='POST'){
    /* "Use a local GGUF": pick (or type) the folder, and Control says what is in it. Nothing is copied or changed. */
