@@ -57,7 +57,8 @@ reach them. `apps/host/scripts/prepare-brand-lockups.py` draws them from
   releases.
 - `--weights 400,700` draws every theme at each weight (`strata-lockup-light-400.svg` and so on;
   weight 700 keeps the plain file name). `--themes` picks themes, and `--update-manifest` refreshes
-  the hashes and the method text in `source-manifest.json`.
+  the hashes and the method text in `source-manifest.json`. It also drops a lockup row whose file is
+  gone, or whose name no longer matches a theme the script knows, and prints each one it drops.
 - `--png` writes `strata-lockup-*.png` and `--preview` writes the in-context pictures above. PNG
   bytes depend on the Pillow build, so they are convenience exports and `--check` ignores them.
 - `--ink-left` is a trial offset for the wordmark. It needs `--out DIR`, so a trial never overwrites

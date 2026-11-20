@@ -19,7 +19,10 @@ weight 700. Options:
     --check                write nothing; compare the SVGs on disk with what this
                            run would draw, and exit 1 if any differs
     --update-manifest      after writing, refresh output_sha256 and method for
-                           the drawn files in public/brand/source-manifest.json
+                           the drawn files in public/brand/source-manifest.json;
+                           a lockup row whose file is gone, or whose name no
+                           longer matches a theme the script knows, is dropped
+                           and reported, so the manifest cannot keep dead rows
     --png                  also write brand/strata-lockup-*.png, transparent and
                            --png-scale times larger (default 4)
     --preview              also write docs/media/lockup-in-context-<theme>.png,
@@ -420,6 +423,20 @@ def method_for(theme: str, weight: int) -> str:
     return text + "; scripts/prepare-brand-lockups.py regenerates this file byte for byte"
 
 
+def parse_lockup_name(path: Path) -> tuple[str, int] | None:
+    """The theme and weight in a lockup file name, or None if it cannot be one."""
+    prefix = "strata-lockup-"
+    if not path.stem.startswith(prefix):
+        return None
+    rest = path.stem[len(prefix) :]
+    for theme in sorted(THEMES, key=len, reverse=True):
+        if rest == theme:
+            return theme, DEFAULT_WEIGHT
+        if rest.startswith(theme + "-") and rest[len(theme) + 1 :].isdigit():
+            return theme, int(rest[len(theme) + 1 :])
+    return None
+
+
 def update_manifest(drawn: list[tuple[Path, str, int]]) -> None:
     """Point each drawn file's hash and method at what is now on disk.
 
@@ -450,8 +467,28 @@ def update_manifest(drawn: list[tuple[Path, str, int]]) -> None:
             entry["output_sha256"] = digest
             entry["method"] = method_for(theme, weight)
 
+    drawn_paths = {path for path, _, _ in drawn}
+    kept, dropped = [], 0
+    for entry in files:
+        path = BRAND.parent / entry["output"]
+        if path in drawn_paths or not path.name.startswith("strata-lockup-"):
+            kept.append(entry)
+            continue
+        if parse_lockup_name(path) is None:
+            print(f"stale: {entry['output']} (no theme in its name matches the script); row removed")
+        elif not path.is_file():
+            print(f"stale: {entry['output']} (its file is gone); row removed")
+        else:
+            kept.append(entry)  # a variant this run did not redraw, still on disk
+            continue
+        dropped += 1
+    data["files"] = kept
+
     MANIFEST.write_text(json.dumps(data, indent=2) + "\n")
-    print(f"updated {MANIFEST.relative_to(APP)} ({len(drawn)} row(s))")
+    print(
+        f"updated {MANIFEST.relative_to(APP)} ({len(drawn)} row(s)"
+        + (f", {dropped} stale removed)" if dropped else ")")
+    )
 
 
 def needs_pillow(args: argparse.Namespace) -> None:
