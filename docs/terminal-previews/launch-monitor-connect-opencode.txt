@@ -1,4 +1,4 @@
-# strata launch preview: the monitor's Connect view (key 7), OpenCode selected
+# nostroma launch preview: the monitor's Connect view (key 7), OpenCode selected
 # (text of the screen as drawn at the size named in tests/terminal/launch_previews.py)
 
  NOSTROMA  Connect   http://127.0.0.1:8080                                                                       [LIVE]
@@ -27,7 +27,7 @@
      "autoupdate": false,
    ... 28 more lines (c copies all)
  Good to know
-   - The setup needs limit.input (strata connect sets it to 28672); without it OpenCode never compacts its
+   - The setup needs limit.input (nostroma connect sets it to 28672); without it OpenCode never compacts its
      conversation.
    - Its first start downloads a plug-in from npm (internet needed once; the first run can take over a minute).
    - In a script or over ssh, run it as: opencode run "..." < /dev/null (it waits for typing otherwise).
