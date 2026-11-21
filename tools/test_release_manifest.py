@@ -1,11 +1,99 @@
 """The release manifest (docs/data/release.json) and the pages that quote it."""
 import copy
 import os
+import re
 import sys
 import unittest
+from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import release_manifest as rm  # noqa: E402
+
+
+ASSET_TABLE = "## The assets"
+ARCHIVE = re.compile(r"\.(?:tar\.gz|zip)\Z")
+
+
+def asset_rows(text):
+    """The first cell of each row in the checklist's asset table (``## The assets``)."""
+    lines = text.splitlines()
+    start = next((i for i, line in enumerate(lines) if line.strip() == ASSET_TABLE), None)
+    if start is None:
+        raise AssertionError("docs/RELEASE_CHECKLIST.md has no %r heading" % ASSET_TABLE)
+    rows = []
+    for line in lines[start + 1:]:
+        if line.startswith("#"):
+            break
+        if line.startswith("| `"):
+            rows.append(line.split("|")[1].strip())
+    return rows
+
+
+def asset_patterns(text):
+    """The file names a table row stands for: ``<...>`` is one segment, ``.sig`` repeats the name before it."""
+    patterns = []
+    for cell in asset_rows(text):
+        for token in re.findall(r"`([^`]+)`", cell):
+            patterns.append(patterns[-1] + token if token.startswith(".") else token)
+    return patterns
+
+
+def name_regex(pattern):
+    parts = re.split(r"(\[-<[^>]+>\]|<[^>]+>)", pattern)
+    out = []
+    for part in parts:
+        if part.startswith("[-<"):
+            out.append(r"(?:-[^/]+)?")
+        elif part.startswith("<"):
+            out.append(r"[^/]+")
+        else:
+            out.append(re.escape(part))
+    return re.compile("".join(out) + r"\Z")
+
+
+def matches(pattern, asset):
+    """A row matches a name; the control archive is ``.zip`` on Windows and ``.tar.gz`` elsewhere."""
+    if name_regex(pattern).match(asset):
+        return True
+    if ARCHIVE.search(pattern) and ARCHIVE.search(asset):
+        return name_regex(ARCHIVE.sub("", pattern)).match(ARCHIVE.sub("", asset)) is not None
+    return False
+
+
+def table_problems(patterns, assets):
+    missing = sorted(a for a in assets if not any(matches(p, a) for p in patterns))
+    extra = [p for p in patterns if not any(matches(p, a) for a in assets)]
+    return missing, extra
+
+
+class ReleaseDocs(unittest.TestCase):
+    """The checklist's asset table and the notes describe the manifest's assets; latest.json is not one of them."""
+
+    def setUp(self):
+        self.manifest = rm.load()
+        self.checklist = Path(rm.ROOT, "docs", "RELEASE_CHECKLIST.md").read_text(encoding="utf-8")
+        self.notes = Path(rm.ROOT, "docs", "release-notes-0.2.15.md").read_text(encoding="utf-8")
+
+    def test_the_asset_table_lists_exactly_the_manifest(self):
+        missing, extra = table_problems(asset_patterns(self.checklist), self.manifest["assets"])
+        self.assertEqual(missing, [], "the checklist's asset table does not list: " + ", ".join(missing))
+        self.assertEqual(extra, [], "the checklist's asset table lists what the manifest does not: " + ", ".join(extra))
+
+    def test_latest_json_is_not_an_asset(self):
+        self.assertNotIn("latest.json", self.manifest["assets"])
+        self.assertEqual([r for r in asset_rows(self.checklist) if "latest.json" in r], [],
+                         "the checklist's asset table lists latest.json again")
+        downloads = self.notes.split("## Downloads", 1)[1].split("\n## ", 1)[0]
+        for paragraph in re.split(r"\n\s*\n", downloads):
+            if "latest.json" in paragraph:
+                self.assertRegex(paragraph, r"does not publish|not an asset|not published",
+                                 "the notes list latest.json among the downloads")
+
+    def test_a_table_that_drifts_is_reported(self):
+        table = "## The assets\n\n| Asset | Made by | Notes |\n| --- | --- | --- |\n| `a.tar.gz` | x | y |\n"
+        self.assertEqual(table_problems(asset_patterns(table), ["a.tar.gz", "b.tar.gz"])[0], ["b.tar.gz"])
+        self.assertEqual(table_problems(asset_patterns(table), ["b.tar.gz"])[1], ["a.tar.gz"])
+        self.assertEqual(asset_rows(table + "| `latest.json` | `build-feed` | z |\n"), ["`a.tar.gz`", "`latest.json`"])
 
 
 class ReleaseManifest(unittest.TestCase):
