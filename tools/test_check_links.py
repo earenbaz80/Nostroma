@@ -20,7 +20,7 @@ class LinkCheck(unittest.TestCase):
         self.assertEqual([t for _, t in cl.targets(text)], ["real.md", "https://example.com/x.md", "#top", "other.md#h"])
 
     def test_a_missing_target_is_reported_and_urls_are_not_local(self):
-        self.assertIsNone(cl.resolve("docs/README.md", "https://github.com/Niko1221/Strata"))
+        self.assertIsNone(cl.resolve("docs/README.md", "https://github.com/earenbaz80/Nostroma"))
         self.assertIsNone(cl.resolve("docs/README.md", "mailto:a@b.c"))
         self.assertTrue(cl.resolve("docs/README.md", "INSTALL.md").endswith(os.path.join("docs", "INSTALL.md")))
         self.assertTrue(cl.resolve("docs/README.md", "/LICENSE").endswith("LICENSE"))

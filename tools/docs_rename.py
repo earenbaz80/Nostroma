@@ -103,7 +103,7 @@ DOCS_BEFORE = (
 # The word glued to the old name by a path, a dot or a hyphen never reaches the word rule, so only
 # the few names that must survive spelled as they are need saying here. Pages add their own ids.
 KEEP = (
-    r"Niko1221/Strata",           # the upstream repository and its downloads
+    r"earenbaz80/Nostroma",           # the upstream repository and its downloads
     r"eddoursul/Strata",
     r"Strata-0[\w.]*",            # published asset names (Strata-0.2.15-windows-x64-setup.exe)
     r"Strata\.[A-Za-z]{2,4}\b",   # Strata.AppImage, Strata.dmg

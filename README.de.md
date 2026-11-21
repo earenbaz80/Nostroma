@@ -11,12 +11,12 @@
 <p align="center">
   <a href="#modelle">Modelle</a> · <a href="#installation"><b>Installation</b></a> ·
   <a href="#hardware">Hardware</a> · <a href="#tools">Tools</a> ·
-  <a href="#hilfe">Hilfe</a> · <a href="#strata-unterstützen">Unterstützen</a>
+  <a href="#hilfe">Hilfe</a> · <a href="#nostroma-unterstützen">Unterstützen</a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/Niko1221/Strata/releases/latest"><img src="https://img.shields.io/github/v/release/Niko1221/Strata?label=download&color=0ab887" alt="Nostroma herunterladen"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/Niko1221/Strata" alt="MIT-Lizenz"></a>
+  <a href="https://github.com/earenbaz80/Nostroma/releases/latest"><img src="https://img.shields.io/github/v/release/earenbaz80/Nostroma?label=download&color=0ab887" alt="Nostroma herunterladen"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/earenbaz80/Nostroma" alt="MIT-Lizenz"></a>
   <a href="https://github.com/sponsors/Niko1221"><img src="https://img.shields.io/badge/Sponsor-EA4AAA?logo=githubsponsors&logoColor=fff" alt="Nostroma über GitHub Sponsors unterstützen"></a>
   <a href="https://buymeacoffee.com/strataengine"><img src="https://img.shields.io/badge/Buy_me_a_coffee-FFDD00?logo=buymeacoffee&logoColor=000" alt="Nostroma auf Buy Me a Coffee unterstützen"></a>
 </p>
@@ -62,7 +62,7 @@ Unsicher, was passt? [Wähle ein Modell für deinen Computer](docs/MODELS.md#pic
 
 ### Desktop-App
 
-**[Nostroma für Windows, Linux oder Mac herunterladen →](https://github.com/Niko1221/Strata/releases/latest)**
+**[Nostroma für Windows, Linux oder Mac herunterladen →](https://github.com/earenbaz80/Nostroma/releases/latest)**
 
 Installiere die App, wähle ein Modell und leg mit dem Chat los. Es gibt einen Installer pro System. Beim ersten Start lädt die App die Engine für deine Grafikkarte herunter. [Hilfe zum Installer](docs/INSTALL.md#the-app).
 
@@ -85,13 +85,13 @@ Lieber im Terminal? Installiere Nostroma und starte dann **`nostroma launch`**.
 **Linux / Mac**
 
 ```sh
-curl -fsSL --connect-timeout 15 --max-time 120 https://github.com/Niko1221/Strata/releases/latest/download/install.sh -o install.sh && sh install.sh
+curl -fsSL --connect-timeout 15 --max-time 120 https://github.com/earenbaz80/Nostroma/releases/latest/download/install.sh -o install.sh && sh install.sh
 ```
 
 **Windows PowerShell**
 
 ```powershell
-irm -TimeoutSec 120 https://github.com/Niko1221/Strata/releases/latest/download/install.ps1 | iex
+irm -TimeoutSec 120 https://github.com/earenbaz80/Nostroma/releases/latest/download/install.ps1 | iex
 ```
 
 Öffne unter Windows danach ein neues Terminal. Dann:
@@ -141,7 +141,7 @@ Führe **`nostroma connect`** aus, um die Einrichtung für dein Tool zu sehen. [
 
 ## Hilfe
 
-[Alle Anleitungen](docs) · [Fehlerbehebung](docs/TROUBLESHOOTING.md) · [Fehler melden](https://github.com/Niko1221/Strata/issues/new/choose) ·
+[Alle Anleitungen](docs) · [Fehlerbehebung](docs/TROUBLESHOOTING.md) · [Fehler melden](https://github.com/earenbaz80/Nostroma/issues/new/choose) ·
 [Benchmarks](docs/COMMUNITY_BENCHMARKS.md) · [So funktioniert es](docs/HOW_IT_WORKS.md) · [Mitmachen](CONTRIBUTING.md)
 
 ## Nostroma unterstützen

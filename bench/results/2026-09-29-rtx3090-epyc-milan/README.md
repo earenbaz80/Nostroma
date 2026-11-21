@@ -1,6 +1,6 @@
 # Preliminary native RTX 3090 / EPYC 7453 results
 
-Issue: [#165](https://github.com/Niko1221/Strata/issues/165)
+Issue: [#165](https://github.com/earenbaz80/Nostroma/issues/165)
 Engine: Strata v0.1.26, source build at `ac8b251`
 Status: preliminary; prompt set and harness guidance requested upstream.
 

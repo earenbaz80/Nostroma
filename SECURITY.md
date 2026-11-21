@@ -4,12 +4,12 @@
 
 Please report anything that should not be public until it is fixed **privately**, through GitHub's private
 vulnerability reporting: the repository's **Security** tab, **Report a vulnerability**
-([direct link](https://github.com/Niko1221/Strata/security/advisories/new)). Say what you found, how to reproduce it
+([direct link](https://github.com/earenbaz80/Nostroma/security/advisories/new)). Say what you found, how to reproduce it
 (the request, the config keys involved, the Nostroma version), and what an attacker gains. We answer there, fix it in
 a release, and credit you in the advisory unless you ask us not to.
 
 Ordinary hardening ideas and findings that are safe to discuss in public are welcome as an
-[issue](https://github.com/Niko1221/Strata/issues) (#544 collects audit findings) or as a pull request, which we
+[issue](https://github.com/earenbaz80/Nostroma/issues) (#544 collects audit findings) or as a pull request, which we
 review like our own code.
 
 Supported: the latest release. Fixes go into the next release, not into older ones.
@@ -79,8 +79,8 @@ the model. The section above is about the engine's HTTP server. This is what the
 The Terminal installs with one line:
 
 ```sh
-curl -fsSL --connect-timeout 15 --max-time 120 https://github.com/Niko1221/Strata/releases/latest/download/install.sh -o install.sh && sh install.sh
-irm -TimeoutSec 120 https://github.com/Niko1221/Strata/releases/latest/download/install.ps1 | iex
+curl -fsSL --connect-timeout 15 --max-time 120 https://github.com/earenbaz80/Nostroma/releases/latest/download/install.sh -o install.sh && sh install.sh
+irm -TimeoutSec 120 https://github.com/earenbaz80/Nostroma/releases/latest/download/install.ps1 | iex
 ```
 
 Piping a script into a shell runs whatever the server sends, so it deserves the same care as running any downloaded program.
@@ -89,11 +89,11 @@ checks its SHA-256, unpacks it into your home folder (no administrator rights, n
 with the Terminal it just unpacked and removes it again if that fails, and puts `nostroma` on your PATH.
 
 Those checks have a limit. The checksum comes from the same release as the archive, and the public key that checks the feed arrives inside
-that archive, so for the first install all trust rests on HTTPS and on the `Niko1221/Strata` GitHub release itself. The checks catch a
+that archive, so for the first install all trust rests on HTTPS and on the `earenbaz80/Nostroma` GitHub release itself. The checks catch a
 damaged or half-finished download and a feed that was not signed by the release key; they do not protect you if the release has been replaced
 by someone who controls it. Later updates are checked against the key already on your PC, which is a stronger position.
 
-If that is not enough: save the script (`curl -fsSLO --connect-timeout 15 --max-time 120 https://github.com/Niko1221/Strata/releases/latest/download/install.sh`), read it, and
+If that is not enough: save the script (`curl -fsSLO --connect-timeout 15 --max-time 120 https://github.com/earenbaz80/Nostroma/releases/latest/download/install.sh`), read it, and
 run it from the file; or install the desktop app or build from source instead and check the code you build.
 
 Nostroma has not had an outside security audit yet.

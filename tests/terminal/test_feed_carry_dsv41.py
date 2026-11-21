@@ -19,8 +19,8 @@ sys.path.insert(0, str(ROOT / "packaging"))
 import feed_tool  # noqa: E402
 from nostroma_control import feed as feedmod, transfer  # noqa: E402
 
-BASE = "https://github.com/Niko1221/Strata/releases/download/v0.2.13.1/"
-FEED_URL = "https://github.com/Niko1221/Strata/releases/latest/download/strata-feed.json"
+BASE = "https://github.com/earenbaz80/Nostroma/releases/download/v0.2.13.1/"
+FEED_URL = "https://github.com/earenbaz80/Nostroma/releases/latest/download/strata-feed.json"
 
 
 def entry(url):
@@ -91,7 +91,7 @@ class OlderControlReadsIt(unittest.TestCase):
         self.assertEqual(transfer.resolve_ref(base, pkg.url), BASE + "strata-dsv41-0.1.59-linux-x86_64-cuda-cuda13.tar.gz")
         # the relative form would have pointed at the NEW release, which does not hold the archive
         self.assertTrue(transfer.resolve_ref(base, "strata-dsv41-0.1.59-linux-x86_64-cuda-cuda13.tar.gz").startswith(
-            "https://github.com/Niko1221/Strata/releases/latest/download/"))
+            "https://github.com/earenbaz80/Nostroma/releases/latest/download/"))
 
     def test_this_control_ignores_the_member(self):
         self.assertFalse(hasattr(feedmod.Feed, "dsv41"))

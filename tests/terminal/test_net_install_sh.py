@@ -73,9 +73,9 @@ class InstallFetch(unittest.TestCase):
 class DocumentedLines(unittest.TestCase):
     """W12 and the Windows line (owner 11-10): the documented install lines carry their limits; no copy of the old lines is left (old release notes
     are history and keep theirs)."""
-    OLD = ("curl -fsSL https://github.com/Niko1221/Strata/releases/latest/download/install.sh -o install.sh",
-           "curl -fsSLO https://github.com/Niko1221/Strata/releases/latest/download/install.sh",
-           "irm https://github.com/Niko1221/Strata/releases/latest/download/install.ps1 | iex")
+    OLD = ("curl -fsSL https://github.com/earenbaz80/Nostroma/releases/latest/download/install.sh -o install.sh",
+           "curl -fsSLO https://github.com/earenbaz80/Nostroma/releases/latest/download/install.sh",
+           "irm https://github.com/earenbaz80/Nostroma/releases/latest/download/install.ps1 | iex")
 
     def files(self):
         for p in ROOT.rglob("*"):
@@ -100,9 +100,9 @@ class DocumentedLines(unittest.TestCase):
 
     def test_the_readme_lines(self):
         text = (ROOT / "README.md").read_text(encoding="utf-8")
-        self.assertIn("curl -fsSL --connect-timeout 15 --max-time 120 https://github.com/Niko1221/Strata/releases/latest/download/install.sh "
+        self.assertIn("curl -fsSL --connect-timeout 15 --max-time 120 https://github.com/earenbaz80/Nostroma/releases/latest/download/install.sh "
                       "-o install.sh && sh install.sh", text)
-        self.assertIn("irm -TimeoutSec 120 https://github.com/Niko1221/Strata/releases/latest/download/install.ps1 | iex", text)
+        self.assertIn("irm -TimeoutSec 120 https://github.com/earenbaz80/Nostroma/releases/latest/download/install.ps1 | iex", text)
 
 
 class InstallPs1Text(unittest.TestCase):

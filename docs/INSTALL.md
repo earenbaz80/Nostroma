@@ -8,7 +8,7 @@ install does not need a source checkout or a startup `.bat` file.
 
 | I want | Do this |
 | --- | --- |
-| A window with chat | Download the installer from the [latest release](https://github.com/Niko1221/Strata/releases/latest) ([steps](#the-app)) |
+| A window with chat | Download the installer from the [latest release](https://github.com/earenbaz80/Nostroma/releases/latest) ([steps](#the-app)) |
 | The terminal, or my coding tool | Run the one-line install, then `nostroma launch` ([steps](#the-terminal)) |
 
 [Requirements](#what-you-need) · [Desktop app](#the-app) · [Terminal](#the-terminal) ·
@@ -35,7 +35,7 @@ hardware drivers. Models and updates need an internet connection to download.
 
 ## The app
 
-1. Open the [latest release](https://github.com/Niko1221/Strata/releases/latest).
+1. Open the [latest release](https://github.com/earenbaz80/Nostroma/releases/latest).
 2. Download the one installer for your system. There is one per system, not one per graphics card:
    - **Windows:** run `Strata-0.2.15-windows-x64-setup.exe`. It installs for your user and needs no administrator rights.
    - **Linux:** make `Strata-0.2.15-linux-x86_64.AppImage` executable, then open it. If FUSE is unavailable, run the
@@ -64,13 +64,13 @@ Install once, then use `nostroma launch`. The Terminal includes Python and downl
 **Linux / Mac**
 
 ```sh
-curl -fsSL --connect-timeout 15 --max-time 120 https://github.com/Niko1221/Strata/releases/latest/download/install.sh -o install.sh && sh install.sh
+curl -fsSL --connect-timeout 15 --max-time 120 https://github.com/earenbaz80/Nostroma/releases/latest/download/install.sh -o install.sh && sh install.sh
 ```
 
 **Windows PowerShell**
 
 ```powershell
-irm -TimeoutSec 120 https://github.com/Niko1221/Strata/releases/latest/download/install.ps1 | iex
+irm -TimeoutSec 120 https://github.com/earenbaz80/Nostroma/releases/latest/download/install.ps1 | iex
 ```
 
 On Windows, open a **new terminal** afterwards. On Linux and Mac, if `nostroma` is not found, use the full path printed

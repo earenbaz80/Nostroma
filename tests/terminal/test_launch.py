@@ -406,7 +406,7 @@ class SetupArgs(unittest.TestCase):
                     text, nxt = comp.new_card_note
                     self.assertIn("new to Nostroma", text)
                     self.assertIn("--vision off", nxt)
-                    self.assertIn("github.com/Niko1221/Strata/issues", nxt)
+                    self.assertIn("github.com/earenbaz80/Nostroma/issues", nxt)
 
     def test_a_mac_defaults_pictures_to_the_metal_reader_whatever_its_memory(self):
         for gb in (16.0, 32.0, 128.0):

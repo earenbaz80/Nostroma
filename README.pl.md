@@ -11,12 +11,12 @@
 <p align="center">
   <a href="#modele">Modele</a> · <a href="#instalacja"><b>Instalacja</b></a> ·
   <a href="#sprzęt">Sprzęt</a> · <a href="#narzędzia">Narzędzia</a> ·
-  <a href="#pomoc">Pomoc</a> · <a href="#wesprzyj-stratę">Wsparcie</a>
+  <a href="#pomoc">Pomoc</a> · <a href="#wesprzyj-nostromę">Wsparcie</a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/Niko1221/Strata/releases/latest"><img src="https://img.shields.io/github/v/release/Niko1221/Strata?label=download&color=0ab887" alt="Pobierz Nostromę"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/Niko1221/Strata" alt="Licencja MIT"></a>
+  <a href="https://github.com/earenbaz80/Nostroma/releases/latest"><img src="https://img.shields.io/github/v/release/earenbaz80/Nostroma?label=download&color=0ab887" alt="Pobierz Nostromę"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/earenbaz80/Nostroma" alt="Licencja MIT"></a>
   <a href="https://github.com/sponsors/Niko1221"><img src="https://img.shields.io/badge/Sponsor-EA4AAA?logo=githubsponsors&logoColor=fff" alt="Wesprzyj Nostromę na GitHub Sponsors"></a>
   <a href="https://buymeacoffee.com/strataengine"><img src="https://img.shields.io/badge/Buy_me_a_coffee-FFDD00?logo=buymeacoffee&logoColor=000" alt="Wesprzyj Nostromę na Buy Me a Coffee"></a>
 </p>
@@ -62,7 +62,7 @@ Nie wiesz, co się zmieści? [Wybierz model do swojego komputera](docs/MODELS.md
 
 ### Aplikacja na komputer
 
-**[Pobierz Nostromę dla Windows, Linuxa lub Maca →](https://github.com/Niko1221/Strata/releases/latest)**
+**[Pobierz Nostromę dla Windows, Linuxa lub Maca →](https://github.com/earenbaz80/Nostroma/releases/latest)**
 
 Zainstaluj aplikację, wybierz model i zacznij rozmawiać. Dla każdego systemu jest jeden instalator. Przy pierwszym
 uruchomieniu aplikacja pobiera silnik dla twojej karty graficznej. [Pomoc z instalatorem](docs/INSTALL.md#the-app).
@@ -86,13 +86,13 @@ Wolisz terminal? Zainstaluj Nostromę, a potem uruchom **`nostroma launch`**.
 **Linux / Mac**
 
 ```sh
-curl -fsSL --connect-timeout 15 --max-time 120 https://github.com/Niko1221/Strata/releases/latest/download/install.sh -o install.sh && sh install.sh
+curl -fsSL --connect-timeout 15 --max-time 120 https://github.com/earenbaz80/Nostroma/releases/latest/download/install.sh -o install.sh && sh install.sh
 ```
 
 **Windows PowerShell**
 
 ```powershell
-irm -TimeoutSec 120 https://github.com/Niko1221/Strata/releases/latest/download/install.ps1 | iex
+irm -TimeoutSec 120 https://github.com/earenbaz80/Nostroma/releases/latest/download/install.ps1 | iex
 ```
 
 W Windows otwórz potem nowe okno terminala. Następnie:
@@ -142,7 +142,7 @@ Uruchom **`nostroma connect`**, aby zobaczyć instrukcję konfiguracji dla swoje
 
 ## Pomoc
 
-[Wszystkie przewodniki](docs) · [Rozwiązywanie problemów](docs/TROUBLESHOOTING.md) · [Zgłoś błąd](https://github.com/Niko1221/Strata/issues/new/choose) ·
+[Wszystkie przewodniki](docs) · [Rozwiązywanie problemów](docs/TROUBLESHOOTING.md) · [Zgłoś błąd](https://github.com/earenbaz80/Nostroma/issues/new/choose) ·
 [Testy wydajności](docs/COMMUNITY_BENCHMARKS.md) · [Jak to działa](docs/HOW_IT_WORKS.md) · [Współtworzenie](CONTRIBUTING.md)
 
 ## Wesprzyj Nostromę

@@ -1,7 +1,7 @@
 #!/bin/sh
 # Nostroma Terminal: one-line installer for Linux (x86_64, and ARM64 on the NVIDIA DGX Spark) and macOS (Apple silicon).
 #
-#     curl -fsSL --connect-timeout 15 --max-time 120 https://github.com/Niko1221/Strata/releases/latest/download/install.sh -o install.sh && sh install.sh
+#     curl -fsSL --connect-timeout 15 --max-time 120 https://github.com/earenbaz80/Nostroma/releases/latest/download/install.sh -o install.sh && sh install.sh
 #
 # What it does, in order (and nothing else):
 #   1. finds out which computer this is (system, processor, graphics card) so it can fetch the right archive;
@@ -14,7 +14,7 @@
 # The engine (the part that talks to your graphics card) and the model are NOT part of this: `nostroma launch` fetches the engine for
 # your card the first time you choose a model, from the same release folder, signed.
 #
-# <feed> is where the release folder is hosted: GitHub Releases of Niko1221/Strata (the "latest" release's files), built in as the default.
+# <feed> is where the release folder is hosted: GitHub Releases of earenbaz80/Nostroma (the "latest" release's files), built in as the default.
 # Set NOSTROMA_FEED (the older STRATA_FEED still works) to another folder (a URL) to use that instead, for example a local test feed:
 # NOSTROMA_FEED=http://127.0.0.1:8099 sh install.sh
 #
@@ -23,7 +23,7 @@
 # The older STRATA_* names of the same settings are still read, and win only when the NOSTROMA_* one is not set.
 set -eu
 
-FEED="${NOSTROMA_FEED:-${STRATA_FEED:-https://github.com/Niko1221/Strata/releases/latest/download}}"
+FEED="${NOSTROMA_FEED:-${STRATA_FEED:-https://github.com/earenbaz80/Nostroma/releases/latest/download}}"
 FEED="${FEED%/}"
 DATA_DIR="${NOSTROMA_DATA_DIR:-${STRATA_DATA_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/strata}}"
 BIN_DIR="${NOSTROMA_BIN_DIR:-${STRATA_BIN_DIR:-$HOME/.local/bin}}"

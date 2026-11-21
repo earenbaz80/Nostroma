@@ -79,7 +79,7 @@ For everyday use follow [the app or Terminal installation](INSTALL.md). The comm
 builds the Metal engine locally.
 
 ```sh
-git clone https://github.com/Niko1221/Strata && cd Nostroma
+git clone https://github.com/earenbaz80/Nostroma && cd Nostroma
 ./setup.sh                 # asks the size; --yes takes the recommended answers
 ```
 

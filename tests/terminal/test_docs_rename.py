@@ -34,7 +34,7 @@ class DocsRename(unittest.TestCase):
     def test_the_word_is_renamed_and_the_names_that_are_not_ours_are_kept(self):
         tool = load()
         self.assertEqual(tool.renamed("Start Strata and run `strata launch`."), "Start Nostroma and run `nostroma launch`.")
-        for kept in ("https://github.com/Niko1221/Strata/releases/latest/download/install.sh",
+        for kept in ("https://github.com/earenbaz80/Nostroma/releases/latest/download/install.sh",
                      "Strata-0.2.15-windows-x64-setup.exe",
                      "third_party/strata-ggml",
                      "tools/strata_bench.py",

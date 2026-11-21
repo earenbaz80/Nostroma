@@ -6,7 +6,7 @@ one; do not start from a source checkout.
 - **The Terminal and `nostroma launch`** (below). This is the route for an agent that has a shell.
 - **The desktop app.** One installer per system: `Strata-0.2.15-windows-x64-setup.exe`,
   `Strata-0.2.15-linux-x86_64.AppImage`, `Strata-0.2.15-macos-arm64.dmg`, from the
-  [latest release](https://github.com/Niko1221/Strata/releases/latest). The Windows and Linux installers carry no
+  [latest release](https://github.com/earenbaz80/Nostroma/releases/latest). The Windows and Linux installers carry no
   engine: on first start the app shows the engine for the user's graphics card and downloads it, or installs a file the
   user already has ("I already have the file"). Details: [INSTALL.md](INSTALL.md).
 
@@ -33,13 +33,13 @@ installs into the user's home folder. The engine and model are acquired during l
 **Linux / Mac:**
 
 ```sh
-curl -fsSL --connect-timeout 15 --max-time 120 https://github.com/Niko1221/Strata/releases/latest/download/install.sh -o install.sh && sh install.sh
+curl -fsSL --connect-timeout 15 --max-time 120 https://github.com/earenbaz80/Nostroma/releases/latest/download/install.sh -o install.sh && sh install.sh
 ```
 
 **Windows PowerShell:**
 
 ```powershell
-irm -TimeoutSec 120 https://github.com/Niko1221/Strata/releases/latest/download/install.ps1 | iex
+irm -TimeoutSec 120 https://github.com/earenbaz80/Nostroma/releases/latest/download/install.ps1 | iex
 ```
 
 Open a new terminal on Windows. On Linux and Mac, use the full executable path printed by the installer if

@@ -53,7 +53,7 @@ class AppPagesRename(unittest.TestCase):
         for kept in ("<html id=\"strata-app\">",
                      "class=\"strata-panel wide\"",
                      "data-strata-tab=\"monitor\"",
-                     "https://github.com/Niko1221/Strata/releases/latest/download/install.sh",
+                     "https://github.com/earenbaz80/Nostroma/releases/latest/download/install.sh",
                      "Strata-0.2.15-windows-x64-setup.exe",
                      "strata:src"):
             self.assertEqual(tool.renamed(kept, "terminal"), kept)

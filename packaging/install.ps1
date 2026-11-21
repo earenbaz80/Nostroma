@@ -1,6 +1,6 @@
 # Nostroma Terminal: one-line installer for Windows (PowerShell 5.1 or newer).
 #
-#     irm -TimeoutSec 120 https://github.com/Niko1221/Strata/releases/latest/download/install.ps1 | iex
+#     irm -TimeoutSec 120 https://github.com/earenbaz80/Nostroma/releases/latest/download/install.ps1 | iex
 #
 # What it does, in order (and nothing else):
 #   1. finds out which computer this is (Windows, processor, graphics card);
@@ -13,7 +13,7 @@
 # The engine and the model are not part of this: `nostroma launch` fetches the engine for your graphics card the first time you choose
 # a model, from the same release folder, signed.
 #
-# <feed> is where the release folder is hosted: GitHub Releases of Niko1221/Strata (the "latest" release's files), built in as the default.
+# <feed> is where the release folder is hosted: GitHub Releases of earenbaz80/Nostroma (the "latest" release's files), built in as the default.
 # Set $env:STRATA_FEED to another folder (a URL) to use that instead, for example a local test feed:  $env:STRATA_FEED='http://127.0.0.1:8099'; irm http://127.0.0.1:8099/install.ps1 | iex
 # Optional: $env:NOSTROMA_DATA_DIR (default %LOCALAPPDATA%\Strata), $env:NOSTROMA_INSTALL_TEST_TRUST='1' (a test feed: trust only
 # its test-trust.json for step 4), $env:NOSTROMA_NO_PATH='1' (do not change the user PATH). The older STRATA_* names of the same
@@ -27,7 +27,7 @@ function Die([string]$msg) { [Console]::Error.WriteLine("nostroma installer: $ms
 try { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12 } catch { }
 try { if ([Net.WebRequest]::DefaultWebProxy) { [Net.WebRequest]::DefaultWebProxy.Credentials = [Net.CredentialCache]::DefaultNetworkCredentials } } catch { }
 
-$feed = if ($env:NOSTROMA_FEED) { $env:NOSTROMA_FEED } elseif ($env:STRATA_FEED) { $env:STRATA_FEED } else { 'https://github.com/Niko1221/Strata/releases/latest/download' }
+$feed = if ($env:NOSTROMA_FEED) { $env:NOSTROMA_FEED } elseif ($env:STRATA_FEED) { $env:STRATA_FEED } else { 'https://github.com/earenbaz80/Nostroma/releases/latest/download' }
 $feed = $feed.TrimEnd('/')
 $feedHost = try { ([Uri]$feed).Host } catch { '' }
 if (-not $feedHost) { $feedHost = $feed }
