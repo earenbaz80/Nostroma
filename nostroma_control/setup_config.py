@@ -225,7 +225,7 @@ def config_for(inp: SetupInputs, lib) -> SetupConfig:
     if resident and a.low_ram != "resident" and engine_ver < RESIDENT_ENGINE:
         resident = False                               # an engine from before --resident-experts would refuse it
         ok(f"low-RAM mode: engine {meta.get('version')} has no resident variant yet; the experts are read through "
-           "the OS file cache (run setup again after the next engine update)")
+           "the OS file cache (run `nostroma install` again after the next engine update)")
     if low_ram and ready:
         # NVFP4 (68 GB of experts) on a PC whose RAM does not hold them: the RAM-budget mode, as Unsloth's files - the
         # most-used experts outside VRAM pinned within RAM less 24 GB, the rest read from experts.bin.  Mapped
@@ -346,7 +346,7 @@ def config_for(inp: SetupInputs, lib) -> SetupConfig:
         if vision == "gpu" and a.vram_reserve_mib is None and 0 < gpu.get("vram_gb", 0.0) <= 12.5:
             # a tip only (recommend, never force): on a 12 GB card the encoder's 700 MiB can leave ~200 MiB free
             print(f"  tip: images on a {gpu['vram_gb']:.0f} GB card can leave little VRAM free; if a request stalls, "
-                  f"run setup again with --vram-reserve-mib {VISION_GPU_SMALL_RESERVE_MIB}")
+                  f"run `nostroma install --vram-reserve-mib {VISION_GPU_SMALL_RESERVE_MIB}`")
     if a.vram_reserve_mib is not None:                 # #493: VRAM left free for other programs (only when given)
         if "--vram-reserve-mib" in args:
             i = args.index("--vram-reserve-mib") + 1
@@ -411,7 +411,7 @@ def config_for(inp: SetupInputs, lib) -> SetupConfig:
             say("  " + line)
     if not hip and not multi and a.vram_reserve_mib is None and gpu_drives_display(gpu):
         say("  tip: this card drives a display. If the PC freezes or the screen goes black once the model is loaded "
-            f"(#779), keep more VRAM free: run setup again with --vram-reserve-mib {DISPLAY_RESERVE_MIB}")   # a tip only
+            f"(#779), keep more VRAM free: run `nostroma install --vram-reserve-mib {DISPLAY_RESERVE_MIB}`")   # a tip only
     if not hip:
         for gi in ([g for g in multi] if multi else [gpu.get("index", 0)]):
             gi = gi["index"] if isinstance(gi, dict) else gi

@@ -808,7 +808,7 @@ def run_launch(a: argparse.Namespace) -> int:
             no_screens_package = _screens_missing()
             interactive = False
             _say(f"The screens need a Python package this install does not have yet ({no_screens_package}), so Nostroma goes on in plain lines. "
-                 "Run setup again (START-HERE / ./setup.sh) to get the screens.")
+                 "Run `nostroma install` to get the screens (source checkout: START-HERE.bat or ./setup.sh).")
         if not have_choices and not interactive and not a.plan:
             if machine or a.no_tui or catalog is None or not _can_ask():     # --no-tui never asks (round 8, M)
                 return fail("`nostroma launch` with no choices opens screens, and this is not a terminal (or --no-tui was given). Name what to start: --preset NAME, or --model NAME "

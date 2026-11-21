@@ -265,7 +265,7 @@ class StaleConfigPaths(UpdaterCase):
         text = str(caught.exception)
         self.assertIn("expert-profile.bin", text)
         self.assertIn("removed by an update", text)
-        self.assertIn("run setup again", text)
+        self.assertIn("run `nostroma install` again", text)
         self.assertIn("0.1.44", path.read_text(encoding="utf-8"), "nothing is guessed: the file is left as it was")
 
 

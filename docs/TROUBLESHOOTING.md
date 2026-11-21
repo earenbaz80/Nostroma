@@ -100,7 +100,7 @@ checkout uses `START-HERE.bat` / `./setup.sh` to resume source setup; it continu
 
 **Setup says the engine does not match GitHub's checksum.**
 Setup checks the downloaded ready-made engine against the SHA-256 GitHub publishes. On a mismatch the file is corrupt or
-was changed on the way, so setup deletes it and stops; run setup again to download it afresh. If GitHub gives no checksum
+was changed on the way, so setup deletes it and stops; run `nostroma install` again to download it afresh. If GitHub gives no checksum
 (offline, rate limited, your own mirror), setup warns and installs anyway. `STRATA_SKIP_SHA256=1` skips the check, only if
 you insist.
 
@@ -172,7 +172,7 @@ memory stays; a card that also draws the desktop can freeze or slow to a few tok
 **Pictures are refused, or slow.**
 "this server was started without the vision encoder": the model was set up for text only (someone chose "No", or the engine
 has no picture reader). Switch pictures on in the app or on the Pictures step of `nostroma launch` (`--vision on|gpu|cpu`);
-in a source checkout run setup again with `--vision yes` (or `--vision gpu` / `--vision cpu`). Pictures are on by default
+in a source checkout run `./setup.sh --vision yes` (or `--vision gpu` / `--vision cpu`). Pictures are on by default
 wherever a model can read them, and `--vision off` (source setup: `--vision no`) turns them off; that is different from
 optional [image generation](IMAGES.md). The reader runs on the CPU under 24 GB of graphics memory and on the card from
 24 GB, on NVIDIA and AMD cards. Pictures that take several seconds (about 3 s at 300 image tokens on 8 cores, more with more
@@ -325,7 +325,7 @@ in order, one at a time, and tell us what changed:
 3. **`"STRATA_KV_HOST_DMA": "1"`** in the same `"env"` block: no GPU kernel writes the RAM copy of the K/V during a
    prompt, it is copied by DMA instead. Same answers. On AMD and Intel Arc this is off until you set it. NVIDIA cards do it by
    default; setting it to `"0"` there goes back to the earlier way of writing.
-4. **No KV streaming:** run setup again and pick 32K context (or remove `--kv-resident` and its number from
+4. **No KV streaming:** run `nostroma install` and pick 32K context (or remove `--kv-resident` and its number from
    `"args"` in the JSON, with a context that fits the VRAM).
 5. **A smaller prompt chunk:** change `--prefill` in `"args"` (for example `--prefill 512`): each GPU launch then does
    less work between two checks by Windows. Prompts are read more slowly.

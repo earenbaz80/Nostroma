@@ -146,7 +146,7 @@ def repair(configs) -> tuple[list[str], list[str]]:
             continue                                     # a DeepSeek config is never written: this Nostroma does not run it (retired.py)
         new, found, lost = resolve_config(cfg)
         for old, _ in lost:
-            problems.append(f"{c.name}: {old} was removed by an update and no file of that name is in the current version; run setup again for this model")
+            problems.append(f"{c.name}: {old} was removed by an update and no file of that name is in the current version; run `nostroma install` again for this model")
         if not found:
             continue
         try:
