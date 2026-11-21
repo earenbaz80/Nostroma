@@ -91,9 +91,3 @@ Every speed number below is a median of interleaved pairs against the previous d
 - The standard benchmark protocol is a draft (`docs/BENCHMARK_PROTOCOL.md`); `nostroma bench run` and `BENCH.bat` do not implement it.
 
 Thanks to Laurent Zuijdwijk (the Gyro kernels for CPU and the trellis types), ATIVX928 and NoxestNoz (Volta work) and everyone who tested the builds and sent reports.
-
----
-
-Strata is free and open source. If it runs well on your PC, a coffee keeps the work on it going:
-
-<a href="https://buymeacoffee.com/strataengine"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="50"></a>

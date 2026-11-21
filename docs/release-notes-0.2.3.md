@@ -47,9 +47,3 @@ The engine packages (the Terminal and the app fetch these for you; you only need
 Also in the release: `strata-feed.json` with its `.sig`, `install-manifest.txt`, `latest.json` and `SHA256SUMS.txt`.
 
 Thanks to Tsury, whose PR #3556 (tool-call aliases and wrapper boundaries) is in with the name; and to the people who reported the issues above.
-
----
-
-Strata is free and open source. If it runs well on your PC, a coffee keeps the work on it going:
-
-<a href="https://buymeacoffee.com/strataengine"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="50"></a>

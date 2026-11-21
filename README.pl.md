@@ -17,8 +17,6 @@
 <p align="center">
   <a href="https://github.com/earenbaz80/Nostroma/releases/latest"><img src="https://img.shields.io/github/v/release/earenbaz80/Nostroma?label=download&color=0ab887" alt="Pobierz Nostromę"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/earenbaz80/Nostroma" alt="Licencja MIT"></a>
-  <a href="https://github.com/sponsors/Niko1221"><img src="https://img.shields.io/badge/Sponsor-EA4AAA?logo=githubsponsors&logoColor=fff" alt="Wesprzyj Nostromę na GitHub Sponsors"></a>
-  <a href="https://buymeacoffee.com/strataengine"><img src="https://img.shields.io/badge/Buy_me_a_coffee-FFDD00?logo=buymeacoffee&logoColor=000" alt="Wesprzyj Nostromę na Buy Me a Coffee"></a>
 </p>
 
 <p align="center"><sub><a href="README.md">English</a> · <a href="README.zh-CN.md">简体中文</a> · <a href="README.ja.md">日本語</a> · <a href="README.de.md">Deutsch</a> · <a href="README.fr.md">Français</a> · <a href="README.es.md">Español</a> · <a href="README.pt-BR.md">Português</a> · <b>Polski</b></sub></p>
@@ -147,11 +145,6 @@ Uruchom **`nostroma connect`**, aby zobaczyć instrukcję konfiguracji dla swoje
 
 ## Wesprzyj Nostromę
 
-**Pomóż zachować lokalną sztuczną inteligencję otwartą dla wszystkich.** Sponsoring na GitHubie lub kawa pomaga finansować rozwój i testy na większej liczbie sprzętu.
-
-<a href="https://github.com/sponsors/Niko1221"><img src="https://img.shields.io/badge/Sponsor_on_GitHub-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="GitHub Sponsors: wesprzyj Nostromę" height="48"></a>
-<a href="https://buymeacoffee.com/strataengine"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me a Coffee: wesprzyj Nostromę" height="48"></a>
-
 ### Wierni wspierający
 
 Dziękujemy wszystkim, którzy wspierają Nostromę.
@@ -173,5 +166,3 @@ Dziękujemy wszystkim, którzy wspierają Nostromę.
 <a id="option-c-let-your-ai-set-it-up"></a>
 
 <sub>Dla narzędzi AI i automatycznych czytników: <a href="AGENTS.md">dokumentacja techniczna</a> · <a href="docs/AI_SETUP.md">instrukcja instalacji</a>.</sub>
-
-**Sponsoring, partnerstwa sprzętowe i współpraca:** [niko.veit@outlook.com](mailto:niko.veit@outlook.com).

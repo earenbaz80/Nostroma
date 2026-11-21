@@ -58,9 +58,3 @@ Agent runs (tool calls balanced, run to the end): [FILL] of 5 on [FILL: machine]
 ## Thanks and credits
 
 - **[FILL: model authors and quantizers]:** [FILL: what they made].
-
----
-
-Nostroma is free and open source. If it runs well on your PC, a coffee keeps the work on it going:
-
-<a href="https://buymeacoffee.com/strataengine"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="50"></a>

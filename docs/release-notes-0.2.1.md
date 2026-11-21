@@ -94,9 +94,3 @@ Speed numbers are medians of interleaved pairs on the same box, a fresh engine p
 - **NUMA-split CPU pool (#3201):** not part of 0.2.1; we have no dual-socket box to measure it.
 
 Thanks to H3buss, who found that the Gyro import was missing `--compat-bf16` and where to put it (#3193); to bext1998, whose trace of the MTP download and the orphaned process (#3257) led to the progress and cancel fixes; and to Gazoo, who reported the card-selection, dropdown and re-download bugs (#3195, #3221, #3199). Thanks also to everyone who tested 0.2.0-beta and sent reports.
-
----
-
-Strata is free and open source. If it runs well on your PC, a coffee keeps the work on it going:
-
-<a href="https://buymeacoffee.com/strataengine"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="50"></a>

@@ -17,8 +17,6 @@
 <p align="center">
   <a href="https://github.com/earenbaz80/Nostroma/releases/latest"><img src="https://img.shields.io/github/v/release/earenbaz80/Nostroma?label=download&color=0ab887" alt="Télécharger Nostroma"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/earenbaz80/Nostroma" alt="Licence MIT"></a>
-  <a href="https://github.com/sponsors/Niko1221"><img src="https://img.shields.io/badge/Sponsor-EA4AAA?logo=githubsponsors&logoColor=fff" alt="Soutenir Nostroma sur GitHub Sponsors"></a>
-  <a href="https://buymeacoffee.com/strataengine"><img src="https://img.shields.io/badge/Buy_me_a_coffee-FFDD00?logo=buymeacoffee&logoColor=000" alt="Soutenir Nostroma sur Buy Me a Coffee"></a>
 </p>
 
 <p align="center"><sub><a href="README.md">English</a> · <a href="README.zh-CN.md">简体中文</a> · <a href="README.ja.md">日本語</a> · <a href="README.de.md">Deutsch</a> · <b>Français</b> · <a href="README.es.md">Español</a> · <a href="README.pt-BR.md">Português</a> · <a href="README.pl.md">Polski</a></sub></p>
@@ -146,11 +144,6 @@ Lancez **`nostroma connect`** pour voir la configuration de votre outil. [Guide 
 
 ## Soutenir Nostroma
 
-**Aidez à garder l'IA locale ouverte à tous.** Un parrainage sur GitHub ou un café aide à financer le développement et les tests sur davantage de matériel.
-
-<a href="https://github.com/sponsors/Niko1221"><img src="https://img.shields.io/badge/Sponsor_on_GitHub-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="GitHub Sponsors : soutenir Nostroma" height="48"></a>
-<a href="https://buymeacoffee.com/strataengine"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me a Coffee : soutenir Nostroma" height="48"></a>
-
 ### Fidèles soutiens
 
 Merci à toutes les personnes qui soutiennent Nostroma.
@@ -172,5 +165,3 @@ Merci à toutes les personnes qui soutiennent Nostroma.
 <a id="option-c-let-your-ai-set-it-up"></a>
 
 <sub>Pour les outils d'IA et les lecteurs automatiques : <a href="AGENTS.md">référence technique</a> · <a href="docs/AI_SETUP.md">instructions d'installation</a>.</sub>
-
-**Parrainages, partenariats matériel ou collaborations :** [niko.veit@outlook.com](mailto:niko.veit@outlook.com).

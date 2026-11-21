@@ -80,9 +80,3 @@ Names stay on the commits: 55 contributors' pull requests were ported with their
 ## Downloads
 
 Three installers (Windows, Linux AppImage, Mac dmg) and the Mac updater archive `Strata.app.tar.gz`, the three Control packages (0.1.52), 13 Qwen engine packages and 4 DeepSeek engine packages (all 0.1.52: Windows CUDA 13, Windows AMD for Ryzen AI Max, Linux CUDA 13, Linux AMD rx9070), plus `strata-feed.json` with its signature, `latest.json`, `install-manifest.txt`, `install.sh`, `install.ps1` and `SHA256SUMS.txt`. The DeepSeek CUDA packages are built for sm_86, sm_89 and sm_120.
-
----
-
-Strata is free and open source. If it runs well on your PC, a coffee keeps the work on it going:
-
-<a href="https://buymeacoffee.com/strataengine"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="50"></a>

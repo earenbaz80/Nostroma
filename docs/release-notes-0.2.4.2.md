@@ -26,9 +26,3 @@ Fixes for `nostroma launch` with DeepSeek and for the one-line installer. The Te
 ## Downloads
 
 Everything from 0.2.4.1 is attached again, so the release page still holds every file. New in this release: the three Control packages (`strata-control-0.1.49.2-windows-x86_64.zip`, `-linux-x86_64.tar.gz`, `-macos-arm64.tar.gz`), the three DeepSeek engine packages (`strata-dsv41-0.1.49.2-windows-x86_64-cuda-cuda13.tar.gz`, `-linux-x86_64-cuda-cuda13.tar.gz`, `-linux-x86_64-hip-rx9070.tar.gz`), `install.sh`, the feed and `SHA256SUMS.txt`. The installers, AppImages, dmg and Qwen engine packages are the 0.2.3 files.
-
----
-
-Strata is free and open source. If it runs well on your PC, a coffee keeps the work on it going:
-
-<a href="https://buymeacoffee.com/strataengine"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="50"></a>

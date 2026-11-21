@@ -20,8 +20,7 @@ Suggested opening: **“Run powerful AI on your own computer. Chat, code and wor
    Gyro is a memory-saving option, currently slower. State the model, quantization and hardware used in any live demo.
 5. **Connect a familiar tool.** Examples include Claude Code, Codex CLI, OpenCode, oh-my-pi, pi.dev and Hermes Agent.
    Show a real successful connection if demonstrating one.
-6. **Close with the two useful links.** [Download Nostroma](https://github.com/earenbaz80/Nostroma/releases/latest)
-   and [support development](https://buymeacoffee.com/strataengine).
+6. **Close with the download link.** [Download Nostroma](https://github.com/earenbaz80/Nostroma/releases/latest).
 
 This is an outline, not evidence that any particular model, workflow or benchmark was tested for the video.
 
@@ -92,5 +91,3 @@ The script needs fontTools and Brotli, because the face ships as WOFF2. Pillow i
 
 - Project: [earenbaz80/Nostroma](https://github.com/earenbaz80/Nostroma)
 - Downloads: [Releases](https://github.com/earenbaz80/Nostroma/releases/latest)
-- Support: [Buy Me a Coffee](https://buymeacoffee.com/strataengine)
-- Sponsorships, hardware partnerships and collaborations: [niko.veit@outlook.com](mailto:niko.veit@outlook.com)

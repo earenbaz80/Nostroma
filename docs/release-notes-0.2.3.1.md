@@ -15,9 +15,3 @@ Only the Terminal's Control changed (version 0.1.48.1). The app stays 0.2.3 and 
 ## Downloads
 
 Everything from 0.2.3 is attached again, so the release page still holds every file. The files that changed are `strata-control-0.1.48.1-windows-x86_64.zip`, `strata-control-0.1.48.1-linux-x86_64.tar.gz`, the feed (`strata-feed.json` with its `.sig`), `install-manifest.txt`, `latest.json` and `SHA256SUMS.txt`. The installers, AppImages, dmg and engine packages are the 0.2.3 files.
-
----
-
-Strata is free and open source. If it runs well on your PC, a coffee keeps the work on it going:
-
-<a href="https://buymeacoffee.com/strataengine"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="50"></a>

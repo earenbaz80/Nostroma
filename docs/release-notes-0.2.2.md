@@ -28,7 +28,6 @@
 - **Idle GPU time was measured, with no default change.** On a two-card test PC decode leaves 47 to 49% of the card time idle (batch 51%, prompts 24 to 42%), on a one-card PC 5%. Overlap gave +0.3, +2.1 and -0.3% against 2.8% noise; pipeline windows 2 gained 5.4% on code only, cost 5 to 13% with the draft layer on the first card, and `--batch-groups 2` cost 15.3% with 4 chats, so nothing is switched on. Raw numbers are in `bench/results/2026-10-20-0.2.1-idle-gpu/`.
 - **The recommended size leaves 5 GB for Windows.** The memory tiers now count RAM + VRAM less 5 GB, so a PC with 32 GB of RAM and a 16 GB card gets the 40 GB tier instead of the 48 GB one, which had it reading part of the model from the SSD (#3425). Every other size is still a choice.
 
-
 ## Faster, with what we measured
 
 Speed numbers are medians of interleaved pairs on the same box, a fresh engine per run; "pairs faster" counts the pairs the new code won. Each change has an off switch.
@@ -65,9 +64,3 @@ These went out as Terminal, Control and engine updates before 0.2.2, so a Termin
 - **Docker:** no AMD or Intel image was built or run, and no Docker Desktop.
 
 Thanks to baptisterajaut, whose NUMA-split branch the pool is built on; to John-Pi (PR #3484), MEsfits (#3276), xrip (#2140, #2290), devYRPauli (#2497), ctr-137 (#3156), yudhanjaya (#3374), jackbapa (#3302) and TheHubUser4860938 (#3501), whose fixes are in with their names; and to agentionai, whose Gyro work all three Gyro ports build on.
-
----
-
-Strata is free and open source. If it runs well on your PC, a coffee keeps the work on it going:
-
-<a href="https://buymeacoffee.com/strataengine"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="50"></a>

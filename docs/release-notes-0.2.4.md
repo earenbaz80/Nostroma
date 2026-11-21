@@ -85,9 +85,3 @@ Everything from 0.2.3 is attached again, so the release page still holds every f
 
 - **ISTA-DASLab** for the IQ1_M, IQ2_XXS and IQ2_XS sets of DeepSeek V4.1-Flash ([ISTA-DASLab/DeepSeek-V4.1-Flash-1017-GSQ-RCO-GGUF](https://huggingface.co/ISTA-DASLab/DeepSeek-V4.1-Flash-1017-GSQ-RCO-GGUF)).
 - **Unsloth** for the DSpark drafter GGUF.
-
----
-
-Strata is free and open source. If it runs well on your PC, a coffee keeps the work on it going:
-
-<a href="https://buymeacoffee.com/strataengine"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="50"></a>
