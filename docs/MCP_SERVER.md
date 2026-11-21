@@ -203,7 +203,7 @@ If a config of the folder sets an `api_key`, the tool sends that key with its ow
   stderr and wait for input (Ctrl+C ends it). If it reports `not a Nostroma folder`, the path is wrong or `--root` is
   needed. Python older than 3.10 is refused.
 - **The install failed.** Ask the assistant for the setup log (`strata_logs` with `source: setup`), or open
-  `.strata-mcp/setup.log`. Setup's `[X]` line says what to fix. Then install again: every finished step is skipped.
+  `.strata-mcp/setup.log`. Setup's `[X]` line says what to fix. Then call `strata_install` again: every finished step is skipped.
 - **The model does not start.** Get the server log with `strata_logs`, and the engine log with `source: engine`.
   [Troubleshooting](DETAILS.md#troubleshooting) has the usual causes.
 - **Tests.** `python -m unittest tools/test_strata_mcp.py` runs the tests with a fake setup and server. They do not

@@ -33,7 +33,7 @@ installed app has none of them.
    ```
 
 3. Point your app at `http://127.0.0.1:8080/v1` with any API key, or run `nostroma connect` to list the apps Nostroma can configure.
-4. Change a setting by editing `strata-<model>.json` and restarting. Setup rewrites the file when you run it again and
+4. Change a setting by editing `strata-<model>.json` and restarting. Setup rewrites the file when you run `nostroma install` again and
    keeps the keys it does not manage.
 
 ---
@@ -392,7 +392,7 @@ the experts in VRAM, then the counted routing, then the shipped order, on a clea
 requests (`"expert_profile_save_every": 5` for another interval, `0` for exit only). The next start begins from it when it
 is a profile of the same model. A relative path is in the Nostroma folder. The file is a fingerprint of what you used the model
 for and stays on your PC. A profile learned from one kind of text speeds that kind up and can slow others, so keep one file
-per kind of work. Setup rewrites the config when run again, so add the key again then.
+per kind of work. Setup rewrites the config when you run `nostroma install` again, so add the key again then.
 
 ### The expert cache size is a budget
 
@@ -475,7 +475,7 @@ trained with, not a hard token limit.
 
 ### Config keys (`strata-<model>.json`, outside `"args"`)
 
-All are optional. Setup rewrites the config when run again and keeps keys it does not manage. The About tab's Model settings
+All are optional. Setup rewrites the config when you run `nostroma install` again and keeps keys it does not manage. The About tab's Model settings
 card edits some of them (the sampling defaults, `reasoning_budget_tokens`, `fit_max_tokens`, `anthropic_thinking`,
 `effort_position`, `aliases`, `idle_unload_s`, `lazy_load`, `engine_silence_s`, `api_monitor`, `open_browser` and
 `--vram-reserve-mib`). An empty field removes the key, the earlier file is kept as `strata-<model>.json.bak`, and the change
@@ -1005,7 +1005,7 @@ every turn, is encoded once.
 
 | Setting | Effect |
 | --- | --- |
-| `--vision-tokens N` at setup, or `"max_tokens"` | The most tokens a picture becomes. More keep more detail (small text, charts) and take longer, on the CPU most of all. A setup run again keeps the value. |
+| `--vision-tokens N` at setup, or `"max_tokens"` | The most tokens a picture becomes. More keep more detail (small text, charts) and take longer, on the CPU most of all. Running `nostroma install` again keeps the value. |
 | `"min_tokens": N` | Scales a small picture up to at least N tokens (passed to the encoder as `--min-tokens`). Qwen-VL grounding tasks want at least 1,024. A larger minimum changes image answers and costs encode time. |
 | `"mmproj"` | Points to another mmproj file of this model, for example a Q8_0 one (`llama-quantize mmproj-Qwen3.8-Flash-Next-BF16.gguf mmproj-Qwen3.8-Flash-Next-Q8_0.gguf Q8_0`): 590 MiB against 865 MiB, about 280 MiB less encoder RAM, and it can encode faster on the CPU. **Recommended for `--vision cpu`.** Embedding cosine against BF16 is 0.997-0.999. Setup downloads the BF16 file and keeps a file of your own that still exists. |
 | `"cuda_device": N` | Runs the encoder on a spare card (numbered like `nvidia-smi`). Lower `--vram-reserve-mib` in `"args"` to 700 as well. The card needs code in the ready-made encoder (RTX 20/30/40/50). |
@@ -1341,7 +1341,7 @@ never changed. `STRATA_ROUTE_PRIOR` raises KL and is an opt-in again in 0.2.8 (0
 | Symptom | What to do |
 | --- | --- |
 | `the NVIDIA driver is too old` | Update the driver, restart, run `nostroma install` again. |
-| Python or the build tools could not be installed | Install what it names (links are printed), then run it again. Everything already done is kept. |
+| Python or the build tools could not be installed | Install what it names (links are printed), then run `nostroma install` again. Everything already done is kept. |
 | `port 8080 is already in use` | Nostroma is already running, or another program uses the port: `nostroma launch --port 8081` (source checkout: `START-HERE.bat --port 8081`). |
 | `cudaHostRegister ... out of memory` in the log | Normal on Windows: the engine pins the experts in per-layer slices instead. A problem only if the load then fails. |
 | `ExpertCache: cudaMalloc(...) failed: out of memory` although VRAM is free | Windows' page file is off or tiny. Every allocation on the card is also charged to Windows' commit (RAM + page file). Set a fixed page file size, the same initial and maximum (for example 65536 MB), and restart. The engine retries with a smaller cache, and setup warns about a page file under 4 GB. |

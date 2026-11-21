@@ -824,7 +824,8 @@ def fail(msg, hint=None):
     say(f"\n  [X]  {msg}")
     if hint:
         say(f"       {hint}")
-    say("\nSetup stopped. Fix the item above and run it again - everything already done is kept and skipped.")
+    say("\nSetup stopped. Fix the item above and run `nostroma install` again (`./setup.sh` in a "
+        "source checkout) - everything already done is kept and skipped.")
     sys.exit(1)
 
 
@@ -932,7 +933,8 @@ def fetch_mtp(mtp: Path, env: dict, tries: int = 3):
         if rc == 5:                                        # tools/mtp_fetch.py OFFLINE: its [X] lines above say so; the model is set up and starts without the layer,
             return False                                   # and the next launch with a connection fetches it (offline users: never a stop)
         if rc == 4:                                       # tools/mtp_fetch.py NO_ANSWER: its [X] lines above name the host and the next step
-            say("\nSetup stopped. Fix the item above and run it again - everything already done is kept and skipped.")
+            say("\nSetup stopped. Fix the item above and run `nostroma install` again (`./setup.sh` in a "
+                "source checkout) - everything already done is kept and skipped.")
             sys.exit(1)
         if r is not None and on_disk() <= before:          # the network rule: run again only when the last run moved bytes
             break
@@ -2979,10 +2981,10 @@ def parallel_download(url: str, part: Path, total: int, label: str, conns: int, 
         part.with_name(part.name + ".chunks").unlink(missing_ok=True)
         part.with_name(part.name + ".src").unlink(missing_ok=True)
         fail(f"{name} changed on the server while it was downloading: the part that was there was deleted",
-             "run it again (the download starts over with the file that is there now)")
+             "run `nostroma install` again (the download starts over with the file that is there now)")
     if isinstance(st.fatal, _DiskError):
         _save_pieces(part, total, st.snapshot())
-        fail(f"cannot write {part.name}: {st.fatal}", "free some disk space (or pick another --models-dir) and run it again")
+        fail(f"cannot write {part.name}: {st.fatal}", "free some disk space (or pick another --models-dir) and run `nostroma install` again")
     if isinstance(st.fatal, _NoRange):
         _save_pieces(part, total, st.snapshot())
         return False                                    # the server stopped doing ranges: one stream from the unbroken start
@@ -2992,7 +2994,7 @@ def parallel_download(url: str, part: Path, total: int, label: str, conns: int, 
         if clock.expired():                             # no new byte for 5 minutes (W6)
             fail(*clock.words(netpolicy.what_words(label), have, total))
         fail(f"could not finish downloading {name}: {have:,} of {total:,} bytes",
-             "check your internet connection and run it again (the download resumes where it stopped)")
+             "check your internet connection and run `nostroma install` again (the download resumes where it stopped)")
     try:
         with open(part, "r+b") as g:
             g.truncate(total)
@@ -3246,14 +3248,14 @@ def download(url, dst: Path, what=None):
                 pin = None
                 continue
             fail(f"cannot reach {url.split('/')[2]} ({e})",
-                 "check your internet connection and run it again" + proxy_hint() + source_hint(url))
+                 "check your internet connection and run `nostroma install` again" + proxy_hint() + source_hint(url))
         except tls.CertificateProblem as e:           # the same answer every time: no retry
             fail(f"cannot download from {url.split('/')[2]}: its security certificate was not accepted", str(e))
         except netpolicy.NetFailure as e:
             net_fail(e, url, what)
         except (OSError, http.client.HTTPException) as e:
             fail(f"cannot reach {url.split('/')[2]} ({e})",
-                 "check your internet connection and run it again" + proxy_hint() + source_hint(url))
+                 "check your internet connection and run `nostroma install` again" + proxy_hint() + source_hint(url))
     if not total:
         total = range_total(url)
     meta = ms_meta(*ms) if ms is not None else None
@@ -3286,7 +3288,7 @@ def download(url, dst: Path, what=None):
         download_single(url, part, total, label)
     if total and part.stat().st_size != total:
         fail(f"could not finish downloading {dst.name}: {part.stat().st_size:,} bytes on disk, the server says {total:,}",
-             "check your internet connection and run it again (the download resumes where it stopped)")
+             "check your internet connection and run `nostroma install` again (the download resumes where it stopped)")
     try:
         atomic.replace(part, dst)                      # waits a moment for a virus scanner or indexer that holds the file
     except OSError as e:
@@ -4863,7 +4865,7 @@ def hip_card(eng: Path, gpu: dict, listed: list[dict]) -> dict:
     working AMD driver stops here with what to install."""
     hip = hip_devices(eng / "strata-device.exe")
     hint = (f"install or update the AMD driver (AMD Software: Adrenalin Edition) from {WIN_AMD_DRIVER}, restart the "
-            f"PC and run this again; {eng / 'strata-device.exe'} --list-devices shows what the HIP runtime sees")
+            f"PC and run `nostroma install` again; {eng / 'strata-device.exe'} --list-devices shows what the HIP runtime sees")
     if not hip:
         fail("the AMD HIP runtime finds no GPU (the ready-made engine's device check)", hint)
     m = hip_match(gpu, listed, hip) if gpu.get("driver") != "hip" else \
@@ -5068,7 +5070,7 @@ def rocm_root(archs):
     root = Path(out([str(sdk), "path", "--root"]).strip())
     if not (root / "llvm" / "bin" / "clang++").exists():
         fail(f"ROCm was installed but its compiler is missing ({root})",
-             f"remove {stamp} and run this again; or install ROCm 7 system-wide")
+             f"remove {stamp} and run `nostroma install` again; or install ROCm 7 system-wide")
     # the card family's libraries only (gfx120X-all -> _rocm_sdk_libraries_gfx120X_all): another family's
     # libhipblaslt.so first on the path would have no kernels for this card
     family = "_rocm_sdk_libraries_" + index.rstrip("/").rsplit("/", 1)[-1].replace("-", "_")
@@ -5167,7 +5169,7 @@ def build_engine_hip(gpu, llama, vision="none") -> Path:
     if stale_binary(ROOT / "build-hip" / EXE):            # #2054: no stamp for a binary of another version
         fail(f"the engine build finished without a new engine ({EXE} is version "
              f"{binary_engine_version(ROOT / 'build-hip' / EXE)}, this source is {source_version()}): "
-             "the installed engine is left as it was", "delete the folder build-hip and run this again")
+             "the installed engine is left as it was", "delete the folder build-hip and run `nostroma install` again")
     shutil.copy2(ROOT / "build-hip" / EXE, eng / EXE)
     meta = {"source": "local-hip", "backend": "hip", "version": source_version(), "archs": archs, "vision": "none",
             "lib_dirs": dirs, "src": src, **({"isa_floor": floor} if floor else {})}
@@ -5808,7 +5810,7 @@ def get_prebuilt(url_base, gpu, vision, updating=False, toolkit=13) -> Path | No
     if tuple(int(x) for x in str(meta.get("version", "0")).split(".")[:4] if x.isdigit()) < MIN_ENGINE:
         need = ".".join(map(str, MIN_ENGINE))
         if updating:                                   # these files are newer than the published release (#58)
-            warn(f"engine {need} is not published yet (the release may still be uploading): run this again "
+            warn(f"engine {need} is not published yet (the release may still be uploading): run `nostroma install` again "
                  f"in a few minutes to update it")
         else:
             warn(f"the ready-made engine at {base} is version {meta.get('version')}; this setup needs "
@@ -5950,7 +5952,7 @@ def update_installed_engine(url_base, toolkit=None) -> None:
                 with open(eng / x, "r+b"):
                     pass
     except OSError:
-        warn(f"engine {meta.get('version') or ''} is in use: close the model window and run this again to update it")
+        warn(f"engine {meta.get('version') or ''} is in use: close the model window and run `nostroma install` again to update it")
         return
     gpu = update_engine_gpu(toolkit)
     if local:
@@ -6048,7 +6050,7 @@ def install_build_tools(gpu, yes):
              f"Toolkit {need12[0]}.{need12[1]} or a newer 12.x (CUDA 13 cannot compile for these cards)" +
              (f"; found CUDA {cuda_v[0]}.{cuda_v[1]}" if nvcc else ""),
              "install CUDA 12.9 (it can sit next to a newer one) from https://developer.nvidia.com/cuda-toolkit-archive "
-             "and run it again (STRATA_NVCC=<its nvcc> picks one toolkit)")
+             "and run `nostroma install` again (STRATA_NVCC=<its nvcc> picks one toolkit)")
     # RTX 50 (sm_120): CUDA 13.0 - an engine built with 12.8 crashed in the prompt path on Linux (#220)
     need_cuda = need12 if old else (13, 0) if max(archs) >= 120 else (12, 0)
     vcvars = find_vcvars(cuda_v) if WIN else None
@@ -6066,7 +6068,7 @@ def install_build_tools(gpu, yes):
     say("  They can be installed now (about 8-10 GB, 15-40 minutes" + (", Windows will ask for permission" if WIN else
                                                                         ", sudo will ask for your password") + ").")
     if ask("  Install them now?", ["y", "n"], "y", yes) != "y":
-        fail("the build tools are needed", "install them yourself (see README.md) and run it again")
+        fail("the build tools are needed", "install them yourself (see README.md) and run `nostroma install` again")
     if WIN:
         if shutil.which("winget") is None:
             fail("winget (Windows package manager) is not available",
@@ -6085,7 +6087,7 @@ def install_build_tools(gpu, yes):
         if apt is None:
             fail("missing: " + " and ".join(missing) + " (the automatic install is only done on Ubuntu/Debian)",
                  "install them with your distribution's packages (Arch: pacman -S base-devel cuda; nvcc is found on "
-                 "PATH, in /usr/local/cuda* and in /opt/cuda*), then run it again")
+                 "PATH, in /usr/local/cuda* and in /opt/cuda*), then run `nostroma install` again")
         if not have_cc:
             run(["sudo", "apt-get", "install", "-y", "build-essential"])
         if nvcc is None or cuda_v < need_cuda:
@@ -6093,7 +6095,7 @@ def install_build_tools(gpu, yes):
             repo = cuda_apt_repo(osr)
             if repo is None:
                 fail("the CUDA Toolkit can be installed automatically on Ubuntu 22.04 / 24.04 and Debian 12 / 13 only",
-                     "install it from https://developer.nvidia.com/cuda-downloads and run it again")
+                     "install it from https://developer.nvidia.com/cuda-downloads and run `nostroma install` again")
             deb = Path("/tmp/cuda-keyring.deb")
             # NVIDIA's arm64 server repository is "sbsa" (a DGX Spark; DGX OS normally has the toolkit already)
             download(f"https://developer.download.nvidia.com/compute/cuda/repos/{repo}/"
@@ -6109,12 +6111,12 @@ def install_build_tools(gpu, yes):
                         break
                 else:
                     fail(f"no cuda-toolkit-13-x package could be installed from NVIDIA's {repo} repository",
-                         "install the CUDA Toolkit 13 from https://developer.nvidia.com/cuda-downloads and run it again")
+                         "install the CUDA Toolkit 13 from https://developer.nvidia.com/cuda-downloads and run `nostroma install` again")
     nvcc, cuda_v = find_nvcc(below=(13, 0)) if old else find_nvcc()
     if (WIN and find_vcvars(cuda_v) is None) or (not WIN and shutil.which("g++") is None):
-        fail("the C++ build tools did not install", "install them by hand (README.md) and run it again")
+        fail("the C++ build tools did not install", "install them by hand (README.md) and run `nostroma install` again")
     if nvcc is None or cuda_v < need_cuda:
-        fail("the CUDA Toolkit did not install", "install it from https://developer.nvidia.com/cuda-downloads, then run it again")
+        fail("the CUDA Toolkit did not install", "install it from https://developer.nvidia.com/cuda-downloads, then run `nostroma install` again")
     nvcc, cuda_v = sm120_nvcc(nvcc, cuda_v, archs)
     ok(f"build tools installed (CUDA {cuda_v[0]}.{cuda_v[1]})")
     return nvcc, find_vcvars(cuda_v) if WIN else None
@@ -6368,7 +6370,7 @@ def build_engine(gpu, vision, yes, llama, toolkit=None) -> Path:
         if stale_binary(bdir / EXE):                      # #2054: the stamp below is written only for a binary of this source
             fail(f"the engine build finished without a new engine ({EXE} is version {binary_engine_version(bdir / EXE)}, "
                  f"this source is {source_version()}): the installed engine and its stamp are left as they were",
-                 "the build folder " + str(bdir) + " may be configured for something else: delete it and run this again")
+                 "the build folder " + str(bdir) + " may be configured for something else: delete it and run `nostroma install` again")
         shutil.copy2(bdir / EXE, eng / EXE)
         if (bdir / KQ_LIB).exists():                      # built with it (Phase 1): it goes next to the engine
             shutil.copy2(bdir / KQ_LIB, eng / KQ_LIB)
@@ -7689,7 +7691,7 @@ def _start(cfg_path: Path, port: int | None, gpu: int | list | None = None, open
     files = ([] if component else [cfg["exe"]]) + [a for a in cfg["args"] if a.endswith(".gguf")]
     missing = [p for p in files if not Path(p).exists()]
     if missing:
-        fail(f"{cfg_path.name} refers to missing files: {missing[0]}", "run it again with --setup to repair")
+        fail(f"{cfg_path.name} refers to missing files: {missing[0]}", "run `nostroma install --setup` to repair")
     keep = {k: v for k, v in (keep or {}).items() if v is not None}
     reserve = keep.pop("vram_reserve_mib", None)       # #493: an engine argument, kept in the config's args
     if reserve is not None:
@@ -8433,7 +8435,7 @@ def control_engine_step(gpu, vision):
             # (STRATA_ALLOW_NO_ENGINE: the person said yes to "download the model anyway").  The app does not stop (owner decision
             # 2026-10-18): it says so in its download card and still downloads the model.
             fail(plain or "no engine is installed for this PC",
-                 "get the engine that matches this graphics card (`nostroma update`, or the app's Settings), then run this again; "
+                 "get the engine that matches this graphics card (`nostroma update`, or the app's Settings), then run `nostroma install` again; "
                  "nothing was downloaded and files already downloaded are kept")
         eng = home() / "engine"
         meta = {"version": "99.0.0", "source": "local", "component": "missing"}   # its version is checked when it loads
@@ -9017,7 +9019,7 @@ def prepare_pack_only(a) -> int:
         run([sys.executable, str(ROOT / "tools" / "iq_pack.py"), "--gguf", str(files[0]), "--out", str(pack),
              *fam.get("pack_args", [])], env=env)
     if not (pack / "tokenizer" / "vocab.json").exists():
-        fail("the pack was built but has no tokenizer", "run it again; if it repeats, the model files may be damaged")
+        fail("the pack was built but has no tokenizer", "run `nostroma install` again; if it repeats, the model files may be damaged")
     ok(f"model prepared: {pack}")
     return 0
 
@@ -9087,7 +9089,7 @@ def mac_prepare_lock(native: Path) -> Path:
     running = mac_engine_pids()
     if running:
         fail(f"a Nostroma engine is running (pid {running[0]}): preparing a model beside it can freeze this Mac",
-             "stop the model in Nostroma (unload it), then install again")
+             "stop the model in Nostroma (unload it), then run `nostroma install` again")
     native.parent.mkdir(parents=True, exist_ok=True)
     lock = native.parent / MAC_PREPARE_LOCK
     lock.write_text(str(os.getpid()))
@@ -9774,7 +9776,7 @@ def main() -> int:
         if driver_major(gpu) < min_driver:
             fail(f"the NVIDIA driver is too old ({gpu['driver']}; {min_driver} or newer is needed)"
                  + ("" if cuda_tk == 12 else f" (the CUDA 12 engine package needs {cuda12_min_driver()[1]} or newer, {cuda12_min_driver()[2]})"),
-                 "update it with the NVIDIA App or from https://www.nvidia.com/drivers, restart, and run this again")
+                 "update it with the NVIDIA App or from https://www.nvidia.com/drivers, restart, and run `nostroma install` again")
         if cuda_tk == 12:
             cuda12_min_driver(feed=True)                   # the CUDA 12 package's driver floor: the installed package, else the signed feed (#4247)
             if note := cuda12_driver_warning(driver_major(gpu)):
@@ -9851,7 +9853,7 @@ def main() -> int:
             say(f"\nThis PC cannot run Nostroma yet: no model size fits {ram:.0f} GB of RAM (the smallest needs about "
                 f"{need} GB). --model NAME --yes installs one anyway, slowly.")
             return 1
-        say("\nThis PC can run Nostroma. Run it again without --check to install.")
+        say("\nThis PC can run Nostroma. Run `nostroma install` without --check to install.")
         return 0
 
     # ---- 2. the questions
