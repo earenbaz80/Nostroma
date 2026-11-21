@@ -8,6 +8,8 @@ rem   4. py -3 / python on PATH, 3.10 or newer a developer convenience, never a 
 setlocal
 rem UTF-8 text in Python, not the Windows code page: folders with Cyrillic or other letters stay intact (#3202)
 set "PYTHONUTF8=1"
+set "PROG=%~n0"
+set "NOSTROMA_PROG=%PROG%"
 set "HERE=%~dp0"
 for %%I in ("%HERE%..") do set "ROOT=%%~fI"
 if exist "%HERE%strata.py" set "ROOT=%HERE%"
@@ -21,7 +23,7 @@ py -3 -c "import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)" >nul 2>
 if not errorlevel 1 set "PY=py -3" & goto run
 python -c "import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)" >nul 2>nul
 if not errorlevel 1 set "PY=python" & goto run
-echo strata: no usable Python found. 1>&2
+echo %PROG%: no usable Python found. 1>&2
 echo.       This archive carries its own runtime in python\: it is missing from this install. Reinstall the archive, 1>&2
 echo.       or set STRATA_PYTHON to a Python 3.10 or newer. 1>&2
 exit /b 5
@@ -44,9 +46,9 @@ goto run
 exit /b %errorlevel%
 
 :badenv
-echo strata: STRATA_PYTHON=%STRATA_PYTHON% does not exist 1>&2
+echo %PROG%: STRATA_PYTHON=%STRATA_PYTHON% does not exist 1>&2
 exit /b 5
 
 :incomplete
-echo strata: cannot find strata.py next to "%HERE%" or its parent; the installation looks incomplete 1>&2
+echo %PROG%: cannot find strata.py next to "%HERE%" or its parent; the installation looks incomplete 1>&2
 exit /b 5

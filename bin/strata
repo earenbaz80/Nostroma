@@ -16,7 +16,10 @@
 # than failing obscurely.
 set -eu
 
-# Resolve this script's real directory, following symlinks, so `strata` can live on PATH.
+# Resolve this script's real directory, following symlinks, so `nostroma` and its old name `strata` can live on PATH.
+prog=$(basename -- "$0")          # the name it was typed as, for the messages below
+NOSTROMA_PROG="$prog"             # and for strata.py, which cannot see which link was used
+export NOSTROMA_PROG
 self=$0
 while [ -L "$self" ]; do
   dir=$(CDPATH= cd -- "$(dirname -- "$self")" && pwd -P)
@@ -31,7 +34,7 @@ HERE=$(CDPATH= cd -- "$(dirname -- "$self")" && pwd -P)
 pick_python() {
   if [ -n "${STRATA_PYTHON:-}" ]; then
     if [ -x "$STRATA_PYTHON" ]; then printf '%s\n' "$STRATA_PYTHON"; return 0; fi
-    echo "strata: STRATA_PYTHON=$STRATA_PYTHON is not executable" >&2
+    echo "$prog: STRATA_PYTHON=$STRATA_PYTHON is not executable" >&2
     return 1
   fi
 
@@ -75,7 +78,7 @@ pick_python() {
 
 if ! PY=$(pick_python); then
   cat >&2 <<'MSG'
-strata: no usable Python found.
+$prog: no usable Python found.
 
 This distribution is meant to run on its own. If you are seeing this, the private runtime is
 missing from the install and no Python 3.10+ is on your PATH.
@@ -95,7 +98,7 @@ if [ -f "$HERE/strata.py" ]; then
 elif [ -f "$HERE/../strata.py" ]; then
   APP=$(CDPATH= cd -- "$HERE/.." && pwd -P)
 else
-  echo "strata: cannot find strata.py next to $HERE or its parent; the installation looks incomplete" >&2
+  echo "$prog: cannot find strata.py next to $HERE or its parent; the installation looks incomplete" >&2
   exit 5
 fi
 
@@ -117,7 +120,7 @@ if missing:
     raise SystemExit(1)
 PROBE
     then
-      echo "strata: the interpreter $PY is missing packages the API server needs." >&2
+      echo "$prog: the interpreter $PY is missing packages the API server needs." >&2
       echo "        Run: $PY -m pip install -r \"$APP/requirements.txt\"" >&2
       echo "        (strata status, monitor, timeskip and tune plan do not need them)" >&2
       exit 5

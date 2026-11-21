@@ -7,10 +7,12 @@
 # If scripts are blocked on this PC, use bin\strata.cmd, or:  powershell -ExecutionPolicy Bypass -File bin\strata.ps1 ...
 $ErrorActionPreference = 'Stop'
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
+$prog = [IO.Path]::GetFileNameWithoutExtension($MyInvocation.MyCommand.Name)   # nostroma, or the old name strata
+$env:NOSTROMA_PROG = $prog                                                     # and for strata.py, which cannot see which name ran
 $root = if (Test-Path -LiteralPath (Join-Path $here 'strata.py')) { $here } else { Split-Path -Parent $here }
 $app = Join-Path $root 'strata.py'
 if (-not (Test-Path -LiteralPath $app)) {
-    [Console]::Error.WriteLine("strata: cannot find strata.py next to $here or its parent; the installation looks incomplete")
+    [Console]::Error.WriteLine("${prog}: cannot find strata.py next to $here or its parent; the installation looks incomplete")
     exit 5
 }
 
@@ -27,7 +29,7 @@ $bundled = Join-Path $root 'python\python.exe'
 $venv = Join-Path $root '.venv\Scripts\python.exe'
 if ($env:STRATA_PYTHON) {
     if (-not (Test-Path -LiteralPath $env:STRATA_PYTHON)) {
-        [Console]::Error.WriteLine("strata: STRATA_PYTHON=$($env:STRATA_PYTHON) does not exist")
+        [Console]::Error.WriteLine("${prog}: STRATA_PYTHON=$($env:STRATA_PYTHON) does not exist")
         exit 5
     }
     $py = @($env:STRATA_PYTHON)
@@ -45,7 +47,7 @@ if ($env:STRATA_PYTHON) {
     $py = @('python')
 }
 if (-not $py) {
-    [Console]::Error.WriteLine("strata: no usable Python found.")
+    [Console]::Error.WriteLine("${prog}: no usable Python found.")
     [Console]::Error.WriteLine("        This archive carries its own runtime in python\: it is missing from this install.")
     [Console]::Error.WriteLine("        Reinstall the archive, or set STRATA_PYTHON to a Python 3.10 or newer.")
     exit 5

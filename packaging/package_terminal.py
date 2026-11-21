@@ -102,7 +102,7 @@ PAYLOAD = (
     "requirements.txt",
     "requirements-monitor.txt",
     "docs/MANAGEMENT_PROTOCOL.md",
-    "docs/TERMINAL_LAUNCH.md",         # the README below points at it (`strata launch`); it used to be missing from the archive
+    "docs/TERMINAL_LAUNCH.md",         # the README below points at it (`nostroma launch`); it used to be missing from the archive
     "data/gguf_fingerprints.json",     # `strata models import --plan` names a known file set from this table
     "bench/prompts/standard-v1",       # `strata bench run` (the standard benchmark) sends these frozen requests; hashed byte for byte
 )
@@ -115,7 +115,7 @@ TOOLS_SUBSET = (
     "dflash2_pack.py",     # the DFlash2 drafter: nostroma_control/drafting_fetch.py packs the download with it (numpy only)
 )
 
-#: What `strata launch` and the desktop app's installer need on top of the read-only terminal: the model catalog and GPU probe
+#: What `nostroma launch` and the desktop app's installer need on top of the read-only terminal: the model catalog and GPU probe
 #: (tools/strata_mcp.py reads setup.py's tables) and the install job, which downloads the model the user chose, prepares it with
 #: the bundled tools and writes a run config naming "component:strata-engine". setup.py runs in its CONTROL mode there
 #: (STRATA_CONTROL_INSTALL=1: no pip, no engine fetch, no compiler). Entry points; their local imports under tools/ come with them.
@@ -376,7 +376,7 @@ def main() -> int:
     ap.add_argument("--keep-staging", action="store_true")
     ap.add_argument("--no-installer", action="store_true",
                     help="leave out setup.py, tools/strata_mcp.py and data/ (the read-only terminal of earlier releases; "
-                         "`strata launch` then cannot list or install models)")
+                         "`nostroma launch` then cannot list or install models)")
     ap.add_argument("--cache", default=None, help="where the pinned interpreter archive is cached")
     ap.add_argument("--wheelhouse", default=None,
                     help="install the locked wheels from this folder (lock_wheels.py --download) and fetch nothing")
@@ -447,6 +447,10 @@ def main() -> int:
             shutil.copy2(ROOT / "bin" / launcher, bin_dir / launcher)
             if launcher == "strata":
                 (bin_dir / launcher).chmod(0o755)
+            if target.startswith("windows"):
+                # the other name of the same launcher: a Windows PATH entry lists files, and the installer puts neither
+                # name in a link of its own, so both have to be in the archive for `nostroma` to be found on the PATH
+                shutil.copy2(bin_dir / launcher, bin_dir / launcher.replace("strata", "nostroma"))
 
         installed: dict[str, str] = {}
         removed: list[str] = []
@@ -541,8 +545,8 @@ Put `bin/` on your PATH to get the `strata` command everywhere:
 
 This is the terminal distribution. It carries its own Python {PYTHON_VERSION} and its own packages, so you do not
 need Python, pip, Node, a compiler or a development checkout. Serving and watching (`strata serve`, `strata runtime`,
-`strata monitor`) never install or download anything; if something is missing, the error names the command that
-installs it. Only two commands fetch files, and only when you run them: `strata launch` (the engine and the model you
+`nostroma monitor`) never install or download anything; if something is missing, the error names the command that
+installs it. Only two commands fetch files, and only when you run them: `nostroma launch` (the engine and the model you
 choose, after it tells you the size) and `strata update` (the engine and the Nostroma components).
 
 Install
@@ -554,24 +558,24 @@ A model of tens of GB needs free memory. Check how much is free first:
 
 {ram}
 
-Close other programs (browsers use a lot) if it is less than the model needs; `strata launch` shows what each model needs.
+Close other programs (browsers use a lot) if it is less than the model needs; `nostroma launch` shows what each model needs.
 
 What it does NOT include
 ------------------------
 The **engine** is a separate, independently versioned component and is not bundled: the right engine package
-depends on your OS, CPU and GPU. `strata launch` (or `strata update`) fetches the one for your card from the signed
-release feed; or point Nostroma at one with STRATA_ENGINE. Model weights are likewise not included: `strata launch`
+depends on your OS, CPU and GPU. `nostroma launch` (or `strata update`) fetches the one for your card from the signed
+release feed; or point Nostroma at one with STRATA_ENGINE. Model weights are likewise not included: `nostroma launch`
 downloads the one you choose (the installer files setup.py and tools/ are in this archive for that).
 
 Useful commands
 ---------------
-    strata launch                     choose a model, tune it, serve it and watch it (guided screens; docs/TERMINAL_LAUNCH.md)
-    strata connect opencode           the setup for a coding app on the running server (also codex, claude-code, omp, pi, hermes, openclaw)
+    nostroma launch                     choose a model, tune it, serve it and watch it (guided screens; docs/TERMINAL_LAUNCH.md)
+    nostroma connect opencode           the setup for a coding app on the running server (also codex, claude-code, omp, pi, hermes, openclaw)
     strata --version                  the version and the interpreter it runs on
     strata doctor                     read-only component inventory
     strata profile list               saved serving profiles
     strata status                     one read-only telemetry snapshot
-    strata monitor                    the terminal monitor
+    nostroma monitor                    the terminal monitor
     strata serve --profile NAME       start the inference server in the foreground
     strata serve --engine mock ...    a scripted engine for client tests (no GPU, no model)
     strata runtime start|status|stop  run a profile as a managed background instance

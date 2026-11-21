@@ -9,25 +9,42 @@
 #   3. unpacks it into  ${XDG_DATA_HOME:-~/.local/share}/strata/terminal/<version>  (no administrator rights, nothing outside your home);
 #   4. checks the release's signed feed with the Terminal it just unpacked (`strata update --check`); if that check fails, it removes
 #      what it unpacked and stops;
-#   5. puts a `strata` link in ~/.local/bin and prints:  Installed. Run: strata launch
+#   5. puts a `strata` link in ~/.local/bin and prints:  Installed. Run: nostroma launch
 #
-# The engine (the part that talks to your graphics card) and the model are NOT part of this: `strata launch` fetches the engine for
+# The engine (the part that talks to your graphics card) and the model are NOT part of this: `nostroma launch` fetches the engine for
 # your card the first time you choose a model, from the same release folder, signed.
 #
 # <feed> is where the release folder is hosted: GitHub Releases of Niko1221/Strata (the "latest" release's files), built in as the default.
 # Set STRATA_FEED to another folder (a URL) to use that instead, for example a local test feed:  STRATA_FEED=http://127.0.0.1:8099 sh install.sh
 #
-# Settings (all optional): STRATA_FEED, STRATA_DATA_DIR (default ~/.local/share/strata), STRATA_BIN_DIR (default ~/.local/bin),
-# STRATA_INSTALL_TEST_TRUST=1 (a test feed: also fetch <feed>/test-trust.json and trust only that key for the check in step 4).
+# Settings (all optional): NOSTROMA_FEED, NOSTROMA_DATA_DIR (default ~/.local/share/strata), NOSTROMA_BIN_DIR (default ~/.local/bin),
+# NOSTROMA_INSTALL_TEST_TRUST=1 (a test feed: also fetch <feed>/test-trust.json and trust only that key for the check in step 4).
+# The older STRATA_* names of the same settings are still read, and win only when the NOSTROMA_* one is not set.
 set -eu
 
-FEED="${STRATA_FEED:-https://github.com/Niko1221/Strata/releases/latest/download}"
+FEED="${NOSTROMA_FEED:-${STRATA_FEED:-https://github.com/Niko1221/Strata/releases/latest/download}}"
 FEED="${FEED%/}"
-DATA_DIR="${STRATA_DATA_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/strata}"
-BIN_DIR="${STRATA_BIN_DIR:-$HOME/.local/bin}"
+DATA_DIR="${NOSTROMA_DATA_DIR:-${STRATA_DATA_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/strata}}"
+BIN_DIR="${NOSTROMA_BIN_DIR:-${STRATA_BIN_DIR:-$HOME/.local/bin}}"
+TEST_TRUST="${NOSTROMA_INSTALL_TEST_TRUST:-${STRATA_INSTALL_TEST_TRUST:-}}"
 
 say() { printf '%s\n' "$*"; }
 die() { printf 'strata installer: %s\n' "$*" >&2; exit 1; }
+
+# Put one of the product's two names on the PATH, both pointing at the program just installed. A name that is already
+# there is replaced only when it is a link this installer made: anything else is someone's file, and it is left alone.
+put_on_path() {
+  dst=$1
+  if [ -L "$dst" ]; then
+    case $(readlink "$dst") in
+      "$DATA_DIR"/terminal/*) : ;;
+      *) die "$dst is a link to $(readlink "$dst"), which this installer did not make. Move it and run this again. Nothing was changed." ;;
+    esac
+  elif [ -e "$dst" ]; then
+    die "$dst already exists and is not a link this installer made. Move it and run this again. Nothing was changed."
+  fi
+  ln -sf "$DATA_DIR/terminal/current/bin/strata" "$dst"
+}
 
 [ -n "$FEED" ] || die "this installer does not know where the Nostroma release folder is. Set STRATA_FEED to its address and run it again, for example: STRATA_FEED=https://example.org/strata sh install.sh"
 
@@ -85,7 +102,7 @@ main() {
   if [ "$platform" = linux-aarch64 ]; then      # recommend, never force: the Terminal installs on any ARM Linux, its engine is for one machine
     case "$gpu" in
       *GB10*) ;;
-      *) say "  Note: Nostroma's engine for ARM Linux is built and tested on the NVIDIA DGX Spark (GB10) only. This computer reports ${gpu:-no NVIDIA graphics}: the Terminal installs, but 'strata launch' may find no engine for it." ;;
+      *) say "  Note: Nostroma's engine for ARM Linux is built and tested on the NVIDIA DGX Spark (GB10) only. This computer reports ${gpu:-no NVIDIA graphics}: the Terminal installs, but 'nostroma launch' may find no engine for it." ;;
     esac
   fi
   say "  Release folder: $FEED"
@@ -122,7 +139,7 @@ main() {
   chmod +x "$dest.incoming/bin/strata" 2>/dev/null || true
 
   # ---- 4. the signed feed, checked with the Terminal just unpacked
-  if [ "${STRATA_INSTALL_TEST_TRUST:-}" = 1 ]; then
+  if [ "$TEST_TRUST" = 1 ]; then
     fetch "$FEED/test-trust.json" "$work/test-trust.json" || { rm -rf "$dest.incoming"; die "the test feed has no test-trust.json"; }
     STRATA_UPDATE_TRUSTED_KEYS="$work/test-trust.json"; export STRATA_UPDATE_TRUSTED_KEYS
   fi
@@ -138,11 +155,14 @@ main() {
   rm -rf "$dest"
   mv "$dest.incoming" "$dest"
   ln -sfn "$dest" "$DATA_DIR/terminal/current"
-  ln -sf "$DATA_DIR/terminal/current/bin/strata" "$BIN_DIR/strata"
+  put_on_path "$BIN_DIR/nostroma"
+  put_on_path "$BIN_DIR/strata"                 # the name this command had before, the same program
   case ":$PATH:" in
-    *":$BIN_DIR:"*) say "Installed. Run: strata launch" ;;
-    *) say "Installed. Run: $BIN_DIR/strata launch"
-       say "  (To type just 'strata', add this line to your shell profile: export PATH=\"$BIN_DIR:\$PATH\")" ;;
+    *":$BIN_DIR:"*) say "Installed. Run: nostroma launch"
+                    say "  (the old name, 'strata', still works)" ;;
+    *) say "Installed. Run: $BIN_DIR/nostroma launch"
+       say "  (To type just 'nostroma', add this line to your shell profile: export PATH=\"$BIN_DIR:\$PATH\")"
+       say "  (the old name, 'strata', is put there too)" ;;
   esac
 }
 
