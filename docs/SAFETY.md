@@ -127,7 +127,7 @@ size stops it before the download starts.
 - If the pinned version of a file is gone from Hugging Face, the install stops and says to update Strata. It does not take
   the repository's current file instead. A tester can set `STRATA_ALLOW_UNPINNED=1` to take the current file anyway, without
   the check. It is off by default, and setup says so when it is set.
-- Starting a model does not check its files, and running setup again for a model you have does not download or hash them
+- Starting a model does not check its files, and running the installer again for a model you have does not download or hash them
   again. A file installed before these hashes existed is kept as it is.
 - Files from ModelScope are checked against the same fixed SHA-256. ModelScope serves a repository's current files, so a file
   it has changed fails the check. A file without a pin is checked against the hash ModelScope publishes, and setup warns

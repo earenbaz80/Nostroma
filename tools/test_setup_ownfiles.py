@@ -40,7 +40,7 @@ class OwnFileChecks(unittest.TestCase):
     def test_a_downloaded_file_of_the_wrong_size_asks_to_delete_it(self):
         code, text = run(setup.verify_sha256, self.file, 801, self.sha)
         self.assertEqual(code, 1)
-        self.assertIn("delete it and run setup again", text)
+        self.assertIn("delete it and run `nostroma install` again", text)
 
     def test_an_own_file_of_the_wrong_size_is_left_and_the_text_says_so(self):
         code, text = run(setup.verify_sha256, self.file, 801, self.sha, own=True)

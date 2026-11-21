@@ -188,7 +188,7 @@ def model_source() -> str:
 def source_hint(url: str) -> str:
     """The recommendation that goes with a failed download from Hugging Face: ModelScope, by an explicit choice."""
     if "huggingface" in url or "hf-mirror" in url:
-        return ("; if huggingface.co does not reach you (mainland China), the same files are on ModelScope: run setup "
+        return ("; if huggingface.co does not reach you (mainland China), the same files are on ModelScope: run `nostroma install` "
                 "with --source modelscope (docs/INSTALL.md)")
     return ""
 
@@ -855,7 +855,7 @@ def ask(question, choices, default, yes):
             a = input(f"{question} [{default}]: ").strip()
         except EOFError:
             fail("input ended before a setup answer was received",
-                 "run setup in a terminal, or pass --yes to accept the recommended answers")
+                 "run `nostroma install` in a terminal, or pass --yes to accept the recommended answers")
         if not a:
             return default
         if a.lower() in [c.lower() for c in choices]:
@@ -941,7 +941,7 @@ def fetch_mtp(mtp: Path, env: dict, tries: int = 3):
                  f"({n + 1} of {tries})")
             time.sleep(5)
     fail(f"the draft layer's download keeps stopping (exit {rc}): the connection to Hugging Face is slow or drops",
-         "run setup again - what is downloaded is kept. If it still stops, set STRATA_SOURCE=modelscope (setup --source modelscope) "
+         "run `nostroma install` again - what is downloaded is kept. If it still stops, set STRATA_SOURCE=modelscope (nostroma install --source modelscope) "
          "to read the same files from ModelScope")
 
 
@@ -2080,7 +2080,7 @@ def choose_roles(a, found) -> list:
             try:
                 text = input("Roles, e.g. " + ",".join(f"{i}={r}" for i, r in sorted(roles.items())) + " (cards you leave out are Off): ").strip()
             except EOFError:
-                fail("input ended before a setup answer was received", "run setup in a terminal, or pass --yes to accept the recommended roles")
+                fail("input ended before a setup answer was received", "run `nostroma install` in a terminal, or pass --yes to accept the recommended roles")
             if not text:
                 break
             try:
@@ -3290,7 +3290,7 @@ def download(url, dst: Path, what=None):
     try:
         atomic.replace(part, dst)                      # waits a moment for a virus scanner or indexer that holds the file
     except OSError as e:
-        fail(f"cannot finish {dst.name}: {e}", "close any program that has the file open and run setup again")
+        fail(f"cannot finish {dst.name}: {e}", "close any program that has the file open and run `nostroma install` again")
     for side in (".chunks", ".src"):
         part.with_name(part.name + side).unlink(missing_ok=True)
     if pin:
@@ -3493,7 +3493,7 @@ def verify_sha256(s: Path, size: int, sha: str, own: bool = False, repair=None, 
         if own:                                        # --gguf-dir: the person's own file is never deleted by setup
             fail(f"{s.name} is {have:,} bytes; the published file is {size:,}",
                  "it may be cut short or another version; your file was left as it is. Copy the whole published file into the folder")
-        fail(f"{s.name} is {have:,} bytes, not {size:,}", "delete it and run setup again (the download restarts)")
+        fail(f"{s.name} is {have:,} bytes, not {size:,}", "delete it and run `nostroma install` again (the download restarts)")
     say(f"  checking {s.name} (SHA-256, {size / 1e9:.1f} GB) ...")
     digest = _hash_file(s, size)
     server_same = False                                # the repair read the whole file from the server and found no block that differs
@@ -3522,9 +3522,9 @@ def verify_sha256(s: Path, size: int, sha: str, own: bool = False, repair=None, 
         m.unlink(missing_ok=True)
         if server_same:
             hint = ("the server sends exactly the bytes you have (every block was compared), so the file there is not the version this Nostroma pins: "
-                    "update Nostroma. Run setup again to check the kept file once more")
+                    "update Nostroma. Run `nostroma install` again to check the kept file once more")
         else:
-            hint = "run setup again: the kept file is checked once more, and if it still differs it is downloaded again and the kept one is removed"
+            hint = "run `nostroma install` again: the kept file is checked once more, and if it still differs it is downloaded again and the kept one is removed"
         fail(f"{s.name} does not match the pinned SHA-256 (it is {digest}, Nostroma expects {sha}); the file was kept as {s.name}.bad", hint)
     mark(s, f"sha256 {sha}")
 
@@ -3761,7 +3761,7 @@ def check_shards(shards):
         try:
             g = GGUFFile(s)
         except (ValueError, struct.error) as e:
-            fail(f"{s.name} is not a whole GGUF shard ({e})", "delete it and run setup again")
+            fail(f"{s.name} is not a whole GGUF shard ({e})", "delete it and run `nostroma install` again")
         need = g.data_start + max((t.offset + (t.expected_bytes() or 0) for t in g.tensors), default=0)
         have = s.stat().st_size
         if not g.tensors:
@@ -3770,12 +3770,12 @@ def check_shards(shards):
             need = min(need, have)
         if have < need:
             fail(f"{s.name} is short: {have:,} of {need:,} bytes ({need - have:,} missing)",
-                 "delete it and run setup again (or copy the whole file into --gguf-dir)")
+                 "delete it and run `nostroma install` again (or copy the whole file into --gguf-dir)")
         if len(g.tensors) == 1 and have - need >= 64:       # (a few bytes may be the last tensor's alignment padding)
             # #657: a shard that holds one tensor (the PLE table) is exactly as long as that tensor; extra bytes are a
             # damaged or wrong file that the engine would refuse at start ("PLE table size mismatch")
             fail(f"{s.name} is longer than its tensor: {have:,} bytes, {need:,} expected ({have - need:,} extra)",
-                 f"delete {s.name} and its .done mark and run setup again")
+                 f"delete {s.name} and its .done mark and run `nostroma install` again")
 
 
 #: gguf-py and llama.cpp's HF converter, vendored at the llama.cpp pin (third_party/strata-gguf-py/UPSTREAM.md): the preparation tools import
@@ -5307,7 +5307,7 @@ def vulkan_sdk() -> Path | None:
         return None
     if WIN:
         fail("compiling the image generator for this GPU (Vulkan) needs the Vulkan SDK",
-             "install it from https://vulkan.lunarg.com/sdk/home#windows, open a new window and run setup again "
+             "install it from https://vulkan.lunarg.com/sdk/home#windows, open a new window and run `nostroma install` again "
              "(or --image-backend cpu)")
     base = ROOT / "third_party" / "vulkan-sdk"
     sdk = base / QI.VULKAN_SDK_VERSION / "x86_64"
@@ -5389,7 +5389,7 @@ def build_image_engine(backend: str, gpu: dict, noise: bool = False, vae: bool =
         nvcc, cuda_v = find_nvcc()
         if nvcc is None:
             fail("compiling the image generator for NVIDIA needs the CUDA Toolkit (nvcc)",
-                 "install it from https://developer.nvidia.com/cuda-downloads and run setup again "
+                 "install it from https://developer.nvidia.com/cuda-downloads and run `nostroma install` again "
                  "(or --image-backend vulkan / cpu)")
         root = Path(nvcc).resolve().parent.parent
         defs = QI.cmake_defs("cuda", arch=arch, cuda_root=root) + [f"-DCMAKE_CUDA_COMPILER={nvcc}"] + \
@@ -5643,7 +5643,7 @@ def engine_refused(asset: str, e: Exception, updating: bool) -> None:
              "published file again. Set STRATA_SKIP_SHA256=1 only if you insist on installing it anyway")
         return
     warn(f"keeping the engine that is installed: {e}")
-    say("       Nothing was replaced. The bad download was deleted; run setup again to fetch it afresh.")
+    say("       Nothing was replaced. The bad download was deleted; run `nostroma install` again to fetch it afresh.")
 
 
 def prebuilt_bases(url_base) -> list[str]:
@@ -6223,7 +6223,7 @@ def cmake_build(src, bdir, target, defs, vcvars, bat_name):
     if WIN:
         if vcvars is None:                             # #881: the build needs MSVC's environment
             fail("the Visual Studio 2022 C++ build tools were not found (Visual Studio 2019 is too old: the sources are C++20)",
-                 "install Visual Studio 2022 Build Tools (workload 'Desktop development with C++'), then run setup again; a ready-made engine "
+                 "install Visual Studio 2022 Build Tools (workload 'Desktop development with C++'), then run `nostroma install` again; a ready-made engine "
                  "needs no compiler: `nostroma update` fetches it")
         bat = ROOT / bat_name
         q = lambda c: " ".join(f'"{x}"' if " " in str(x) else str(x) for x in c)  # noqa: E731
@@ -7955,7 +7955,7 @@ def unsloth_small_card_lines(model: str, vram_gb: float, plan, start_ok: bool) -
     would have stopped, that and what setup changed instead.  Recommend, never force."""
     lines = [f"{model} on a {vram_gb:.0f} GB card is very slow: the dense side and the draft layer fill the card, the expert "
              "cache gets a few slots, and nearly every expert comes from RAM or the SSD (3-5 tok/s measured on an 8 GB "
-             "Arc A750). IQ3_XXS or IQ3_S of the Qwen3.8-Flash-Next family fit such a card far better; run setup again "
+             "Arc A750). IQ3_XXS or IQ3_S of the Qwen3.8-Flash-Next family fit such a card far better; run `nostroma install` again "
              "and pick one of them."]
     if not start_ok and plan is None:
         lines.append("By setup's estimate even a 4608 context with a 4-bit KV cache and no draft layer leaves no room "
@@ -8075,7 +8075,7 @@ def bench_tips(args, env, ram: float, model_ram_gb: float, vram_gb: float, visio
                     "default is 4")
     if vision == "gpu" and 0 < vram_gb <= SMALL_VISION_VRAM_GB:
         tips.append("tip: the image encoder on the GPU makes a prompt's chunks smaller on a card this size (243 vs 750 "
-                    "tok/s measured, #469); run setup again with --vision cpu to read prompts ~3x faster, at about "
+                    "tok/s measured, #469); run `nostroma install --vision cpu` to read prompts ~3x faster, at about "
                     "2-3 s per picture")
     return tips
 
@@ -8804,7 +8804,7 @@ def install_own_path(a, family, gpu, hip, amd, cuda_tk, multi, port, ram, adopte
     if hip and vision != "none":
         vision, reader = hip_reader(eng, vision, gpu)
     elif vision != "none" and not (eng / VEXE).exists():
-        warn("this engine has no image encoder: images off (run setup again with --build to compile it)")
+        warn("this engine has no image encoder: images off (run `nostroma install --build` again to compile it)")
         vision = "none"
     if CONTROL and meta.get("component") == "missing":
         pass                                           # the app: no engine yet (control_engine_step said so); the run config names the component,
@@ -8814,7 +8814,7 @@ def install_own_path(a, family, gpu, hip, amd, cuda_tk, multi, port, ram, adopte
             warn(f"{fam['title']} is {FEED_UNAVAILABLE[family]['reason']}")
         else:
             fail(f"this engine ({meta.get('version')}) does not run {fam['title']} yet",
-                 "update Strata, or compile the engine with --build, and run setup again")
+                 "update Strata, or compile the engine with --build, and run `nostroma install` again")
     ok("engine: the engine component (looked up when the model loads)" if CONTROL else f"engine: {eng / EXE}")
 
     step(5, f"downloading {fam['title']} {model}")
@@ -8958,7 +8958,7 @@ def preview_family(a) -> int:
     ok(f"{fam['title']} {model}: {folder}")
     say()
     say(f"{fam['title']} is downloaded, but this Nostroma version cannot run it yet (its engine path is in "
-        "development); nothing was configured. Run setup again without --family qwen36 to install a model it runs.")
+        "development); nothing was configured. Run `nostroma install` without --family qwen36 to install a model it runs.")
     return 0
 
 
@@ -9073,7 +9073,7 @@ def mac_experts_file(native: Path) -> None:
     if free < need + MAC_EXPERTS_MARGIN_GB:
         warn(f"the experts' streaming copy needs {need:.0f} GB and {MAC_EXPERTS_MARGIN_GB:.0f} GB to spare on the disk "
              f"({free:.0f} GB free): not written; the engine streams from the model file ({MF.STREAM_COPY_GAIN} "
-             f"slower). Free some space and run ./setup.sh --setup again to add it")
+             f"slower). Free some space and run `./setup.sh --setup` again to add it")
         return
     say(f"  Writing the experts in SSD-read order (one time, {need:.0f} GB; each expert is read with one request) ...")
     run([sys.executable, str(mac_tools_dir() / "stream_experts.py"), "--gguf", str(native), "--verify"])
@@ -9178,7 +9178,7 @@ def mac_control_setup(a) -> int:
         warn(f"no Metal engine is installed for this Mac yet ({e}). The model is downloaded and prepared now; the engine comes "
              "with the app or its update feed, and is looked up when the model loads")
         if vision != "none":
-            warn("pictures are off for now: the picture reader comes with the engine (run setup again once it is installed)")
+            warn("pictures are off for now: the picture reader comes with the engine (run `nostroma install` again once it is installed)")
             vision = "none"
     else:
         if family == "gyro":                           # an engine from before the trellis kernels refuses the file when it loads
@@ -10228,7 +10228,7 @@ def main() -> int:
     # checked before the 94-188 GB download
     if (MODELS[model].get("budget") or family == "gyro") and engine_ver < need_engine:
         fail(f"{model} needs engine {'.'.join(map(str, need_engine))} or newer; this one is {meta.get('version')}",
-             "update Nostroma (or compile the engine with --build) and run setup again")
+             "update Nostroma (or compile the engine with --build) and run `nostroma install` again")
     ok("engine: the engine component (looked up when the model loads)" if CONTROL else f"engine: {eng / EXE}")
 
     # ---- 5. the model files

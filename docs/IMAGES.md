@@ -20,7 +20,7 @@ commercially.
 START-HERE.bat --setup --images qwen-image      # Windows
 ```
 
-For an install that is already set up, without running the whole setup again:
+For an install that is already set up, without running the whole install again:
 
 ```sh
 .venv/bin/python tools/image/install.py --config strata-<model>.json

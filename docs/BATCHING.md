@@ -14,7 +14,7 @@ engine protocol and the same server): its numbers, what a slot costs and where s
 
 ## Turning it on
 
-One GPU: add `"parallel": 2` to the model's config (`strata-<model>.json`) and restart, or run setup with
+One GPU: add `"parallel": 2` to the model's config (`strata-<model>.json`) and restart, or run `nostroma install` with
 `--parallel 2`. Setup recommends it only where it does not cost speed (below); any number you ask for is kept as
 asked, with a note when it is more than setup would recommend.
 

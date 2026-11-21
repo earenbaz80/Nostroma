@@ -192,9 +192,9 @@ If a config of the folder sets an `api_key`, the tool sends that key with its ow
 - **Big downloads need a yes.** `strata_install` does nothing until it is called with `confirm: true`. The plan
   shows the download size and the free space first, and the install is refused if the disk is too small.
 - **Local only.** The server checks `127.0.0.1` and never changes the network settings: it does not install with
-  `--host 0.0.0.0` or an API key. To share Nostroma on your network, run setup yourself (see
+  `--host 0.0.0.0` or an API key. To share Nostroma on your network, run `nostroma install` yourself (see
   [Using it](DETAILS.md#using-it)). Experimental options are left off too: the speed projection, rope scaling past
-  262K and `--build`. Run setup by hand for those.
+  262K and `--build`. Run `nostroma install` by hand for those.
 
 ## Troubleshooting
 

@@ -639,7 +639,7 @@ tables per token). The scaling is fixed for the whole run, because the KV cache 
 
 ### Network access
 
-- **Local only by default** (`127.0.0.1`). For other devices on your network run setup with
+- **Local only by default** (`127.0.0.1`). For other devices on your network run `nostroma install` with
   `--host 0.0.0.0 --api-key some-long-secret`, or add `"host": "0.0.0.0"` and `"api_key": "..."` to the config. A key is
   recommended, not required: without one the server starts and warns that anyone who can reach the port can use the model
   and its tools. `--no-api-key` (or `"api_key": "none"`) says it is on purpose. The server window prints this PC's addresses.
@@ -1340,7 +1340,7 @@ never changed. `STRATA_ROUTE_PRIOR` raises KL and is an opt-in again in 0.2.8 (0
 
 | Symptom | What to do |
 | --- | --- |
-| `the NVIDIA driver is too old` | Update the driver, restart, run setup again. |
+| `the NVIDIA driver is too old` | Update the driver, restart, run `nostroma install` again. |
 | Python or the build tools could not be installed | Install what it names (links are printed), then run it again. Everything already done is kept. |
 | `port 8080 is already in use` | Nostroma is already running, or another program uses the port: `nostroma launch --port 8081` (source checkout: `START-HERE.bat --port 8081`). |
 | `cudaHostRegister ... out of memory` in the log | Normal on Windows: the engine pins the experts in per-layer slices instead. A problem only if the load then fails. |
@@ -1348,12 +1348,12 @@ never changed. `STRATA_ROUTE_PRIOR` raises KL and is an opt-in again in 0.2.8 (0
 | The first start takes minutes, or the PC freezes for a few minutes | The engine is reading 34-55 GB into RAM, pinning part of it and sizing the expert cache. Wait. The second start is faster while the files are in the OS cache. Still frozen after 10 minutes: restart, close other programs, or pick a smaller size. |
 | `the engine stopped unexpectedly (exit code ...)` | The engine ended mid-answer, usually out of RAM (Linux ends the biggest program: `sudo dmesg \| grep -i -E 'killed process\|out of memory'`). The next request starts it again. If it repeats, close other programs or pick a smaller size. The server warns at start when the experts leave less than ~6 GB of RAM. |
 | Slow output, disk light busy | Not enough free RAM: close other programs, or choose Q2_0 or IQ2_XS. |
-| `prompt ... exceeds the context` | The request is longer than the context you chose: run setup again with a bigger `--context`. |
+| `prompt ... exceeds the context` | The request is longer than the context you chose: run `nostroma install` with a bigger `--context`. |
 | Slower than the tables | A monitor plugged into the GPU and other GPU programs take VRAM from the expert cache. RAM below its rated speed (enable EXPO or XMP in the BIOS) slows the CPU half. |
-| `this server was started without the vision encoder` | The model was set up for text only: run setup again with `--vision gpu` or `--vision cpu`. |
+| `this server was started without the vision encoder` | The model was set up for text only: run `nostroma install` with `--vision gpu` or `--vision cpu`. |
 | Setup puts the model on an old drive after you moved or reinstalled Nostroma | Setup remembers the data folder in its settings file (`%APPDATA%\Nostroma\settings.json` on Windows, `~/.config/nostroma/settings.json` on Linux; the `data_dir` entry). Choose another place with `--data-dir DIR` (model files, packs, MTP layer) or `--models-dir DIR` (the GGUF files only), or delete the `data_dir` line. `--gguf-dir DIR` uses GGUF files you already have without copying. |
 | A picture is refused or `cannot read the image` | The file is not a picture Pillow can open (JPEG, PNG, WebP, GIF, BMP, TIFF, AVIF work). |
-| Pictures are slow (3-30 s) | The encoder runs on the CPU, the default under 24 GB of graphics memory. Run setup again with `--vision gpu` (needs ~1.4 GB of VRAM, taken from the expert cache). |
+| Pictures are slow (3-30 s) | The encoder runs on the CPU, the default under 24 GB of graphics memory. Run `nostroma install` with `--vision gpu` (needs ~1.4 GB of VRAM, taken from the expert cache). |
 | Output much slower than the tables, only with a large `--context`, and the start shows a small `... MiB of VRAM free with everything loaded` | The expert cache does not fit the card at that context. Use `--expert-cache auto`, a smaller number, or a larger `--vram-reserve-mib`. See [The expert cache size is a budget](#the-expert-cache-size-is-a-budget). |
 | A request ends with `no progress for ... s ... (issue #29)`, with a stall report under it | A request that stops moving ends with an error after 2 minutes, and the next request starts the engine again. `STRATA_WATCHDOG_S` sets the time in seconds (`0` turns it off). Open an issue with the line, the stall report and, on Windows, the `strata-stall-<pid>.dmp` file. |
 | `no progress for 60 s ... reading the prompt` on Linux with `threads waiting on the disk (state D)` in the stall report | The engine waits for the drive: the n-gram table is read at random (`--ple-io direct`), which a rotational disk cannot keep up with. `--ple-io ram` (needs RAM for the table) or the model on an SSD fixes it. Setup adds `--ple-io ram` itself on a rotational disk when the RAM holds the table. |
