@@ -1,4 +1,4 @@
-"""The model catalog, the computer's figures and the fit words for `strata launch`.
+"""The model catalog, the computer's figures and the fit words for `nostroma launch`.
 
 There is ONE catalog: setup.py's MODELS / FAMILIES / CONTEXTS, which the desktop app reads through tools/strata_mcp.py
 (`Strata.model_table`, `Strata.hardware`, `Strata.recommend`; the app page's own fit arithmetic is
@@ -255,7 +255,7 @@ class Catalog:
         if not mcp.is_file() or not (self.src / "setup.py").is_file():
             raise CatalogUnavailable(
                 "This Terminal does not carry the model list. Install it again with the one-line installer, "
-                "or run `strata launch` from a full Nostroma folder (the folder with setup.py).")
+                "or run `nostroma launch` from a full Nostroma folder (the folder with setup.py).")
         self.root.mkdir(parents=True, exist_ok=True)
         name = "strata_mcp_for_launch"
         mod = sys.modules.get(name)

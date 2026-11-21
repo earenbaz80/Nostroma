@@ -1,4 +1,4 @@
-"""The Nostroma Monitor as `strata launch` opens it: the same monitor plus a Connect view and a quit question.
+"""The Nostroma Monitor as `nostroma launch` opens it: the same monitor plus a Connect view and a quit question.
 
 Everything about the monitor itself (the views, colours, polling, key hints) is `nostroma_cli.monitor.MonitorApp`, unchanged.
 This subclass adds
@@ -39,7 +39,7 @@ class LaunchMonitor(MonitorApp):
     def __init__(self, endpoint, snapshot, *, info: dict, ask_quit: bool = True, **kw) -> None:
         super().__init__(endpoint, snapshot, **kw)
         self.info = info
-        self.ask_quit = ask_quit                  # False: plain `strata monitor` (q detaches, nothing to stop)
+        self.ask_quit = ask_quit                  # False: plain `nostroma monitor` (q detaches, nothing to stop)
         self.connect_enabled = True
         self.connect_index = 0
         self.show_key = False
@@ -230,7 +230,7 @@ class LaunchMonitor(MonitorApp):
             self.copy_to_clipboard(text)
             self.notice = "Copied (if your terminal allows it)."
         except Exception:                                    # noqa: BLE001
-            self.notice = "! Your terminal does not allow copying; use: strata connect " + self._harness().id
+            self.notice = "! Your terminal does not allow copying; use: nostroma connect " + self._harness().id
         self._paint()
 
     def _write(self) -> None:

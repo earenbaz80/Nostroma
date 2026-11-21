@@ -6,7 +6,7 @@ work off the card in the order of least speed cost: a smaller --kv-resident wind
 auto sizing gives the cache what is left, so this needs no flag), a smaller prompt chunk (--prefill), a smaller reserve (--vram-reserve-mib, within the
 engine's floor), and what only the engine can do (it sizes around what it cannot spill).  Which knobs a backend takes is KNOBS below, from what was measured
 on it.  One plain note says it: short of GPU memory, more is read from RAM and the SSD, expect it to be slower.  Pure functions, no I/O: sycl/setup_intel.py
-(setup), nostroma_cli/launch (strata launch) and serve/server.py (every engine start, fit_start) import it.
+(setup), nostroma_cli/launch (nostroma launch) and serve/server.py (every engine start, fit_start) import it.
 
 The arithmetic (MiB), measured on the Arc A750 (8 GB, i915) with the SYCL engine of 0.2.2, Gyro-M and Gyro-S, 12 starts, and on the CUDA engine (RTX PRO 5000
 held to 7942 / 8966 / 9990 / 12000 MiB by a memory hog, DF2-MEM RESULTS-DF2MEM.md):

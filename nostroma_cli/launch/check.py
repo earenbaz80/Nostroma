@@ -1,8 +1,8 @@
 """Check my harness: send one simple prompt and one tool call to the running server the way an app configured by
-`strata connect` would, and say in plain words whether each worked.
+`nostroma connect` would, and say in plain words whether each worked.
 
 The check uses the harness's own wire format (chat completions, responses, or messages) with the address, key and model name its
-config carries, so it proves the settings `strata connect` prints reach a server that answers correctly. It does not start the app
+config carries, so it proves the settings `nostroma connect` prints reach a server that answers correctly. It does not start the app
 itself. The prompt's answer text is checked (it must contain the expected word) and the tool call's arguments are checked (the
 city must be named), not just the HTTP status.
 """
@@ -151,5 +151,5 @@ def _why(e: Exception) -> str:
             return "The server does not have that address. Check the server address and the app's endpoint type."
         return f"The server answered with an error (HTTP {e.code})."
     if isinstance(e, urllib.error.URLError):
-        return "The server could not be reached. Is it running (strata launch --status)?"
+        return "The server could not be reached. Is it running (nostroma launch --status)?"
     return f"The check could not finish: {type(e).__name__}."

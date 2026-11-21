@@ -100,7 +100,7 @@ class Issue3403MacBuildTools(unittest.TestCase):
 
 @unittest.skipUnless(sys.platform == "win32", "ACLs are Windows only")
 class WindowsRuntimeFolderRefused(unittest.TestCase):
-    """The owner's fresh Windows PC: `strata launch` stopped with "runtime directory must be owner-only" on a folder that was already
+    """The owner's fresh Windows PC: `nostroma launch` stopped with "runtime directory must be owner-only" on a folder that was already
     there with another account in its ACL.  Fake SDDL strings for each way an ACL can look."""
 
     def setUp(self):

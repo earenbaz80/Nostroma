@@ -48,7 +48,7 @@ def ds_install(d: Path, *, model_bytes: int = 3_000_000) -> tuple[Path, Path, Pa
 
 
 class StartRefused(unittest.TestCase):
-    """The app and `strata start` (and a saved `strata launch` profile) start through runtime.start."""
+    """The app and `strata start` (and a saved `nostroma launch` profile) start through runtime.start."""
 
     def test_runtime_start_refuses_before_anything_is_written(self):
         with tempfile.TemporaryDirectory() as d:
@@ -153,7 +153,7 @@ class Setup(unittest.TestCase):
                      ("--model=ISTA-DAS-Coder",)):
             code, out = self.run_setup(*argv, "--yes", "--no-start")
             self.assertEqual(code, 2, argv)
-            self.assertIn("Nostroma no longer offers DeepSeek models. Run `strata launch` to choose one of the Qwen models.", out)
+            self.assertIn("Nostroma no longer offers DeepSeek models. Run `nostroma launch` to choose one of the Qwen models.", out)
 
     def test_config_lists_leave_deepseek_out(self):
         import setup

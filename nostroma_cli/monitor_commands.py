@@ -34,7 +34,7 @@ def add_status(sp: argparse._SubParsersAction) -> None:
 
 
 def running_launch() -> dict | None:
-    """The server a `strata launch` has running (address and its key), when no address was given: so `strata monitor` needs no --url.
+    """The server a `nostroma launch` has running (address and its key), when no address was given: so `nostroma monitor` needs no --url.
     Nothing is read when a connection, STRATA_URL or STRATA_CONNECTION names the server, and a thin monitor bundle has no launch code."""
     if os.environ.get("NOSTROMA_URL", os.environ.get("STRATA_URL")) or os.environ.get("NOSTROMA_CONNECTION", os.environ.get("STRATA_CONNECTION")):
         return None
@@ -47,7 +47,7 @@ def running_launch() -> dict | None:
 
 
 def add_monitor(sp: argparse._SubParsersAction) -> None:
-    monitor = sp.add_parser("monitor", help="read-only terminal monitor: seven views (Overview ... Logs, Connect), the same as the one strata launch opens")
+    monitor = sp.add_parser("monitor", help="read-only terminal monitor: seven views (Overview ... Logs, Connect), the same as the one nostroma launch opens")
     _connection(monitor)
     monitor.add_argument("--once", action="store_true", help="print one snapshot without starting the TUI")
     monitor.add_argument("--output", choices=("human", "json"), default="human")
@@ -222,7 +222,7 @@ def run(a: argparse.Namespace) -> int:
             MonitorApp(endpoint, None, interval=a.interval, requests=a.requests,
                        theme=a.theme, color=a.color, glyphs=a.glyphs).run()
             return 0
-        # the one monitor, with the same seven views as the one `strata launch` opens (Connect is key 7 and works against this --url
+        # the one monitor, with the same seven views as the one `nostroma launch` opens (Connect is key 7 and works against this --url
         # server); q just detaches here: nothing was started by this command, so there is nothing to stop
         LaunchMonitor(endpoint, None, info={"url": endpoint.base_url, "urls": [endpoint.base_url], "key": endpoint.credential or "", "model": "",
                                             "profile": None, "name": None}, ask_quit=False, interval=a.interval, requests=a.requests,

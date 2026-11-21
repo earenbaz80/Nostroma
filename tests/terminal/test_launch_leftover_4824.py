@@ -61,7 +61,7 @@ class Leftover(unittest.TestCase):
 
     def test_the_message_for_a_profile_that_is_still_held_names_the_cure_and_the_retune(self):
         hint = _log_hint(None, "this profile already has a live managed runtime")
-        self.assertIn("`strata launch --stop`", hint)
+        self.assertIn("`nostroma launch --stop`", hint)
         self.assertIn("without --retune", hint)
         self.assertNotIn("Run the command again", hint)
 
@@ -77,13 +77,13 @@ class SavedPreset(unittest.TestCase):
     def test_a_start_that_fails_after_the_tuning_keeps_the_preset_that_was_asked_for(self):
         def fails(self_, **_):
             self_.config_path = Path("/x")                              # the settings were written: the failure came later
-            raise LaunchError("The server could not start: busy.", "Run `strata launch --stop`.", 6)
+            raise LaunchError("The server could not start: busy.", "Run `nostroma launch --stop`.", 6)
         with mock.patch.object(Runner, "run", fails):
             code, out, err = run_cli(["launch", "--no-tui", "--model", "q2_0", "--save-preset", "Office"])
         self.assertEqual(code, 6, err)
         self.assertEqual([p.name for p in store.list_presets()], ["Office"])
         self.assertIn("saved as the launch preset Office", out)
-        self.assertIn("strata launch --preset Office", out)
+        self.assertIn("nostroma launch --preset Office", out)
         self.assertIn("The server could not start", err)
 
     def test_a_failure_before_the_settings_were_written_saves_nothing(self):

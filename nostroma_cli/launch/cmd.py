@@ -1,4 +1,4 @@
-"""The `strata launch` and `strata connect` commands: the flags, the plain-text (no TUI) run, and the hand-over to the TUI."""
+"""The `nostroma launch` and `nostroma connect` commands: the flags, the plain-text (no TUI) run, and the hand-over to the TUI."""
 
 from __future__ import annotations
 
@@ -13,19 +13,19 @@ from nostroma_cli.launch import settings as S
 
 EXAMPLES = """\
 examples:
-  strata launch                                    open the guided screens (saved presets, then set up from the beginning)
-  strata launch --preset "IQ3_XXS 128K"            start a saved preset (opens the monitor)
-  strata launch --model iq3_xxs --context 128k --parallel 4 --vision off --tune quick \\
+  nostroma launch                                    open the guided screens (saved presets, then set up from the beginning)
+  nostroma launch --preset "IQ3_XXS 128K"            start a saved preset (opens the monitor)
+  nostroma launch --model iq3_xxs --context 128k --parallel 4 --vision off --tune quick \\
                 --access lan --port 8080 --save-preset "Office" --no-tui
                                                    set everything on the command line, serve, print the address
-  strata launch --model-path /data/models/IQ3_XXS --no-tui
+  nostroma launch --model-path /data/models/IQ3_XXS --no-tui
                                                    use model files you already have (a folder or one .gguf)
-  strata launch --preset Office --set prefill=65536 --set STRATA_PIN_BY_NEED=1 --no-tui
+  nostroma launch --preset Office --set prefill=65536 --set STRATA_PIN_BY_NEED=1 --no-tui
                                                    change one advanced setting for this start
-  strata launch --plan --model q2_0                show what would happen, change nothing
-  strata launch --list-presets | --delete-preset NAME | --status | --stop [--preset NAME]
-  strata connect                                   list the apps Nostroma can be connected to
-  strata connect opencode --write                  write OpenCode's config for the running server (keeps a backup)
+  nostroma launch --plan --model q2_0                show what would happen, change nothing
+  nostroma launch --list-presets | --delete-preset NAME | --status | --stop [--preset NAME]
+  nostroma connect                                   list the apps Nostroma can be connected to
+  nostroma connect opencode --write                  write OpenCode's config for the running server (keeps a backup)
 """
 
 
@@ -157,7 +157,7 @@ def add_parsers(sp: argparse._SubParsersAction) -> list[argparse.ArgumentParser]
     c = sp.add_parser(
         "connect", help="print (or write) the setup for an app that uses the running server", epilog=EXAMPLES,
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        description="Shows the settings file and environment an app needs to talk to the Nostroma server that `strata launch` started. "
+        description="Shows the settings file and environment an app needs to talk to the Nostroma server that `nostroma launch` started. "
                     "Without a name it lists the apps. With --write it writes the file after asking, keeping a backup of any file it replaces.")
     c.add_argument("harness", nargs="?", help="opencode, codex, claude-code, omp, pi, hermes, openclaw, deepseek-harness")
     c.add_argument("--url", metavar="URL", help="the server address (default: the running launch, else http://127.0.0.1:8080)")
@@ -334,13 +334,13 @@ def apply_defaults(s: S.LaunchSettings, catalog) -> tuple[S.LaunchSettings, list
             notices.append(S.Notice("warn", f"No model was named, so Nostroma picked {rec['title']} for this computer ({rec['why']}).", ""))
         else:
             notices.append(S.Notice("error", "No model fits this computer by Nostroma's rules, and none was chosen.",
-                                    "Name one with --model (strata launch --help lists them); a bigger one will run slowly."))
+                                    "Name one with --model (nostroma launch --help lists them); a bigger one will run slowly."))
     try:
         from nostroma_control import engine_component as _ec
         _b, _how = _ec.detect_backend()
         if _how == "saved choice":
             notices.append(S.Notice("warn", f"The engine for {_ec.MAKE_NAMES.get(_b, _b)} cards is used (your saved choice). "
-                                            "`strata launch --backend auto` goes back to the PC's own choice.", ""))
+                                            "`nostroma launch --backend auto` goes back to the PC's own choice.", ""))
     except Exception:                                    # noqa: BLE001
         pass
     broken = _broken_nvidia_note(comp)
@@ -380,10 +380,10 @@ def apply_defaults(s: S.LaunchSettings, catalog) -> tuple[S.LaunchSettings, list
         s.api_key = kept or access.new_key()
         if kept:
             notices.append(S.Notice("warn", "The API key from the earlier launch is kept, so apps that use it keep working.",
-                                    "A different one: add --new-key. Show it with: strata launch --show-key"))
+                                    "A different one: add --new-key. Show it with: nostroma launch --show-key"))
         else:
             notices.append(S.Notice("warn", "A new API key was made, because the server is shared beyond this computer.",
-                                    "It is saved with the preset; show it with: strata launch --show-key", after_write=True))
+                                    "It is saved with the preset; show it with: nostroma launch --show-key", after_write=True))
     notices += gpu_notices(s, comp)
     notices += S.check_access(s)
     vram = comp.main_vram_gb or None
@@ -527,7 +527,7 @@ def _stop_all(name: str | None) -> int:
             failed += 0 if r.get("ok") else 1
         access.stop_tunnel(prof)
     if not stopped and not failed:                           # zero targets only: a failed stop already said so and must not be followed by "nothing"
-        _say("Nothing from `strata launch` is running.")
+        _say("Nothing from `nostroma launch` is running.")
     return 1 if failed else 0                                # any failed stop is a nonzero exit, also when another one succeeded
 
 
@@ -591,7 +591,7 @@ def open_page(url: str) -> bool:
 
 def _screens_missing() -> str | None:
     """The Python package the screens need that this install lacks ("rich" / "textual"), None when both are there.  A source install made before
-    setup installed them has neither: `strata launch` then goes on in plain lines instead of stopping with a traceback."""
+    setup installed them has neither: `nostroma launch` then goes on in plain lines instead of stopping with a traceback."""
     import importlib.util
     return next((m for m in ("rich", "textual") if importlib.util.find_spec(m) is None), None)
 
@@ -600,8 +600,8 @@ def final_hint_lines(s, preset_saved: bool) -> list[str]:
     """The last lines of a flag launch: how to connect an app and how to stop.  `--preset "<name>"` is suggested only when a preset by that name exists
     (--preset NAME, or --save-preset NAME); otherwise the plain command, and how to keep the settings."""
     if preset_saved:
-        return [f"  Connect an app:  strata connect opencode      Stop:  strata launch --stop --preset \"{s.name}\""]
-    return ["  Connect an app:  strata connect opencode      Stop:  strata launch --stop",
+        return [f"  Connect an app:  nostroma connect opencode      Stop:  nostroma launch --stop --preset \"{s.name}\""]
+    return ["  Connect an app:  nostroma connect opencode      Stop:  nostroma launch --stop",
             "  To keep these settings for next time, add --save-preset NAME."]
 
 
@@ -726,7 +726,7 @@ def run_launch(a: argparse.Namespace) -> int:
             if machine:
                 print(json.dumps({"schema_version": 1, "ok": True, "presets": [i.to_dict(with_key=False) for i in items]}))
             elif not items:
-                _say("No saved presets yet. Save one with: strata launch --model ... --save-preset NAME")
+                _say("No saved presets yet. Save one with: nostroma launch --model ... --save-preset NAME")
             else:
                 for i in items:
                     sm = store.summary(i)
@@ -745,7 +745,7 @@ def run_launch(a: argparse.Namespace) -> int:
             if machine:
                 print(json.dumps({"schema_version": 1, "ok": True, "running": rows}))
             elif not rows:
-                _say("Nothing from `strata launch` is running.")
+                _say("Nothing from `nostroma launch` is running.")
             for r in rows:
                 _say(f"{r['name']}: {r['state']} at {r['url']}")
             return 0
@@ -788,7 +788,7 @@ def run_launch(a: argparse.Namespace) -> int:
                 else:
                     _ec.save_backend(family)
                     backend_note = (f"The engine for {made} cards is used, now and next time. "
-                                    "`strata launch --backend auto` goes back to the PC's own choice.")
+                                    "`nostroma launch --backend auto` goes back to the PC's own choice.")
         try:
             catalog = Catalog()
         except CatalogUnavailable as e:
@@ -811,13 +811,13 @@ def run_launch(a: argparse.Namespace) -> int:
                  "Run setup again (START-HERE / ./setup.sh) to get the screens.")
         if not have_choices and not interactive and not a.plan:
             if machine or a.no_tui or catalog is None or not _can_ask():     # --no-tui never asks (round 8, M)
-                return fail("`strata launch` with no choices opens screens, and this is not a terminal (or --no-tui was given). Name what to start: --preset NAME, or --model NAME "
-                            "(strata launch --help has examples; --plan shows what would happen without changing anything).", 2)
+                return fail("`nostroma launch` with no choices opens screens, and this is not a terminal (or --no-tui was given). Name what to start: --preset NAME, or --model NAME "
+                            "(nostroma launch --help has examples; --plan shows what would happen without changing anything).", 2)
             # Git Bash, mintty and some editor panels cannot show the screens although a person is typing: go on in plain lines, and ask first
             plain_questions = True
             if no_screens_package is None:
                 _say("This window cannot show Nostroma's screens (Git Bash and similar windows do not pass the keyboard through). "
-                     "For the screens, open Windows Terminal, PowerShell or cmd, or run `winpty strata launch`. Going on with plain questions.")
+                     "For the screens, open Windows Terminal, PowerShell or cmd, or run `winpty nostroma launch`. Going on with plain questions.")
         if interactive and not have_choices:
             if catalog is None:
                 return fail("This Terminal does not carry the model list, so the screens cannot open. Install it again with the one-line installer.", 5)
@@ -890,7 +890,7 @@ def run_launch(a: argparse.Namespace) -> int:
             try:
                 answer = input("Start it now? Models can be tens of GB to download. [Y/n] ").strip().lower()
             except EOFError:
-                return fail("There is nobody to answer. Name what to start: --preset NAME, or --model NAME (strata launch --help has examples).", 2)
+                return fail("There is nobody to answer. Name what to start: --preset NAME, or --model NAME (nostroma launch --help has examples).", 2)
             if answer not in ("", "y", "yes"):
                 _say("Nothing was changed.")
                 return 0
@@ -903,11 +903,11 @@ def run_launch(a: argparse.Namespace) -> int:
         except LaunchError as e:
             if a.save_preset and runner.config_path is not None:
                 # the choices were written and may have been tuned (a measuring that takes up to two hours): a start that fails afterwards keeps the
-                # launch preset the person asked for, so `strata launch --preset NAME` starts it again without the tuning (#4824)
+                # launch preset the person asked for, so `nostroma launch --preset NAME` starts it again without the tuning (#4824)
                 try:
                     saved = store.save(s, s.name)
                     if not machine:
-                        _say(f"Your choices were saved as the launch preset {saved.name}; start it again with `strata launch --preset {saved.name}`.")
+                        _say(f"Your choices were saved as the launch preset {saved.name}; start it again with `nostroma launch --preset {saved.name}`.")
                 except Exception:                            # noqa: BLE001 - saving is a convenience; the start error below is the news
                     pass
             return fail(f"{e.text}" + (f" {e.next}" if e.next else ""), e.code)
@@ -939,7 +939,7 @@ def run_launch(a: argparse.Namespace) -> int:
             _say(f"  {'Anthropic apps':<14} {result.urls[0]}   (Claude Code: ANTHROPIC_BASE_URL, no /v1 at the end)")
         if result.key:
             from nostroma_cli.launch import access
-            _say(f"  {'API key':<14} {access.mask_key(result.key)}   (show it: strata launch --show-key"
+            _say(f"  {'API key':<14} {access.mask_key(result.key)}   (show it: nostroma launch --show-key"
                  + (f" --preset \"{s.name}\")" if (a.preset or a.save_preset) else ")"))
         engine_log = _engine_log_of(result.config)
         if engine_log:
@@ -950,11 +950,11 @@ def run_launch(a: argparse.Namespace) -> int:
         if a.open and local:
             open_page(local)
         if result.key and os.name == "nt":
-            _say(f"  Watch it:    $env:STRATA_API_KEY = strata launch --show-key; strata monitor --url {local} --credential-env STRATA_API_KEY")
+            _say(f"  Watch it:    $env:STRATA_API_KEY = nostroma launch --show-key; nostroma monitor --url {local} --credential-env STRATA_API_KEY")
         elif result.key:
-            _say(f"  Watch it:    STRATA_API_KEY=$(strata launch --show-key) strata monitor --url {local} --credential-env STRATA_API_KEY")
+            _say(f"  Watch it:    STRATA_API_KEY=$(nostroma launch --show-key) nostroma monitor --url {local} --credential-env STRATA_API_KEY")
         else:
-            _say(f"  Watch it:    strata monitor --url {local}")
+            _say(f"  Watch it:    nostroma monitor --url {local}")
         for line in final_hint_lines(s, bool(a.preset or a.save_preset)):
             _say(line)
         return 0
@@ -981,7 +981,7 @@ def run_connect(a: argparse.Namespace) -> int:
                 _say(f"{r['id']:<20}{r['speaks']:<22}{r['status']}")
             _say("")
             _say("Vendor tested is the app version its maker tested the setup with, not a check of your server.")
-            _say("Check your server: strata connect opencode --check        Show one: strata connect opencode        Write it: strata connect opencode --write")
+            _say("Check your server: nostroma connect opencode --check        Show one: nostroma connect opencode        Write it: nostroma connect opencode --write")
         return 0
     h = harness.find(a.harness)
     if h is None:
@@ -1025,7 +1025,7 @@ def run_connect(a: argparse.Namespace) -> int:
         return 0 if passed else 1
     _say(f"{h.title}  ({h.speaks}; {h.status})")
     if not info.get("running") and not a.url:
-        _say("[!] No running Nostroma server was found, so this uses the default address. Start one with: strata launch")
+        _say("[!] No running Nostroma server was found, so this uses the default address. Start one with: nostroma launch")
     for f in out["files"]:
         _say("")
         _say(f"File: {f['path']}" + ("   (merged with the file if it exists)" if f["merge"] else ""))

@@ -133,7 +133,7 @@ class DraftLayerInTheDataDir(Base):
             st = modelstate.assess(catalog(HW_12), "qwen", "IQ3_XXS", vision="off", model_path=str(folder))
         self.assertEqual([p.kind for p in st.parts], [])
 
-    # the plan as `strata launch --plan` prints it (check (a))
+    # the plan as `nostroma launch --plan` prints it (check (a))
     def test_plan_says_nothing_to_download_for_a_model_folder_outside_the_data_dir(self):
         data = self.base / "data"
         self.layer_in(data)

@@ -203,7 +203,7 @@ class SwitchBusy(updater.Busy):
     """A model is running, so the engine is not switched. One plain answer; the running model keeps the engine it started with."""
 
     def __init__(self, serving: list[dict]):
-        updater.UpdateError.__init__(self, "A model is running, so the engine was not switched. Stop the model first (`strata launch --stop`, or Unload in the app), "
+        updater.UpdateError.__init__(self, "A model is running, so the engine was not switched. Stop the model first (`nostroma launch --stop`, or Unload in the app), "
                                            "then switch. The running model keeps the engine it started with. Nothing was changed.", 7)
         self.serving = serving
 
@@ -280,7 +280,7 @@ def _use_qwen(ctx: "updater.Context", folder: str) -> dict:
     wanted = ctx.hardware.get("backend")
     if target is not None and wanted and target.backend != wanted and target.backend in (ctx.hardware.get("makes") or []):
         # An engine for this PC's other card (an AMD card beside an NVIDIA one): choosing it is choosing that card, the same choice
-        # `strata launch --backend amd` keeps ("now and next time"). Without it a start would go on picking the engine of the first make.
+        # `nostroma launch --backend amd` keeps ("now and next time"). Without it a start would go on picking the engine of the first make.
         before = ec.saved_backend()
         ec.save_backend(target.backend)
         ctx.hardware = {**updater.detect_hardware(), "backend_source": "saved choice"}

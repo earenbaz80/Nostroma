@@ -1,7 +1,7 @@
 """A launch, a setup and a model download never update an engine by themselves (owner, 11-01; the same shape as #4823: "downloading a model changed my
 engine without asking").  An engine update is the person's choice, and never beside a loaded model.
 
-* Qwen: `strata launch` with an engine older than the model needs warns and goes on; it updates only on a yes (--yes, or the answer on the screens),
+* Qwen: `nostroma launch` with an engine older than the model needs warns and goes on; it updates only on a yes (--yes, or the answer on the screens),
   and never with a model loaded.  No engine installed at all is still fetched (nothing runs on it yet).
 * The app's model download for Qwen never fetches an engine (control_engine_step), as before.
 """
@@ -45,7 +45,7 @@ class QwenStaleEngine(unittest.TestCase):
             spawns, r, seen = self.ensure([OLD], serving=RUNNING, **kwargs)
             self.assertEqual(spawns, [], kwargs)
             self.assertTrue(any("running, so Nostroma did not update the engine" in n for n in r.notices), r.notices)
-            self.assertTrue(any("strata launch --stop" in n for n in r.notices))
+            self.assertTrue(any("nostroma launch --stop" in n for n in r.notices))
 
     def test_no_yes_no_update(self):
         spawns, r, _ = self.ensure([OLD])

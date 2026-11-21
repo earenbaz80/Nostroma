@@ -18,7 +18,7 @@ from typing import Any, Iterable, Mapping
 #: the family and arch names setup and the server used for DeepSeek-V4.1-Flash
 FAMILY = "deepseek41"
 ENGINE_NAMES = ("strata-dsv41", "strata-dsv41.exe")
-#: the model sizes setup and `strata launch` offered under --family deepseek41 (lower case); "UD-IQ1_M" and "UD-IQ1_S" are not here: they are also
+#: the model sizes setup and `nostroma launch` offered under --family deepseek41 (lower case); "UD-IQ1_M" and "UD-IQ1_S" are not here: they are also
 #: Unsloth Qwen names
 MODEL_NAMES = frozenset({"ist-das-2.00bpw", "ist-das-2.25bpw", "ist-das-1.75bpw", "ista-das-coder", "ud-q8_k_xl",
                          "deepseek-v4.1-flash", "deepseek41", "deepseek"})
@@ -39,9 +39,9 @@ NEXT = ("Choose a Qwen model to run instead. If you no longer need the DeepSeek 
 #: D2: the model list's line for a DeepSeek row
 ROW = "DeepSeek - no longer supported."
 ROW_FILES = "DeepSeek - no longer supported. {size} in {folder}."
-#: D3: DeepSeek asked for by name (`strata launch --model`, `--family deepseek41`, setup, a DeepSeek-only flag)
-NOT_OFFERED = "Nostroma no longer offers DeepSeek models. Run `strata launch` to choose one of the Qwen models."
-#: D4: the person's own DeepSeek files (`strata launch --model-path`, the own-files screen, `strata models import`)
+#: D3: DeepSeek asked for by name (`nostroma launch --model`, `--family deepseek41`, setup, a DeepSeek-only flag)
+NOT_OFFERED = "Nostroma no longer offers DeepSeek models. Run `nostroma launch` to choose one of the Qwen models."
+#: D4: the person's own DeepSeek files (`nostroma launch --model-path`, the own-files screen, `strata models import`)
 OWN_FILES = ("These are DeepSeek model files ({size} in {folder}). This version of Nostroma no longer runs DeepSeek models; "
              "nothing in the folder was changed. Choose a Qwen model instead.")
 OWN_FILES_NOSIZE = ("These are DeepSeek model files (in {folder}). This version of Nostroma no longer runs DeepSeek models; "

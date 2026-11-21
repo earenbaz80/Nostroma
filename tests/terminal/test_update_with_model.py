@@ -220,7 +220,7 @@ class WithAModel(ModelCase):
         text = str(caught.exception)
         self.assertIn(NAME, text)
         self.assertIn("--stop-model", text)
-        self.assertIn("strata launch --stop", text)
+        self.assertIn("nostroma launch --stop", text)
         self.assertIn("nothing was changed", text)
         self.assertEqual(self.archive_requests(), [])
         self.assertEqual((self.state(), self.resolved()), ("ready", "0.1.45"))

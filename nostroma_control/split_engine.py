@@ -3,7 +3,7 @@
 `strata-split-N` (src/split, from sFNX, MIT, Copyright (c) 2026 John Fink) gives every card a share of EVERY layer instead of some
 layers, and the cards exchange the layer sums through page-locked host memory (no peer access anywhere). On two RTX A6000 with
 UD-Q4_K_XL it decodes 40-95% faster than the normal layer split (phaseA-tests/sfnx/RESULTS.md). The owner's decision: it runs by itself whenever the
-rule below says yes ("auto", the default), and `strata launch --split-engine off` (or "split_engine": "off" in the run config, or
+rule below says yes ("auto", the default), and `nostroma launch --split-engine off` (or "split_engine": "off" in the run config, or
 STRATA_SPLIT_ENGINE=0) turns it off; "on" asks for it and says why in one line when it cannot run. In auto a "no" is silent: the normal
 layer split starts, as before.
 
@@ -390,7 +390,7 @@ def _flag(args: list, name: str) -> str | None:
 
 
 def mode(cfg: dict, environ: dict | None = None) -> str:
-    """"auto" (the default), "on" or "off". The run config's "split_engine" (true/false or the word; `strata launch --split-engine X` writes it)
+    """"auto" (the default), "on" or "off". The run config's "split_engine" (true/false or the word; `nostroma launch --split-engine X` writes it)
     and, over it, STRATA_SPLIT_ENGINE in the environment (testers). Anything it does not know is auto."""
     import os
 

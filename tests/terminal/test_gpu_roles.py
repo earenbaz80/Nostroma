@@ -1,4 +1,4 @@
-"""nostroma_control/gpu_roles.py: Main / Helper / Off for every graphics card (the rules the app, `strata launch`, setup and the server share)."""
+"""nostroma_control/gpu_roles.py: Main / Helper / Off for every graphics card (the rules the app, `nostroma launch`, setup and the server share)."""
 
 from __future__ import annotations
 

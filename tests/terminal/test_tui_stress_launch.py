@@ -52,7 +52,7 @@ class SecondLaunchTests(unittest.TestCase):
         self.assertIn("port 8080", cm.exception.text)
         self.assertIn("context 64K", cm.exception.text)
         self.assertIn("--restart", cm.exception.next)
-        self.assertIn("strata launch --stop", cm.exception.next)
+        self.assertIn("nostroma launch --stop", cm.exception.next)
 
     def test_yes_alone_does_not_restart(self):
         r = self.runner(assume_yes=True)

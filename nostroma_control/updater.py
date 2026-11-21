@@ -66,7 +66,7 @@ class UpdateError(RuntimeError):
         self.exit_code = exit_code
 
 
-LAUNCH_NEXT_STEP = "Stop the model first (`strata launch --stop`), then run `strata update` again. Nothing was changed."
+LAUNCH_NEXT_STEP = "Stop the model first (`nostroma launch --stop`), then run `strata update` again. Nothing was changed."
 
 
 class Busy(UpdateError):

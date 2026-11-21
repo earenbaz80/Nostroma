@@ -1,4 +1,4 @@
-"""`strata launch --plan` for a feed model whose entry says `drafter: none` (found by the Q4-P8 rehearsal, G14: the plan said "Drafting: MTP" while setup fetches no draft layer)."""
+"""`nostroma launch --plan` for a feed model whose entry says `drafter: none` (found by the Q4-P8 rehearsal, G14: the plan said "Drafting: MTP" while setup fetches no draft layer)."""
 
 from __future__ import annotations
 

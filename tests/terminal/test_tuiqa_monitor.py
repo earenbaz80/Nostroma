@@ -133,7 +133,7 @@ class MonitorViews(unittest.TestCase):
         self.run_app(MonitorApp, (120, 40), case)
 
     def test_strata_monitor_is_the_same_seven_view_monitor_as_launchs(self):
-        """`strata monitor --url ...` builds the launch monitor without the quit question: seven views, key 7, Connect points at that server."""
+        """`nostroma monitor --url ...` builds the launch monitor without the quit question: seven views, key 7, Connect points at that server."""
         from nostroma_cli import monitor_commands
         seen = {}
 

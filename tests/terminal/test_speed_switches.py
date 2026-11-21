@@ -1,7 +1,7 @@
 """The 0.2.7 speed features and their switches: the contract names, the defaults (Faster long prompts OFF, the other two ON), where each applies, and how the Terminal carries them.
 
 The app (apps/host/server/native-settings.mjs SPEED_SWITCHES) and Control (nostroma_control/speed_switches.py) say the same thing; the last test reads the
-app's table with node and fails when the two differ.  `strata launch` shows the environment entries as rows of its Advanced table and writes them into
+app's table with node and fails when the two differ.  `nostroma launch` shows the environment entries as rows of its Advanced table and writes them into
 the run config's "env" (`--set STRATA_KVA=1` turns Faster long prompts on); a default launch has none of them.
 """
 from __future__ import annotations
@@ -153,7 +153,7 @@ class Contract(unittest.TestCase):
 
 
 class Terminal(unittest.TestCase):
-    """`strata launch`: the run config a launch writes."""
+    """`nostroma launch`: the run config a launch writes."""
 
     def config(self, base, extra=None):
         return derive_config(base, S.LaunchSettings(extra=extra or {}), bool_flags=frozenset())

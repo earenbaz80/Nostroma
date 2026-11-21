@@ -185,7 +185,7 @@ class MonitorApp(App):
         return "ascii" if self.glyph_choice == "solid" else self.glyph_choice
 
     def _view_count(self) -> int:
-        """Six views, and a seventh (Connect) when `strata launch` opened the monitor: arrows, number keys and the tab line all use this."""
+        """Six views, and a seventh (Connect) when `nostroma launch` opened the monitor: arrows, number keys and the tab line all use this."""
         return nav.count(self.connect_enabled)
 
     def _paint(self, size=None) -> None:

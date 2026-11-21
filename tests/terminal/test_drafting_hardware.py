@@ -351,7 +351,7 @@ class TheQ4Pack(unittest.TestCase):
 
 
 class TheTerminalStep(unittest.TestCase):
-    """strata launch: the Drafting step exists only where there is something to choose."""
+    """nostroma launch: the Drafting step exists only where there is something to choose."""
 
     def flow(self, family, hardware):
         from types import SimpleNamespace

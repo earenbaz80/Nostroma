@@ -1,4 +1,4 @@
-"""nostroma_control/vram_fit.py: the fit math with mock card sizes, and its use in setup (sycl/setup_intel.py) and strata launch."""
+"""nostroma_control/vram_fit.py: the fit math with mock card sizes, and its use in setup (sycl/setup_intel.py) and nostroma launch."""
 
 from __future__ import annotations
 

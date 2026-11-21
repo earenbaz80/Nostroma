@@ -7,7 +7,7 @@ hardware the choice read stayed the NVIDIA card's), `strata components engine --
 Proves, with a faked two-card detection: amd / hip / hip-rx6000 / nvidia name their family; --backend amd reads the AMD card (gfx1031) and picks
 the rx6000 package from a feed that also has the CUDA, rx9070, rx7900 and halo builds; resolve / status accept the make's word; the engines list marks
 the AMD engine as one this computer can run (for its other card) and keeps "newest" on the engine of the make in use; switching to it keeps the
-AMD choice the way `strata launch --backend amd` does."""
+AMD choice the way `nostroma launch --backend amd` does."""
 import argparse
 import io
 import json

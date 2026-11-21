@@ -67,7 +67,7 @@ class WindowsInstaller(unittest.TestCase):
         feed = stub_release(self.root / "feed", "@echo off\r\nexit /b 0\r\n")
         data = self.root / "Ünï test"
         out = self.run_installer(feed, data)
-        self.assertIn("Installed. Run: strata launch", out, out)
+        self.assertIn("Installed. Run: nostroma launch", out, out)
         self.assertTrue((data / "terminal" / "0.1.48" / "bin" / "strata.cmd").is_file())
         self.assertEqual([p.name for p in (data / "terminal").iterdir() if p.name.startswith("u") and p.suffix in ("", ".zip")], [])
 

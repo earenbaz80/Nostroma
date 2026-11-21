@@ -1,4 +1,4 @@
-"""The plan's Main card is the run's Main card: `strata launch --plan` (nostroma_cli/launch/cmd.py roles_line -> gpu_roles.from_legacy) and the start
+"""The plan's Main card is the run's Main card: `nostroma launch --plan` (nostroma_cli/launch/cmd.py roles_line -> gpu_roles.from_legacy) and the start
 (runner.apply_cards -> serve/server.py ordered_gpus) take the card order from ONE function, gpu_roles.speed_stage_order (5% rule #1760, faster card last
 #1352, VRAM guard #1576).  Faked cards, nothing is started or probed.
 

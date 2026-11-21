@@ -1,4 +1,4 @@
-"""Round 0213 QATUI (final pass, owner PC): with an engine installed, one `strata launch --plan` on Windows started `nvidia-smi` 19 times (10 x compute_cap, 9 x
+"""Round 0213 QATUI (final pass, owner PC): with an engine installed, one `nostroma launch --plan` on Windows started `nvidia-smi` 19 times (10 x compute_cap, 9 x
 driver_version): every caller asked again. The answer is kept for 30 s per field now.
 
     python -m pytest tests/terminal/test_smi_cache_0213_qatui.py

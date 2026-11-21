@@ -35,7 +35,7 @@ if __name__ == "__main__":
 
 
 class AdoptUnsloth(unittest.TestCase):
-    """ENG-AMD (round 0214): `strata launch` refused every Unsloth set on an Intel Arc card because adopt.FAMILIES lacked "unsloth"."""
+    """ENG-AMD (round 0214): `nostroma launch` refused every Unsloth set on an Intel Arc card because adopt.FAMILIES lacked "unsloth"."""
 
     def _plan(self, tmp, model, hub, n, backend="sycl", family="unsloth"):
         from pathlib import Path

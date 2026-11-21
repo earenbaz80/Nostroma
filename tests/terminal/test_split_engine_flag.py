@@ -1,4 +1,4 @@
-"""`strata launch --split-engine auto|on|off`: the owner's switch for the all-cards split engine (nostroma_control/split_engine.py).
+"""`nostroma launch --split-engine auto|on|off`: the owner's switch for the all-cards split engine (nostroma_control/split_engine.py).
 auto (nothing written) is the default; the choice is listed in --help, in the copyable flags, in the launch config and in a saved preset, so an
 "off" survives updates and restarts; the launcher's apply_split_engine honours it (off: nothing, auto: silent on a refusal, on: one line)."""
 

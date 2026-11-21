@@ -1,5 +1,5 @@
 """Where Nostroma's existing installs and model files are: ONE place that the launch screens, `strata models list`, the own-files import
-and `strata launch` all ask.
+and `nostroma launch` all ask.
 
 Three kinds of place hold a model's run config (`strata-<tag>.json`), looked at in this order, the first that has any is the main one:
 

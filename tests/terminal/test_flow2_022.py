@@ -1,4 +1,4 @@
-"""0.2.2 flow walk, second round (phaseA-tests/flow-findings-022.md): what `strata launch` says and does with your own model files, the
+"""0.2.2 flow walk, second round (phaseA-tests/flow-findings-022.md): what `nostroma launch` says and does with your own model files, the
 plan, the download figure, the long silent step and a tuning result that already exists."""
 
 from __future__ import annotations

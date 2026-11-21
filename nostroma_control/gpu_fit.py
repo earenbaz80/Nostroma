@@ -1,4 +1,4 @@
-"""Which graphics cards a model should use: ONE place for the app, `strata launch` and setup.
+"""Which graphics cards a model should use: ONE place for the app, `nostroma launch` and setup.
 
 The rule (owner decision):
 1. First try the model on ONE card (the largest) plus system RAM, the normal hybrid mode.

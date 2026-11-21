@@ -1,6 +1,6 @@
 """The monitor's view tabs: ONE model for every view and every width.
 
-There are six views (Overview, Serving, Requests, Engine, Hardware, Logs) and, when `strata launch` opened the monitor, a seventh, Connect.
+There are six views (Overview, Serving, Requests, Engine, Hardware, Logs) and, when `nostroma launch` opened the monitor, a seventh, Connect.
 Every screen draws the same tab line from here, so the selected tab is always marked (in square brackets, and in colour when there is
 colour), the hints say 1-6 or 1-7 to match, and a narrow terminal keeps the tab names: shorter names first, then only the tabs around the
 selected one with < and > for the ones out of sight.

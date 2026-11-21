@@ -1,4 +1,4 @@
-"""The `strata launch` application: the screens in order, the run, and the hand-over to the monitor.
+"""The `nostroma launch` application: the screens in order, the run, and the hand-over to the monitor.
 
 `run_tui` opens the screens (or, with settings already chosen, goes straight to the run), then the Nostroma Monitor with the
 launch-aware extras: a Connect view (key 7) and a quit question (keep serving in the background, or stop).
@@ -190,7 +190,7 @@ class Ctx:
 
 
 class LaunchApp(App):
-    TITLE = "strata launch"
+    TITLE = "nostroma launch"
     CSS = CSS
     # Textual's own ctrl+c only shows a "Do you want to quit?" note, and Escape pressed next also went Back (B13): ctrl+c quits like ctrl+q and q
     BINDINGS = [Binding("ctrl+c", "quit", "Quit", show=False, priority=True)]
@@ -435,7 +435,7 @@ def run_monitor(info: dict, *, keep_default: bool = True, color: str = "auto") -
         acc.stop_tunnel(info["profile"])
         print("Stopped. The model is unloaded and the graphics memory is free.")
     else:
-        print(f"Still serving at {info['url']}. Watch it again: strata monitor --url {info['url']}   Stop: strata launch --stop")
+        print(f"Still serving at {info['url']}. Watch it again: nostroma monitor --url {info['url']}   Stop: nostroma launch --stop")
     return 0
 
 
@@ -465,7 +465,7 @@ def run_tui(settings: S.LaunchSettings | None, *, catalog: Catalog | None = None
               "Run the same command with --no-tui to see the steps as plain lines, and send the output if you ask for help.", file=sys.stderr)
         return 1
     if app.stopped_after_save:
-        print(f"Saved the preset '{ctx.settings.name}'. Start it with: strata launch --preset \"{ctx.settings.name}\"")
+        print(f"Saved the preset '{ctx.settings.name}'. Start it with: nostroma launch --preset \"{ctx.settings.name}\"")
         return 0
     if result is None:
         return 0

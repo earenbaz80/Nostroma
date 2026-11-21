@@ -1,4 +1,4 @@
-"""#3570: `strata launch --show-key` printed a key only for a launch (a running one or a preset). A model set up by setup.py keeps its key in
+"""#3570: `nostroma launch --show-key` printed a key only for a launch (a running one or a preset). A model set up by setup.py keeps its key in
 strata-<model>.json, so there the command said "no key" and people read the JSON by hand. It now reads that file when no launch has one."""
 from __future__ import annotations
 

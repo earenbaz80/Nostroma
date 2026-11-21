@@ -1,4 +1,4 @@
-"""The monitor as `strata launch` opens it: the Connect view (key 7), its keys, the check, and the quit question."""
+"""The monitor as `nostroma launch` opens it: the Connect view (key 7), its keys, the check, and the quit question."""
 
 from __future__ import annotations
 

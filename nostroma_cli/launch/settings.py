@@ -2,7 +2,7 @@
 flags that say the same thing without the TUI.
 
 No Textual, no network, standard library only: the screens, the flags and the saved presets all use this one description,
-so `strata launch --preset X` and clicking through the screens cannot drift apart.
+so `nostroma launch --preset X` and clicking through the screens cannot drift apart.
 
 Rules of this file: recommend, never force. A choice that does not fit this computer is a warning with the reason; only
 a value that cannot be run at all (a port that is not a number, an unknown access kind) is an error.
@@ -80,7 +80,7 @@ def words_for(tokens: int) -> str:
 
 @dataclass
 class LaunchSettings:
-    """Every choice of `strata launch`. `None` means "the recommendation for this computer"."""
+    """Every choice of `nostroma launch`. `None` means "the recommendation for this computer"."""
 
     name: str | None = None                    # the saved preset's name
     family: str | None = None                  # catalog family id (qwen, swift, coder, unsloth, gyro, nvfp4...)
@@ -285,8 +285,8 @@ def as_argv_changes(extra: dict[str, str], bool_flags: frozenset[str],
 
 
 def flags_text(s: LaunchSettings, *, preset: str | None = None) -> str:
-    """The `strata launch ...` line that says the same as these choices (copyable)."""
-    parts = ["strata launch"]
+    """The `nostroma launch ...` line that says the same as these choices (copyable)."""
+    parts = ["nostroma launch"]
     if preset:
         parts.append(f'--preset "{preset}"')
     else:

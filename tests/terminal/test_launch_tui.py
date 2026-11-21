@@ -1,4 +1,4 @@
-"""The `strata launch` screens, driven with Textual's pilot: every screen, its keys and what it writes into the settings."""
+"""The `nostroma launch` screens, driven with Textual's pilot: every screen, its keys and what it writes into the settings."""
 
 from __future__ import annotations
 
@@ -576,7 +576,7 @@ class AdvancedStep(Base):
             self.assertIn("[experimental]", t)
             self.assertIn("+ Add a setting by name", t)
             self.assertIn("Command that will run", t)
-            self.assertIn("Same as: strata launch --model iq3_s", t)
+            self.assertIn("Same as: nostroma launch --model iq3_s", t)
         self.run_app(case, ctx=ctx)
 
     def test_edit_a_value_then_reset_it(self):

@@ -1,4 +1,4 @@
-"""`strata launch` without screens: the settings rules, the catalog, presets, parameters, access, connect, and every flag."""
+"""`nostroma launch` without screens: the settings rules, the catalog, presets, parameters, access, connect, and every flag."""
 
 from __future__ import annotations
 
@@ -675,7 +675,7 @@ class AdoptRules(unittest.TestCase):
 
     def test_a_card_the_installed_model_was_set_to_is_not_replaced_by_the_automatic_pick(self):
         """Two equal cards: the fit rule recommends card 0, so a person's earlier choice (setup --gpu 1, the app's card pick: "gpus_asked")
-        must survive a `strata launch` that names no cards - in its order, with "gpu_order": "as_given" too."""
+        must survive a `nostroma launch` that names no cards - in its order, with "gpu_order": "as_given" too."""
         import json
         from tests.terminal.launch_support import HW_2X16
         from nostroma_cli.launch.runner import cards_for_launch, installed_cards
@@ -805,12 +805,12 @@ class AccessRules(unittest.TestCase):
                          "https://calm-river-1234.trycloudflare.com")
 
 
-# a person at Git Bash: no CI variable (a CI runner sets one, and strata launch then never asks) and no STRATA_NO_PROMPT
+# a person at Git Bash: no CI variable (a CI runner sets one, and nostroma launch then never asks) and no STRATA_NO_PROMPT
 GIT_BASH_ENV = {"MSYSTEM": "MINGW64", "CI": "", "STRATA_NO_PROMPT": ""}
 
 
 class FlagsCommand(unittest.TestCase):
-    """Every `strata launch` flag, run through the real parser with the computer faked and nothing installed."""
+    """Every `nostroma launch` flag, run through the real parser with the computer faked and nothing installed."""
 
     def setUp(self):
         self.home = Home().__enter__()
@@ -945,7 +945,7 @@ class FlagsCommand(unittest.TestCase):
         self.assertEqual(code, 0, err)
         run.assert_called_once()
         self.assertIn("cannot show Nostroma's screens", out + err)
-        self.assertIn("winpty strata launch", out + err)
+        self.assertIn("winpty nostroma launch", out + err)
 
     def test_git_bash_answering_no_changes_nothing(self):
         with mock.patch.dict(os.environ, GIT_BASH_ENV), mock.patch("builtins.input", return_value="n"),                 mock.patch.object(Runner, "run", side_effect=AssertionError("must not run")):
@@ -1013,7 +1013,7 @@ class FlagsCommand(unittest.TestCase):
 
     def test_the_access_help_names_the_flags_for_showing_and_setting_a_key(self):             # #3713 #3951
         from nostroma_cli.launch import screens
-        self.assertIn("strata launch --show-key", screens.AccessScreen.help_text)
+        self.assertIn("nostroma launch --show-key", screens.AccessScreen.help_text)
         self.assertIn("--api-key YOUR-KEY", screens.AccessScreen.help_text)
 
     def test_the_summary_says_where_the_engine_log_is(self):                                  # #3656
@@ -1039,7 +1039,7 @@ class FlagsCommand(unittest.TestCase):
         self.assertIn("http://127.0.0.1:8080/v1", out)
         self.assertIn("http://192.168.1.5:8080/v1", out)
         self.assertNotIn("sk-strata-abcdefghijkl", out)                      # the key is masked
-        self.assertIn("strata connect", out)
+        self.assertIn("nostroma connect", out)
         self.assertEqual([p.name for p in store.list_presets()], ["Office"])
         code, out, err = run_cli(["launch", "--list-presets"])
         self.assertIn("Office", out)
@@ -1077,7 +1077,7 @@ class FlagsCommand(unittest.TestCase):
         self.assertIn("No saved presets", out)
         code, out, _ = run_cli(["launch", "--status"])
         self.assertEqual(code, 0)
-        self.assertIn("Nothing from `strata launch` is running.", out)
+        self.assertIn("Nothing from `nostroma launch` is running.", out)
         code, out, _ = run_cli(["launch", "--stop"])
         self.assertEqual(code, 0)
         self.assertIn("Nothing", out)

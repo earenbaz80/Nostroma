@@ -1,4 +1,4 @@
-"""strata launch finds a model folder whatever its letter case (#3996).
+"""nostroma launch finds a model folder whatever its letter case (#3996).
 
 setup.py writes `models/IQ3_S` (the model name's case kept); the run-config tag is lower case (`iq3_s`). On a case-sensitive disk the
 launch lookup missed the downloaded folder and offered the whole download again. The tests make the disk case-sensitive on any system by

@@ -1,4 +1,4 @@
-"""nostroma_control/gpu_fit.py: the one rule for which graphics cards a model uses (app, strata launch and setup share it)."""
+"""nostroma_control/gpu_fit.py: the one rule for which graphics cards a model uses (app, nostroma launch and setup share it)."""
 
 from __future__ import annotations
 

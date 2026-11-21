@@ -157,7 +157,7 @@ def convert_selector(data_dir: str | Path, *, progress: Progress | None = None, 
 
 
 FEED_TIMEOUT = 8.0
-RETRY_AFTER_S = drafting.RETRY_AFTER_S          # Load (strata launch) asks the feed for the tuned drafter at most this often when the answer was "nothing"; setup and `strata drafting fetch` always ask
+RETRY_AFTER_S = drafting.RETRY_AFTER_S          # Load (nostroma launch) asks the feed for the tuned drafter at most this often when the answer was "nothing"; setup and `strata drafting fetch` always ask
 MISS_MARK = drafting.MISS_MARK
 _recent_miss = drafting.recent_miss              # (the start's "Run strata drafting fetch" line reads the same mark: nostroma_control/drafting.py fetch_hint)
 

@@ -1,4 +1,4 @@
-"""What `strata launch` does after the choices are made: get the engine and the model, write the run config, tune, start, open access.
+"""What `nostroma launch` does after the choices are made: get the engine and the model, write the run config, tune, start, open access.
 
 Every step reports plain-word events through one callback (`emit`), so the TUI (progress screen), `--no-tui` (printed lines) and the
 tests see the same thing. Nothing here prints or reads the keyboard. The steps reuse what is already in the Terminal:
@@ -169,7 +169,7 @@ class Result:
     reused: bool = False                   # the same choices were already serving: nothing was stopped or started
 
 
-NO_ENGINE_NEXT = ("Update Nostroma (`strata update`) and run `strata launch` again. Nothing was downloaded, and any model files you already have are kept.")
+NO_ENGINE_NEXT = ("Update Nostroma (`strata update`) and run `nostroma launch` again. Nothing was downloaded, and any model files you already have are kept.")
 
 STAGES = ("engine", "model", "config", "tune", "start", "access")
 
@@ -486,7 +486,7 @@ def derive_config(base: dict, s: S.LaunchSettings, *, bool_flags: frozenset[str]
     if s.split_engine:                                       # nostroma_control/split_engine.py: read by apply_split_engine; "off" survives every update
         cfg["split_engine"] = s.split_engine
     cfg.setdefault("exe", "component:strata-engine")
-    cfg["open_browser"] = False                              # strata launch never opens a browser by itself (only `--open` does, after the start)
+    cfg["open_browser"] = False                              # nostroma launch never opens a browser by itself (only `--open` does, after the start)
     if isinstance(cfg.get("args"), list):
         cfg["args"] = [a for a in cfg["args"] if a != "--open"]
     if log and not own_log_path(base):
@@ -787,7 +787,7 @@ class Runner:
         if models:
             names = ", ".join(m.label for m in models)
             return (f"{stale} {names} {'is' if len(models) == 1 else 'are'} running, so Nostroma did not update the engine. "
-                    "Stop it (`strata launch --stop`), run `strata update`, then start again.")
+                    "Stop it (`nostroma launch --stop`), run `strata update`, then start again.")
         if self.assume_yes:
             return None
         if self.confirm is not None and self.confirm("Update the engine?", stale + " Update it now? Nothing else is changed; your models are kept."):
@@ -1230,7 +1230,7 @@ class Runner:
         self.check_own_files()
         self.resolved_vision()
         if not (s.family and s.model):
-            raise LaunchError("No model was chosen.", "Choose a model, or use --model NAME (strata launch --help lists them).", 2)
+            raise LaunchError("No model was chosen.", "Choose a model, or use --model NAME (nostroma launch --help lists them).", 2)
         path, desc = self.installed_state()
         if path is not None and desc is not None and desc_matches(desc, s) and not files_present(read_config(path)) and not self.layer_back(path) \
                 and not getattr(self, "_layer_fetch", False):
@@ -1334,7 +1334,7 @@ class Runner:
         path, _desc = self.installed_state()
         if path is None:
             raise LaunchError("Setup finished but no run config was written for this model.",
-                              "Run `strata launch` again; if it repeats, the setup output above says why.", 6)
+                              "Run `nostroma launch` again; if it repeats, the setup output above says why.", 6)
         self.emit("model", f"{title} is ready.", 100)
         self.say_reused_data(path)
         self.check_pictures(path)
@@ -1752,7 +1752,7 @@ class Runner:
             cfg.pop("parallel", None)
         if decision.quiet:
             return
-        line = decision.line + (" Turn it off with: strata launch --split-engine off." if decision.use_split else "")
+        line = decision.line + (" Turn it off with: nostroma launch --split-engine off." if decision.use_split else "")
         self.notices.append(line)
         self.emit("config", line, None)
 
@@ -1771,7 +1771,7 @@ class Runner:
             return
         where = f"card {kept[0]}" if len(kept) == 1 else "cards " + ", ".join(str(k) for k in kept)
         text = (f"This model stays on {where}, the {'card' if len(kept) == 1 else 'cards'} you chose earlier; this PC has {len(usable)} usable cards. "
-                f"To use them all: strata launch --gpu {','.join(str(u) for u in sorted(usable))} (it is remembered from then on).")
+                f"To use them all: nostroma launch --gpu {','.join(str(u) for u in sorted(usable))} (it is remembered from then on).")
         self.notices.append(text)
         self.emit("config", text, None)
 
@@ -1933,7 +1933,7 @@ class Runner:
         try:
             runtime.stop(self.profile, timeout=120)
         except ProfileError as e:
-            raise LaunchError(f"The running model could not be stopped to measure: {e}.", "Run `strata launch --stop` first, then measure again.", 6) from None
+            raise LaunchError(f"The running model could not be stopped to measure: {e}.", "Run `nostroma launch --stop` first, then measure again.", 6) from None
 
     def stored_tuning(self) -> dict | None:
         """The tuning result stored for this launch's model, choices and computer (the active preset of its slot in the shared presets store,
@@ -2042,7 +2042,7 @@ class Runner:
             return Result(self.profile, urls, self.s.api_key, None, self.notices, str(self.config_path), reused=True)
         for r in beside:
             self.notices.append(f"{r['name']} is already loaded on port {r['port']}. Two models at once may not fit in the graphics memory; "
-                                "the new one can fail to start. Stop the first with `strata launch --stop` if it does.")
+                                "the new one can fail to start. Stop the first with `nostroma launch --stop` if it does.")
         blocking = ([own] if own and not self.retune else []) + same_port
         if not blocking:
             self.checked()
@@ -2054,7 +2054,7 @@ class Runner:
                     raise LaunchError("Left as it is: the running model keeps serving.", "", 130)
             else:
                 raise LaunchError(f"A model is already running: {what}. These choices are different.",
-                                  "Add --restart to stop it and start these, or run `strata launch --stop` first.", 6)
+                                  "Add --restart to stop it and start these, or run `nostroma launch --stop` first.", 6)
         self._stop_first = [r["profile"] for r in same_port]
         self.checked()
         return None
@@ -2074,7 +2074,7 @@ class Runner:
                 runtime.stop(pid, timeout=120)
                 acc.stop_tunnel(pid)
             except ProfileError as e:
-                raise LaunchError(f"The running server {pid[7:]} could not be stopped: {e}.", "Run `strata launch --stop` first.", 6) from None
+                raise LaunchError(f"The running server {pid[7:]} could not be stopped: {e}.", "Run `nostroma launch --stop` first.", 6) from None
         self._stop_first = []
 
     # ---- 5. start
@@ -2092,7 +2092,7 @@ class Runner:
             try:
                 runtime.stop(name, timeout=120)
             except ProfileError as e:
-                raise LaunchError(f"The running server could not be stopped: {e}.", "Run `strata launch --stop` first.", 6) from None
+                raise LaunchError(f"The running server could not be stopped: {e}.", "Run `nostroma launch --stop` first.", 6) from None
         self.check_port_free()
         self._marks = self.log_marks()                       # what the logs already held: only this attempt's lines are ever quoted
         self.emit("start", "Starting the engine and loading the model. The first start can take a few minutes.", None)
@@ -2783,7 +2783,7 @@ def _log_sentence(log: str | None) -> str:
 
 
 #: the states of a launch's own runtime that must be ended before a new start: a server that runs, and one that stopped but whose host is still
-#: alive ("failed", "stale"); `strata launch --stop` ends all four, and a start refuses the profile while any of them is left (#4824).
+#: alive ("failed", "stale"); `nostroma launch --stop` ends all four, and a start refuses the profile while any of them is left (#4824).
 LEFTOVER_STATES = ("ready", "starting", "failed", "stale")
 
 #: what the runtime says when another host still owns the profile: the start never began, so there is no engine log to read.
@@ -2793,7 +2793,7 @@ PROFILE_BUSY = re.compile(r"already has a live managed runtime", re.I)
 def _log_hint(config: Path | None, error: object = None) -> str:
     if PROFILE_BUSY.search(str(error or "")):
         return ("Another Nostroma server for this preset is still running or starting, or one that stopped has not been cleared, so this start never began "
-                "and there is no engine log for it. Run `strata launch --stop`, then start again without --retune: a tuning that finished is kept and is not measured again.")
+                "and there is no engine log for it. Run `nostroma launch --stop`, then start again without --retune: a tuning that finished is kept and is not measured again.")
     log = None
     if config:
         try:

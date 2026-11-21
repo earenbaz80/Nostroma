@@ -1,4 +1,4 @@
-"""Tester report 2026-10-18 (Terminal 0.1.45), T02: `strata launch` with flags opened the screens straight into the run, which crashed
+"""Tester report 2026-10-18 (Terminal 0.1.45), T02: `nostroma launch` with flags opened the screens straight into the run, which crashed
 (IndexError: pop from empty list in switch_screen) and exited 0. The run now opens on its own screen; an error of the screens ends non-zero."""
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ from tests.terminal.test_launch_tui import FakeRunner, SIZE, make_ctx
 
 
 def flags_settings() -> S.LaunchSettings:
-    """What `strata launch --model q2_0 --family qwen --context 128k --kv int8 --vision cpu --parallel 1 --tune skip --access local --port 8081` gives."""
+    """What `nostroma launch --model q2_0 --family qwen --context 128k --kv int8 --vision cpu --parallel 1 --tune skip --access local --port 8081` gives."""
     return S.LaunchSettings(name="QA flags", family="qwen", model="Q2_0", context=131072, kv="int8", vision="cpu", parallel=1, tune="skip",
                             access="local", port=8081)
 

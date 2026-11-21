@@ -1,4 +1,4 @@
-"""The model screen of `strata launch` with models from the signed feed: a model this Nostroma does not know is named under the list with the plain reason, and a feed
+"""The model screen of `nostroma launch` with models from the signed feed: a model this Nostroma does not know is named under the list with the plain reason, and a feed
 without models changes nothing on the screen. No engine is needed: the list comes from the cached feed in the test's own components folder (a throwaway key)."""
 
 from __future__ import annotations

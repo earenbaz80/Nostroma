@@ -45,7 +45,7 @@ class Readme(unittest.TestCase):
         self.assertNotIn("Starting and serving never install or download anything", text)
         self.assertIn("Serving and watching", text)
         self.assertIn("Only two commands fetch files", text)
-        self.assertIn("`strata launch`", text)
+        self.assertIn("`nostroma launch`", text)
 
     def test_the_launch_doc_it_points_at_is_in_the_archive(self):
         self.assertIn("docs/TERMINAL_LAUNCH.md", self.readme("linux-x86_64"))

@@ -11,7 +11,7 @@ reads that file and fails when the two disagree, so the Terminal and the app can
   and give weaker results in long agent sessions): ``STRATA_ROUTE_PRIOR=1.5`` turns it on.  The ``STRATA_ROUTE_PRIOR=0`` that 0.2.7's Off wrote is the default state now.
 - "Faster answers on Radeon RX 9000 / AI PRO R9700" is ON by default; turning it off writes its entry.
 
-The Terminal shows the switches as rows of its Advanced table (nostroma_cli/launch/params.py), only where they apply: ``strata launch --set STRATA_KVA=1``
+The Terminal shows the switches as rows of its Advanced table (nostroma_cli/launch/params.py), only where they apply: ``nostroma launch --set STRATA_KVA=1``
 turns "Faster long prompts" on, ``--set STRATA_KVA=off`` puts the default back (the same as removing the row).
 """
 

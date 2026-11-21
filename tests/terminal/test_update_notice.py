@@ -267,7 +267,7 @@ class Monitor(unittest.TestCase):
     def test_the_daily_check_is_started_by_the_launch_monitor_only(self):
         with mock.patch.object(engine_update, "start_daily_check") as start:
             self.run_app(lambda app, pilot: asyncio.sleep(0))
-            start.assert_not_called()                                        # (plain monitors, tests, `strata monitor --url`)
+            start.assert_not_called()                                        # (plain monitors, tests, `nostroma monitor --url`)
             self.run_app(lambda app, pilot: asyncio.sleep(0), info={**INFO, "daily_check": True})
             start.assert_called_once()
 

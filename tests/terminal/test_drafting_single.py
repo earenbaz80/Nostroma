@@ -1,6 +1,6 @@
 """One drafter per run, from every way in (owner, 2026-11-02): DFlash2 alone or the MTP alone, never both.
 
-nostroma_control/drafting.py decides; the app (apps/host, through Control and serve/server.py) and the Terminal (strata launch, its Drafting step, a saved preset)
+nostroma_control/drafting.py decides; the app (apps/host, through Control and serve/server.py) and the Terminal (nostroma launch, its Drafting step, a saved preset)
 both end at serve/server.py engine_args(). These tests lock in the engine arguments of every choice on the main backends, the old saved values, and the Terminal
 path from the launch settings to the argument list. (tests/terminal/test_drafting.py has the table, the flags and the downloads one by one.)
 """
@@ -205,7 +205,7 @@ class OldSavedValues(Base):
 
 
 class TheServerAndTheTerminalEndAtTheSameArguments(Base):
-    """serve/server.py engine_args() is where the app's Load (through Control's saved profile), `strata launch` and the Terminal's steps all arrive."""
+    """serve/server.py engine_args() is where the app's Load (through Control's saved profile), `nostroma launch` and the Terminal's steps all arrive."""
 
     def server_args(self, cfg, backend="cuda", archs=("sm_120",)):
         from serve.server import engine_args

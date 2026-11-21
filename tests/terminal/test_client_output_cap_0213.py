@@ -1,4 +1,4 @@
-"""Round 0213 TUICFG, step 9: the output cap strata connect writes (#5006; PR #4230's idea, written here) and the OpenCode block (#4528)."""
+"""Round 0213 TUICFG, step 9: the output cap nostroma connect writes (#5006; PR #4230's idea, written here) and the OpenCode block (#4528)."""
 from __future__ import annotations
 
 import json

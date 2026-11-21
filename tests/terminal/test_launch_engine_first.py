@@ -1,4 +1,4 @@
-"""`strata launch` settles the engine before it touches the model. With no usable engine and none to get it does NOT refuse (owner decision,
+"""`nostroma launch` settles the engine before it touches the model. With no usable engine and none to get it does NOT refuse (owner decision,
 2026-10-18): it warns in plain words (the reason from `strata update`, and the next step), asks whether to download the model anyway (the
 answer is yes unless the person says no; --yes skips the question), downloads, and ends with a message that names the engine problem and the
 next step, exit code 0. Nothing is started without an engine."""
@@ -215,7 +215,7 @@ class EngineBeforeModel(unittest.TestCase):
 
 
 class SetupControlStep(unittest.TestCase):
-    """setup.py in the app's mode (and under `strata launch`): the engine step comes before the download step."""
+    """setup.py in the app's mode (and under `nostroma launch`): the engine step comes before the download step."""
 
     def load_setup(self):
         """A private copy of setup.py read in the app's mode; the shared `setup` module (other tests) is left as it is."""

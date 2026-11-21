@@ -1,4 +1,4 @@
-"""Terminal polish (0.2.1): "already downloaded" instead of a fake download, and `strata monitor` finding a running launch."""
+"""Terminal polish (0.2.1): "already downloaded" instead of a fake download, and `nostroma monitor` finding a running launch."""
 
 import io
 import json

@@ -1,7 +1,7 @@
 """Qwen4 day on an Intel Arc card: a model of the signed feed (nostroma_control/feed_models.py) gets an Arc run config, in the Terminal (nostroma_cli/launch/adopt.py,
 runner.adopt_prepared_files) and in the app (setup.py --backend sycl in CONTROL mode, tools/strata_mcp.py's install plan).
 
-Found by the Q4-READY rehearsal on the A750 (11-09): `strata launch` of a feed model stopped with "Nostroma can write the settings itself only for the Qwen3.8-Flash-Next,
+Found by the Q4-READY rehearsal on the A750 (11-09): `nostroma launch` of a feed model stopped with "Nostroma can write the settings itself only for the Qwen3.8-Flash-Next,
 Swift, Coder and Gyro files, not for q4rehearsal-a", for a model on the Nostroma engine and for one on its own shape's engine alike. What these tests pin:
   * a feed model is laid out like Unsloth's sets: --native the first file, no --ple-gguf (the engine finds the n-gram table by its tensor name), its one GGUF when it is one file;
   * no Flash-Next draft layer for it; an entry that says drafter: none writes "mtp": false and "drafting": "off" (as setup_config writes it);

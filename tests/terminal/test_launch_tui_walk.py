@@ -1,4 +1,4 @@
-"""Release 0.2.4 TUI stability walk: every screen of `strata launch`, every key, for a Qwen pick, at 80x24 and a wide
+"""Release 0.2.4 TUI stability walk: every screen of `nostroma launch`, every key, for a Qwen pick, at 80x24 and a wide
 terminal, on several computers, with back/escape on each screen and a seeded random-key fuzz. Nothing may raise, hang or leave a blank
 screen; the app must still be alive after every key. The same file runs on Windows and Linux."""
 

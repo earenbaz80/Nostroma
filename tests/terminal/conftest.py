@@ -1,6 +1,6 @@
 """Terminal tests do not depend on the graphics card of the box they run on.
 
-The Drafting step of `strata launch` (and the Drafting line of the summary) exists only where the engine can run DFlash2 (CUDA or HIP), so the number
+The Drafting step of `nostroma launch` (and the Drafting line of the summary) exists only where the engine can run DFlash2 (CUDA or HIP), so the number
 of steps and the layout of the summary used to differ between an Nvidia box and an Intel one. Every test starts on a computer with no card the engine
 knows; a test about drafting names the card it means (test_drafting.py and test_drafting_hardware.py patch `detect_hardware` themselves)."""
 import os

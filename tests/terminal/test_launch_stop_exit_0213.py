@@ -1,4 +1,4 @@
-"""Round 0213 TUICFG, step 2: `strata launch --stop` exit status and message (#4398).
+"""Round 0213 TUICFG, step 2: `nostroma launch --stop` exit status and message (#4398).
 Four cases scripted against a runtime double that tracks which fake PIDs are still alive: empty, successful, failed, mixed."""
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from unittest import mock
 from nostroma_cli.launch import access
 from tests.terminal.launch_support import run_cli
 
-NOTHING = "Nothing from `strata launch` is running."
+NOTHING = "Nothing from `nostroma launch` is running."
 
 
 class Runtime:

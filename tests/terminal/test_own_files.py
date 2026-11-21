@@ -265,7 +265,7 @@ class Folders(Base):
 
 
 class Launcher(Base):
-    """`strata launch --model-path` and the TUI's "use my own files" (nostroma_cli/launch/runner.py, screens.py)."""
+    """`nostroma launch --model-path` and the TUI's "use my own files" (nostroma_cli/launch/runner.py, screens.py)."""
 
     def runner(self, **kw):
         from nostroma_cli.launch import settings as S

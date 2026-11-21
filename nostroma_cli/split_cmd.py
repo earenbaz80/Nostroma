@@ -1,4 +1,4 @@
-"""``strata split-engine apply``: the all-cards split engine for a run config the app wrote (the Terminal does the same inside ``strata launch``).
+"""``strata split-engine apply``: the all-cards split engine for a run config the app wrote (the Terminal does the same inside ``nostroma launch``).
 
 The desktop app builds its run config itself and starts it as a saved profile, so the step that turns a layer-split run config into the split engine's
 (nostroma_control/split_engine.py ``apply_run_config``) is asked of Control here, with the rule, the engine package and the draft layer checked on this computer.
@@ -14,7 +14,7 @@ from pathlib import Path
 
 
 def add_parser(sp) -> None:
-    p = sp.add_parser("split-engine", help="the all-cards split engine for a run config (the app's start asks it; the Terminal does the same in `strata launch`)")
+    p = sp.add_parser("split-engine", help="the all-cards split engine for a run config (the app's start asks it; the Terminal does the same in `nostroma launch`)")
     s_sp = p.add_subparsers(dest="split_engine_command", required=True)
     one = s_sp.add_parser("apply", help="write the split engine's run config for this one when the rule says yes; the config itself is not changed")
     one.add_argument("--config", required=True, metavar="FILE", help="the run config the app is about to start")

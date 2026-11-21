@@ -1,6 +1,6 @@
 """Round 0213 QATUI: a profile or run config of the launch itself that cannot be read stops the launch BEFORE anything is written.
 
-Found on l620 (job qatui-s03c / s03d): with `chmod 000` on the launch's own profile, `strata launch --access lan` printed "A new API key was made", rewrote the
+Found on l620 (job qatui-s03c / s03d): with `chmod 000` on the launch's own profile, `nostroma launch --access lan` printed "A new API key was made", rewrote the
 launch's run config with that new key, and only then failed with `profile 'launch-x' already exists` (exit 2): the key every app was set up with was gone.
 With `chmod 000` on the run config the launch went on and replaced it silently, again with a new key. Real files, an isolated home; only the Runner's
 step is called (the rest of a launch needs an engine).
@@ -114,7 +114,7 @@ class CheckSavedState(unittest.TestCase):
             self.assertIn("cannot be read (Permission denied)", str(ctx.exception))
 
 
-NEW_KEY = "A new API key was made, because the server is shared beyond this computer. It is saved with the preset; show it with: strata launch --show-key"
+NEW_KEY = "A new API key was made, because the server is shared beyond this computer. It is saved with the preset; show it with: nostroma launch --show-key"
 
 
 class NewKeySentenceIsTrue(unittest.TestCase):

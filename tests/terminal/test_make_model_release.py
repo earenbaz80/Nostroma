@@ -223,19 +223,19 @@ class Plan(unittest.TestCase):
         code, out, err = run(self.base(self.a, "--json", "--quant", "UD-Q4_K_XL"))
         self.assertEqual(code, 0, err)
         launch = json.loads(out)["launch"]
-        self.assertIn("strata launch --family m1 --model ud-q4_k_xl-m1", launch)
-        self.assertTrue(any(l.startswith("strata launch --family m1 --model ud-q4_k_xl-m1 --model-path ") for l in launch))
+        self.assertIn("nostroma launch --family m1 --model ud-q4_k_xl-m1", launch)
+        self.assertTrue(any(l.startswith("nostroma launch --family m1 --model ud-q4_k_xl-m1 --model-path ") for l in launch))
         code, out, err = run(self.base(self.a, "--json", "--quant", "Q4REH"))
         self.assertEqual(code, 0, err)
-        self.assertIn("strata launch --family m1 --model q4reh", json.loads(out)["launch"])
+        self.assertIn("nostroma launch --family m1 --model q4reh", json.loads(out)["launch"])
         code, out, err = run(self.base(self.a, "--quant", "Q4REH"))
         self.assertIn("## How a person starts it", out)
-        self.assertIn("    strata launch --family m1 --model q4reh", out)
+        self.assertIn("    nostroma launch --family m1 --model q4reh", out)
         with mock.patch.object(M, "builtin_sizes", return_value=None):
             code, out, err = run(self.base(self.a, "--json", "--quant", "Q4REH"))
         launch = json.loads(out)["launch"]
-        self.assertIn("strata launch --family m1 --model q4reh", launch)
-        self.assertIn("strata launch --family m1 --model q4reh-m1", launch)
+        self.assertIn("nostroma launch --family m1 --model q4reh", launch)
+        self.assertIn("nostroma launch --family m1 --model q4reh-m1", launch)
 
     def test_the_repo_templates_have_what_the_script_fills(self):
         """The templates live in the repo (packaging/templates/model-release, the default of --templates), so this runs on every box."""

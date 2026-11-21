@@ -26,7 +26,7 @@ class LogHint(unittest.TestCase):
             text = R._log_hint(self.config(h, log), ProfileError("this profile already has a live managed runtime", 6))
             self.assertNotIn(str(log), text)
             self.assertIn("still running or starting", text)
-            self.assertIn("strata launch --stop", text)
+            self.assertIn("nostroma launch --stop", text)
 
     def test_a_log_that_does_not_exist_is_not_pointed_at(self):
         with Home() as h:
@@ -69,7 +69,7 @@ class LogHint(unittest.TestCase):
                     runner.start()
         self.assertIn("already has a live managed runtime", raised.exception.text)
         self.assertNotIn(str(log), raised.exception.next)
-        self.assertIn("strata launch --stop", raised.exception.next)
+        self.assertIn("nostroma launch --stop", raised.exception.next)
 
 
 if __name__ == "__main__":

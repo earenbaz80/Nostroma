@@ -1,4 +1,4 @@
-"""The screens of `strata launch`: the saved-preset start screen, the nine setup steps, the confirm pop-up and the progress screen.
+"""The screens of `nostroma launch`: the saved-preset start screen, the nine setup steps, the confirm pop-up and the progress screen.
 
 One decision per screen. Every screen has a short plain explanation under the content (what it means, what to do next) and a line
 of key hints. Esc goes back, Enter goes on, q leaves (and says what is kept). Choices are written into `app.ctx.settings`
@@ -1411,7 +1411,7 @@ class AccessScreen(Base):
     hints = "↑↓ choose   Enter next   p port   k new key   t key on/off   Esc back   ? help"
     help_text = ("Who can use the model. 'This computer only' is the safe default and never needs a key. Beyond it Nostroma makes an API key "
                  "for you (recommended); press t if you would rather have no key: it still starts, but anyone who can reach it can use it. "
-                 "To see the key later: strata launch --show-key. To use a key of your own: strata launch --api-key YOUR-KEY (or --api-key-env NAME).")
+                 "To see the key later: nostroma launch --show-key. To use a key of your own: nostroma launch --api-key YOUR-KEY (or --api-key-env NAME).")
 
     BINDINGS = Base.BINDINGS + [Binding("p", "port", show=False), Binding("k", "newkey", show=False), Binding("t", "keytoggle", show=False)]
 
@@ -1514,7 +1514,7 @@ class AccessScreen(Base):
     def action_newkey(self) -> None:
         self.ctx.settings.api_key = acc.new_key()
         self.ctx.settings.no_key = False
-        self.say("A new API key was made. Apps that used the old one need the new one (strata connect shows it).")
+        self.say("A new API key was made. Apps that used the old one need the new one (nostroma connect shows it).")
         self.paint()
 
     def action_keytoggle(self) -> None:

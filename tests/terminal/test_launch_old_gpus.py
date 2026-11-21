@@ -1,4 +1,4 @@
-"""`strata launch` on a computer whose only NVIDIA cards are Pascal / Volta (P100, V100): setup.py admits them (the experimental CUDA 12 engine);
+"""`nostroma launch` on a computer whose only NVIDIA cards are Pascal / Volta (P100, V100): setup.py admits them (the experimental CUDA 12 engine);
 the screens must not say "no usable graphics card found", and several of them must offer the Cards step."""
 
 from __future__ import annotations

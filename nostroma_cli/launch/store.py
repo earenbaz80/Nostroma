@@ -94,7 +94,7 @@ def load(name: str, *, missing_ok: bool = False) -> LaunchSettings | None:
             return None
         raise PresetError(f"There is no saved preset called '{name}'." + _near(name)) from None
     except (OSError, ValueError):
-        raise PresetError(f"The saved preset '{name}' cannot be read. Delete it (strata launch --delete-preset \"{name}\") "
+        raise PresetError(f"The saved preset '{name}' cannot be read. Delete it (nostroma launch --delete-preset \"{name}\") "
                           "and save it again.") from None
     if not isinstance(data, dict):
         raise PresetError(f"The saved preset '{name}' is damaged.")

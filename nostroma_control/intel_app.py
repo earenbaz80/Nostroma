@@ -1,6 +1,6 @@
 """The Intel Arc card in the desktop app (the model setup of Nostroma Control, tools/strata_mcp.py and setup.py in their CONTROL mode).
 
-The Terminal (`strata launch`) sets an Arc up in two steps (nostroma_cli/launch/runner.py adopt_prepared_files): `setup.py --prepare-pack` makes the pack
+The Terminal (`nostroma launch`) sets an Arc up in two steps (nostroma_cli/launch/runner.py adopt_prepared_files): `setup.py --prepare-pack` makes the pack
 from the model's GGUF files, and nostroma_cli/launch/adopt.py writes the run config, with the engine named as the component (`component:strata-engine`).
 Intel cards do not download models: the files must be on the computer. The app's install job did neither step: it ran setup.py's normal NVIDIA / AMD
 path, which stops with "no NVIDIA GPU found (nvidia-smi did not answer)" (0.2.13 and 0.2.12, found by QAGUI-LIN on an Arc A750).

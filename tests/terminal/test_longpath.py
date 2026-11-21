@@ -1,6 +1,6 @@
 """Windows MAX_PATH (260) and the engine installer.
 
-A fresh Windows PC has long paths off. `strata launch` on an AMD PC failed with "local file operation failed
+A fresh Windows PC has long paths off. `nostroma launch` on an AMD PC failed with "local file operation failed
 (FileNotFoundError)" because the staging folder (components\\.updates\\staging\\<12 hex>\\engine\\<folder>) plus the longest file in
 the hip packages (149 characters) went past 259 under an ordinary user name. This pins the path arithmetic for the real 0.2.1
 package file lists (tests/terminal/data/windows_package_paths.json, made from the release tarballs) and the behaviour of the fix."""

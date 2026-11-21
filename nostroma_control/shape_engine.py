@@ -50,7 +50,7 @@ WORDS = {
     "start_failed": "The engine for {model} {version} was not installed because it did not start correctly ({why}). The Nostroma engine is unchanged.",
     "fetch_failed": "The engine for {model} could not be downloaded: {why}",
     "newer_failed": "A newer engine for {model} is available but could not be installed ({why}). Still using {have}.",
-    "missing": ("{model} needs its own engine, which is not installed or does not fit this PC: {reason}. Run `strata launch` again, or Download / repair in the app, "
+    "missing": ("{model} needs its own engine, which is not installed or does not fit this PC: {reason}. Run `nostroma launch` again, or Download / repair in the app, "
                 "to fetch it. Starting a model never downloads an engine."),
     "current": "The engine for {model} is up to date.",
     # setup.py (the [X] / [ok] marks are setup's)
@@ -173,7 +173,7 @@ class ShapeEngineMissing(ec.EngineMissing):
         self.plain_notice = None
         RuntimeError.__init__(self, WORDS["missing"].format(model=shown(shape, title), reason=reason))
         self.what = f"the engine for {shown(shape, title)}"
-        self.command = "strata launch"
+        self.command = "nostroma launch"
 
 
 def status(components: Path | None = None) -> list[dict]:
@@ -317,7 +317,7 @@ def ensure(shape: str, source: str, *, components: Path | None = None, hardware:
            quiet_when_current: bool = True, title: str | None = None, automatic: bool = False) -> Path | None:
     """The engine of `shape` is installed and up to date, from the signed feed at `source` (a URL or a folder). Returns its program, or None with one plain line through `emit` when
     there is none (not in the feed, nothing for this PC, the feed cannot be read). A newer package is fetched only when the feed can be read; an installed one keeps running when it
-    cannot. This is what setup and `strata launch` call when a model of that shape is chosen.  `automatic` (`strata launch`): with an engine installed,
+    cannot. This is what setup and `nostroma launch` call when a model of that shape is chosen.  `automatic` (`nostroma launch`): with an engine installed,
     the check for a newer one is a read nobody asked for, so a feed host that refused within the last hours is not asked again (netpolicy rule 4b);
     without one the feed is always read."""
     from nostroma_control import acquisition, feed as feedmod, signing, updater

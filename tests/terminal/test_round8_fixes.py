@@ -158,7 +158,7 @@ class SetupArguments(unittest.TestCase):
             two.say_remembered_cards(base)
             self.assertEqual(len(two.notices), 1)
             self.assertIn("stays on card 0", two.notices[0])
-            self.assertIn("strata launch --gpu 0,1", two.notices[0])
+            self.assertIn("nostroma launch --gpu 0,1", two.notices[0])
             self.assertIn("remembered", two.notices[0])
             one = Runner(S.LaunchSettings(family="qwen", model="IQ3_XXS"), catalog=catalog(HW_12))
             one.say_remembered_cards(base)                                                     # one card in the PC: nothing to say
@@ -182,7 +182,7 @@ class SetupArguments(unittest.TestCase):
         text = (Path(__file__).resolve().parents[2] / "setup.py").read_text(encoding="utf-8")
         self.assertIn('if a.mtp == "off" and not (rt / "experts.bin").exists():', text)
         self.assertIn('if use_mtp and a.mtp == "off" and not (mtp / "mtp-q2_0.gguf").exists():', text)
-        self.assertIn('"use --data-dir on a bigger drive (strata launch --data-dir)" if CONTROL', text)       # N2: a launch option, not --models-dir
+        self.assertIn('"use --data-dir on a bigger drive (nostroma launch --data-dir)" if CONTROL', text)       # N2: a launch option, not --models-dir
 
 
 class PlanPredictsEveryDownload(unittest.TestCase):

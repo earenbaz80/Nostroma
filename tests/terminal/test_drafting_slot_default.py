@@ -263,7 +263,7 @@ class TheStart(unittest.TestCase):
             return drafting.summary_line(drafting.decide(**want, **sig))
 
     def plan_by_launch(self, parallel, args=None, **env) -> str:
-        """The plan line the Terminal's `strata launch --plan` shows (runner.drafting_plan_line) for an installed config like this one."""
+        """The plan line the Terminal's `nostroma launch --plan` shows (runner.drafting_plan_line) for an installed config like this one."""
         from nostroma_cli.launch import settings as S
         from nostroma_cli.launch.runner import Runner
         from tests.terminal.launch_support import HW_12, Home, catalog

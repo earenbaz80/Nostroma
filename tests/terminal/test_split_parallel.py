@@ -299,7 +299,7 @@ class SummaryTellsWhatRuns(Base):
         cfgfile.write_text(json.dumps({"log": str(log), "args": []}), encoding="utf-8")
         r = Runner(S.LaunchSettings(family="qwen", model="UD-Q4_K_XL", context=131072, tune="skip", port=18999), catalog=catalog(self.hw))
         r.config_path = cfgfile
-        r.notices.append("Using the all-cards split engine on 2 cards. Turn it off with: strata launch --split-engine off.")
+        r.notices.append("Using the all-cards split engine on 2 cards. Turn it off with: nostroma launch --split-engine off.")
         return r, log
 
     def metrics(self, engine):

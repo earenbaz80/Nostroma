@@ -1,6 +1,6 @@
 """The model library when `--data-dir` names another folder: what is in the folder in use, and the one question about it.
 
-Nothing here moves a file.  `strata launch` asks (or is told with --move-data); setup.py does the moving, and only when
+Nothing here moves a file.  `nostroma launch` asks (or is told with --move-data); setup.py does the moving, and only when
 it is given --move-data.  Without it the old folder stays where it is, stays usable, and the new folder is used for new
 downloads."""
 from __future__ import annotations

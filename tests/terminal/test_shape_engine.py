@@ -548,7 +548,7 @@ class Update(Base):
             self.assertTrue(any("could not be downloaded" in line for line in lines), lines)
 
     def test_a_refused_feed_is_asked_once_by_the_launch_check_then_not_for_six_hours(self):
-        """netpolicy rule 4b: `strata launch` (automatic=True) with an engine installed reads the refusal note; setup (no flag) and a shape
+        """netpolicy rule 4b: `nostroma launch` (automatic=True) with an engine installed reads the refusal note; setup (no flag) and a shape
         with no engine yet always read the feed."""
         from nostroma_control import netpolicy, transfer
         from tests.terminal.test_netpolicy import refused_port
@@ -712,7 +712,7 @@ class ApprovedWords(unittest.TestCase):
         self.assertEqual(W["newer_failed"].format(model=M, why="bad hash", have="0.1.59"),
                          "A newer engine for Q4 Lite Shape is available but could not be installed (bad hash). Still using 0.1.59.")
         self.assertEqual(W["missing"].format(model=M, reason="nothing matched"),
-                         "Q4 Lite Shape needs its own engine, which is not installed or does not fit this PC: nothing matched. Run `strata launch` again, or Download / repair in "
+                         "Q4 Lite Shape needs its own engine, which is not installed or does not fit this PC: nothing matched. Run `nostroma launch` again, or Download / repair in "
                          "the app, to fetch it. Starting a model never downloads an engine.")
         self.assertEqual(W["setup_failed"].format(model=M), "the engine for Q4 Lite Shape could not be installed")
         self.assertEqual(W["setup_failed_hint"], "See the line above. Nothing was downloaded for the model. Run this again when the update feed has it.")

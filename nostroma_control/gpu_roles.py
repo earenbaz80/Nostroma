@@ -1,4 +1,4 @@
-"""Main / Helper / Off for every graphics card: ONE place for the app, `strata launch`, setup and the server.
+"""Main / Helper / Off for every graphics card: ONE place for the app, `nostroma launch`, setup and the server.
 
 A card has one of three roles:
 * Main   - the card that runs the LAST stage of the layer split: the output head, the draft layer and the check of its guesses. Exactly one.
@@ -254,7 +254,7 @@ def roles_from_text(text: str, cards: list[dict]) -> dict[int, str]:
 
 def speed_stage_order(order: list[int], speeds: dict[int, float], vram_mib: "dict[int, int] | Callable[[], dict[int, int] | None] | None" = None) -> tuple[list[int], str, tuple[int, int] | None]:
     """THE decision of the card order of an automatic layer split (#1352, #1576, #1760), shared by the start (serve/server.py ordered_gpus) and the plan
-    (`from_legacy`, strata launch --plan): the same function, so the plan can never name a different Main card than the run.
+    (`from_legacy`, nostroma launch --plan): the same function, so the plan can never name a different Main card than the run.
     `order`: the cards as the config lists them.  `speeds`: {index: multiprocessors x max clock}, every card of `order`.  `vram_mib`: {index: MiB}, or a function
     that returns it (asked only when a reorder is on the table; None / missing cards: no VRAM check).
     Returns (order, why, vram) with why:
@@ -444,7 +444,7 @@ def engine_order(roles: dict[int, str], speeds: dict[int, float] | None = None) 
 
 def describe(roles: dict[int, str], cards: list[dict], *, card_numbers: bool = False) -> str:
     """`Main: GPU 2 RTX 4070 Ti. Helper: GPU 1 RTX 3060.` (the line setup prints; the screens count from 1: GPU 1 is card 0).
-    `card_numbers`: each card also names the number `--gpu` takes, as `strata launch --plan` prints them: `GPU 2 (--gpu 1) RTX 4070 Ti`."""
+    `card_numbers`: each card also names the number `--gpu` takes, as `nostroma launch --plan` prints them: `GPU 2 (--gpu 1) RTX 4070 Ti`."""
     cs = {_idx(c): c for c in cards}
     parts = []
     for role, word in (("main", "Main"), ("helper", "Helper"), ("off", "Off")):

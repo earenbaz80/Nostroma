@@ -2,7 +2,7 @@
 
 A new model can ship as a signed feed update, with no new Control package. The feed carries, for each model, the Hugging Face repository at a pinned revision,
 every file's exact size and SHA-256, the engine family, the licence and the first engine version that reads it (nostroma_control/feed.py ``FeedModel``). Setup, the
-Terminal's `strata launch` and the app read the SAME tables (setup.py's MODELS / FAMILIES / OWN_PATH_FAMILIES), so a feed model is added to those tables here and
+Terminal's `nostroma launch` and the app read the SAME tables (setup.py's MODELS / FAMILIES / OWN_PATH_FAMILIES), so a feed model is added to those tables here and
 every screen shows it after the built-in ones. It then goes through the code a built-in model goes through: the same pins (REPO_PINS / REV_PINS, HF_REVISIONS), the
 same SHA-256 check after the download and the same ``.bad`` handling (setup.py ``download`` / ``verify_sha256`` / ``keep_bad``).
 

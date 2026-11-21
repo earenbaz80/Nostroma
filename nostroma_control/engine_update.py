@@ -147,7 +147,7 @@ class RunningModel:
     name: str
     state: str = "ready"
     port: int | None = None
-    kind: str = "launch"                 # launch (strata launch), profile (the app's or a saved profile), server (a Nostroma server nobody here started)
+    kind: str = "launch"                 # launch (nostroma launch), profile (the app's or a saved profile), server (a Nostroma server nobody here started)
     can_stop: bool = True
     choices: dict | None = field(default=None, repr=False)
 
@@ -243,7 +243,7 @@ def start_model(model: RunningModel) -> tuple[bool, str]:
                     from nostroma_cli.launch import access
                     access.start_tunnel(model.profile, int(model.port or 8080))
                 except Exception:                        # noqa: BLE001 - the model serves on this computer; the tunnel is said not to be back
-                    return True, f"{model.label} is serving again; its Cloudflare tunnel did not open, start it again with `strata launch`."
+                    return True, f"{model.label} is serving again; its Cloudflare tunnel did not open, start it again with `nostroma launch`."
             return True, f"{model.label} is serving again with the same settings."
         try:
             from nostroma_cli.launch.runner import explain_engine_exit
@@ -268,7 +268,7 @@ def start_hint(model: RunningModel) -> str:
             return S.flags_text(S.LaunchSettings.from_dict({**model.choices, "name": model.name}))
         except Exception:                                # noqa: BLE001
             pass
-    return "`strata launch` (the screens start from your saved presets)"
+    return "`nostroma launch` (the screens start from your saved presets)"
 
 
 # ---------------------------------------------------------------------------------------------------- the gate
@@ -312,7 +312,7 @@ class ModelGate:
                     f"{'it' if len(models) == 1 else 'them'} stopped, so nothing was changed. To let the update stop "
                     f"{'it' if len(models) == 1 else 'them'}: run {NEXT_STEP} again with --stop-model (add --start-again to start "
                     f"{'it' if len(models) == 1 else 'them'} again afterwards). Or stop {'it' if len(models) == 1 else 'them'} yourself first "
-                    f"(`strata launch --stop`).", EXIT_BUSY)
+                    f"(`nostroma launch --stop`).", EXIT_BUSY)
             self.say(f"{names} {'is' if len(models) == 1 else 'are'} running. {plan} The new engine is downloaded while "
                      f"{'it keeps' if len(models) == 1 else 'they keep'} serving; then {'it is' if len(models) == 1 else 'they are'} stopped "
                      f"(answers in progress end), the engine is updated, and you choose whether to start "

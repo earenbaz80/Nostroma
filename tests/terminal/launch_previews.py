@@ -1,4 +1,4 @@
-"""Writes the text previews of every `strata launch` screen to docs/terminal-previews/launch-*.txt (fake computer: RTX 5070 12 GB, 64 GB RAM).
+"""Writes the text previews of every `nostroma launch` screen to docs/terminal-previews/launch-*.txt (fake computer: RTX 5070 12 GB, 64 GB RAM).
 
     python tests/terminal/launch_previews.py
 
@@ -37,7 +37,7 @@ def ctx_for(hw):
 
 
 def write(name: str, text: str, note: str) -> None:
-    body = f"# strata launch preview: {note}\n# (text of the screen as drawn at the size named in tests/terminal/launch_previews.py)\n\n" + text.rstrip() + "\n"
+    body = f"# nostroma launch preview: {note}\n# (text of the screen as drawn at the size named in tests/terminal/launch_previews.py)\n\n" + text.rstrip() + "\n"
     (OUT / f"launch-{name}.txt").write_text(body, encoding="utf-8")
     print("wrote", f"launch-{name}.txt")
 

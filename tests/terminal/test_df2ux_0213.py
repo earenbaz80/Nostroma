@@ -81,7 +81,7 @@ class PlanNamesTheRealDrafter(unittest.TestCase):
 
 
 class TheLaunchPlan(unittest.TestCase):
-    """`strata launch --plan` for a model that is not installed yet: the number is the tuned drafter's."""
+    """`nostroma launch --plan` for a model that is not installed yet: the number is the tuned drafter's."""
 
     def setUp(self):
         from tests.terminal.launch_support import not_intel

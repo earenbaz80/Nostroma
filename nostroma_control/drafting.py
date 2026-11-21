@@ -4,7 +4,7 @@ One drafter per run. The engine is started with the DFlash2 drafter or with the 
 chosen is not loaded, so its graphics memory goes to the expert cache.
 
 The choice is the person's, and it is saved in the model's run config as ``"drafting"``: ``auto`` (the default), ``mtp``, ``dflash2`` or ``off``.
-``strata launch --drafting ...`` writes it, the app's Models screen writes it, and ``serve/server.py`` applies it at every start (like ``"mtp": false``,
+``nostroma launch --drafting ...`` writes it, the app's Models screen writes it, and ``serve/server.py`` applies it at every start (like ``"mtp": false``,
 nostroma_control/draft_layer.py), so a setup run that rewrites the engine arguments cannot undo it. An older config that names both drafters (``--mtp`` and
 ``--draft dflash2``) starts with the one chosen.
 
@@ -450,7 +450,7 @@ SLOT_BASE_MIB = 3800         # dense weights and the engine's fixed buffers beyo
 SLOT_RESERVE_MIB = 700       # the engine's default --vram-reserve-mib
 DEFAULT_CONTEXT = 131072     # --max-context when the arguments name none (the 128K default)
 
-#: model families (strata launch --family) the drafter was trained for and measured on: Qwen3.8-Flash-Next, its Gyro build and Unsloth's quantizations of the same weights
+#: model families (nostroma launch --family) the drafter was trained for and measured on: Qwen3.8-Flash-Next, its Gyro build and Unsloth's quantizations of the same weights
 #: (UD-IQ4_XS, UD-Q4_K_XL...; DFlash2 numbers measured on UD-Q4_K_XL on Strix, R9700 and M5 Max). Not Swift (UkisAI's fine-tune), Coder (ISTA-DASLab's coding version) or NVFP4:
 #: no DFlash2 acceptance numbers for them, they start the MTP.
 SUPPORTED_FAMILIES = ("qwen", "gyro", "unsloth")
@@ -820,7 +820,7 @@ def normalize(value: Any) -> str:
     return text if text in MODES else DEFAULT_MODE
 
 
-#: Does the engine in this release run DFlash2 when it serves (the app and `strata launch`)? On this branch it does: `--draft dflash2` works with --serve for one
+#: Does the engine in this release run DFlash2 when it serves (the app and `nostroma launch`)? On this branch it does: `--draft dflash2` works with --serve for one
 #: card or a layer split over several cards, one request at a time (src/program/generate.cpp); --batch (several requests at once on one card) and --pipeline-windows cannot. A parked or
 #: edited conversation starts the drafter with an empty context (a log line; the answers are the same). Flip back to False to hide the choice again.
 ENGINE_SERVES_DFLASH2 = True

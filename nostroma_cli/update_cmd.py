@@ -450,13 +450,13 @@ def _engines_command(a, ctx, machine: bool, fail) -> int:
             from nostroma_control import engine_component as ec
             print(f"Engine {out['to']} is now in use. Models you start from now on run on it.")
             print(f"The engine for {ec.MAKE_NAMES[out['backend_saved']]} cards is used, now and next time. "
-                  "`strata launch --backend auto` goes back to the PC's own choice.")
+                  "`nostroma launch --backend auto` goes back to the PC's own choice.")
         else:
             print(f"Engine {out['to']} is now in use (was {out.get('from') or 'none'}). Models you start from now on run on it.")
             if out.get("backend_saved"):
                 from nostroma_control import engine_component as ec
                 print(f"The engine for {ec.MAKE_NAMES[out['backend_saved']]} cards is used, now and next time. "
-                      "`strata launch --backend auto` goes back to the PC's own choice.")
+                      "`nostroma launch --backend auto` goes back to the PC's own choice.")
             print("Saved tuning presets are marked for the short re-check; none were deleted." if out.get("presets_marked") else
                   "Saved tuning presets are unchanged.")
             print("`strata update` makes the newest engine the one in use again." if not out.get("automatic") else

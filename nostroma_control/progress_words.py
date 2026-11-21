@@ -1,5 +1,5 @@
 """What the person is told while a model downloads and is prepared: ONE place for the words, read by the app (through
-tools/strata_mcp.py `install_progress`) and by the Terminal (`strata launch`, nostroma_cli/launch/runner.py).
+tools/strata_mcp.py `install_progress`) and by the Terminal (`nostroma launch`, nostroma_cli/launch/runner.py).
 
 Setup prints its work in seven steps and the tools it runs print their command lines (`> python tools/strata_pack.py build ...`)
 and progress lines (`name: 1.20 / 5.04 GB (24%)`). Those titles are for people who read the setup log ("writing the start script",

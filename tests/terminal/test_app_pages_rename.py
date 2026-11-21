@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[2]
 TOOL = ROOT / "tools" / "docs_rename.py"
 
 # Each area, and the fewest files it must still find: a path that moves away passes in silence otherwise.
-FEWEST = {"terminal": 2, "desktop": 2, "tui": 4, "app": 10, "previews": 18}
+FEWEST = {"terminal": 2, "desktop": 2, "tui": 5, "app": 10, "previews": 18}
 
 
 def load():
@@ -68,6 +68,15 @@ class AppPagesRename(unittest.TestCase):
         self.assertEqual(tool.renamed("The Strata launch screens stopped.", "tui"),
                          "The Nostroma launch screens stopped.")
 
+
+    def test_the_harness_configs_keep_their_provider_and_lose_the_brand(self):
+        tool = load()
+        # what OpenCode's config carries: the provider is strata, the name a person reads in its picker is not
+        config = "{\"defaultProvider\": \"strata\", \"primary\": f\"strata/{t.model}\", \"name\": \"qwen3.8 (Strata)\"}"
+        kept = tool.renamed(config, "tui")
+        self.assertIn('"defaultProvider": "strata"', kept)
+        self.assertIn('strata/{t.model}', kept)
+        self.assertIn("qwen3.8 (Nostroma)", kept, "the name the app lists still says the old brand")
 
     def test_a_capture_keeps_the_folders_it_prints(self):
         tool = load()

@@ -1,5 +1,5 @@
 """Item 1 of lane NET: the silent wait in launch step 5. setup.download() against a server that accepts and never answers, a refusing
-port and a working one (the rule's limits scaled down); what `strata launch` shows while setup waits (the waiting line, the heartbeat in
+port and a working one (the rule's limits scaled down); what `nostroma launch` shows while setup waits (the waiting line, the heartbeat in
 the download phase, the plain printer); setup's [X] reason in the launch error and the setup log."""
 
 from __future__ import annotations

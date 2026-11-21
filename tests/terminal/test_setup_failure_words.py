@@ -1,4 +1,4 @@
-"""When setup.py stops with a Python error, `strata launch` says what it was and where the rest of the output is (#3613, #3467)."""
+"""When setup.py stops with a Python error, `nostroma launch` says what it was and where the rest of the output is (#3613, #3467)."""
 
 import tempfile
 import unittest

@@ -1,6 +1,6 @@
 """Round 0213 QATUI: the Windows display-adapter CIM query is asked once per process, not once per caller (#4975 family).
 
-Found on the owner PC (packaged Windows Terminal, `strata launch --plan`): the same PowerShell `Get-CimInstance Win32_VideoController` command ran 18 times in one
+Found on the owner PC (packaged Windows Terminal, `nostroma launch --plan`): the same PowerShell `Get-CimInstance Win32_VideoController` command ran 18 times in one
 command (26 child processes, 17 s). With PowerShell/WMI stuck (a fake `powershell` that never answers) the plan was still running after 300 s: 18 times the
 query's 15 s timeout, far beyond the 60 s the app waits for Control. After the change a stuck query costs its timeout once.
 

@@ -476,7 +476,7 @@ def runtime_version() -> str | None:
 def split_backend(value) -> tuple[str, str]:
     """(backend, variant) for a name the person typed: "hip-rdna2" is the hip family and its rdna2 package (the way the feed labels an AMD
     package, #4013), "hip" is the family alone, a make's own name is its family ("amd" -> hip, "nvidia" -> cuda, "intel" -> sycl: the words
-    `strata launch --backend` takes, so `strata update --backend amd` means the same), any other name is returned as it is with no variant."""
+    `nostroma launch --backend` takes, so `strata update --backend amd` means the same), any other name is returned as it is with no variant."""
     name = str(value or "").strip().lower()
     if name not in BACKEND_MATRIX and name.startswith("hip-") and len(name) > 4:
         return "hip", name[4:]
@@ -497,7 +497,7 @@ def clean_backend_name(value) -> str:
 
 
 def saved_backend(environ=None) -> str | None:
-    """The engine family the person chose with `strata launch --backend` (kept in the settings file), or None. It is ignored when this PC
+    """The engine family the person chose with `nostroma launch --backend` (kept in the settings file), or None. It is ignored when this PC
     has no card of that make (the choice was made on other hardware): the PC's own detection then decides again."""
     try:
         from nostroma_control import discovery
@@ -729,7 +729,7 @@ CIM_CACHE_SECONDS = 120.0        # one answer (a failed or timed-out one too) se
 
 
 def _windows_adapters_cim() -> list[dict]:
-    """The CIM query below, asked once per process and 2 minutes: one `strata launch --plan` asked it 18 times (17 s on a healthy PC) and, with the WMI
+    """The CIM query below, asked once per process and 2 minutes: one `nostroma launch --plan` asked it 18 times (17 s on a healthy PC) and, with the WMI
     service stuck, 18 times its 15 s timeout, far beyond the 60 s the app waits for Control (#4975). The adapters do not change inside a command."""
     if os.name != "nt":
         return []
@@ -928,7 +928,7 @@ SMI_CACHE_SECONDS = 30.0         # a card's capability and the driver version do
 
 
 def _smi_query(field_name: str) -> list[str]:
-    """nvidia-smi for one field, asked once per process and 30 s: one `strata launch --plan` on Windows with an engine installed started it 19 times (10 for the
+    """nvidia-smi for one field, asked once per process and 30 s: one `nostroma launch --plan` on Windows with an engine installed started it 19 times (10 for the
     compute capability, 9 for the driver version), and a stuck driver would have cost its 8 s timeout each time. A failed answer is kept for the same time."""
     now = time.monotonic()
     hit = _SMI_CACHE.get(field_name)

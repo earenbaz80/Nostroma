@@ -1,4 +1,4 @@
-"""Shared fixtures for the `strata launch` tests: an isolated home, a fake computer, and a text dump of a Textual screen."""
+"""Shared fixtures for the `nostroma launch` tests: an isolated home, a fake computer, and a text dump of a Textual screen."""
 
 from __future__ import annotations
 
