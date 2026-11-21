@@ -9,13 +9,14 @@
 #   3. unpacks it into  ${XDG_DATA_HOME:-~/.local/share}/strata/terminal/<version>  (no administrator rights, nothing outside your home);
 #   4. checks the release's signed feed with the Terminal it just unpacked (`strata update --check`); if that check fails, it removes
 #      what it unpacked and stops;
-#   5. puts a `strata` link in ~/.local/bin and prints:  Installed. Run: nostroma launch
+#   5. puts `nostroma` and the older `strata` links in ~/.local/bin and prints:  Installed. Run: nostroma launch
 #
 # The engine (the part that talks to your graphics card) and the model are NOT part of this: `nostroma launch` fetches the engine for
 # your card the first time you choose a model, from the same release folder, signed.
 #
 # <feed> is where the release folder is hosted: GitHub Releases of Niko1221/Strata (the "latest" release's files), built in as the default.
-# Set STRATA_FEED to another folder (a URL) to use that instead, for example a local test feed:  STRATA_FEED=http://127.0.0.1:8099 sh install.sh
+# Set NOSTROMA_FEED (the older STRATA_FEED still works) to another folder (a URL) to use that instead, for example a local test feed:
+# NOSTROMA_FEED=http://127.0.0.1:8099 sh install.sh
 #
 # Settings (all optional): NOSTROMA_FEED, NOSTROMA_DATA_DIR (default ~/.local/share/strata), NOSTROMA_BIN_DIR (default ~/.local/bin),
 # NOSTROMA_INSTALL_TEST_TRUST=1 (a test feed: also fetch <feed>/test-trust.json and trust only that key for the check in step 4).
@@ -31,22 +32,23 @@ TEST_TRUST="${NOSTROMA_INSTALL_TEST_TRUST:-${STRATA_INSTALL_TEST_TRUST:-}}"
 say() { printf '%s\n' "$*"; }
 die() { printf 'strata installer: %s\n' "$*" >&2; exit 1; }
 
-# Put one of the product's two names on the PATH, both pointing at the program just installed. A name that is already
-# there is replaced only when it is a link this installer made: anything else is someone's file, and it is left alone.
-put_on_path() {
-  dst=$1
-  if [ -L "$dst" ]; then
-    case $(readlink "$dst") in
+# One of the product's two names may already be on the PATH. It is replaced only when it is a link this installer
+# made: anything else is someone's file, and it is left alone. Checked before anything is downloaded, so a refusal
+# costs nothing and the message that says nothing was changed is true.
+check_name() {
+  if [ -L "$1" ]; then
+    case $(readlink "$1") in
       "$DATA_DIR"/terminal/*) : ;;
-      *) die "$dst is a link to $(readlink "$dst"), which this installer did not make. Move it and run this again. Nothing was changed." ;;
+      *) die "$1 is a link to $(readlink "$1"), which this installer did not make. Move it and run this again. Nothing was changed." ;;
     esac
-  elif [ -e "$dst" ]; then
-    die "$dst already exists and is not a link this installer made. Move it and run this again. Nothing was changed."
+  elif [ -e "$1" ]; then
+    die "$1 already exists and is not a link this installer made. Move it and run this again. Nothing was changed."
   fi
-  ln -sf "$DATA_DIR/terminal/current/bin/strata" "$dst"
 }
+check_name "$BIN_DIR/nostroma"
+check_name "$BIN_DIR/strata"
 
-[ -n "$FEED" ] || die "this installer does not know where the Nostroma release folder is. Set STRATA_FEED to its address and run it again, for example: STRATA_FEED=https://example.org/strata sh install.sh"
+[ -n "$FEED" ] || die "this installer does not know where the Nostroma release folder is. Set NOSTROMA_FEED to its address and run it again, for example: NOSTROMA_FEED=https://example.org/strata sh install.sh"
 
 # Everything below is one function, called on the last line: a download that stops half-way is a syntax error (nothing runs), not a half installer.
 main() {
@@ -155,8 +157,8 @@ main() {
   rm -rf "$dest"
   mv "$dest.incoming" "$dest"
   ln -sfn "$dest" "$DATA_DIR/terminal/current"
-  put_on_path "$BIN_DIR/nostroma"
-  put_on_path "$BIN_DIR/strata"                 # the name this command had before, the same program
+  ln -sf "$DATA_DIR/terminal/current/bin/strata" "$BIN_DIR/nostroma"
+  ln -sf "$DATA_DIR/terminal/current/bin/strata" "$BIN_DIR/strata"       # the name this command had before, the same program
   case ":$PATH:" in
     *":$BIN_DIR:"*) say "Installed. Run: nostroma launch"
                     say "  (the old name, 'strata', still works)" ;;

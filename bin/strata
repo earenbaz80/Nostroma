@@ -77,8 +77,9 @@ pick_python() {
 }
 
 if ! PY=$(pick_python); then
+  # outside the heredoc below: a quoted one ('MSG') does not expand, so a name in there would print as $prog
+  printf '%s: no usable Python found.\n\n' "$prog" >&2
   cat >&2 <<'MSG'
-$prog: no usable Python found.
 
 This distribution is meant to run on its own. If you are seeing this, the private runtime is
 missing from the install and no Python 3.10+ is on your PATH.
