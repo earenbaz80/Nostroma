@@ -8,7 +8,7 @@ const NO_ANSWER = /^(_no response_|none|n\/a|na|-|todo|tbd|\.|\?)$/i;
 const NOT_RUN_LABELS = /^\*\*(passed|failed|not run)\s*:?\*\*\s*:?/gim;
 
 // Version the reopened work must be tested on.
-const CURRENT_VERSION_RE = /\b0\.2\.\d+|0\.2\.0-beta/i;
+const CURRENT_VERSION_RE = /\b0\.2\.\d+/i;
 // Any version or commit.
 const ANY_VERSION_RE = /\bv?\d+\.\d+(\.\d+)*(-[a-z0-9.]+)?\b|\b[0-9a-f]{7,40}\b|\bcommit\b/i;
 const HARDWARE_RE = /\b(rtx|gtx|geforce|quadro|tesla|radeon|rx ?\d|instinct|arc|a\d{3,4}|b\d{2,3}|apple|m[1-5]( pro| max| ultra)?|nvidia|amd|intel|gpu|cpu|vram|\d+ ?gb|ram|windows|linux|ubuntu|debian|fedora|arch|macos|mac os|wsl)\b/i;
