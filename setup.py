@@ -9609,7 +9609,7 @@ def main() -> int:
     port = a.port or 8080                              # a new install's port (issue #32: --port for an existing one)
     if a.calibrate and (a.setup or a.check or not have):    # #2036: said, not dropped
         why = ("--setup" if a.setup else "--check" if a.check else "no model is installed yet")
-        warn(f"--calibrate does nothing with {why}: it tunes a model that is already installed. Run setup first, "
+        warn(f"--calibrate does nothing with {why}: it tunes a model that is already installed. Run `nostroma install` first, "
              "then " + ("START-HERE.bat" if WIN else "./setup.sh") + " --calibrate [--model NAME]")
     if have and a.calibrate and not (a.setup or a.check):
         targets = calibration_targets(have, a.model, a.family)
