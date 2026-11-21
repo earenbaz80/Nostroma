@@ -95,3 +95,6 @@ node_modules/
 /build-spark/
 /build-vision-spark/
 /.venv-build/
+
+# local backups of this checkout (a bundle, not source)
+/backups/
