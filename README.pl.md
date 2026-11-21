@@ -11,7 +11,7 @@
 <p align="center">
   <a href="#modele">Modele</a> · <a href="#instalacja"><b>Instalacja</b></a> ·
   <a href="#sprzęt">Sprzęt</a> · <a href="#narzędzia">Narzędzia</a> ·
-  <a href="#pomoc">Pomoc</a> · <a href="#wesprzyj-nostromę">Wsparcie</a>
+  <a href="#pomoc">Pomoc</a> · <a href="#wspierający">Wspierający</a>
 </p>
 
 <p align="center">
@@ -143,9 +143,7 @@ Uruchom **`nostroma connect`**, aby zobaczyć instrukcję konfiguracji dla swoje
 [Wszystkie przewodniki](docs) · [Rozwiązywanie problemów](docs/TROUBLESHOOTING.md) · [Zgłoś błąd](https://github.com/earenbaz80/Nostroma/issues/new/choose) ·
 [Testy wydajności](docs/COMMUNITY_BENCHMARKS.md) · [Jak to działa](docs/HOW_IT_WORKS.md) · [Współtworzenie](CONTRIBUTING.md)
 
-## Wesprzyj Nostromę
-
-### Wierni wspierający
+## Wspierający
 
 Dziękujemy wszystkim, którzy wspierają Nostromę.
 

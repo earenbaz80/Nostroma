@@ -11,7 +11,7 @@
 <p align="center">
   <a href="#模型">模型</a> · <a href="#安装"><b>安装</b></a> ·
   <a href="#硬件">硬件</a> · <a href="#工具">工具</a> ·
-  <a href="#帮助">帮助</a> · <a href="#支持-nostroma">支持</a>
+  <a href="#帮助">帮助</a> · <a href="#支持者">支持者</a>
 </p>
 
 <p align="center">
@@ -142,9 +142,7 @@ nostroma launch
 [全部指南](docs) · [故障排查](docs/TROUBLESHOOTING.md) · [报告问题](https://github.com/earenbaz80/Nostroma/issues/new/choose) ·
 [基准测试](docs/COMMUNITY_BENCHMARKS.md) · [工作原理](docs/HOW_IT_WORKS.md) · [参与贡献](CONTRIBUTING.md)
 
-## 支持 Nostroma
-
-### 忠实支持者
+## 支持者
 
 感谢每一位支持 Nostroma 的人。
 

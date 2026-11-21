@@ -87,7 +87,7 @@ The script needs fontTools and Brotli, because the face ships as WOFF2. Pillow i
 - Nostroma's MIT license does not replace the licenses of model weights, dependencies or other creators' work.
   Use the [credits and licensing guide](HOW_IT_WORKS.md#credits).
 
-## Links and contact
+## Links
 
 - Project: [earenbaz80/Nostroma](https://github.com/earenbaz80/Nostroma)
 - Downloads: [Releases](https://github.com/earenbaz80/Nostroma/releases/latest)

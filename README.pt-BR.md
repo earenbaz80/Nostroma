@@ -11,7 +11,7 @@
 <p align="center">
   <a href="#modelos">Modelos</a> · <a href="#instalação"><b>Instalação</b></a> ·
   <a href="#hardware">Hardware</a> · <a href="#ferramentas">Ferramentas</a> ·
-  <a href="#ajuda">Ajuda</a> · <a href="#apoie-o-nostroma">Apoiar</a>
+  <a href="#ajuda">Ajuda</a> · <a href="#apoiadores">Apoiadores</a>
 </p>
 
 <p align="center">
@@ -142,9 +142,7 @@ Execute **`nostroma connect`** para ver as instruções da sua ferramenta. [Guia
 [Todos os guias](docs) · [Solução de problemas](docs/TROUBLESHOOTING.md) · [Relatar um bug](https://github.com/earenbaz80/Nostroma/issues/new/choose) ·
 [Benchmarks](docs/COMMUNITY_BENCHMARKS.md) · [Como funciona](docs/HOW_IT_WORKS.md) · [Contribuir](CONTRIBUTING.md)
 
-## Apoie o Nostroma
-
-### Apoiadores fiéis
+## Apoiadores
 
 Obrigado a todas as pessoas que apoiam o Nostroma.
 

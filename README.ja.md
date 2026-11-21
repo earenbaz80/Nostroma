@@ -11,7 +11,7 @@
 <p align="center">
   <a href="#モデル">モデル</a> · <a href="#インストール"><b>インストール</b></a> ·
   <a href="#ハードウェア">ハードウェア</a> · <a href="#ツール">ツール</a> ·
-  <a href="#ヘルプ">ヘルプ</a> · <a href="#nostroma-を支援する">支援</a>
+  <a href="#ヘルプ">ヘルプ</a> · <a href="#支援者">支援者</a>
 </p>
 
 <p align="center">
@@ -142,9 +142,7 @@ nostroma launch
 [すべてのガイド](docs) · [トラブルシューティング](docs/TROUBLESHOOTING.md) · [不具合を報告](https://github.com/earenbaz80/Nostroma/issues/new/choose) ·
 [ベンチマーク](docs/COMMUNITY_BENCHMARKS.md) · [仕組み](docs/HOW_IT_WORKS.md) · [貢献する](CONTRIBUTING.md)
 
-## Nostroma を支援する
-
-### いつも支えてくださる方々
+## 支援者
 
 Nostroma を支えてくださるすべての方に感謝します。
 
