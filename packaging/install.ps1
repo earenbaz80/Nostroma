@@ -6,7 +6,7 @@
 #   1. finds out which computer this is (Windows, processor, graphics card);
 #   2. downloads the Terminal archive named in the release folder's install-manifest.txt and checks its SHA-256 against it;
 #   3. unpacks it into  %LOCALAPPDATA%\Strata\terminal\<version>  (no administrator rights);
-#   4. checks the release's signed feed with the Terminal it just unpacked (`strata update --check`); if that fails it removes what it
+#   4. checks the release's signed feed with the Terminal it just unpacked (`nostroma update --check`); if that fails it removes what it
 #      unpacked and stops;
 #   5. adds  %LOCALAPPDATA%\Strata\terminal\current\bin  to your user PATH and prints:  Installed. Run: nostroma launch
 #
@@ -22,7 +22,7 @@
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 
-function Die([string]$msg) { [Console]::Error.WriteLine("strata installer: $msg"); throw "strata installer stopped" }
+function Die([string]$msg) { [Console]::Error.WriteLine("nostroma installer: $msg"); throw "nostroma installer stopped" }
 # older Windows 10 builds offer only TLS 1.0/1.1 to Windows PowerShell 5.1, and GitHub accepts only 1.2; a company proxy may want the Windows sign-in
 try { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12 } catch { }
 try { if ([Net.WebRequest]::DefaultWebProxy) { [Net.WebRequest]::DefaultWebProxy.Credentials = [Net.CredentialCache]::DefaultNetworkCredentials } } catch { }

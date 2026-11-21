@@ -123,7 +123,7 @@ PROBE
     then
       echo "$prog: the interpreter $PY is missing packages the API server needs." >&2
       echo "        Run: $PY -m pip install -r \"$APP/requirements.txt\"" >&2
-      echo "        (strata status, monitor, timeskip and tune plan do not need them)" >&2
+      echo "        ($prog status, monitor, timeskip and tune plan do not need them)" >&2
       exit 5
     fi
     ;;

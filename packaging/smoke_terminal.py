@@ -8,11 +8,11 @@ the test), and every command runs with a PATH that holds no Python (Windows: Sys
 dirname/readlink/cat and nothing else), no PYTHON* variables, a private user profile, and a dead HTTP proxy so that
 anything reaching for the internet fails loudly. It then checks, through the bundled launcher:
 
-    strata --version              must name the interpreter inside the extracted folder
-    strata doctor                 read-only inventory
-    strata profile list           saved profiles (none in a clean profile)
-    strata serve --engine mock    the server on the scripted engine: /health, /v1/models and a chat answer
-    strata install               must refuse (no installer in the archive) with exit 5, not fetch anything
+    nostroma --version            must name the interpreter inside the extracted folder
+    nostroma doctor               read-only inventory
+    nostroma profile list         saved profiles (none in a clean profile)
+    nostroma serve --engine mock  the server on the scripted engine: /health, /v1/models and a chat answer
+    nostroma install              must refuse (no installer in the archive) with exit 5, not fetch anything
 
 The script is one foreground run: the mock server it starts is a child that is stopped (whole tree) before it exits.
 """

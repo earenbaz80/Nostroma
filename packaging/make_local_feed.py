@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Build a LOCAL, TEST-SIGNED release folder (a feed) from a Terminal archive and engine packages, to try `install.sh`, `install.ps1`,
-`strata update` and `nostroma launch` end to end without any hosting. Nothing is uploaded.
+`nostroma update` and `nostroma launch` end to end without any hosting. Nothing is uploaded.
 
     python packaging/make_local_feed.py --out FEED --terminal strata-terminal-0.1.45-linux-x86_64.tar.gz \
         --engine /path/to/components/engine/0.1.45-linux-x86_64-cuda [--engine ...] \

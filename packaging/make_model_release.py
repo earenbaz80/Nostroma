@@ -210,7 +210,7 @@ def plan(report: dict, set_index: int, a, prev: dict) -> dict:
     n += 1
     step("%d" % n, "Verify from the public URLs", "any box", 20,
          ["download every asset back and sha256sum -c SHA256SUMS.txt", "python packaging/feed_tool.py verify-feed <public strata-feed.json> --pub <FEED-KEY.pub.json>",
-          "a clean-home install and `strata update --check` on a Linux box: the sequence is %d and the model is listed" % a.sequence], [])
+          "a clean-home install and `nostroma update --check` on a Linux box: the sequence is %d and the model is listed" % a.sequence], [])
     return {"id": a.id, "case": case, "set": s["files"][0]["name"], "steps": steps, "changed": changed, "kept": kept, "entry": entry,
             "warnings": warn, "upload_bytes": up}
 

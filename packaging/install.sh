@@ -7,7 +7,7 @@
 #   1. finds out which computer this is (system, processor, graphics card) so it can fetch the right archive;
 #   2. downloads the Terminal archive named in the release folder's install-manifest.txt and checks its SHA-256 against it;
 #   3. unpacks it into  ${XDG_DATA_HOME:-~/.local/share}/strata/terminal/<version>  (no administrator rights, nothing outside your home);
-#   4. checks the release's signed feed with the Terminal it just unpacked (`strata update --check`); if that check fails, it removes
+#   4. checks the release's signed feed with the Terminal it just unpacked (`nostroma update --check`); if that check fails, it removes
 #      what it unpacked and stops;
 #   5. puts `nostroma` and the older `strata` links in ~/.local/bin and prints:  Installed. Run: nostroma launch
 #
@@ -30,7 +30,7 @@ BIN_DIR="${NOSTROMA_BIN_DIR:-${STRATA_BIN_DIR:-$HOME/.local/bin}}"
 TEST_TRUST="${NOSTROMA_INSTALL_TEST_TRUST:-${STRATA_INSTALL_TEST_TRUST:-}}"
 
 say() { printf '%s\n' "$*"; }
-die() { printf 'strata installer: %s\n' "$*" >&2; exit 1; }
+die() { printf 'nostroma installer: %s\n' "$*" >&2; exit 1; }
 
 # Every symlink in a path resolved. `readlink -f` is not on macOS, so the chain is walked by hand; a target that no
 # longer exists (an old data folder the user deleted) comes back as its own path instead of failing.

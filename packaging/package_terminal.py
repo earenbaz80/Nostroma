@@ -103,8 +103,8 @@ PAYLOAD = (
     "requirements-monitor.txt",
     "docs/MANAGEMENT_PROTOCOL.md",
     "docs/TERMINAL_LAUNCH.md",         # the README below points at it (`nostroma launch`); it used to be missing from the archive
-    "data/gguf_fingerprints.json",     # `strata models import --plan` names a known file set from this table
-    "bench/prompts/standard-v1",       # `strata bench run` (the standard benchmark) sends these frozen requests; hashed byte for byte
+    "data/gguf_fingerprints.json",     # `nostroma models import --plan` names a known file set from this table
+    "bench/prompts/standard-v1",       # `nostroma bench run` (the standard benchmark) sends these frozen requests; hashed byte for byte
 )
 
 #: `tools/` modules the terminal paths import. Adding one here is a deliberate act: this list is what keeps
@@ -372,7 +372,7 @@ def main() -> int:
                     help="skip the locked install (layout checks only; the result is NOT distributable)")
     ap.add_argument("--commit", default=None, metavar="SHA",
                     help="the full commit the sources come from, for a tree copy that has no .git (or set STRATA_COMMIT); "
-                         "`strata bench run` records it, and a standard benchmark without it is nonconforming")
+                         "`nostroma bench run` records it, and a standard benchmark without it is nonconforming")
     ap.add_argument("--keep-staging", action="store_true")
     ap.add_argument("--no-installer", action="store_true",
                     help="leave out setup.py, tools/strata_mcp.py and data/ (the read-only terminal of earlier releases; "
@@ -389,7 +389,7 @@ def main() -> int:
     commit = build_commit(args.commit)
     if commit is None:
         message = ("the commit of these sources is unknown (no .git here, no --commit, no STRATA_COMMIT): the archive would carry "
-                   "no COMMIT file, and every `strata bench run` on it would be nonconforming")
+                   "no COMMIT file, and every `nostroma bench run` on it would be nonconforming")
         if not args.skip_deps:
             raise SystemExit(message)
         print("warning: " + message)
@@ -436,7 +436,7 @@ def main() -> int:
             shutil.copy2(src, tools_dir / item)
         installer = None if args.no_installer else add_installer(root)
         (root / "VERSION").write_text(version + "\n", encoding="utf-8")
-        # the commit the archive was built from: `strata bench run` records it (an archive has no .git to ask)
+        # the commit the archive was built from: `nostroma bench run` records it (an archive has no .git to ask)
         if commit:
             (root / "COMMIT").write_text(commit + "\n", encoding="utf-8")
 
@@ -544,10 +544,10 @@ Put `bin/` on your PATH to get the `strata` command everywhere:
 {'=' * (len(version) + len(target) + 18)}
 
 This is the terminal distribution. It carries its own Python {PYTHON_VERSION} and its own packages, so you do not
-need Python, pip, Node, a compiler or a development checkout. Serving and watching (`strata serve`, `strata runtime`,
+need Python, pip, Node, a compiler or a development checkout. Serving and watching (`nostroma serve`, `nostroma runtime`,
 `nostroma monitor`) never install or download anything; if something is missing, the error names the command that
 installs it. Only two commands fetch files, and only when you run them: `nostroma launch` (the engine and the model you
-choose, after it tells you the size) and `strata update` (the engine and the Nostroma components).
+choose, after it tells you the size) and `nostroma update` (the engine and the Nostroma components).
 
 Install
 -------
@@ -563,7 +563,7 @@ Close other programs (browsers use a lot) if it is less than the model needs; `n
 What it does NOT include
 ------------------------
 The **engine** is a separate, independently versioned component and is not bundled: the right engine package
-depends on your OS, CPU and GPU. `nostroma launch` (or `strata update`) fetches the one for your card from the signed
+depends on your OS, CPU and GPU. `nostroma launch` (or `nostroma update`) fetches the one for your card from the signed
 release feed; or point Nostroma at one with STRATA_ENGINE. Model weights are likewise not included: `nostroma launch`
 downloads the one you choose (the installer files setup.py and tools/ are in this archive for that).
 
@@ -571,14 +571,14 @@ Useful commands
 ---------------
     nostroma launch                     choose a model, tune it, serve it and watch it (guided screens; docs/TERMINAL_LAUNCH.md)
     nostroma connect opencode           the setup for a coding app on the running server (also codex, claude-code, omp, pi, hermes, openclaw)
-    strata --version                  the version and the interpreter it runs on
-    strata doctor                     read-only component inventory
-    strata profile list               saved serving profiles
-    strata status                     one read-only telemetry snapshot
+    nostroma --version                  the version and the interpreter it runs on
+    nostroma doctor                     read-only component inventory
+    nostroma profile list               saved serving profiles
+    nostroma status                     one read-only telemetry snapshot
     nostroma monitor                    the terminal monitor
-    strata serve --profile NAME       start the inference server in the foreground
-    strata serve --engine mock ...    a scripted engine for client tests (no GPU, no model)
-    strata runtime start|status|stop  run a profile as a managed background instance
+    nostroma serve --profile NAME       start the inference server in the foreground
+    nostroma serve --engine mock ...    a scripted engine for client tests (no GPU, no model)
+    nostroma runtime start|status|stop  run a profile as a managed background instance
 
 Existing installs are found in place: the run configs (strata-<model>.json) and the data folder remembered in
 settings.json are used where they are; nothing is copied or moved.
