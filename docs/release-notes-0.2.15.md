@@ -53,7 +53,7 @@ DeepSeek (`dsv41`) packages are carried as they were.
   `Nostroma-0.2.15-linux-x86_64.AppImage`, `Nostroma-0.2.15-macos-arm64.dmg` and `Nostroma.app.tar.gz`. The
   release manifest, `AGENTS.md`, the READMEs and the guides quote those names.
 - `SHA256SUMS.txt` is written by `packaging/sha256sums.py` from the flat upload folder, and
-  `packaging/check_assets.py` fails when the folder and the manifest's 42 assets disagree.
+  `packaging/check_assets.py` fails when the folder and the manifest's 41 assets disagree.
 - `docs/RELEASE_CHECKLIST.md` is the runbook: every asset, the script that builds it, and the order up to
   publishing as Latest.
 - The release guards now fail on an old name instead of accepting it: the page check rewrites
@@ -86,5 +86,5 @@ Three installers (Windows, Linux AppImage, Mac dmg) and the Mac updater archive 
 (`strata-feed.json` and `strata-feed-linux-aarch64.json`) with their signatures; `install.sh`, `install.ps1`,
 `install-manifest.txt` and `SHA256SUMS.txt`.
 
-`latest.json` is also in the folder because the feed build writes it. This build's app does not read it — its
-own update row is off — and `nostroma update --app` reads the signed feed, not this file.
+The release does not publish `latest.json`: this build's app has no update row to read it, and `nostroma update
+--app` reads the signed feed, which carries the same app installer.

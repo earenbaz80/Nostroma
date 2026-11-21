@@ -193,7 +193,7 @@ All signing happens on the release PC, on the finished files.
 * *The installer*, one per OS (0.2.15). The Windows and Linux ones have no engine inside: built with `--config src-tauri/tauri.update.conf.json`, which drops `engine-bundle`. The Mac dmg keeps its small Metal engine (one Mac variant).
   Windows: `Nostroma-0.2.15-windows-x64-setup.exe`; Linux: `Nostroma-0.2.15-linux-x86_64.AppImage`; Mac: `Nostroma-0.2.15-macos-arm64.dmg` for people and
   `Nostroma.app.tar.gz` as the updater archive (the updater cannot install from a dmg). The Windows and Linux files are both the first download and the
-  file `latest.json` names; the first start of the app downloads the engine for the card (the first-run card), or installs a file the person already has.
+  file the feed's app member names; the first start of the app downloads the engine for the card (the first-run card), or installs a file the person already has.
   Why: an app update must not carry an engine, and the right engine depends on the card. Engines come per card from the signed feed
   (`feed.select_engine`: platform, backend, CUDA `archs` and `min_driver`, HIP `archs`; `tests/terminal/test_release_matrix.py`).
 
@@ -209,14 +209,14 @@ All signing happens on the release PC, on the finished files.
     # Linux: tauri build --bundles appimage (no engine inside) is the AppImage
     # on the release PC, per updater artifact (Windows setup .exe, Linux .AppImage, Mac Nostroma.app.tar.gz):
     npx tauri signer sign -f <path to tauri-updater.key> <artifact>                                 # writes <artifact>.sig
-    python packaging/feed_tool.py set-app-platform --app-json RELEASE/tauri-latest.json --target windows-x86_64 --version 0.2.15 --archive Nostroma-0.2.15-windows-x64-setup.exe --sig Nostroma-0.2.15-windows-x64-setup.exe.sig --notes "..."
-    python packaging/feed_tool.py set-app-platform --app-json RELEASE/tauri-latest.json --target linux-x86_64   --version 0.2.15 --archive Nostroma-0.2.15-linux-x86_64.AppImage --sig Nostroma-0.2.15-linux-x86_64.AppImage.sig
-    python packaging/feed_tool.py set-app-platform --app-json RELEASE/tauri-latest.json --target darwin-aarch64 --version 0.2.15 --archive Nostroma.app.tar.gz --sig Nostroma.app.tar.gz.sig
+    python packaging/feed_tool.py set-app-platform --app-json RELEASE/tauri-latest.json --target windows-x86_64 --version 0.2.15 --archive Nostroma-0.2.15-windows-x64-setup.exe --sig Nostroma-0.2.15-windows-x64-setup.exe.sig --notes "..." --pubkey <app_minisign_public>
+    python packaging/feed_tool.py set-app-platform --app-json RELEASE/tauri-latest.json --target linux-x86_64   --version 0.2.15 --archive Nostroma-0.2.15-linux-x86_64.AppImage --sig Nostroma-0.2.15-linux-x86_64.AppImage.sig --pubkey <app_minisign_public>
+    python packaging/feed_tool.py set-app-platform --app-json RELEASE/tauri-latest.json --target darwin-aarch64 --version 0.2.15 --archive Nostroma.app.tar.gz --sig Nostroma.app.tar.gz.sig --pubkey <app_minisign_public>
     python packaging/feed_tool.py build-feed --out RELEASE --sequence N --key <feed-key.json> --engine RELEASE/engine --control RELEASE/control --app-json RELEASE/tauri-latest.json (--carry-dsv41 <the last strata-feed.json> --carry-dsv41-base https://github.com/earenbaz80/Nostroma/releases/download/<DSV41-TAG>/ | --no-dsv41-carry) [--shapes RELEASE/shapes] [--drafters RELEASE/drafters]
     python packaging/feed_tool.py verify-feed RELEASE --pub <feed-key.pub.json>
 
-`set-app-platform` checks each `.sig` against the public key in `tauri.conf.json` over the exact bytes, so a file signed with another key, or changed after
-signing, stops the release. The Mac dmg is not in `latest.json` (the updater uses `Nostroma.app.tar.gz`) and needs no Tauri signature; it is downloaded by hand.
+`set-app-platform` checks each `.sig` against the public key in `tauri.conf.json` (or `--pubkey`, which this build needs because it names no updater key) over the exact bytes, so a file signed with another key, or changed after
+signing, stops the release. The Mac dmg is not in the feed's app member (it uses `Nostroma.app.tar.gz`) and needs no Tauri signature; it is downloaded by hand.
 
 ### The Mac app
 
@@ -228,9 +228,9 @@ Mach-O in the app with the Developer ID and notarises and staples it, which chan
    Tauri's bundler makes), unpacks it again and checks `codesign`, the staple and `spctl`. It never reads the Tauri key.
 2. Move the `.tar.gz` to the release PC and sign it there with `npx tauri signer sign -f <key> Nostroma.app.tar.gz` (or `TAURI_SIGNING_PRIVATE_KEY_PATH` and the password variable).
    The key stays on the PC and in the owner's safe storage; nothing in this tree reads or stores it, and the Mac needs no node and no key.
-3. `feed_tool.py set-app-platform` checks that signature against the public key in `tauri.conf.json` over the exact archive bytes, checks the archive holds `<Name>.app` at its root,
+3. `feed_tool.py set-app-platform` checks that signature against the public key in `tauri.conf.json` (or `--pubkey`, which this build needs) over the exact archive bytes, checks the archive holds `<Name>.app` at its root,
    and writes `url`, `signature`, `sha256` and `size` of the darwin entry. A signature that was made for the pre-notarisation file does not verify, so it cannot be published by mistake.
-4. `build-feed --app-json` and `verify-feed` as above. Upload the notarised `Nostroma.dmg`, `Nostroma.app.tar.gz`, and the `latest.json` from the feed folder (`app/latest.json`).
+4. `build-feed --app-json` and `verify-feed` as above. Upload the notarised `Nostroma.dmg` and `Nostroma.app.tar.gz`; `app/latest.json` is the feed's app member, not an asset, so it stays out of the upload.
 
 The Windows installer and the Linux AppImage need no extra step: their `.sig` files from `tauri build` are the ones to pass to `set-app-platform`. Re-signing the Mac app after the archive
 was made (a second `sign-and-notarize.sh` run) makes a new archive: sign and add it again.
@@ -247,11 +247,10 @@ The feed is hosted as the files of a GitHub release of `earenbaz80/Nostroma`. Th
 `https://github.com/earenbaz80/Nostroma/releases/latest/download` (`nostroma_cli/update_cmd.py` `DEFAULT_FEED` adds `/strata-feed.json`; `install.sh`
 and `install.ps1` use the folder). GitHub assets are flat, so build the packages with `--url-prefix ""` and upload every file of the release folder
 as an asset: `strata-feed.json`, `strata-feed.json.sig`, `install-manifest.txt`, `install.sh`, `install.ps1`, the engine and Control archives and the
-app installer with `latest.json` (the Tauri updater endpoint). `STRATA_FEED` (installers) and `--feed` / `STRATA_UPDATE_FEED` (`nostroma update`) override the
+app installer and its `.sig` (the feed's app member names it). `STRATA_FEED` (installers) and `--feed` / `STRATA_UPDATE_FEED` (`nostroma update`) override the
 address. Nothing in this tree uploads anything.
 
-Publish as a normal release (latest): a pre-release is not found by `latest/download`, so the installers, `nostroma update` and the app updater would get a 404. The `latest` release must carry every file listed above, so a later hotfix release repeats them all. The app updater reads
-`https://github.com/earenbaz80/Nostroma/releases/latest/download/latest.json`.
+Publish as a normal release (latest): a pre-release is not found by `latest/download`, so the installers and `nostroma update` would get a 404. The `latest` release must carry every file listed above, so a later hotfix release repeats them all.
 
 ## Testing locally
 
@@ -276,4 +275,4 @@ Run it before every release that touches `setup.py`, `nostroma_control/feed_mode
 - **Keys:** the feed key and the Tauri updater key were created once and the feed key's public half was committed in `nostroma_control/update_keys.json`
   with the first signed release (0.2.0-beta). Terminals from before that build trust no key and refuse every feed.
 - **Engine-less installers:** an app update once carried an engine. The Windows and Linux installers now drop `engine-bundle`
-  (`tauri.update.conf.json`), so one `latest.json` entry per OS serves every card variant.
+  (`tauri.update.conf.json`), so one app entry in the feed per OS serves every card variant.
