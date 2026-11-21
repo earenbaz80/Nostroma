@@ -398,6 +398,15 @@ class AppPlatform(unittest.TestCase):
         self.assertNotIn("updater", conf.get("plugins", {}))
         self.assertEqual(_default_app_pubkey(), shipped)
 
+    def test_a_missing_or_broken_shipped_keys_file_gives_no_key(self):
+        """A tree with no update_keys.json, or one that is not JSON, gives no key instead of an error."""
+        from feed_tool import _default_app_pubkey
+        broken = self.root / "update_keys.json"
+        broken.write_text("{not json", encoding="utf-8")
+        for keys in (self.root / "no-update-keys.json", broken):
+            with mock.patch.object(signing, "BUILTIN_KEYS", keys):
+                self.assertEqual(_default_app_pubkey(), "")
+
     def test_without_the_flag_the_shipped_key_is_checked(self):
         """The .sig here is made by another key, so the failure names that key, not a missing one."""
         with self.assertRaises(SystemExit) as caught:
