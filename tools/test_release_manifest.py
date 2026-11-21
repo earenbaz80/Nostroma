@@ -15,11 +15,11 @@ class ReleaseManifest(unittest.TestCase):
 
     def test_old_installer_names_are_found_and_rewritten(self):
         m = rm.load()
-        old = "run `Strata-0.2.9-windows-x64-setup.exe` or Strata-0.2.9-linux-x86_64.AppImage.sig"
+        old = "run `Nostroma-0.2.9-windows-x64-setup.exe` or Nostroma-0.2.9-linux-x86_64.AppImage.sig"
         self.assertEqual(len(rm.INSTALLER_RE.findall(old)), 2)
         fixed = rm.INSTALLER_RE.sub(lambda x: x.group(0).replace(x.group(1), m["product_version"], 1), old)
         self.assertNotIn("0.2.9", fixed)
-        self.assertIn("Strata-%s-linux-x86_64.AppImage.sig" % m["product_version"], fixed)
+        self.assertIn("Nostroma-%s-linux-x86_64.AppImage.sig" % m["product_version"], fixed)
 
     def test_version_lines_are_rewritten_and_a_second_pass_changes_nothing(self):
         m = rm.load()
@@ -36,7 +36,7 @@ class ReleaseManifest(unittest.TestCase):
         m.pop("terminal_version", None)                             # the Terminal then has to say the product version
         problems = "\n".join(rm.check(m))
         self.assertIn("nostroma_cli/__init__.py says", problems)
-        self.assertIn("asset list has no Strata-0.2.99-windows-x64-setup.exe", problems)
+        self.assertIn("asset list has no Nostroma-0.2.99-windows-x64-setup.exe", problems)
 
     def test_a_control_only_hotfix_is_allowed_and_a_drifting_control_is_not(self):
         """0.2.13.1: the Terminal and Control are one hotfix part ahead of the app and the engines; nothing else may differ.

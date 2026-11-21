@@ -65,7 +65,7 @@ Nie wiesz, co się zmieści? [Wybierz model do swojego komputera](docs/MODELS.md
 Zainstaluj aplikację, wybierz model i zacznij rozmawiać. Dla każdego systemu jest jeden instalator. Przy pierwszym
 uruchomieniu aplikacja pobiera silnik dla twojej karty graficznej. [Pomoc z instalatorem](docs/INSTALL.md#the-app).
 
-<sub>Pliki: `Strata-0.2.15-windows-x64-setup.exe` · `Strata-0.2.15-linux-x86_64.AppImage` · `Strata-0.2.15-macos-arm64.dmg`</sub>
+<sub>Pliki: `Nostroma-0.2.15-windows-x64-setup.exe` · `Nostroma-0.2.15-linux-x86_64.AppImage` · `Nostroma-0.2.15-macos-arm64.dmg`</sub>
 
 <p align="center">
   <img src="docs/media/app-chat.png" width="900" alt="Aplikacja Nostroma na komputer: czat i podgląd kodu na żywo obok siebie">

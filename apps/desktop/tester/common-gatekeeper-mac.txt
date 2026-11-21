@@ -7,7 +7,7 @@ Mail saves, and it only lets a marked program run if Apple has checked it. There
   double-click the .dmg, drag Nostroma onto Applications, open Nostroma. The first time, macOS says "Nostroma is an app downloaded from
   the Internet. Are you sure you want to open it?" - press Open. That is the same for every app you download; there is nothing to
   type and no setting to change. A notarised .zip of the Terminal works the same way: unzip it and run it.
-  To see which kind you have:      spctl -a -vv /Applications/Strata.app
+  To see which kind you have:      spctl -a -vv /Applications/Nostroma.app
   A notarised build answers "accepted" and "source=Notarized Developer ID".
 
 * A build that is NOT notarised (a test build sent to you before it was signed, or one you built yourself). macOS may say
@@ -16,7 +16,7 @@ Mail saves, and it only lets a marked program run if Apple has checked it. There
   Open the Terminal app (Finder, Applications, Utilities, Terminal) and type ONE of these, matching what you have:
 
       the .dmg file, before opening it:     xattr -dr com.apple.quarantine ~/Downloads/@APPIMAGE@
-      the app, after dragging it over:      xattr -dr com.apple.quarantine /Applications/Strata.app
+      the app, after dragging it over:      xattr -dr com.apple.quarantine /Applications/Nostroma.app
       an unzipped Terminal folder:          xattr -dr com.apple.quarantine <the folder you unzipped>
 
   (If the file is somewhere other than Downloads, type the path to it; you can drag the file from Finder into the Terminal window to

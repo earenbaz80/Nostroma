@@ -54,9 +54,13 @@ class AppPagesRename(unittest.TestCase):
                      "class=\"strata-panel wide\"",
                      "data-strata-tab=\"monitor\"",
                      "https://github.com/earenbaz80/Nostroma/releases/latest/download/install.sh",
-                     "Strata-0.2.15-windows-x64-setup.exe",
+                     "Nostroma-0.2.15-windows-x64-setup.exe",
                      "strata:src"):
             self.assertEqual(tool.renamed(kept, "terminal"), kept)
+        # an old asset name is not one of the app's own names: a screen that reintroduces one is reported
+        for area in FEWEST:
+            self.assertEqual(tool.renamed("Strata-0.2.15-windows-x64-setup.exe", area),
+                             "Nostroma-0.2.15-windows-x64-setup.exe")
 
     def test_the_command_name_in_a_screen_is_not_the_brand(self):
         tool = load()

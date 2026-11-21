@@ -8,7 +8,7 @@ What it covers (standard library only, no network):
   * the manifest against the code: app/Terminal version (nostroma_cli/__init__.py, apps/host and apps/desktop package
     files, Cargo.toml) and Control/engine version (the CMake project version);
   * the three installer file names in the manifest's asset list;
-  * every installer file name (Strata-<version>-windows-x64-setup.exe, ...-linux-x86_64.AppImage, ...-macos-arm64.dmg)
+  * every installer file name (Nostroma-<version>-windows-x64-setup.exe, ...-linux-x86_64.AppImage, ...-macos-arm64.dmg)
     in a current page: the version must be the manifest's, and the file must be in the release's asset list;
   * the version lines of the pages listed in LINES below.
 Release notes, measurement logs and history/ keep the versions they were written with; tools/doc_pages.py says which
@@ -26,9 +26,9 @@ import doc_pages  # noqa: E402
 ROOT = doc_pages.ROOT
 MANIFEST = os.path.join(ROOT, "docs", "data", "release.json")
 
-INSTALLER_NAMES = ("Strata-{v}-windows-x64-setup.exe", "Strata-{v}-linux-x86_64.AppImage", "Strata-{v}-macos-arm64.dmg")
+INSTALLER_NAMES = ("Nostroma-{v}-windows-x64-setup.exe", "Nostroma-{v}-linux-x86_64.AppImage", "Nostroma-{v}-macos-arm64.dmg")
 # Any installer-looking file name in a current page.  Group 1 is the version.
-INSTALLER_RE = re.compile(r"Strata-(\d+\.\d+(?:\.\d+)*)-(?:windows-x64-setup\.exe|linux-x86_64\.AppImage|macos-arm64\.dmg)")
+INSTALLER_RE = re.compile(r"Nostroma-(\d+\.\d+(?:\.\d+)*)-(?:windows-x64-setup\.exe|linux-x86_64\.AppImage|macos-arm64\.dmg)")
 
 V = r"(\d+\.\d+(?:\.\d+)*)"
 # (page, regex, manifest keys): the regex has one group per key, each holding a version.  A rule that matches nothing is

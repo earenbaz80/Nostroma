@@ -2,9 +2,11 @@
 """Check that the pages call the product Nostroma, or rewrite the ones that still say Strata.
 
 The word is renamed only where it stands on its own, so the names that are not ours keep their
-spelling without being listed one by one: upstream URLs and release downloads, the asset names in
-docs/data/release.json and the file names of this checkout (strata.py, the engine binary,
-third_party/strata-*, tools/strata_*.py) are all glued to a path, a dot, a colon or a hyphen.
+spelling without being listed one by one: upstream URLs and release downloads and the file names of
+this checkout (strata.py, the engine binary, third_party/strata-*, tools/strata_*.py) are all glued
+to a path, a dot, a colon or a hyphen. The release's old asset names are the exception: nothing is
+published under them any more, so a page that still says Strata-0.2.15-... or Strata.app is
+rewritten and reported (a version note keeps them: there they are what shipped).
 
 Seven areas, each with the names that are its own to keep (an area's words are prose, so the word
 is renamed there; its paths, ids and asset names are protected):
@@ -56,6 +58,14 @@ COMMAND_ONLY = ("docs/release-notes",)
 WORD = re.compile(r"(?<![\w./~:@-])Strata(?![\w.-])|(?<![\w./~:@-])strata(?![\w.-])")
 BRAND = re.compile(r"(?<![\w./~:@-])Strata(?![\w.-])")
 
+# The names the release published under the old product name: the installers, the app bundle, the updater archive. The
+# word rule never reaches them (a hyphen or a dot follows the name), and none of them exists under that spelling any
+# more, so every page that is not a version note is rewritten and reported.
+ASSETS_BEFORE = (
+    (r"\bStrata-(\d+\.\d+(?:\.\d+)*)-(?=(?:windows|linux|macos)-)", r"Nostroma-\1-"),
+    (r"\bStrata\.(app|dmg|AppImage)\b", r"Nostroma.\1"),
+)
+
 # The command as a person would be told to type it: every subcommand the CLI has, so a page cannot send a reader to
 # `strata serve` or `strata update` either. The lookbehind is the same one the word rule uses, so a path
 # (`bin/strata monitor`, `~/.local/bin/strata launch`) is a file name and is left alone, and only prose is reported;
@@ -105,8 +115,6 @@ DOCS_BEFORE = (
 KEEP = (
     r"earenbaz80/Nostroma",           # the upstream repository and its downloads
     r"eddoursul/Strata",
-    r"Strata-0[\w.]*",            # published asset names (Strata-0.2.15-windows-x64-setup.exe)
-    r"Strata\.[A-Za-z]{2,4}\b",   # Strata.AppImage, Strata.dmg
     r"strata:src[\w-]*",          # the local image tag the root Dockerfile and docker/compose use
     r"\bstrata\.py\b",            # the program's file name
     r"\b(?:tools|tests|third_party)/strata[-_][\w.-]*",
@@ -164,7 +172,7 @@ def renamed(text: str, area: str | Area = "docs", word: bool = True) -> str:
     note, whose prose is the record of what shipped)."""
     where = AREAS[area] if isinstance(area, str) else area
     if word:
-        for pattern, replacement in where.before:
+        for pattern, replacement in ASSETS_BEFORE + tuple(where.before):
             text = re.sub(pattern, replacement, text)
     if where.command:
         text = COMMAND.sub("nostroma", text)

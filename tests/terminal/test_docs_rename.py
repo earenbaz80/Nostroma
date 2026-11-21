@@ -35,11 +35,25 @@ class DocsRename(unittest.TestCase):
         tool = load()
         self.assertEqual(tool.renamed("Start Strata and run `strata launch`."), "Start Nostroma and run `nostroma launch`.")
         for kept in ("https://github.com/earenbaz80/Nostroma/releases/latest/download/install.sh",
-                     "Strata-0.2.15-windows-x64-setup.exe",
+                     "Nostroma-0.2.15-windows-x64-setup.exe",
                      "third_party/strata-ggml",
                      "tools/strata_bench.py",
                      "docker build -t strata:src ."):
             self.assertEqual(tool.renamed(kept), kept)
+
+    def test_an_old_asset_name_is_rewritten_and_not_kept(self):
+        """Nothing is published under the old name any more, so a page that reintroduces one is a page --check reports."""
+        tool = load()
+        for old, new in (("Strata-0.2.15-windows-x64-setup.exe", "Nostroma-0.2.15-windows-x64-setup.exe"),
+                         ("Strata-0.2.15-linux-x86_64.AppImage", "Nostroma-0.2.15-linux-x86_64.AppImage"),
+                         ("Strata.app.tar.gz", "Nostroma.app.tar.gz"),
+                         ("xattr -dr com.apple.quarantine /Applications/Strata.app",
+                          "xattr -dr com.apple.quarantine /Applications/Nostroma.app")):
+            self.assertEqual(tool.renamed(old), new)
+            self.assertEqual(tool.renamed(old, "terminal"), new)
+        # a version note is the record of what shipped and keeps the name it had
+        self.assertEqual(tool.renamed("Strata-0.2.15-windows-x64-setup.exe", "docs", word=False),
+                         "Strata-0.2.15-windows-x64-setup.exe")
 
     def test_the_engine_binary_keeps_its_name_and_its_own_flags(self):
         """The engine is also called strata: serve.server's --engine takes strata|mock, and a flag after the word is the binary's."""

@@ -18,7 +18,7 @@ nostroma launch --status
 **I cannot find `START-HERE.bat` or `SETUP.bat`.**
 Open the installed Nostroma app, or run `nostroma launch`. Those wrappers are in the source repository and are not the
 startup path for the app. For a fresh desktop install, download the one installer for your system
-(`Strata-0.2.15-windows-x64-setup.exe`, `Strata-0.2.15-linux-x86_64.AppImage` or `Strata-0.2.15-macos-arm64.dmg`), not a
+(`Nostroma-0.2.15-windows-x64-setup.exe`, `Nostroma-0.2.15-linux-x86_64.AppImage` or `Nostroma-0.2.15-macos-arm64.dmg`), not a
 `strata-engine-…` archive.
 
 **`nostroma` is not found.**
@@ -65,13 +65,13 @@ test build that is not notarised says "damaged". Do not move it to the Trash. Op
 with the line that matches what you have (drag the file from Finder into the Terminal window to type its path):
 
     xattr -dr com.apple.quarantine ~/Downloads/<the .dmg file>        # the .dmg, before opening it
-    xattr -dr com.apple.quarantine /Applications/Strata.app           # the app, after dragging it over
+    xattr -dr com.apple.quarantine /Applications/Nostroma.app           # the app, after dragging it over
     xattr -dr com.apple.quarantine <the folder you unzipped>          # an unzipped Terminal folder
 
 Then open it again. If macOS says only "the developer cannot be verified", you can instead try to open it once, then open
-System Settings > Privacy & Security and press "Open Anyway" next to the message about Strata. Only remove the mark from a
+System Settings > Privacy & Security and press "Open Anyway" next to the message about Nostroma. Only remove the mark from a
 file you downloaded from the official release; a warning alone does not show that a file is safe or intact. Installs made
-with `curl ... | sh` carry no mark and need none of this. To see which kind you have: `spctl -a -vv /Applications/Strata.app`
+with `curl ... | sh` carry no mark and need none of this. To see which kind you have: `spctl -a -vv /Applications/Nostroma.app`
 answers "accepted" and "Notarized Developer ID" for a notarised build. How the builds are signed is in
 [Mac packaging](../packaging/mac/README.md).
 
