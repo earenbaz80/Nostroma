@@ -314,8 +314,8 @@ def _cpu_pack_issue(cfg: dict, config_path: Path, cpuinfo: str = "/proc/cpuinfo"
         return None
     return {"code": "CPU_PACK_NEEDS_AVX512", "severity": "warning",
             "message": f"{pack} is the pack for CPUs with AVX-512 (it has no native_experts.txt), and this CPU has no AVX-512 (Ryzen 3000-5000 and "
-                       "Intel Core 12th-14th generation do not): the engine will stop at start. Run `strata setup` again; on this CPU it builds "
-                       "the pack that runs on AVX2"}
+                       "Intel Core 12th-14th generation do not): the engine will stop at start. Run setup again (`nostroma install`); on this "
+                       "CPU it builds the pack that runs on AVX2"}
 
 
 def _monitor_component() -> dict:

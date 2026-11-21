@@ -32,7 +32,7 @@ class CpuPackIssue(unittest.TestCase):
             issue = doctor._cpu_pack_issue(self.cfg(p), Path(d) / "run.json")
             self.assertEqual(issue["code"], "CPU_PACK_NEEDS_AVX512")
             self.assertIn("no native_experts.txt", issue["message"])
-            self.assertIn("strata setup", issue["message"])
+            self.assertIn("nostroma install", issue["message"])
             # a half-built pack (what stopped an Arc A750 on a Ryzen 5 5600X) reads the same way
             q = Path(d) / "half"
             q.mkdir()
@@ -74,7 +74,7 @@ class EngineStopIsExplained(unittest.TestCase):
             cfg.write_text(json.dumps({"log": str(log)}), encoding="utf-8")
             text, nxt = R.explain_engine_exit({"state": "failed", "error": "server_exited", "engine_exit_code": 1}, cfg)
             self.assertIn("cannot run the expert kernel", text)
-            self.assertIn("strata setup", nxt)
+            self.assertIn("nostroma install", nxt)
             self.assertIn("AVX2", nxt)
 
 
