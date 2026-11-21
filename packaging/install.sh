@@ -32,15 +32,50 @@ TEST_TRUST="${NOSTROMA_INSTALL_TEST_TRUST:-${STRATA_INSTALL_TEST_TRUST:-}}"
 say() { printf '%s\n' "$*"; }
 die() { printf 'strata installer: %s\n' "$*" >&2; exit 1; }
 
+# Every symlink in a path resolved. `readlink -f` is not on macOS, so the chain is walked by hand; a target that no
+# longer exists (an old data folder the user deleted) comes back as its own path instead of failing.
+real_path() {
+  path=$1
+  hops=0
+  while [ -L "$path" ] && [ "$hops" -lt 20 ]; do
+    here=$(CDPATH= cd -- "$(dirname -- "$path")" && pwd -P) || break
+    step=$(readlink "$path") || break
+    case $step in /*) path=$step ;; *) path=$here/$step ;; esac
+    hops=$((hops + 1))
+  done
+  here=$(CDPATH= cd -- "$(dirname -- "$path")" 2>/dev/null && pwd -P) || { printf '%s\n' "$path"; return 0; }
+  printf '%s/%s\n' "$here" "$(basename -- "$path")"
+}
+
+# A name is ours when it points at exactly what this installer links to: terminal/current/bin/strata, or
+# terminal/<version>/bin/strata where the version starts with a digit. The target is resolved first, so the same
+# folder spelled another way counts (a home reached through a link, `current` instead of the version it names, a
+# trailing slash), and so does a link into a data folder the user has moved away from since: changing
+# NOSTROMA_DATA_DIR does not turn the old name into someone else's file. A terminal of some other kind, one folder
+# over, is not ours and is left alone.
+is_our_name() {
+  target=$(readlink "$1")
+  case $target in /*) : ;; *) target=$(dirname -- "$1")/$target ;; esac
+  real=$(real_path "$target")
+  [ "${real##*/}" = strata ] || return 1                       # the program itself
+  bin_dir=${real%/*}
+  [ "${bin_dir##*/}" = bin ] || return 1
+  slot=${bin_dir%/*}                                           # .../current or .../<version>
+  terminal_dir=${slot%/*}
+  [ "${terminal_dir##*/}" = terminal ] || return 1
+  case ${slot##*/} in
+    current) return 0 ;;
+    [0-9]*) return 0 ;;                                         # a version, as the installer writes it
+    *) return 1 ;;
+  esac
+}
+
 # One of the product's two names may already be on the PATH. It is replaced only when it is a link this installer
 # made: anything else is someone's file, and it is left alone. Checked before anything is downloaded, so a refusal
 # costs nothing and the message that says nothing was changed is true.
 check_name() {
   if [ -L "$1" ]; then
-    case $(readlink "$1") in
-      "$DATA_DIR"/terminal/*) : ;;
-      *) die "$1 is a link to $(readlink "$1"), which this installer did not make. Move it and run this again. Nothing was changed." ;;
-    esac
+    is_our_name "$1" || die "$1 is a link to $(readlink "$1"), which this installer did not make. Move it and run this again. Nothing was changed."
   elif [ -e "$1" ]; then
     die "$1 already exists and is not a link this installer made. Move it and run this again. Nothing was changed."
   fi
