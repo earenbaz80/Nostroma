@@ -130,7 +130,7 @@ def _qwen(setup, world: World, lib: ProbeLib, say) -> tuple[dict, dict]:
 
 def drive_setup(world: World) -> dict:
     from .driver import engine_start
-    command = f"strata setup --family {world.mset.family} --model {world.mset.model} --yes --no-start"
+    command = f"nostroma install --family {world.mset.family} --model {world.mset.model} --yes --no-start"
     if world.machine.key in NOT_DRIVEN:
         return {"entry": "setup", "command": command, "not_driven": NOT_DRIVEN[world.machine.key]}
     if str(ROOT) not in sys.path:

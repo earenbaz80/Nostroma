@@ -4,7 +4,7 @@
  "entries": {
   "setup": {
    "entry": "setup",
-   "command": "strata setup --family unsloth --model UD-Q4_K_XL --yes --no-start",
+   "command": "nostroma install --family unsloth --model UD-Q4_K_XL --yes --no-start",
    "not_driven": "Intel Arc: setup.py hands over to sycl/setup_intel.py (sycl_setup), which writes its own config; it is not behind a seam yet"
   },
   "launch": {

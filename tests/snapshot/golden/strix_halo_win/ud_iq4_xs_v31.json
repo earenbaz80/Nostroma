@@ -4,7 +4,7 @@
  "entries": {
   "setup": {
    "entry": "setup",
-   "command": "strata setup --family unsloth --model UD-IQ4_XS-v31 --yes --no-start",
+   "command": "nostroma install --family unsloth --model UD-IQ4_XS-v31 --yes --no-start",
    "inputs": {
     "family": "unsloth",
     "model": "UD-IQ4_XS-v31",

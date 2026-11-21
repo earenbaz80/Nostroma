@@ -4,7 +4,7 @@
  "entries": {
   "setup": {
    "entry": "setup",
-   "command": "strata setup --family qwen --model IQ3_S --yes --no-start",
+   "command": "nostroma install --family qwen --model IQ3_S --yes --no-start",
    "not_driven": "Intel Arc: setup.py hands over to sycl/setup_intel.py (sycl_setup), which writes its own config; it is not behind a seam yet"
   },
   "launch": {

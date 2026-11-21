@@ -4,7 +4,7 @@
  "entries": {
   "setup": {
    "entry": "setup",
-   "command": "strata setup --family unsloth --model UD-IQ4_XS-v31 --yes --no-start",
+   "command": "nostroma install --family unsloth --model UD-IQ4_XS-v31 --yes --no-start",
    "not_driven": "Mac: setup.py hands over to metal/setup_mac.py (mac_setup) and, for DeepSeek, to mac_dsv41_setup(); they write their own configs; not behind a seam yet"
   },
   "launch": {

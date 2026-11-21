@@ -76,7 +76,7 @@ MODEL_SETS: tuple[ModelSet, ...] = (
 ENTRY_POINTS = ("setup", "launch", "app_plain", "app_models")
 
 ENTRY_TITLES = {
-    "setup": "strata setup / setup.py config generation",
+    "setup": "nostroma install / setup.py config generation",
     "launch": "strata launch (Terminal)",
     "app_plain": "the app's plain Load (no Drafting choice)",
     "app_models": "the app's Models-screen Load (Drafting: Auto)",

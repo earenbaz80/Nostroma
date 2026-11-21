@@ -4,7 +4,7 @@
  "entries": {
   "setup": {
    "entry": "setup",
-   "command": "strata setup --family qwen --model IQ3_S --yes --no-start",
+   "command": "nostroma install --family qwen --model IQ3_S --yes --no-start",
    "inputs": {
     "family": "qwen",
     "model": "IQ3_S",
