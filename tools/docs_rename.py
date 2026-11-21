@@ -24,8 +24,15 @@ draft key `strata.chat-draft.…`, the model name the screen falls back to) and 
     python tools/docs_rename.py --check --area terminal          # one area
     python tools/docs_rename.py --write --area docs --area tui
 
-Historical pages are left alone: history/, bench/ results, data/ notices and docs/release-notes-*
-record what was published and measured under the old name.
+A page of usage also fails when it tells someone to type the command by its old name: `strata launch`,
+`strata monitor` or `strata connect`. That is its own rule, not the brand's, because a capture or a sentence
+can carry the lower-case word where the word rule leaves it alone, and because the fix is a different one:
+the command is `nostroma`, whatever the brand on the page says. A path to the launcher is not the command and
+is not reported (`bin/strata monitor` in a source checkout names a file that is really called that).
+
+The version notes are checked for the command and for the command only: their prose still calls the product
+Strata because that is what shipped, and that record stands, but a note may not send a reader to `strata launch`,
+`strata monitor` or `strata connect` either. history/, bench/ results and data/ notices are left alone entirely.
 """
 
 from __future__ import annotations
@@ -37,19 +44,30 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
-SKIP = ("history/", "bench/", "data/", "docs/release-notes")
+SKIP = ("history/", "bench/", "data/")
+
+# Pages whose brand prose is the record of what shipped, and where only the command's name is checked: the version notes.
+COMMAND_ONLY = ("docs/release-notes",)
 
 # The word itself: on its own, not glued to a letter, a path, a dot or a hyphen. Pages are prose, so
 # both cases are the product; in screens the lower-case word is the command and stays.
 WORD = re.compile(r"(?<![\w./~:@-])Strata(?![\w.-])|(?<![\w./~:@-])strata(?![\w.-])")
 BRAND = re.compile(r"(?<![\w./~:@-])Strata(?![\w.-])")
 
+# The command as a person would be told to type it. The lookbehind is the same one the word rule uses, so a path
+# (`bin/strata monitor`, `~/.local/bin/strata launch`) is a file name and is left alone, and only prose is reported.
+COMMAND = re.compile(r"(?<![\w./~:@\\-])strata(?=[ \t]+(?:launch|monitor|connect)\b)")
+
 
 class Area:
     """One set of pages, and the names in them that are not ours to rename."""
 
-    def __init__(self, paths, skip=(), before=(), keep=(), word=WORD):
+    def __init__(self, paths, skip=(), before=(), keep=(), word=WORD, command=False, command_only=()):
         self.paths = paths            # git pathspecs
+        # Prose read by a person following it: the old name of the command is renamed and reported there too.
+        self.command = command
+        # Path prefixes where only that command rule applies: the brand in them is what shipped.
+        self.command_only = command_only
         self.skip = skip              # path prefixes left alone
         # Rewrites that run before the word, for what a plain word rule cannot place (a path that
         # does change with the product name, an anchor that follows a renamed heading).
@@ -85,7 +103,8 @@ KEEP = (
 )
 
 AREAS: dict[str, Area] = {
-    "docs": Area(paths=("*.md",), skip=SKIP, before=DOCS_BEFORE, keep=KEEP),
+    "docs": Area(paths=("*.md",), skip=SKIP, before=DOCS_BEFORE, keep=KEEP, command=True,
+                 command_only=COMMAND_ONLY),
     # The Terminal's local dashboard: its copy is prose, its ids and classes are its own.
     "terminal": Area(paths=("serve/web/*.html",),
                      keep=KEEP + (r"\bstrata-[\w-]+\b", r"\bdata-strata[\w-]*")),
@@ -106,14 +125,26 @@ AREAS: dict[str, Area] = {
     "previews": Area(paths=("docs/terminal-previews/*.txt",),
                      keep=KEEP + (r"Documents[\\/]Strata", r"\bStrata-data\b", r"(?<=[\\/])Strata\b",
                                   r"[A-Za-z]:(?:[\\/][^\s│]*)+[\\/]?Strata[^\s│]*"),
-                     word=BRAND),
+                     word=BRAND, command=True),
 }
 
 
-def renamed(text: str, area: str | Area = "docs") -> str:
+def names_old_command(text: str) -> bool:
+    """Whether this page tells someone to type the command by the name it had before."""
+    return COMMAND.search(text) is not None
+
+
+def renamed(text: str, area: str | Area = "docs", word: bool = True) -> str:
+    """The page as it should read. `word=False` leaves the brand alone and fixes only the command's name (a version
+    note, whose prose is the record of what shipped)."""
     where = AREAS[area] if isinstance(area, str) else area
-    for pattern, replacement in where.before:
-        text = re.sub(pattern, replacement, text)
+    if word:
+        for pattern, replacement in where.before:
+            text = re.sub(pattern, replacement, text)
+    if where.command:
+        text = COMMAND.sub("nostroma", text)
+    if not word:
+        return text
     kept: list[str] = []
 
     def hold(match: re.Match[str]) -> str:
@@ -157,13 +188,19 @@ def main(argv: list[str]) -> int:
         return 2
 
     stale: list[str] = []
-    total = 0
+    commands: list[str] = []
+    total = named = 0
     for name in chosen or list(AREAS):
         area = AREAS[name]
-        found = 0
+        found = naming = 0
         for page in pages(area):
             text = page.read_text(encoding="utf-8")
-            new = renamed(text, area)
+            relative = page.relative_to(ROOT).as_posix()
+            only_command = any(relative.startswith(prefix) for prefix in area.command_only)
+            if area.command and names_old_command(text):
+                naming += 1
+                commands.append(relative)
+            new = renamed(text, area, word=not only_command)
             if new == text:
                 continue
             found += 1
@@ -171,15 +208,20 @@ def main(argv: list[str]) -> int:
             if write:
                 page.write_text(new, encoding="utf-8")
         if not write:
-            print(f"{name}: {found} page(s) still saying Strata")
+            note = f", {naming} naming the command as strata" if area.command else ""
+            print(f"{name}: {found} page(s) still saying Strata{note}")
         total += found
+        named += naming
     if write:
         print(f"rewritten: {total} page(s)")
         return 0
     for page in stale:
         print(f"  {page}")
     print(f"pages still saying Strata: {total}")
-    return 1 if total else 0
+    for page in commands:
+        print(f"  {page} names the command as strata launch|monitor|connect")
+    print(f"pages still naming the command as strata: {named}")
+    return 1 if total or named else 0
 
 
 if __name__ == "__main__":

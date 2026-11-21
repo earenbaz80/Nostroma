@@ -27,15 +27,15 @@ Two installers and two engines were added to this release later: `Strata-0.2.0-b
 **Three parts that share one engine.**
 
 - **The Strata app** for Windows (installer), Linux (AppImage) and Mac (Apple silicon, macOS 15 or newer, `.dmg`). Chat with a coding agent that asks before it acts (Manual) or works freely (Bypass), web search, `/loop`, pictures pasted or dropped into the chat, a Models page, a Storage page, a choice of which graphics cards a model uses, two models on two GPUs, sharing with other devices (needs an API key first) and setup of your coding apps.
-- **The Terminal**, one line to install (`curl -fsSL https://github.com/Niko1221/Strata/releases/latest/download/install.sh | sh`, `irm https://github.com/Niko1221/Strata/releases/latest/download/install.ps1 | iex` on Windows). `strata launch` is the guided flow (choose a model, tune it, serve it, watch it) and also runs without screens from flags; `strata connect` writes and checks the setup of OpenCode, Codex CLI, Claude Code, oh-my-pi, pi, Hermes Agent and OpenClaw; `strata models`, `strata update`, `strata doctor` and `strata bench run` are there too. The monitor `strata launch` opens has seven views, `1`-`7`, the seventh is Connect. See `docs/TERMINAL_LAUNCH.md`.
+- **The Terminal**, one line to install (`curl -fsSL https://github.com/Niko1221/Strata/releases/latest/download/install.sh | sh`, `irm https://github.com/Niko1221/Strata/releases/latest/download/install.ps1 | iex` on Windows). `nostroma launch` is the guided flow (choose a model, tune it, serve it, watch it) and also runs without screens from flags; `nostroma connect` writes and checks the setup of OpenCode, Codex CLI, Claude Code, oh-my-pi, pi, Hermes Agent and OpenClaw; `strata models`, `strata update`, `strata doctor` and `strata bench run` are there too. The monitor `nostroma launch` opens has seven views, `1`-`7`, the seventh is Connect. See `docs/TERMINAL_LAUNCH.md`.
 - **The engine**, the part that talks to your card, is a separate package per platform and card. The installers carry one, so a new install starts a model without a download. Later engines come from a feed that is signed (Ed25519) and checked file by file, test-started before the switch and rolled back on any failure; models and saved tunings are never replaced. Update with `strata update` or Settings > Update. See `packaging/UPDATES.md` and `SECURITY.md`.
-- **A missing engine is a warning.** `strata launch` and the app say in plain words what is missing and what to do next, and still download the model.
+- **A missing engine is a warning.** `nostroma launch` and the app say in plain words what is missing and what to do next, and still download the model.
 - Starting a model and serving never download anything; downloads are one explicit step.
 
 **Pictures are on by default on NVIDIA and AMD cards.** The picture reader runs on the CPU for a card under 24 GB (a few seconds per picture, nothing taken from the card) and on the graphics card from 24 GB. NVIDIA, AMD and Intel follow the same rule; `--vision gpu` / `--vision cpu` / off still choose per model. AMD now has a GPU reader with an automatic CPU fallback (the server prints one line when the GPU reader cannot start). Measured on a Radeon AI PRO R9700: a 260-token picture 57 ms on the GPU reader against 3.13 s on the CPU, a 972-token picture 0.40 s against 14.1 s; the GPU reader keeps 1,470 MiB of VRAM. On a Radeon 780M 0.40 s against 2.42 s. Gyro and the NVFP4 models read pictures too (Gyro needs engine 0.1.45.1 or newer). The Mac app has no picture reader yet.
 
 **Models.** Qwen3.6-35B-A3B has its three sizes in the app's catalog; the NVFP4 models have clear names. The app and
-`strata launch` now suggest a model by RAM and graphics memory together: 40 GB, Swift 1.5 IQ2_XS (or Gyro-M, slower);
+`nostroma launch` now suggest a model by RAM and graphics memory together: 40 GB, Swift 1.5 IQ2_XS (or Gyro-M, slower);
 48 GB, IQ3_XXS; 64 GB or more, IQ3_S (the original or Swift 1.5). With less memory, low-RAM mode starts by itself and the
 model runs slower.
 
@@ -73,10 +73,10 @@ Every speed number below is a median of interleaved pairs against the previous d
 - **Downloads:** one progress bar for the model and its picture reader, choices kept when you switch tabs.
 - **Web search** stopped after the third search when DuckDuckGo refused; it falls back to another search source and waits before asking DuckDuckGo again. A turn that loops on failed searches, or runs out of context, now ends cleanly and says why.
 - **`/loop`** can be stopped by a count, a time or the answer ("stop after 3 answers").
-- **Anthropic base URL:** the app and `strata connect` show the address without `/v1`; a pasted `/v1` is cut back.
+- **Anthropic base URL:** the app and `nostroma connect` show the address without `/v1`; a pasted `/v1` is cut back.
 - **Files edited:** the chat no longer lists files it did not touch after a turn.
 - **Cloudflare tunnel:** `cloudflared` is found on your PATH and in the usual places, and a copy that is already running is not started twice.
-- **Terminal:** flags no longer crash the start screen; `strata models` finds models the app installed; no web page opens by itself; `strata connect --check --output json` prints one JSON object and exits 1 when a check failed.
+- **Terminal:** flags no longer crash the start screen; `strata models` finds models the app installed; no web page opens by itself; `nostroma connect --check --output json` prints one JSON object and exits 1 when a check failed.
 
 ## Known limits
 
@@ -87,7 +87,7 @@ Every speed number below is a median of interleaved pairs against the previous d
 - **Mini PCs with a Radeon 780M / 880M / 890M:** the matrix-core prompt defaults are parked. On the 780M the GPU reset (MES REMOVE_QUEUE) when they were tried; the iGPU keeps its opt-in switches.
 - **R9700:** about half of the fresh engines with MTP read prompts 10-23% slower than the others (4K: about 1,350 instead of 1,700 tok/s). Not seen on NVIDIA; the cause is not found.
 - **Docker images are not published yet;** build them yourself (`docs/DOCKER.md`).
-- **`strata code` is not available** in the Terminal; use `strata connect` for coding apps (the app has its own agent).
+- **`strata code` is not available** in the Terminal; use `nostroma connect` for coding apps (the app has its own agent).
 - The standard benchmark protocol is a draft (`docs/BENCHMARK_PROTOCOL.md`); `strata bench run` and `BENCH.bat` do not implement it.
 
 Thanks to Laurent Zuijdwijk (the Gyro kernels for CPU and the trellis types), ATIVX928 and NoxestNoz (Volta work) and everyone who tested the builds and sent reports.

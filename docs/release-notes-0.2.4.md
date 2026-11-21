@@ -2,7 +2,7 @@
 
 Strata now runs DeepSeek V4.1-Flash on a PC with one 12 GB graphics card and 46 to 64 GB of RAM. The engine keeps the experts it uses most in RAM and streams the rest from your SSD.
 
-**DeepSeek is in the Terminal (`strata launch`, `strata setup`) in this release. The desktop app is unchanged (it stays 0.2.3) and gets DeepSeek in a later update.**
+**DeepSeek is in the Terminal (`nostroma launch`, `strata setup`) in this release. The desktop app is unchanged (it stays 0.2.3) and gets DeepSeek in a later update.**
 
 ## What you get
 
@@ -68,8 +68,8 @@ These are the 2.00-bit set. The 2.25-bit set reads 13% more data per token, so e
 
 DeepSeek runs on its own engine package, `strata-dsv41`, which sits beside your Qwen engine and never replaces it. There are two ways to get it.
 
-- **Automatic:** choose DeepSeek in `strata launch` or `strata setup`. Strata downloads the package that fits your PC, checks its signature and installs it.
-- **By hand:** download the package for your system from this page, check it against `SHA256SUMS.txt`, and run `strata launch --model ist-das-2.00bpw --dsv41-package PATH-TO-FILE` (or `python setup.py --family deepseek41 --dsv41-package PATH-TO-FILE`). Strata checks that it is the DeepSeek engine, that it fits your system and that its signature and file hashes are good, and refuses anything else. You can also put the file in the `engine-dsv41` folder next to `engine`.
+- **Automatic:** choose DeepSeek in `nostroma launch` or `strata setup`. Strata downloads the package that fits your PC, checks its signature and installs it.
+- **By hand:** download the package for your system from this page, check it against `SHA256SUMS.txt`, and run `nostroma launch --model ist-das-2.00bpw --dsv41-package PATH-TO-FILE` (or `python setup.py --family deepseek41 --dsv41-package PATH-TO-FILE`). Strata checks that it is the DeepSeek engine, that it fits your system and that its signature and file hashes are good, and refuses anything else. You can also put the file in the `engine-dsv41` folder next to `engine`.
 
 | System | File |
 |---|---|

@@ -78,6 +78,44 @@ class AppPagesRename(unittest.TestCase):
         self.assertIn('strata/{t.model}', kept)
         self.assertIn("qwen3.8 (Nostroma)", kept, "the name the app lists still says the old brand")
 
+    def test_a_page_of_usage_may_not_name_the_old_command(self):
+        tool = load()
+        for phrase in ("Run `strata launch` first.",
+                       "`strata monitor` shows what is serving.",
+                       "`strata connect opencode` writes the setup."):
+            self.assertTrue(tool.names_old_command(phrase), phrase)
+            # the command that follows the name is kept: only the name changes
+            self.assertEqual(tool.renamed(phrase, "docs"), phrase.replace("strata ", "nostroma "))
+            self.assertEqual(tool.renamed(phrase, "previews"), phrase.replace("strata ", "nostroma "))
+        # in a capture the brand rule leaves the lower-case word alone, so this rename is the command rule's own
+        self.assertEqual(tool.renamed("Run strata launch now.", "previews"), "Run nostroma launch now.")
+        # a path to the launcher is a file name that is really spelled that way, not the command
+        for kept in ("bin/strata monitor --url http://127.0.0.1:8080",
+                     "~/.local/bin/strata launch",
+                     "engine/strata update"):
+            self.assertFalse(tool.names_old_command(kept), kept)
+            self.assertEqual(tool.renamed(kept, "docs"), kept)
+        # and a plain mention of the folder is not a command
+        self.assertFalse(tool.names_old_command("the strata folder holds the models"))
+
+    def test_the_check_reports_the_command_in_every_prose_area(self):
+        done = subprocess.run([sys.executable, str(TOOL), "--check", "--area", "docs", "--area", "previews"],
+                              cwd=str(ROOT), capture_output=True, text=True, timeout=180)
+        self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
+        self.assertIn("docs: 0 page(s) still saying Strata, 0 naming the command as strata", done.stdout)
+        self.assertIn("previews: 0 page(s) still saying Strata, 0 naming the command as strata", done.stdout)
+        self.assertIn("pages still naming the command as strata: 0", done.stdout)
+
+    def test_a_version_note_is_checked_for_the_command_and_only_for_it(self):
+        tool = load()
+        note = ROOT / "docs" / "release-notes-0.2.0.md"
+        text = note.read_text(encoding="utf-8")
+        self.assertIn(note, tool.pages(tool.AREAS["docs"]), "a note is looked at")
+        self.assertFalse(tool.names_old_command(text), "a note may not send a reader to the old command")
+        self.assertIn("Strata", text, "while its brand prose is the record of what shipped")
+        self.assertEqual(tool.renamed(text, "docs", word=False), text, "nothing left for the command rule to fix")
+        self.assertNotEqual(tool.renamed(text, "docs"), text, "the brand rule would rewrite it")
+
     def test_a_capture_keeps_the_folders_it_prints(self):
         tool = load()
         for kept in ("C:\\Users\\AI-Server\\Documents\\Strata",
