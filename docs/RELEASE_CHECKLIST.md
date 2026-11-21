@@ -39,7 +39,7 @@ Every name below is flat in the release: GitHub release assets have no folders.
 | `latest.json` | `build-feed` (writes `RELEASE/app/latest.json`) | The Tauri updater endpoint |
 | `install.sh`, `install.ps1` | Copies of `packaging/install.sh` and `packaging/install.ps1`, unchanged | Their built-in address is the release folder |
 | `strata-control-<control version>-<platform>.tar.gz` | `apps/desktop/scripts/stage-control.py` stages the folder, `feed_tool.py pack-control` packs it | `--format zip` for `windows-x86_64`; the archive must hold `bin/strata`. The folder is the same bundle `packaging/package_terminal.py` writes as `strata-terminal-<version>-<platform>.tar.gz`, which is not uploaded |
-| `strata-engine-<engine version>-<platform>-<backend>[-<variant>].tar.gz` | The build script for the box, then `packaging/package_engine.py`, `feed_tool.py sign-package`, `feed_tool.py pack-engine --url-prefix=` | See the per-platform list below. This release builds 11 at 0.1.60 and carries `linux-aarch64` cuda13 and `linux-x86_64` sycl at 0.1.59 from v0.2.14 (`engines_from`) |
+| `strata-engine-<engine version>-<platform>-<backend>[-<variant>].tar.gz` | The build script for the box, then `packaging/package_engine.py`, `feed_tool.py sign-package`, `feed_tool.py pack-engine --url-prefix=` | See the per-platform list below. 0.2.15 builds none: all 14 are the ones v0.2.14 published (`engines_from`), 12 at 0.1.60 and `linux-aarch64` cuda13 and `linux-x86_64` sycl at 0.1.59 |
 | `Nostroma-<product version>-windows-x64-setup.exe` (+ `.sig`) | `npx tauri build --bundles nsis --config src-tauri/tauri.update.conf.json`, then `npx tauri signer sign` | No engine inside |
 | `Nostroma-<product version>-linux-x86_64.AppImage` (+ `.sig`) | `npx tauri build --bundles appimage --config src-tauri/tauri.update.conf.json`, then `npx tauri signer sign` | No engine inside |
 | `Nostroma-<product version>-macos-arm64.dmg` | `npx tauri build --bundles dmg`, then `packaging/mac/sign-and-notarize.sh` | Downloaded by hand; it is not in `latest.json` |
@@ -64,7 +64,8 @@ Every name below is flat in the release: GitHub release assets have no folders.
 
 ## Order
 
-1. **Engines.** On each box, build, then package and sign the folder:
+1. **Engines.** Only when an engine changed; 0.2.15 takes v0.2.14's 14 packages as they are, so this step is a
+download of the files, not a build. When one did change, build it on its box, then package and sign the folder:
 
    ```sh
    python packaging/package_engine.py --src <stage> --backend <backend> --version <engine version> --out <package>
