@@ -1,5 +1,5 @@
 """What the entry points are ALLOWED to do differently, with the reason.  Everything else must be identical in every machine class x model set:
-`strata launch`, the app's plain Load and the app's Models-screen Load start the engine with the same arguments and the same environment.
+`nostroma launch`, the app's plain Load and the app's Models-screen Load start the engine with the same arguments and the same environment.
 
 The golden files are the data; `test_entry_points_agree.py` applies this list to them.  A new difference has to be added here WITH a reason, which is the review."""
 

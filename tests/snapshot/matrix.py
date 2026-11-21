@@ -77,7 +77,7 @@ ENTRY_POINTS = ("setup", "launch", "app_plain", "app_models")
 
 ENTRY_TITLES = {
     "setup": "nostroma install / setup.py config generation",
-    "launch": "strata launch (Terminal)",
+    "launch": "nostroma launch (Terminal)",
     "app_plain": "the app's plain Load (no Drafting choice)",
     "app_models": "the app's Models-screen Load (Drafting: Auto)",
 }

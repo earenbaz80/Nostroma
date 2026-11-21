@@ -63,7 +63,7 @@ class AutoStaysAuto(unittest.TestCase):
         self.assertEqual(argv(recs[1]), argv(recs[0]))
 
     def test_the_models_screen_choice_still_decides_a_start_without_a_word(self):
-        # the app saves its Drafting choice in the model's installed config; a later `strata launch` with no word runs that choice, as before
+        # the app saves its Drafting choice in the model's installed config; a later `nostroma launch` with no word runs that choice, as before
         def models_screen_says_mtp(world):
             cfg = json.loads(world.config_path.read_text(encoding="utf-8"))
             cfg["drafting"] = "mtp"

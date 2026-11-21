@@ -1,4 +1,4 @@
-"""The gate of CLEAN-1A: in every machine class x model set, the app's plain Load and the app's Models-screen Load start the engine as `strata launch` does,
+"""The gate of CLEAN-1A: in every machine class x model set, the app's plain Load and the app's Models-screen Load start the engine as `nostroma launch` does,
 apart from the allow-list (tests/snapshot/allowlist.py).  Reads the golden files, so it needs no Node and no machine; test_config_snapshot.py keeps the golden files true."""
 
 from __future__ import annotations

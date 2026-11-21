@@ -1,4 +1,4 @@
-"""A first `strata launch` with Auto (no Drafting word) on a computer without the draft layer: setup is told the drafter the start will run, so the start has it.
+"""A first `nostroma launch` with Auto (no Drafting word) on a computer without the draft layer: setup is told the drafter the start will run, so the start has it.
 Found in the 0.2.14 real-use run on an RTX 5070 12 GB with IQ3_S (present since 0.2.13): Auto's start-time rule for that card class is the MTP
 (drafting.CLASS_DEFAULTS, the "streaming" class, read from the card's memory), but setup was told "--drafter dflash2" (Auto resolved without the model's set and
 the card's memory), skipped the draft layer, and the engine started with no drafter ("Drafting: off (no drafter is downloaded yet)"), at the next Auto launch too.

@@ -1,6 +1,6 @@
 """QAGUI-STRIX 11-09 (APP-WIN item 3): on Windows Strix Halo the app's Models-screen Load rewrote the reserve setup wrote (700) to 1024, 2048 with pictures,
-while `strata launch` started the same model with 700.  The app's Load ("Leave room for my work" and "Full performance", what the Models screen passes)
-now starts the engine as `strata launch` does, from the run config setup writes; the only difference allowed is the work profile's --pool-workers (the
+while `nostroma launch` started the same model with 700.  The app's Load ("Leave room for my work" and "Full performance", what the Models screen passes)
+now starts the engine as `nostroma launch` does, from the run config setup writes; the only difference allowed is the work profile's --pool-workers (the
 profile's meaning) and the variables it sets (allowlist.ENV_BY_DESIGN, STRATA_RAM_KEEP_GIB).
 
   python -m pytest tests/snapshot/test_strix_app_reserve.py -q        (needs Node, as the app entries of the snapshot do)

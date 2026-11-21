@@ -1,6 +1,6 @@
 """Drafting Off (or MTP), then Auto again, in one scratch world: Auto starts the engine exactly as Auto did before (the same drafter, --spec, --draft-conf and
 batch), on every machine class and model set.  Found in the shipped 0.2.13.1 by the real-use rehearsal on an RTX PRO 5000 (REAL-USE-1, block (b)): after one
-`strata launch --drafting off`, `strata launch --drafting auto` started with no drafter (the Off line, --spec 4 --batch 4) and stayed so.  There the launch named
+`nostroma launch --drafting off`, `nostroma launch --drafting auto` started with no drafter (the Off line, --spec 4 --batch 4) and stayed so.  There the launch named
 --model-path, so setup ran at every launch: the Off launch's "--mtp off" left "mtp": false in the installed config, and Auto read that as "the draft layer is off".
 
 The Auto line compared with is the second Auto launch of the world: on the UD sets the first launch fetches the plain DFlash2 pack and the next one converts it
@@ -51,7 +51,7 @@ def tui_drafting(world, pick):
 
 
 def launches(machine, mset, steps, prepare=None):
-    """One world, one `strata launch` per (choice, setup_runs) step (choice None: no --drafting word; (TUI, pick): the TUI's Drafting step first, then the launch
+    """One world, one `nostroma launch` per (choice, setup_runs) step (choice None: no --drafting word; (TUI, pick): the TUI's Drafting step first, then the launch
     with what it saved), in order; the normalized records (a TUI step's record also has "tui": (shown, saved)).  `prepare(world)` runs before the first step."""
     world = World(machine, mset).build()
     try:
@@ -125,7 +125,7 @@ class AutoAgainIsAuto(unittest.TestCase):
                 recs = launches(m, s, [("auto", runs), ("off", runs), (None, runs)])
                 self.assertEqual(argv(recs[2]), argv(recs[1]), "the Off of the launch before is kept (setup's \"mtp\": false)")
 
-    # the TUI (`strata launch` without --no-tui): its Drafting step shows Off where the installed config's draft layer is off and no Drafting choice is saved
+    # the TUI (`nostroma launch` without --no-tui): its Drafting step shows Off where the installed config's draft layer is off and no Drafting choice is saved
     def test_tui_off_then_auto_is_auto(self):
         for m, s, runs in self.cells(setup_runs=(True,)):
             if m.os == "macos":

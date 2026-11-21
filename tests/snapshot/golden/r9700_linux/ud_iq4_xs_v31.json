@@ -103,7 +103,7 @@
   },
   "launch": {
    "entry": "launch",
-   "command": "strata launch --model UD-IQ4_XS-v31 --yes --no-tui --context 131072",
+   "command": "nostroma launch --model UD-IQ4_XS-v31 --yes --no-tui --context 131072",
    "fetches": [],
    "setup_args": [
     "--yes",

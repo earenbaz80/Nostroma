@@ -71,7 +71,7 @@ def setup_fetches_layer(world: World, args: list[str]) -> None:
 
 
 def drive_launch(world: World, extra: tuple[str, ...] = (), setup_runs: bool | str = False, fresh: bool = False) -> dict:
-    """`strata launch --model <set> --yes --no-tui` through the real command, with the engine start, the model download and the tuning replaced.
+    """`nostroma launch --model <set> --yes --no-tui` through the real command, with the engine start, the model download and the tuning replaced.
     `extra`: more words for the command (`--drafting off`), for the tests that launch several times in one world.  `setup_runs`: setup runs at this launch
     (as it does at every launch whose --model-path or data folder the installed copy does not match, runner.installed_serves_request) and leaves the
     draft-layer word in the installed config as nostroma_control/setup_config.py writes it: the stand-in config afresh, "--mtp off" -> "mtp": false (and no --mtp
@@ -128,9 +128,9 @@ def drive_launch(world: World, extra: tuple[str, ...] = (), setup_runs: bool | s
             code, out, err = run_cli(command)
     runner = seen.get("runner")
     if code != 0 or runner is None or runner.config_path is None:
-        return {"entry": "launch", "command": "strata " + " ".join(command), "failed": {"exit": code, "stderr": err[-400:], "stdout": out[-400:]}}
+        return {"entry": "launch", "command": "nostroma " + " ".join(command), "failed": {"exit": code, "stderr": err[-400:], "stdout": out[-400:]}}
     cfg = json.loads(Path(runner.config_path).read_text(encoding="utf-8"))
-    return {"entry": "launch", "command": "strata " + " ".join(command), "fetches": list(world.fetches),
+    return {"entry": "launch", "command": "nostroma " + " ".join(command), "fetches": list(world.fetches),
             "setup_args": seen.get("setup_args"), "config_file": cfg, "engine": engine_start(world, cfg),
             **({"setup_ran": seen.get("setup_ran")} if setup_runs else {}),
             **({"plan_parts": seen.get("plan_parts"), "plan_drafting": seen.get("plan_drafting"), "notices": list(runner.notices)} if fresh else {})}
