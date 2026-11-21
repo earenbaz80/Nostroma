@@ -523,7 +523,7 @@ def _readme(version: str, target: str) -> str:
     cd {stem}
     .\\bin\\strata.cmd --help
 
-Put `bin\\` on your PATH to get the `strata` command everywhere (cmd.exe and PowerShell):
+Put `bin\\` on your PATH to get the `nostroma` command everywhere (cmd.exe and PowerShell):
 
     setx PATH "%PATH%;%CD%\\bin"
 """
@@ -532,7 +532,7 @@ Put `bin\\` on your PATH to get the `strata` command everywhere (cmd.exe and Pow
     cd {stem}
     ./bin/strata --help
 
-Put `bin/` on your PATH to get the `strata` command everywhere:
+Put `bin/` on your PATH to get the `nostroma` command everywhere:
 
     echo "export PATH=\\"$PWD/bin:$PATH\\"" >> ~/.profile
 """

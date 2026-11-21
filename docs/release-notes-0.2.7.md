@@ -74,7 +74,7 @@ Names stay on the commits: 55 contributors' pull requests were ported with their
 ## Updating
 
 - **App:** the in-app updater installs the new installer. The app then offers the 0.1.52 engine.
-- **Terminal:** run `strata update`. It fetches Control 0.1.52 and the newer engine in the same run, and keeps the old engine so `strata components rollback` can return to it.
+- **Terminal:** run `nostroma update`. It fetches Control 0.1.52 and the newer engine in the same run, and keeps the old engine so `nostroma components rollback` can return to it.
 - **DeepSeek engine:** updates itself on the next `nostroma launch`.
 
 ## Downloads

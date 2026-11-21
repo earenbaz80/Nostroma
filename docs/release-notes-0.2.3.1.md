@@ -8,7 +8,7 @@ Only the Terminal's Control changed (version 0.1.48.1). The app stays 0.2.3 and 
 
 ## Updating
 
-- **From 0.2.3:** run `strata update` in the Terminal. It fetches Control 0.1.48.1, and the next `strata` command already runs it (`strata --version` says 0.2.3.1). The app is not touched.
+- **From 0.2.3:** run `nostroma update` in the Terminal. It fetches Control 0.1.48.1, and the next `strata` command already runs it (`strata --version` says 0.2.3.1). The app is not touched.
 - **From an older version:** follow the steps in the 0.2.3 notes. The install command (`install.ps1` on Windows, `install.sh` on Linux) now installs this fix.
 - **Mac:** the Mac Terminal stays on Control 0.1.48. This fix does not touch the Mac.
 

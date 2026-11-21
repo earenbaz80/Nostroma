@@ -24,15 +24,16 @@ draft key `strata.chat-draft.…`, the model name the screen falls back to) and 
     python tools/docs_rename.py --check --area terminal          # one area
     python tools/docs_rename.py --write --area docs --area tui
 
-A page of usage also fails when it tells someone to type the command by its old name: `strata launch`,
-`strata monitor` or `strata connect`. That is its own rule, not the brand's, because a capture or a sentence
-can carry the lower-case word where the word rule leaves it alone, and because the fix is a different one:
-the command is `nostroma`, whatever the brand on the page says. A path to the launcher is not the command and
-is not reported (`bin/strata monitor` in a source checkout names a file that is really called that).
+A page of usage also fails when it tells someone to type the command by its old name: `strata serve`,
+`strata status`, `strata doctor` or any other subcommand. That is its own rule, not the brand's, because a capture
+or a sentence can carry the lower-case word where the word rule leaves it alone, and because the fix is a different
+one: the command is `nostroma`, whatever the brand on the page says. A path to the launcher is not the command and
+is not reported (`bin/strata monitor` in a source checkout names a file that is really called that), and neither is
+a log prefix the engine prints (`strata serve: …`).
 
 The version notes are checked for the command and for the command only: their prose still calls the product
-Strata because that is what shipped, and that record stands, but a note may not send a reader to `strata launch`,
-`strata monitor` or `strata connect` either. history/, bench/ results and data/ notices are left alone entirely.
+Strata because that is what shipped, and that record stands, but a note may not send a reader to `strata serve` or
+`strata update` either. history/, bench/ results and data/ notices are left alone entirely.
 """
 
 from __future__ import annotations
@@ -54,9 +55,13 @@ COMMAND_ONLY = ("docs/release-notes",)
 WORD = re.compile(r"(?<![\w./~:@-])Strata(?![\w.-])|(?<![\w./~:@-])strata(?![\w.-])")
 BRAND = re.compile(r"(?<![\w./~:@-])Strata(?![\w.-])")
 
-# The command as a person would be told to type it. The lookbehind is the same one the word rule uses, so a path
-# (`bin/strata monitor`, `~/.local/bin/strata launch`) is a file name and is left alone, and only prose is reported.
-COMMAND = re.compile(r"(?<![\w./~:@\\-])strata(?=[ \t]+(?:launch|monitor|connect)\b)")
+# The command as a person would be told to type it: every subcommand the CLI has, so a page cannot send a reader to
+# `strata serve` or `strata update` either. The lookbehind is the same one the word rule uses, so a path
+# (`bin/strata monitor`, `~/.local/bin/strata launch`) is a file name and is left alone, and only prose is reported;
+# the lookahead holds off a colon, so an engine log line (`strata serve: …`) keeps the name the engine prints.
+SUBCOMMANDS = ("serve|profile|repair-access|doctor|components|update|models|drafting|split-engine|engine|install|"
+               "runtime|ops|bench|timeskip|tune|presets|launch|connect|status|monitor|logs|connection|config|code")
+COMMAND = re.compile(r"(?<![\w./~:@\\-])strata(?=[ \t]+(?:" + SUBCOMMANDS + r")(?![\w:]))")
 
 
 class Area:
@@ -219,7 +224,7 @@ def main(argv: list[str]) -> int:
         print(f"  {page}")
     print(f"pages still saying Strata: {total}")
     for page in commands:
-        print(f"  {page} names the command as strata launch|monitor|connect")
+        print(f"  {page} names the command as strata <subcommand>")
     print(f"pages still naming the command as strata: {named}")
     return 1 if total or named else 0
 

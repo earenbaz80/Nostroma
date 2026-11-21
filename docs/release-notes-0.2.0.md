@@ -1,4 +1,4 @@
-**0.2.0: Strata is now an app, a Terminal and an engine; installers that carry the engine; pictures on by default on NVIDIA and AMD cards; faster defaults for NVIDIA 12-16 GB cards, AMD RX 9000 / R9700 on Linux and Intel Arc.** Each new default below says whether the answers are identical to 0.1.45 (the identity gate) or change slightly, with the measured difference. Engine package version 0.1.45.3. Update with `strata update` (Terminal), Settings > Update (app), or `UPDATE.bat` / `./update.sh` (source installs).
+**0.2.0: Strata is now an app, a Terminal and an engine; installers that carry the engine; pictures on by default on NVIDIA and AMD cards; faster defaults for NVIDIA 12-16 GB cards, AMD RX 9000 / R9700 on Linux and Intel Arc.** Each new default below says whether the answers are identical to 0.1.45 (the identity gate) or change slightly, with the measured difference. Engine package version 0.1.45.3. Update with `nostroma update` (Terminal), Settings > Update (app), or `UPDATE.bat` / `./update.sh` (source installs).
 
 ## Which file to download
 
@@ -20,15 +20,15 @@ engine and Terminal packages, the signed update feed and the in-app update files
 
 ## Added after the first upload
 
-Two installers and two engines were added to this release later: `Strata-0.2.0-beta-windows-hip-rdna3.exe` (Windows, RX 7000 series and Ryzen AI Max; GPU code for gfx1100, gfx1101, gfx1102 and gfx1151; ROCm 10.2.0a20260930) and `Strata-0.2.0-beta-linux-amd-strixhalo.AppImage` (Linux, Ryzen AI Max; gfx1151; ROCm 7.14.1). The signed update feed is now sequence 101 and lists the two engine packages; `latest.json` and every other file are unchanged. Any other app installer works too: install it, then press **Update engine** in Settings (or run `strata update` in the Terminal) and the matching engine downloads.
+Two installers and two engines were added to this release later: `Strata-0.2.0-beta-windows-hip-rdna3.exe` (Windows, RX 7000 series and Ryzen AI Max; GPU code for gfx1100, gfx1101, gfx1102 and gfx1151; ROCm 10.2.0a20260930) and `Strata-0.2.0-beta-linux-amd-strixhalo.AppImage` (Linux, Ryzen AI Max; gfx1151; ROCm 7.14.1). The signed update feed is now sequence 101 and lists the two engine packages; `latest.json` and every other file are unchanged. Any other app installer works too: install it, then press **Update engine** in Settings (or run `nostroma update` in the Terminal) and the matching engine downloads.
 
 ## What is new
 
 **Three parts that share one engine.**
 
 - **The Strata app** for Windows (installer), Linux (AppImage) and Mac (Apple silicon, macOS 15 or newer, `.dmg`). Chat with a coding agent that asks before it acts (Manual) or works freely (Bypass), web search, `/loop`, pictures pasted or dropped into the chat, a Models page, a Storage page, a choice of which graphics cards a model uses, two models on two GPUs, sharing with other devices (needs an API key first) and setup of your coding apps.
-- **The Terminal**, one line to install (`curl -fsSL https://github.com/Niko1221/Strata/releases/latest/download/install.sh | sh`, `irm https://github.com/Niko1221/Strata/releases/latest/download/install.ps1 | iex` on Windows). `nostroma launch` is the guided flow (choose a model, tune it, serve it, watch it) and also runs without screens from flags; `nostroma connect` writes and checks the setup of OpenCode, Codex CLI, Claude Code, oh-my-pi, pi, Hermes Agent and OpenClaw; `strata models`, `strata update`, `strata doctor` and `strata bench run` are there too. The monitor `nostroma launch` opens has seven views, `1`-`7`, the seventh is Connect. See `docs/TERMINAL_LAUNCH.md`.
-- **The engine**, the part that talks to your card, is a separate package per platform and card. The installers carry one, so a new install starts a model without a download. Later engines come from a feed that is signed (Ed25519) and checked file by file, test-started before the switch and rolled back on any failure; models and saved tunings are never replaced. Update with `strata update` or Settings > Update. See `packaging/UPDATES.md` and `SECURITY.md`.
+- **The Terminal**, one line to install (`curl -fsSL https://github.com/Niko1221/Strata/releases/latest/download/install.sh | sh`, `irm https://github.com/Niko1221/Strata/releases/latest/download/install.ps1 | iex` on Windows). `nostroma launch` is the guided flow (choose a model, tune it, serve it, watch it) and also runs without screens from flags; `nostroma connect` writes and checks the setup of OpenCode, Codex CLI, Claude Code, oh-my-pi, pi, Hermes Agent and OpenClaw; `nostroma models`, `nostroma update`, `nostroma doctor` and `nostroma bench run` are there too. The monitor `nostroma launch` opens has seven views, `1`-`7`, the seventh is Connect. See `docs/TERMINAL_LAUNCH.md`.
+- **The engine**, the part that talks to your card, is a separate package per platform and card. The installers carry one, so a new install starts a model without a download. Later engines come from a feed that is signed (Ed25519) and checked file by file, test-started before the switch and rolled back on any failure; models and saved tunings are never replaced. Update with `nostroma update` or Settings > Update. See `packaging/UPDATES.md` and `SECURITY.md`.
 - **A missing engine is a warning.** `nostroma launch` and the app say in plain words what is missing and what to do next, and still download the model.
 - Starting a model and serving never download anything; downloads are one explicit step.
 
@@ -76,7 +76,7 @@ Every speed number below is a median of interleaved pairs against the previous d
 - **Anthropic base URL:** the app and `nostroma connect` show the address without `/v1`; a pasted `/v1` is cut back.
 - **Files edited:** the chat no longer lists files it did not touch after a turn.
 - **Cloudflare tunnel:** `cloudflared` is found on your PATH and in the usual places, and a copy that is already running is not started twice.
-- **Terminal:** flags no longer crash the start screen; `strata models` finds models the app installed; no web page opens by itself; `nostroma connect --check --output json` prints one JSON object and exits 1 when a check failed.
+- **Terminal:** flags no longer crash the start screen; `nostroma models` finds models the app installed; no web page opens by itself; `nostroma connect --check --output json` prints one JSON object and exits 1 when a check failed.
 
 ## Known limits
 
@@ -87,8 +87,8 @@ Every speed number below is a median of interleaved pairs against the previous d
 - **Mini PCs with a Radeon 780M / 880M / 890M:** the matrix-core prompt defaults are parked. On the 780M the GPU reset (MES REMOVE_QUEUE) when they were tried; the iGPU keeps its opt-in switches.
 - **R9700:** about half of the fresh engines with MTP read prompts 10-23% slower than the others (4K: about 1,350 instead of 1,700 tok/s). Not seen on NVIDIA; the cause is not found.
 - **Docker images are not published yet;** build them yourself (`docs/DOCKER.md`).
-- **`strata code` is not available** in the Terminal; use `nostroma connect` for coding apps (the app has its own agent).
-- The standard benchmark protocol is a draft (`docs/BENCHMARK_PROTOCOL.md`); `strata bench run` and `BENCH.bat` do not implement it.
+- **`nostroma code` is not available** in the Terminal; use `nostroma connect` for coding apps (the app has its own agent).
+- The standard benchmark protocol is a draft (`docs/BENCHMARK_PROTOCOL.md`); `nostroma bench run` and `BENCH.bat` do not implement it.
 
 Thanks to Laurent Zuijdwijk (the Gyro kernels for CPU and the trellis types), ATIVX928 and NoxestNoz (Volta work) and everyone who tested the builds and sent reports.
 

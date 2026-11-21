@@ -60,7 +60,7 @@ These are the 2.00-bit set. The 2.25-bit set reads 13% more data per token, so e
 
 ## Updating
 
-- **From 0.2.3 or 0.2.3.1:** run `strata update` in the Terminal. It fetches Control 0.1.49. Your Qwen engine does not change: every engine package is still the 0.1.48 file, byte for byte.
+- **From 0.2.3 or 0.2.3.1:** run `nostroma update` in the Terminal. It fetches Control 0.1.49. Your Qwen engine does not change: every engine package is still the 0.1.48 file, byte for byte.
 - **Mac:** the Mac Terminal gets Control 0.1.49 too. The Mac engine stays 0.1.48, and DeepSeek is not on the Mac yet.
 - **New installs:** the install command (`install.ps1` on Windows, `install.sh` on Linux) installs this version.
 
