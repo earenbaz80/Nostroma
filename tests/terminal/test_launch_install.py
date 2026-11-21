@@ -43,7 +43,7 @@ class Scripts(unittest.TestCase):
         text = (ROOT / "packaging" / "install.ps1").read_text(encoding="utf-8")
         self.assertNotIn("__FEED__", text)
         self.assertIn("else { '" + mlf.RELEASE_FEED + "' }", text)
-        self.assertIn("Installed. Run: strata launch", text)
+        self.assertIn("Installed. Run: nostroma launch", text)
         ps = shutil.which("powershell") or shutil.which("pwsh")
         if not ps:
             self.skipTest("no PowerShell")
@@ -120,8 +120,18 @@ class Feed(unittest.TestCase):
                 self.assertIn("Signature ok", r.stdout)
                 self.assertIn("Installed. Run:", r.stdout)
                 self.assertTrue((home / ".local" / "bin" / "strata").exists())
-                v = subprocess.run([str(home / ".local" / "bin" / "strata"), "--version"], capture_output=True, text=True, env=env, timeout=60)
+                # both names on the PATH, the same link, and each says the name it was called by
+                nostroma = home / ".local" / "bin" / "nostroma"
+                self.assertTrue(nostroma.is_symlink(), nostroma)
+                self.assertEqual(os.readlink(nostroma), os.readlink(home / ".local" / "bin" / "strata"))
+                self.assertIn("the old name, 'strata'", r.stdout)          # the install says both names work
+                for name in ("nostroma", "strata"):
+                    h = subprocess.run([str(home / ".local" / "bin" / name), "--help"], capture_output=True, text=True, env=env, timeout=60)
+                    self.assertEqual(h.returncode, 0, h.stderr)
+                    self.assertIn(f"usage: {name}", h.stdout, name)
+                v = subprocess.run([str(home / ".local" / "bin" / "nostroma"), "--version"], capture_output=True, text=True, env=env, timeout=60)
                 self.assertEqual(v.returncode, 0, v.stderr)
+                self.assertTrue(v.stdout.startswith("nostroma "), v.stdout)      # the product's name, not the link's
                 # an archive with one top folder (a terminal archive, not the feed's control package) installs too
                 data = archive.read_bytes()
                 (feed / "top.tar.gz").write_bytes(data)
@@ -131,6 +141,7 @@ class Feed(unittest.TestCase):
                 r = subprocess.run(["sh", str(feed / "install.sh")], capture_output=True, text=True, env={**env, "HOME": str(home3)}, timeout=240)
                 self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
                 self.assertTrue((home3 / ".local" / "share" / "strata" / "terminal" / "9.9.9" / "bin" / "strata").exists())
+                self.assertTrue((home3 / ".local" / "bin" / "nostroma").is_symlink())
                 (feed / "install-manifest.txt").write_text(" ".join(line) + chr(10))
                 # a damaged download is refused and nothing is installed
                 data = (feed / line[2]).read_bytes()

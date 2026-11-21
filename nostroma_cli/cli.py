@@ -37,8 +37,16 @@ class _VersionAction(argparse.Action):
         parser.exit()
 
 
+def prog() -> str:
+    """The name this command was typed as: `nostroma`, or the `strata` it was called before. The launchers hand over to
+    strata.py, so argv[0] cannot tell the two apart: they pass the name they were called by in NOSTROMA_PROG. Anything
+    else (an interpreter path, strata.py itself) presents as nostroma."""
+    name = os.environ.get("NOSTROMA_PROG") or os.path.basename(sys.argv[0] or "")
+    return "strata" if name == "strata" else "nostroma"
+
+
 def parser() -> argparse.ArgumentParser:
-    ap = argparse.ArgumentParser(prog="nostroma", description="Nostroma serving and terminal clients")
+    ap = argparse.ArgumentParser(prog=prog(), description="Nostroma serving and terminal clients")
     ap.add_argument("--version", action=_VersionAction, nargs=0,
                     help="print the version and the interpreter this terminal runs on")
     sp = ap.add_subparsers(dest="command", required=True)
@@ -593,7 +601,7 @@ def _models(a: argparse.Namespace) -> int:
             where = ", ".join(result.get("install_dirs") or [result["install_dir"]])
             lines = [f"No installed models found. Looked in: {where}. "
                      "If your models are somewhere else, add --install-dir FOLDER (the folder with the strata-*.json files), "
-                     "or run `strata launch` to set one up."]
+                     "or run `nostroma launch` to set one up."]
         return _success(result, machine=a.output == "json", human="\n".join(lines))
     result = models.inspect(a.model_id, a.install_dir)
     item = result["model"]
