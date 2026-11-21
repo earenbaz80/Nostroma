@@ -78,7 +78,7 @@ export function createNativeControl({directory,requests=()=>[],changed=()=>{},sp
  /* The component updates and the rollback go through Control, not through the native snapshot, so they work in the first seconds after the app starts and on a PC that has no engine yet. */
  const COMPONENT_KINDS=['update-engine','update-strata','rollback','install-engine-file'];
  const updateLog=line=>{try{console.log(`update · ${line}`);}catch{/* no console */}};
- const NO_INSTALL='Installing, updating, tuning with calibration or rolling back model files and engines happens from the Terminal (strata install), never while the app runs.';
+ const NO_INSTALL='Installing, updating, tuning with calibration or rolling back model files and engines happens from the Terminal (nostroma install), never while the app runs.';
  let defaultId=null,timer=null,closing=false,polling=false;
  /* Models the engine update stopped (with the person's yes): kept so the app can offer to start them again with the same settings. */
  let stoppedForUpdate=null;

@@ -105,8 +105,9 @@ def popen(what: str, args: list, role: str = "engine", **kw):
         if getattr(e, "winerror", None) in (4551, 1260):
             raise OSError(f"Windows blocked {what} ({args[0]}): Smart App Control, or an application-control policy, does "
                           "not let a program that is not signed run. Turn Smart App Control off (Windows Security > App "
-                          "& browser control > Smart App Control settings), or - for the image encoder only - run setup "
-                          "with --vision no (see docs/TROUBLESHOOTING.md)") from e
+                          "& browser control > Smart App Control settings), or - for the image encoder only - run nostroma "
+                          "install with --vision no (source checkout: ./setup.sh --setup --vision no, or "
+                          "START-HERE.bat --setup --vision no; see docs/TROUBLESHOOTING.md)") from e
         raise
 
 
@@ -3121,8 +3122,9 @@ def vision_start_error(line: str, log=None, code: int | None = None, waited: flo
         evidence = next((x for x in reversed(lines) if any(sign in x.lower() for sign in _VISION_ARCH_SIGNS)), text)
         return ("the vision encoder did not start: it has no code for this graphics card (a kernel-image error: the "
                 "picture reader in this engine package was built for other card generations than yours). Update the "
-                "engine, or read pictures on the CPU (Models, Read pictures, Image encoder device: CPU; or run setup "
-                "again with --vision cpu). From the encoder: " + evidence[:300])
+                "engine, or read pictures on the CPU (Models, Read pictures, Image encoder device: CPU; or run nostroma "
+                "install with --vision cpu; source checkout: ./setup.sh --setup --vision cpu, or "
+                "START-HERE.bat --setup --vision cpu). From the encoder: " + evidence[:300])
     if text:
         msg = "the vision encoder did not start: " + text
     elif waited is not None:
@@ -3948,8 +3950,9 @@ def engine_args(cfg: dict, exe: str | None = None, *, announce: bool = True) -> 
         if cfg["vision"].get("gpu") and "--vram-reserve-mib" not in args:
             args += ["--vram-reserve-mib", "700"]
             note += " and --vram-reserve-mib 700"
-        print(f'[strata] the config has a "vision" section but no --vision in its args: {note} (run setup again with '
-              "--vision to write them)", flush=True)
+        print(f'[strata] the config has a "vision" section but no --vision in its args: {note} (run nostroma install '
+              "with --vision to write them; source checkout: ./setup.sh --setup --vision, or "
+              "START-HERE.bat --setup --vision)", flush=True)
     if layer_split_of(cfg) and "--layer-split" not in args:
         args += ["--layer-split", layer_split_value(cfg)]
     # opt-in: an auto split runs on the first card alone when it holds every profiled expert and the KV
@@ -4581,7 +4584,7 @@ def engine_arch_note(cfg: dict, cards: dict[int, int] | None = None, built: dict
             return None
         names = ", ".join(f"sm_{m}" for m in miss)
         return (f"[strata] this engine was built for {', '.join(f'sm_{a}' for a in archs)}, but a graphics card in use is {names}: long prompts "
-                "can stop with \"unspecified launch failure\". Update the engine (./update.sh, or `strata update`) so it is built for every card in this PC.")
+                "can stop with \"unspecified launch failure\". Update the engine (./update.sh, or `nostroma update`) so it is built for every card in this PC.")
     except Exception:
         return None
 
@@ -5997,8 +6000,9 @@ class Service:
             if self.offline and any(src.startswith(("http://", "https://")) for src in images):
                 raise ValueError("offline mode cannot download an image URL; send a data: image instead")
             if self.vision is None:
-                raise ValueError("this server was started without the vision encoder (run setup again and choose "
-                                 "'vision'), so it cannot read images")
+                raise ValueError("this server was started without the vision encoder (run nostroma install and choose "
+                                 "'vision'; source checkout: ./setup.sh --setup, or START-HERE.bat --setup), so it "
+                                 "cannot read images")
             # An image URL is downloaded first, outside the FIFO: under it, a slow server held every other request
             # for as long as urlopen waited.
             def fetch(src):
@@ -8411,8 +8415,8 @@ def make_handler(svc: Service):
             gen = svc.images
             if gen is None:
                 self._json(404, {"error": {"type": "invalid_request_error", "code": "images_not_set_up",
-                                           "message": "image generation is not set up on this server (run setup "
-                                                      "with --images qwen-image)"}})
+                                           "message": "image generation is not set up on this server (run nostroma "
+                                                      "install with --images qwen-image)"}})
                 return
             job = images_api.parse_request(req, gen.cfg)        # ImageRequestError (a ValueError): 400
             svc.last_request_at = time.time()
@@ -9017,7 +9021,8 @@ def warn_tight_ram(arena_mib) -> None:
               f"{total / 2**30:.0f} GB, leaving {left:.1f} GB for everything else. "
               + ("Linux may stop the engine in the middle of an answer. " if os.name != "nt" else
                  "Windows will slow down (paging to disk). ")
-              + "Close other programs, or run START-HERE --setup and pick a smaller size (Q2_0 / IQ2_XS).", flush=True)
+              + "Close other programs, or run nostroma install and pick a smaller size (Q2_0 / IQ2_XS); source "
+                "checkout: ./setup.sh --setup, or START-HERE.bat --setup.", flush=True)
 
 
 def warn_budget_over_ram(args) -> str | None:
@@ -9429,9 +9434,9 @@ def apply_saved_tuning(cfg: dict, *, say=None) -> dict:
                 say(f"[strata] warning: {warning}")
             if applied.get("state") == "soft":
                 say("[strata] this PC or engine changed since it was saved (" + "; ".join(applied["reasons"]) +
-                    "): a short re-check is available (strata presets recheck)")
+                    "): a short re-check is available (nostroma presets recheck)")
         elif applied.get("why_not"):
-            say(f"[strata] saved tuning '{applied['preset']['name']}' {applied['why_not']}; re-tune with strata tune auto")
+            say(f"[strata] saved tuning '{applied['preset']['name']}' {applied['why_not']}; re-tune with nostroma tune auto")
         return out
     except Exception as e:  # noqa: BLE001
         say(f"[strata] saved tuning could not be read ({type(e).__name__}); starting with the configuration as it is")
@@ -10141,7 +10146,8 @@ def _main(argv=None, *, lifecycle_event=None, interrupt_exit_code: int = 0) -> i
     tcfg = {}
     tpath = Path(a.tokenizer)
     if a.engine == "strata" and not (tpath / "vocab.json").exists():
-        ap.error(f"the model's tokenizer is missing ({tpath / 'vocab.json'}); run setup again")
+        ap.error(f"the model's tokenizer is missing ({tpath / 'vocab.json'}); run nostroma install (source checkout: "
+                 "./setup.sh --setup, or START-HERE.bat --setup)")
     if (tpath / "vocab.json").exists():
         import strata_tokenizer as ST
         vocab = json.loads((tpath / "vocab.json").read_text(encoding="utf-8"))

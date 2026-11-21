@@ -12,7 +12,7 @@
 const TRUE = new Set(['1', 'true', 'yes', 'on']);
 
 export class AcquisitionRefused extends Error {
-  constructor(what, command = 'the Terminal command `strata install`') {
+  constructor(what, command = 'the Terminal command `nostroma install`') {
     super(`${what} is not installed here, and the app never downloads it while it runs. Install it from ${command}.`);
     this.name = 'AcquisitionRefused';
     this.code = 'acquisition_refused';

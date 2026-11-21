@@ -154,7 +154,7 @@ class NoiseRefusal(unittest.TestCase):
     words with one next step, instead of quietly running on stable-diffusion.cpp's noise."""
 
     WORDS = ("Image generation is set to use Nostroma's own noise (\"noise\": \"strata\" in the images settings), but the "
-             "image program here was built without it. Run setup again with: --images qwen-image --image-noise on")
+             "image program here was built without it. Run nostroma install with: --images qwen-image --image-noise on")
 
     def gen(self, d, build=None, **kw):
         cfg = image_cfg(d, noise="strata", **kw)
@@ -594,7 +594,7 @@ class VaeDecoderSwitch(unittest.TestCase):
     def test_the_owners_words(self):
         self.assertEqual(images_api.VAE_MISSING,
                          "Image generation is set to use Nostroma's own picture decoder (\"vae_decoder\": \"strata\" in the "
-                         "images settings), but the image program here was built without it. Run setup again with: "
+                         "images settings), but the image program here was built without it. Run nostroma install with: "
                          "--images qwen-image --image-vae on")
         self.assertEqual(images_api.VAE_BACKEND.format(backend="vulkan"),
                          "Image generation is set to use Nostroma's own picture decoder (\"vae_decoder\": \"strata\" in the "

@@ -2603,8 +2603,8 @@ class Tools:
                                            "apps": "Cursor (Settings > Models > OpenAI base URL override), "
                                                    "Continue, Open WebUI, LM Studio clients, aider "
                                                    f"(--openai-api-base {base}/v1)"}},
-            "other_devices": "the server listens on this PC only; to reach it from your network, run setup with "
-                             "--host 0.0.0.0 --api-key <secret> (docs/DETAILS.md, 'Using it')"}
+            "other_devices": "the server listens on this PC only; to reach it from your network, run nostroma install "
+                             "with --host 0.0.0.0 --api-key <secret> (docs/DETAILS.md, 'Using it')"}
 
 
 # ------------------------------------------------------------------------------------------------ MCP over stdio

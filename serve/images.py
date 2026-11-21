@@ -56,12 +56,12 @@ NOISES = ("sdcpp", "strata")
 # shown (log line at start, and as the failure of an image request) when the config asks for Nostroma's noise but the
 # built sd-cli does not have it: ONE next step, in plain words
 NOISE_MISSING = ("Image generation is set to use Nostroma's own noise (\"noise\": \"strata\" in the images settings), but "
-                 "the image program here was built without it. Run setup again with: --images qwen-image --image-noise on")
+                 "the image program here was built without it. Run nostroma install with: --images qwen-image --image-noise on")
 VAE_DECODERS = ("sdcpp", "strata")
 VAE_DECODER_BACKENDS = ("cuda", "hip")
 # the same two cases for Nostroma's own VAE decoder (the owner's wording, 11-11)
 VAE_MISSING = ("Image generation is set to use Nostroma's own picture decoder (\"vae_decoder\": \"strata\" in the images "
-               "settings), but the image program here was built without it. Run setup again with: --images qwen-image "
+               "settings), but the image program here was built without it. Run nostroma install with: --images qwen-image "
                "--image-vae on")
 VAE_BACKEND = ("Image generation is set to use Nostroma's own picture decoder (\"vae_decoder\": \"strata\" in the images "
                "settings), which needs the CUDA (NVIDIA) or ROCm (AMD) build of the image program; this one was built "
@@ -368,7 +368,7 @@ class ImageGen:
             raise ValueError(f'images "reload" must be lazy or eager, not {reload!r}')
         for k in ("exe", "diffusion_model", "vae", "llm"):
             if not isinstance(self.cfg.get(k), str) or not self.cfg[k]:
-                raise ValueError(f'the config\'s "images" section needs "{k}" (run setup with --images again)')
+                raise ValueError(f'the config\'s "images" section needs "{k}" (run nostroma install with --images again)')
         if self.cfg.get("noise", "sdcpp") not in NOISES:
             raise ValueError(f'images "noise" must be one of {", ".join(NOISES)}, not {self.cfg["noise"]!r}')
         if self.cfg.get("vae_decoder", "sdcpp") not in VAE_DECODERS:
