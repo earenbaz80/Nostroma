@@ -107,13 +107,14 @@ KEEP = (
     r"\b(?:tools|tests|third_party)/strata[-_][\w.-]*",
 )
 
-# The engine binary is also called strata, and it is not this command: serve.server's --engine takes strata|mock, and the
-# engine's own flags (--families, --geometry, --serve, --pack, the benchmark ones) belong to it. Prose about the engine keeps
-# its spelling, in the value and before those flags.
+# The engine binary is also called strata, and it is not this command: serve.server's --engine takes strata|mock, and a
+# strata followed by one of the binary's own long options (--families, --pack, --serve, --tokens-file, --version, ...) is
+# the binary. No flag is named here, so a new engine flag is protected the day it is documented. The Terminal's two
+# top-level options, --help and --version, are written `nostroma` in these pages; a page that wrote `strata --version`
+# for the Terminal would read as the engine and pass, which is the price of not keeping a list.
 ENGINE_KEEP = (
     r"(?<=--engine )strata\b",
-    r"(?<!\w)strata(?= --(?:families|geometry|serve|pack|native|native-dense-gguf|ple-gguf|mtp|expert-profile|"
-    r"expert-cache|prefill|spec|tokens-file|max-new|device|shards|version|help)\b)",
+    r"(?<![\w./~:@-])strata(?=[ \t]+--[a-z])",
 )
 
 AREAS: dict[str, Area] = {

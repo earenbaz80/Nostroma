@@ -6,6 +6,7 @@ it. A page that starts saying "Strata" again fails this test.
 """
 from __future__ import annotations
 
+import argparse
 import importlib.util
 import subprocess
 import sys
@@ -41,21 +42,18 @@ class DocsRename(unittest.TestCase):
             self.assertEqual(tool.renamed(kept), kept)
 
     def test_the_engine_binary_keeps_its_name_and_its_own_flags(self):
-        """The engine is also called strata: serve.server's --engine takes strata|mock, and these flags are the engine's."""
+        """The engine is also called strata: serve.server's --engine takes strata|mock, and a flag after the word is the binary's."""
         tool = load()
         for kept in ("serve/server.py --engine strata --config strata-orca.json --port 8080",
-                     "`strata --families` lists what the binary runs",
                      "`strata --pack <pack dir> --native <model>.gguf`",
-                     "`strata --tokens-file ids.txt --max-new 1`"):
+                     "`strata --batch 8`"):          # not in any list: the rule reads the shape, not the flags
             self.assertEqual(tool.renamed(kept), kept)
 
     def test_the_command_rule_knows_every_subcommand_the_cli_has(self):
         """One list, checked: a subcommand added to the CLI and not to the tool would let a page say `strata <it>`."""
-        import argparse
+        from nostroma_cli import cli
 
         tool = load()
-        sys.path.insert(0, str(ROOT))
-        from nostroma_cli import cli
         subs = next(action for action in cli.parser()._actions if isinstance(action, argparse._SubParsersAction))
         self.assertEqual(set(tool.SUBCOMMANDS.split("|")), set(subs.choices))
 
