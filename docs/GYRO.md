@@ -251,7 +251,7 @@ Save as `strata-gyro-s.json` at the repository root:
 ```
 
 ```sh
-.venv/bin/python -m serve.server --engine nostroma --config strata-gyro-s.json --port 8080
+.venv/bin/python -m serve.server --engine strata --config strata-gyro-s.json --port 8080
 ```
 
 The web interface is at `http://127.0.0.1:8080`. API clients use `http://127.0.0.1:8080/v1` (OpenAI) or `/v1/messages`
@@ -280,7 +280,7 @@ The web interface is at `http://127.0.0.1:8080`. API clients use `http://127.0.0
   decode peer. The prompt peer says it is not used for a Hadamard-folded pack, and the prompt stays on the first card.
   Prompt processing on a peer GPU over P2P is not validated end to end.
 - Token parity against llama.cpp has not been measured.
-- `nostroma --tokens-file ... --max-new N` (benchmark mode) decodes N tokens past the end of the answer. Compare speeds
+- `strata --tokens-file ... --max-new N` (benchmark mode) decodes N tokens past the end of the answer. Compare speeds
   only up to the answer's end.
 - AMD: the trellis kernels pass parity on gfx1151 (ROCm 7.2.1) and a short end-to-end run there generated correctly
   (28 to 31 tokens/s). There was no speed tuning or RDNA4 speed run. An AMD GPU other than gfx1151 runs with a warning.

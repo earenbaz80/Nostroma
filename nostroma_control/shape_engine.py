@@ -194,7 +194,7 @@ def status(components: Path | None = None) -> list[dict]:
 # ---------------------------------------------------------------------------------------------- fetching from the signed feed
 
 def _test_start(exe: Path, timeout: float = 120.0, shape: str | None = None) -> tuple[bool, str]:
-    """The new engine starts: ``nostroma --version`` runs, loads its libraries and names itself (it needs no graphics card and no model). The package's own folders go on the
+    """The new engine starts: ``strata --version`` runs, loads its libraries and names itself (it needs no graphics card and no model). The package's own folders go on the
     library path first, as the start path does. With `shape`, ``strata --geometry`` (engine 0.2.13 and later) must name that shape: an engine compiled for another geometry than
     the signed manifest says is refused here, not at its first load, and so is one that cannot answer the flag (NO_SHAPE_ANSWER, owner 11-09)."""
     import subprocess

@@ -149,7 +149,7 @@ Everything setup has finished is skipped on the next run, and downloads resume. 
 keeps running. The install is refused while a model this server started is running, because setup may replace the
 engine files that model uses.
 
-**Start.** `strata_start` runs the same command as the `run-<model>` script, `serve/server.py --engine nostroma
+**Start.** `strata_start` runs the same command as the `run-<model>` script, `serve/server.py --engine strata
 --config strata-<model>.json --port N`, with the venv's Python, without `--open` (no browser) and without a console
 window. The server's output goes to `.strata-mcp/server.log`. The tool then polls `GET /health` until the model
 answers. Loading takes 1-3 minutes. If the server ends while loading, the tool returns the end of its log. The model

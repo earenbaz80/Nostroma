@@ -240,7 +240,7 @@ build-hip/strata --serve \
 directory:
 
 ```sh
-.venv/bin/python -m serve.server --engine nostroma --config strata-hip.json --port 8080
+.venv/bin/python -m serve.server --engine strata --config strata-hip.json --port 8080
 ```
 
 - Select the AMD device with `ROCR_VISIBLE_DEVICES` or `HIP_VISIBLE_DEVICES` if needed.
@@ -554,7 +554,7 @@ on any other card.
 The gfx906 build is community-tested: the maintainers have no gfx906 card, and the engine here is checked to compile for
 gfx906 and nothing more. The attention switches `STRATA_GFX906_ATTN_QUERY_SWIZZLE=1` and `STRATA_GFX906_ATTN_REDUCE12=1` are
 off by default and compiled only into this build. A wave32 card seen by this build is refused at start. The Qwen3.6 family
-is not part of this build; `nostroma --families` lists what the binary runs. Please report how it runs on your card.
+is not part of this build; `strata --families` lists what the binary runs. Please report how it runs on your card.
 
 **ROCm.** AMD's current ROCm releases no longer ship gfx906 libraries. The build used HIP 7.14 from the community image
 [`mixa3607/rocm-gfx906:7.14-complete`](https://hub.docker.com/r/mixa3607/rocm-gfx906) (rocBLAS/hipBLAS with gfx906 kernels)
@@ -783,7 +783,7 @@ STRATA_PF_SWITCH_MIN_T=4096` 925 -> 1,092 tok/s; `--resident-experts` 1,092 -> 2
 | `STRATA_PF_PAD`/`STRATA_PF_GEMM` on RX 9070 (gfx1201), ROCm 7.2.4, Coder IQ1_M | 4K prompt 1,247 vs 1,243 tok/s, 8K 1,330 vs 1,321 (noise); an earlier crash with padded GEMMs on RDNA4 was fixed in 0.1.46 |
 
 **Package checks (0.2.1 to 0.2.3).** Initial package checks (build, link, `package_engine.py --verify`, GPU code listing,
-`nostroma --version` in a clean environment, feed selection by architecture) passed without an RX 7000 or Strix Halo card.
+`strata --version` in a clean environment, feed selection by architecture) passed without an RX 7000 or Strix Halo card.
 Later evidence: [release 0.2.3](release-notes-0.2.3.md) records Windows Strix Halo inference with engine 0.1.48. An RX 7900 XTX
 on Windows 11 ran the 0.1.40 Windows engine ([report #1173](../bench/results/2026-10-06-community-rx-7900-xtx/README.md));
 other RX 7900 owners ran Linux builds ([COMMUNITY.md](../bench/results/COMMUNITY.md)).

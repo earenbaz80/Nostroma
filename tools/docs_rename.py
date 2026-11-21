@@ -107,8 +107,17 @@ KEEP = (
     r"\b(?:tools|tests|third_party)/strata[-_][\w.-]*",
 )
 
+# The engine binary is also called strata, and it is not this command: serve.server's --engine takes strata|mock, and the
+# engine's own flags (--families, --geometry, --serve, --pack, the benchmark ones) belong to it. Prose about the engine keeps
+# its spelling, in the value and before those flags.
+ENGINE_KEEP = (
+    r"(?<=--engine )strata\b",
+    r"(?<!\w)strata(?= --(?:families|geometry|serve|pack|native|native-dense-gguf|ple-gguf|mtp|expert-profile|"
+    r"expert-cache|prefill|spec|tokens-file|max-new|device|shards|version|help)\b)",
+)
+
 AREAS: dict[str, Area] = {
-    "docs": Area(paths=("*.md",), skip=SKIP, before=DOCS_BEFORE, keep=KEEP, command=True,
+    "docs": Area(paths=("*.md",), skip=SKIP, before=DOCS_BEFORE, keep=KEEP + ENGINE_KEEP, command=True,
                  command_only=COMMAND_ONLY),
     # The Terminal's local dashboard: its copy is prose, its ids and classes are its own.
     "terminal": Area(paths=("serve/web/*.html",),

@@ -170,7 +170,7 @@ moved by routing and attention decisions a linear map cannot follow.
 
 ```sh
 STRATA_KVA_CAPTURE=/data/kva-cap STRATA_KVA_CAPTURE_FP32=1 \
-  nostroma --serve ... --prefill 1024 --tokens-file ids.txt --max-new 1
+  strata --serve ... --prefill 1024 --tokens-file ids.txt --max-new 1
 ```
 
 writes `L24.bin … L47.bin` in that directory: one row of `hc * n_embd` floats per prompt position per late

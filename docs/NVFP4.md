@@ -48,7 +48,7 @@ python tools/iq_pack.py --gguf <model>.gguf --out <pack dir>
 Run it like an IQ pack, with the GGUF as its own dense-weight source and the PLE table from an IQ GGUF's PLE shard:
 
 ```sh
-nostroma --pack <pack dir> --native <model>.gguf --native-dense-gguf <model>.gguf \
+strata --pack <pack dir> --native <model>.gguf --native-dense-gguf <model>.gguf \
        --ple-gguf <an IQ model's shard with per_layer_token_embd> --mtp <mtp/rt> \
        --expert-profile data/expert-profile.bin --expert-cache auto --prefill auto --spec 4 ...
 ```

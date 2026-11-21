@@ -17,7 +17,7 @@ models:
   nostroma:
     cmd: >-
       sh -c 'cd /path/to/Strata && exec .venv/bin/python serve/server.py
-      --engine nostroma --config strata-<model>.json --port ${PORT}'
+      --engine strata --config strata-<model>.json --port ${PORT}'
     env: ["STRATA_ALLOWED_HOSTS=my-server"]     # the host name your clients use, see below
     checkEndpoint: /health
     ttl: 1800

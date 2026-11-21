@@ -115,7 +115,7 @@ build-sycl/strata --pack <iq pack> --native <shard1> --ple-gguf <shard2> \
 With `--tokens-file` instead of `--tokens` for long prompts (80K ids exceed Linux's single-argument limit). With a native pack
 `--prefill-until N` skips the token loop, so compare output tokens between paths, never only timings.
 
-Serve the port with `serve/server.py --engine nostroma` and `sycl/serve/strata-sycl.sh` as the `exe`, which starts the binary inside
+Serve the port with `serve/server.py --engine strata` and `sycl/serve/strata-sycl.sh` as the `exe`, which starts the binary inside
 the oneAPI runtime image with the serve pipes attached. Paths in the config's `args` are the container's. A config:
 
 ```json
