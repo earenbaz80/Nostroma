@@ -422,9 +422,13 @@ def set_app_platform(app_json: Path, *, target: str, archive: Path, signature_fi
     if target.startswith("darwin-"):
         _check_mac_archive(archive)
     signature = signature_file.read_text(encoding="utf-8").strip()
+    key = pubkey or _default_app_pubkey()
+    if not key.strip():
+        raise SystemExit(f"tauri.conf.json has no plugins.updater.pubkey, so there is no key to check {signature_file.name} against; "
+                         "pass --pubkey with app_minisign_public from nostroma_control/update_keys.json")
     try:
         with archive.open("rb") as stream:
-            signing.minisign_verify(pubkey or _default_app_pubkey(), signature, iter(lambda: stream.read(1 << 20), b""))
+            signing.minisign_verify(key, signature, iter(lambda: stream.read(1 << 20), b""))
     except signing.SignatureError as exc:
         raise SystemExit(f"{signature_file.name} does not verify for {archive.name}: {exc}")
     document: dict = {}
@@ -503,7 +507,7 @@ def main(argv: list[str] | None = None) -> int:
     sa.add_argument("--version")
     sa.add_argument("--notes")
     sa.add_argument("--pub-date")
-    sa.add_argument("--pubkey", help="the Tauri public key (default: tauri.conf.json plugins.updater.pubkey)")
+    sa.add_argument("--pubkey", help="the Tauri public key (default: tauri.conf.json plugins.updater.pubkey; this build names none, so pass app_minisign_public from nostroma_control/update_keys.json)")
     vf = sub.add_parser("verify-feed")
     vf.add_argument("source")
     vf.add_argument("--pub", type=Path, required=True)

@@ -396,6 +396,18 @@ class AppPlatform(unittest.TestCase):
         self.assertEqual(_default_app_pubkey(), "")
         self.assertNotIn("updater", conf.get("plugins", {}))
 
+    def test_a_missing_key_says_what_to_pass(self):
+        """This build names no updater key, so the error must say which key to pass, not that the empty key has no line."""
+        with self.assertRaises(SystemExit) as caught:
+            self.run_tool(pubkey="")
+        message = str(caught.exception)
+        self.assertIn("plugins.updater.pubkey", message)
+        self.assertIn("--pubkey", message)
+        self.assertIn("app_minisign_public", message)
+        self.assertIn("update_keys.json", message)
+        self.assertNotIn("no key line", message)
+        self.assertFalse(self.app_json.exists())
+
     def test_a_version_mismatch_is_refused(self):
         self.run_tool()
         with self.assertRaises(SystemExit):
