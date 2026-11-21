@@ -2466,7 +2466,7 @@
   "s2460": "{0} valor exacto",
   "s2461": "{0} expertos en caché",
   "s2462": "{0} archivos encontrados",
-  "s2463": "Archivos omitidos: {0}. Añade hasta 64 archivos de texto, con 256 KB de texto en total. Las fotos y los PDF se pueden abrir por separado.",
+  "s2463": "Archivos omitidos: {0}. Añade hasta 64 archivos de texto, con 256 KB de texto en total. Las fotos y los PDF{1} se pueden abrir por separado.",
   "s2464": "{0} ya no está en el almacenamiento del navegador. Adjunta el archivo de nuevo.",
   "s2465": "{0} modelos cargados",
   "s2466": "{0} modelos cargados",

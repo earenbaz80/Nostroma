@@ -2466,7 +2466,7 @@
   "s2460": "{0} valeur exacte",
   "s2461": "{0} experts en cache",
   "s2462": "{0} fichiers trouvés",
-  "s2463": "{0} fichier(s) ignoré(s). Ajoutez jusqu’à 64 fichiers texte, avec 256 Ko de texte au total. Les photos et les PDF peuvent s’ouvrir séparément.",
+  "s2463": "{0} fichier(s) ignoré(s). Ajoutez jusqu’à 64 fichiers texte, avec 256 Ko de texte au total. Les photos et les PDF{1} peuvent s’ouvrir séparément.",
   "s2464": "{0} n’est plus dans le stockage du navigateur. Joignez-le à nouveau.",
   "s2465": "{0} modèles chargés",
   "s2466": "{0} modèles chargés",
