@@ -58,10 +58,10 @@ const FORMS = {
       ['Desktop app, Terminal or source?', /desktop app, terminal or source/i, 2],
       ['What happened', /what happened/i, 20],
       ['Reproduction status', /reproduction status/i, 2],
-      ['Strata version', /strata version/i, 3],
+      ['Nostroma version', /nostroma version/i, 3],
       ['Graphics card, memory and system', /graphics card|memory and system/i, 3],
     ],
-    needsCurrentVersion: 'Strata version',
+    needsCurrentVersion: 'Nostroma version',
   },
   feature: {
     detect: /what do you want to do/i,
@@ -109,13 +109,13 @@ function checkIssue({ title, body, labels = [], mode = 'intake' }) {
       if (!s || realText(s.value).length < min) missing.push('Fill in "' + name + '".');
     }
     if (needCurrent && form.needsCurrentVersion) {
-      const s = findSection(sections, /strata version/i);
+      const s = findSection(sections, /nostroma version/i);
       if (s && realText(s.value) && !CURRENT_VERSION_RE.test(s.value)) {
-        missing.push('Re-test on Strata 0.2.0-beta and put that version in "' + form.needsCurrentVersion + '". If it no longer happens, say so in a comment instead.');
+        missing.push('Re-test on the current release and put that version in "' + form.needsCurrentVersion + '". If it no longer happens, say so in a comment instead.');
       }
     }
     if (needCurrent && form.needsCurrentVersionInBody && !CURRENT_VERSION_RE.test(text)) {
-      missing.push('Say which Strata version you measured on. Re-measure on 0.2.0-beta if you can.');
+      missing.push('Say which Nostroma version you measured on, and re-test on the current release if you can.');
     }
     return { ok: missing.length === 0, missing, kind: formKey };
   }
@@ -127,8 +127,8 @@ function checkIssue({ title, body, labels = [], mode = 'intake' }) {
     missing.push('Describe it in the issue body: what happened, what you expected, and the exact error if there is one. The issue forms (New issue > Bug report) list what to include.');
   }
   if (!lenient) {
-    if (!ANY_VERSION_RE.test(text)) missing.push('Add the Strata version (Settings > About, or `strata --version`).');
-    else if (needCurrent && !CURRENT_VERSION_RE.test(text)) missing.push('Re-test on Strata 0.2.0-beta and name that version in the issue. If it no longer happens, say so in a comment instead.');
+    if (!ANY_VERSION_RE.test(text)) missing.push('Add the Nostroma version (Settings > About, or `nostroma --version`).');
+    else if (needCurrent && !CURRENT_VERSION_RE.test(text)) missing.push('Re-test on the current release and name that version in the issue. If it no longer happens, say so in a comment instead.');
     if (!HARDWARE_RE.test(text)) missing.push('Add your graphics card with its VRAM, your RAM and your operating system.');
   }
   return { ok: missing.length === 0, missing, kind: 'free-form' };
@@ -162,7 +162,7 @@ function checkPull({ title, body, mode = 'intake' }) {
     valText = plain;
   }
   if (mode === 'reopen' && valText && !REVISION_RE.test(valText)) {
-    missing.push('Say in Validation which revision you tested: rebase on main (or 0.2.0-beta) and re-run your checks.');
+    missing.push('Say in Validation which revision you tested: rebase on main and re-run your checks.');
   }
   return { ok: missing.length === 0, missing, kind: 'pull' };
 }
