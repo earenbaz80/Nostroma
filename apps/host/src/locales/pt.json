@@ -3511,5 +3511,20 @@
   "s9037": "Esta atualização foi interrompida quando o aplicativo reiniciou. Uma atualização posterior terminou, então não há nada a fazer.",
   "s9038": "Este sistema não deixa o Strata usar a porta {0}. No Linux e no macOS, as portas abaixo de 1024 precisam de direitos de administrador. Inicie o Strata com outra porta (STRATA_PORT), por exemplo 8801.",
   "s9039": "Escolha Principal, Auxiliar ou Desativado para cada placa de vídeo, com apenas uma Principal.",
-  "s9040": "Escolha as placas de vídeo detectadas."
+  "s9040": "Escolha as placas de vídeo detectadas.",
+  "s9041": "Escolha a pasta que contém as configurações dos modelos do Nostroma.",
+  "s9042": "Essa pasta não existe. Verifique o caminho ou se a unidade está conectada.",
+  "s9043": "O Nostroma não pode gravar nessa pasta. Escolha uma pasta em que você possa salvar arquivos.",
+  "s9044": "{0} precisa de uma instalação nativa do Nostroma mais recente. Atualize em Configurações → Sobre.",
+  "s9045": "Termine ou cancele as solicitações antes de excluir este modelo.",
+  "s9046": "Não foi possível remover alguns arquivos: {0}",
+  "s9047": "Os arquivos de imagem são baixados pelo aplicativo instalado.",
+  "s9048": "Escolha primeiro o arquivo do motor.",
+  "s9049": "Não há nenhum modelo parado para iniciar de novo.",
+  "s9050": "{0} não iniciou de novo. {1}",
+  "s9051": "Prepare o modelo antes de ajustá-lo.",
+  "s9052": "O Nostroma ainda está lendo a sua pasta de modelos. Tente de novo em instantes.",
+  "s9053": "Nenhuma movimentação foi interrompida.",
+  "s9054": "Verificar os arquivos de modelos locais faz parte do aplicativo Nostroma.",
+  "s9055": "Escolha uma pasta."
 }

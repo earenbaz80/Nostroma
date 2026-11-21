@@ -3511,5 +3511,20 @@
   "s9037": "Dieses Update wurde beim Neustart der App unterbrochen. Ein späteres Update ist abgeschlossen, Sie müssen nichts tun.",
   "s9038": "Dieses System erlaubt Strata nicht, Port {0} zu verwenden. Unter Linux und macOS brauchen Ports unter 1024 Administratorrechte. Starten Sie Strata mit einem anderen Port (STRATA_PORT), zum Beispiel 8801.",
   "s9039": "Wähle für jede Grafikkarte Haupt, Helfer oder Aus, mit genau einer Hauptkarte.",
-  "s9040": "Wähle erkannte Grafikkarten."
+  "s9040": "Wähle erkannte Grafikkarten.",
+  "s9041": "Wähle den Ordner mit den Modellkonfigurationen von Nostroma.",
+  "s9042": "Dieser Ordner existiert nicht. Prüfe den Pfad und ob das Laufwerk verbunden ist.",
+  "s9043": "Nostroma kann in diesem Ordner nicht schreiben. Wähle einen Ordner, in dem du Dateien speichern kannst.",
+  "s9044": "{0} braucht eine neuere native Nostroma-Installation. Aktualisiere sie unter Einstellungen → Über.",
+  "s9045": "Beende oder brich Anfragen ab, bevor du dieses Modell löschst.",
+  "s9046": "Einige Dateien konnten nicht entfernt werden: {0}",
+  "s9047": "Die Bilddateien lädt die installierte App herunter.",
+  "s9048": "Wähle zuerst die Engine-Datei.",
+  "s9049": "Es gibt kein gestopptes Modell, das erneut gestartet werden kann.",
+  "s9050": "{0} ist nicht erneut gestartet. {1}",
+  "s9051": "Bereite das Modell vor, bevor du es abstimmst.",
+  "s9052": "Nostroma liest deinen Modellordner noch. Versuche es gleich noch einmal.",
+  "s9053": "Es wurde kein Verschieben unterbrochen.",
+  "s9054": "Das Prüfen lokaler Modelldateien ist Teil der Nostroma-App.",
+  "s9055": "Wähle einen Ordner."
 }

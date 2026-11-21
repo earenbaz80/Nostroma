@@ -3511,5 +3511,20 @@
   "s9037": "This update was cut short when the app restarted. A later update finished, so nothing needs doing.",
   "s9038": "This system does not let Strata use port {0}. On Linux and macOS, ports below 1024 need administrator rights. Start Strata with another port (STRATA_PORT), for example 8801.",
   "s9039": "Choose Main, Helper or Off for each graphics card, with one Main.",
-  "s9040": "Choose detected graphics cards."
+  "s9040": "Choose detected graphics cards.",
+  "s9041": "Choose the folder that holds your Nostroma model configurations.",
+  "s9042": "That folder does not exist. Check the path, or that the drive is connected.",
+  "s9043": "Nostroma cannot write in that folder. Choose a folder you can save files in.",
+  "s9044": "{0} needs a newer native Nostroma installation. Update it in Settings → About.",
+  "s9045": "Finish or cancel requests before deleting this model.",
+  "s9046": "Some files could not be removed: {0}",
+  "s9047": "The picture files are downloaded by the installed app.",
+  "s9048": "Choose the engine file first.",
+  "s9049": "There is no stopped model to start again.",
+  "s9050": "{0} did not start again. {1}",
+  "s9051": "Prepare the model before tuning it.",
+  "s9052": "Nostroma is still reading your models folder. Try again in a moment.",
+  "s9053": "No move was interrupted.",
+  "s9054": "Checking local model files is part of the Nostroma app.",
+  "s9055": "Choose a folder."
 }

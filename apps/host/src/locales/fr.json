@@ -3511,5 +3511,20 @@
   "s9037": "Cette mise à jour a été interrompue au redémarrage de l’application. Une mise à jour plus récente s’est terminée, il n’y a donc rien à faire.",
   "s9038": "Ce système ne laisse pas Strata utiliser le port {0}. Sous Linux et macOS, les ports inférieurs à 1024 nécessitent des droits d’administrateur. Lancez Strata avec un autre port (STRATA_PORT), par exemple 8801.",
   "s9039": "Choisissez Principale, Auxiliaire ou Désactivé pour chaque carte graphique, avec une seule Principale.",
-  "s9040": "Choisissez les cartes graphiques détectées."
+  "s9040": "Choisissez les cartes graphiques détectées.",
+  "s9041": "Choisissez le dossier qui contient les configurations de modèles de Nostroma.",
+  "s9042": "Ce dossier n’existe pas. Vérifiez le chemin et que le disque est bien connecté.",
+  "s9043": "Nostroma ne peut pas écrire dans ce dossier. Choisissez un dossier où vous pouvez enregistrer des fichiers.",
+  "s9044": "{0} nécessite une installation native de Nostroma plus récente. Mettez-la à jour dans Réglages → À propos.",
+  "s9045": "Terminez ou annulez les requêtes avant de supprimer ce modèle.",
+  "s9046": "Certains fichiers n’ont pas pu être supprimés : {0}",
+  "s9047": "Les fichiers d’image sont téléchargés par l’application installée.",
+  "s9048": "Choisissez d’abord le fichier du moteur.",
+  "s9049": "Aucun modèle arrêté n’est disponible pour être relancé.",
+  "s9050": "{0} n’a pas redémarré. {1}",
+  "s9051": "Préparez le modèle avant de le régler.",
+  "s9052": "Nostroma lit encore votre dossier des modèles. Réessayez dans un instant.",
+  "s9053": "Aucun déplacement n’a été interrompu.",
+  "s9054": "La vérification des fichiers de modèles locaux fait partie de l’application Nostroma.",
+  "s9055": "Choisissez un dossier."
 }
