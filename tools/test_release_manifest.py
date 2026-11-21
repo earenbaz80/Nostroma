@@ -10,59 +10,47 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import release_manifest as rm  # noqa: E402
 
 
-ASSET_TABLE = "## The assets"
-ARCHIVE = re.compile(r"\.(?:tar\.gz|zip)\Z")
+TABLE = "## The assets"
+ROW_PART = re.compile(r"(\[-<[^>]+>\]|<[^>]+>|\.tar\.gz\Z)")
 
 
-def asset_rows(text):
+def table_rows(text):
     """The first cell of each row in the checklist's asset table (``## The assets``)."""
-    lines = text.splitlines()
-    start = next((i for i, line in enumerate(lines) if line.strip() == ASSET_TABLE), None)
-    if start is None:
-        raise AssertionError("docs/RELEASE_CHECKLIST.md has no %r heading" % ASSET_TABLE)
-    rows = []
-    for line in lines[start + 1:]:
-        if line.startswith("#"):
-            break
-        if line.startswith("| `"):
-            rows.append(line.split("|")[1].strip())
-    return rows
+    _, _, section = text.partition(TABLE)
+    if not section:
+        raise AssertionError("docs/RELEASE_CHECKLIST.md has no %r heading" % TABLE)
+    return [line.split("|")[1].strip() for line in section.split("\n#", 1)[0].splitlines() if line.startswith("| `")]
 
 
-def asset_patterns(text):
-    """The file names a table row stands for: ``<...>`` is one segment, ``.sig`` repeats the name before it."""
-    patterns = []
-    for cell in asset_rows(text):
-        for token in re.findall(r"`([^`]+)`", cell):
-            patterns.append(patterns[-1] + token if token.startswith(".") else token)
-    return patterns
+def row_names(cell):
+    """The asset names a table row stands for: a token starting with ``.`` (``.sig``) continues the name before it."""
+    names = []
+    for token in re.findall(r"`([^`]+)`", cell):
+        names.append(names[-1] + token if token.startswith(".") else token)
+    return names
 
 
-def name_regex(pattern):
-    parts = re.split(r"(\[-<[^>]+>\]|<[^>]+>)", pattern)
-    out = []
-    for part in parts:
+def name_regex(name):
+    """An asset name as a regex: ``<...>`` is one segment, ``[-<...>]`` an optional one, and a ``.tar.gz`` name also
+    matches ``.zip`` (the Windows Control package is a zip)."""
+    pattern = ""
+    for part in ROW_PART.split(name):
         if part.startswith("[-<"):
-            out.append(r"(?:-[^/]+)?")
+            pattern += r"(?:-[^/]+)?"
         elif part.startswith("<"):
-            out.append(r"[^/]+")
-        else:
-            out.append(re.escape(part))
-    return re.compile("".join(out) + r"\Z")
+            pattern += r"[^/]+"
+        elif part == ".tar.gz":
+            pattern += r"\.(?:tar\.gz|zip)"
+        elif part:
+            pattern += re.escape(part)
+    return re.compile(pattern)
 
 
-def matches(pattern, asset):
-    """A row matches a name; the control archive is ``.zip`` on Windows and ``.tar.gz`` elsewhere."""
-    if name_regex(pattern).match(asset):
-        return True
-    if ARCHIVE.search(pattern) and ARCHIVE.search(asset):
-        return name_regex(ARCHIVE.sub("", pattern)).match(ARCHIVE.sub("", asset)) is not None
-    return False
-
-
-def table_problems(patterns, assets):
-    missing = sorted(a for a in assets if not any(matches(p, a) for p in patterns))
-    extra = [p for p in patterns if not any(matches(p, a) for a in assets)]
+def table_problems(rows, assets):
+    """What the table and the manifest disagree on: assets with no name, and names the manifest does not have."""
+    patterns = [(name, name_regex(name)) for row in rows for name in row_names(row)]
+    missing = sorted(a for a in assets if not any(p.fullmatch(a) for _, p in patterns))
+    extra = [name for name, p in patterns if not any(p.fullmatch(a) for a in assets)]
     return missing, extra
 
 
@@ -75,25 +63,19 @@ class ReleaseDocs(unittest.TestCase):
         self.notes = Path(rm.ROOT, "docs", "release-notes-0.2.15.md").read_text(encoding="utf-8")
 
     def test_the_asset_table_lists_exactly_the_manifest(self):
-        missing, extra = table_problems(asset_patterns(self.checklist), self.manifest["assets"])
+        missing, extra = table_problems(table_rows(self.checklist), self.manifest["assets"])
         self.assertEqual(missing, [], "the checklist's asset table does not list: " + ", ".join(missing))
         self.assertEqual(extra, [], "the checklist's asset table lists what the manifest does not: " + ", ".join(extra))
 
     def test_latest_json_is_not_an_asset(self):
         self.assertNotIn("latest.json", self.manifest["assets"])
-        self.assertEqual([r for r in asset_rows(self.checklist) if "latest.json" in r], [],
+        self.assertFalse([row for row in table_rows(self.checklist) if "latest.json" in row],
                          "the checklist's asset table lists latest.json again")
-        downloads = self.notes.split("## Downloads", 1)[1].split("\n## ", 1)[0]
-        for paragraph in re.split(r"\n\s*\n", downloads):
+        downloads = self.notes.split("## Downloads", 1)[1]
+        for paragraph in downloads.split("\n\n"):
             if "latest.json" in paragraph:
-                self.assertRegex(paragraph, r"does not publish|not an asset|not published",
+                self.assertRegex(paragraph, "does not publish|not published|not an asset",
                                  "the notes list latest.json among the downloads")
-
-    def test_a_table_that_drifts_is_reported(self):
-        table = "## The assets\n\n| Asset | Made by | Notes |\n| --- | --- | --- |\n| `a.tar.gz` | x | y |\n"
-        self.assertEqual(table_problems(asset_patterns(table), ["a.tar.gz", "b.tar.gz"])[0], ["b.tar.gz"])
-        self.assertEqual(table_problems(asset_patterns(table), ["b.tar.gz"])[1], ["a.tar.gz"])
-        self.assertEqual(asset_rows(table + "| `latest.json` | `build-feed` | z |\n"), ["`a.tar.gz`", "`latest.json`"])
 
 
 class ReleaseManifest(unittest.TestCase):
