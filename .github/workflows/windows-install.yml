@@ -1,0 +1,54 @@
+name: Windows installer
+
+# install.ps1 run for real: it installs both names of the command from a local, test-signed feed, and each one prints its
+# own name in its usage line. Windows only, and Windows is the point: the launcher, `strata.py` and the CLI need nothing
+# but the standard library (the bundled interpreter is replaced by the runner's Python), so no package is installed.
+# The feed is served over loopback by the test itself and nothing leaves the runner.
+
+on:
+  push:
+    paths:
+      - .github/workflows/windows-install.yml
+      - tests/terminal/test_windows_install.py
+      - packaging/install.ps1
+      - packaging/make_local_feed.py
+      - packaging/feed_tool.py
+      - bin/strata.cmd
+      - bin/strata.ps1
+      - strata.py
+      - nostroma_cli/**
+      - nostroma_control/**
+      - serve/**
+  pull_request:
+    paths:
+      - .github/workflows/windows-install.yml
+      - tests/terminal/test_windows_install.py
+      - packaging/install.ps1
+      - packaging/make_local_feed.py
+      - packaging/feed_tool.py
+      - bin/strata.cmd
+      - bin/strata.ps1
+      - strata.py
+      - nostroma_cli/**
+      - nostroma_control/**
+      - serve/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  installer:
+    name: windows-latest / both names on the PATH
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Install pytest
+        run: python -m pip install --disable-pip-version-check pytest
+      - name: Run install.ps1 and read the two usage lines
+        run: python -m pytest tests/terminal/test_windows_install.py -q
