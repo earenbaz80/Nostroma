@@ -70,7 +70,7 @@ def problems(identifier, source, text):
     found = []
     if not text.strip():
         found.append("empty")
-    expected = [slot for slot in SLOT.findall(source) if not (identifier == "s2463" and slot == "{1}")]  # the tests allow this one to drop {1} (the plural suffix)
+    expected = SLOT.findall(source)
     if sorted(expected) != sorted(SLOT.findall(text)):
         found.append("placeholders differ")
     if sorted(TAG.findall(source)) != sorted(TAG.findall(text)):

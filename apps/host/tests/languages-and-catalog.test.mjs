@@ -15,7 +15,7 @@ test('every language covers every interface key and preserves interpolation slot
   for(const [id,source] of Object.entries(english)){
    const translated=catalogs[language][id];assert.equal(typeof translated,'string',`${language}:${id}`);
    assert(translated.trim()||language==='zh'&&['s2376','s2440'].includes(id),`${language}:${id} is empty`);
-   const expected=slots(source).filter(slot=>!(language!=='en'&&id==='s2463'&&slot==='{1}'));
+   const expected=slots(source);
    assert.deepEqual(slots(translated),expected,`${language}:${id}`);
   }
  }
