@@ -6,7 +6,7 @@ spelling without being listed one by one: upstream URLs and release downloads, t
 docs/data/release.json and the file names of this checkout (strata.py, the engine binary,
 third_party/strata-*, tools/strata_*.py) are all glued to a path, a dot, a colon or a hyphen.
 
-Six areas, each with the names that are its own to keep (an area's words are prose, so the word
+Seven areas, each with the names that are its own to keep (an area's words are prose, so the word
 is renamed there; its paths, ids and asset names are protected):
 
     docs       the Markdown pages
@@ -15,6 +15,7 @@ is renamed there; its paths, ids and asset names are protected):
     tui        the Terminal's screens (nostroma_cli/launch/app.py, screens.py, monitor.py, monitor_ext.py)
     app        the desktop app's screens (apps/host/src/screens/*.tsx)
     previews   the text captures of the Terminal's screens (docs/terminal-previews/*.txt)
+    snapshot   the config snapshot's drivers, its golden files and its tests (tests/snapshot)
 
 The last two are code: there the word is checked in one case only. "Strata" is the brand and is
 renamed; "strata" is the command and the identifiers around it (the event `strata:tasks`, the
@@ -62,6 +63,10 @@ BRAND = re.compile(r"(?<![\w./~:@-])Strata(?![\w.-])")
 SUBCOMMANDS = ("serve|profile|repair-access|doctor|components|update|models|drafting|split-engine|engine|install|"
                "runtime|ops|bench|timeskip|tune|presets|launch|connect|status|monitor|logs|connection|config|code")
 COMMAND = re.compile(r"(?<![\w./~:@\\-])strata(?=[ \t]+(?:" + SUBCOMMANDS + r")(?![\w:]))")
+# A name the command was given that is not a subcommand at all: `strata setup` read as one, and `setup` is setup.py's
+# own entry point, so adding it to SUBCOMMANDS would break that list's parity with the CLI. Reported and rewritten like
+# the subcommands, with the installer's name.
+RETIRED = re.compile(r"(?<![\w./~:@\\-])strata(?=[ \t]+setup(?![\w:]))")
 
 
 class Area:
@@ -141,12 +146,17 @@ AREAS: dict[str, Area] = {
                      keep=KEEP + (r"Documents[\\/]Strata", r"\bStrata-data\b", r"(?<=[\\/])Strata\b",
                                   r"[A-Za-z]:(?:[\\/][^\s│]*)+[\\/]?Strata[^\s│]*"),
                      word=BRAND, command=True),
+    # The config snapshot: its drivers build the command they record, and the golden files keep what they wrote, so an
+    # old `strata launch` or `strata setup` there is the same defect as in a page. Its file names and log prefixes are
+    # the command rule's own protection; the brand in it is data, so only that case is checked.
+    "snapshot": Area(paths=("tests/snapshot/*.py", "tests/snapshot/golden/*/*.json", "tests/snapshot/*.md"),
+                     keep=KEEP, word=BRAND, command=True),
 }
 
 
 def names_old_command(text: str) -> bool:
     """Whether this page tells someone to type the command by the name it had before."""
-    return COMMAND.search(text) is not None
+    return COMMAND.search(text) is not None or RETIRED.search(text) is not None
 
 
 def renamed(text: str, area: str | Area = "docs", word: bool = True) -> str:
@@ -158,6 +168,7 @@ def renamed(text: str, area: str | Area = "docs", word: bool = True) -> str:
             text = re.sub(pattern, replacement, text)
     if where.command:
         text = COMMAND.sub("nostroma", text)
+        text = RETIRED.sub("nostroma install", text)
     if not word:
         return text
     kept: list[str] = []

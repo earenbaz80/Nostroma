@@ -1,6 +1,6 @@
 """The Python Control the app's host talks to, for the config snapshot: ``python control_shim.py drafting plan|fetch ...``.
 
-The app's host runs ``strata drafting plan --config ...`` and ``strata drafting fetch --config ... --if-needed`` before a Load.  Here the same commands run through the
+The app's host runs ``nostroma drafting plan --config ...`` and ``nostroma drafting fetch --config ... --if-needed`` before a Load.  Here the same commands run through the
 real nostroma_cli on the simulated machine (STRATA_SNAPSHOT_WORLD names the world file), with the download replaced by a recorder (tests/snapshot/world.py)."""
 
 from __future__ import annotations

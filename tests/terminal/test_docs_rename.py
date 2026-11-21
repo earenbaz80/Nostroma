@@ -58,5 +58,22 @@ class DocsRename(unittest.TestCase):
         self.assertEqual(set(tool.SUBCOMMANDS.split("|")), set(subs.choices))
 
 
+    def test_the_snapshot_drivers_and_goldens_are_checked_for_the_old_command(self):
+        """tests/snapshot writes the command into its drivers and its golden files: an old `strata launch` or
+        `strata setup` there fails here, while a path or an engine log prefix is still not the command."""
+        tool = load()
+        files = {p.relative_to(ROOT).as_posix(): p for p in tool.pages(tool.AREAS["snapshot"])}
+        self.assertIn("tests/snapshot/driver.py", files)
+        self.assertIn("tests/snapshot/setup_driver.py", files)
+        self.assertTrue(any(name.startswith("tests/snapshot/golden/") and name.endswith(".json") for name in files),
+                        "the golden files are covered too")
+        for name, path in files.items():
+            self.assertFalse(tool.names_old_command(path.read_text(encoding="utf-8")), name)
+        self.assertTrue(tool.names_old_command('"command": "strata launch --model IQ3_S --yes --no-tui"'))
+        self.assertTrue(tool.names_old_command('command = f"strata setup --family qwen --yes"'))
+        self.assertFalse(tool.names_old_command('"strata serve: prefill: copy stream"'))      # an engine log prefix
+        self.assertFalse(tool.names_old_command("tests/snapshot/bin/strata monitor"))          # a path to the launcher
+
+
 if __name__ == "__main__":
     unittest.main()
