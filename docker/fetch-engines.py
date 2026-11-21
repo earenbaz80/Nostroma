@@ -5,7 +5,7 @@
     python3 docker/fetch-engines.py --source /path/to/release-folder --flavors cuda13 --out ./pkgs
     python3 docker/fetch-engines.py --release-tag v0.2.7 --list
 
-What it does, in the same order and with the same code as `strata update`:
+What it does, in the same order and with the same code as `nostroma update`:
 
 1. reads strata-feed.json and strata-feed.json.sig from the release (GitHub release assets, or a folder / URL given with --source)
    and checks the Ed25519 signature against the public key in nostroma_control/update_keys.json;

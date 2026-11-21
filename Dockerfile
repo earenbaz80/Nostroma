@@ -100,12 +100,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends tini ca-certifi
 COPY --chown=${APP_UID}:${APP_GID} --from=terminal /opt/strata/terminal /opt/strata/terminal
 COPY --chown=${APP_UID}:${APP_GID} --from=engine-build /engine/ /opt/strata/components/engine/
 COPY docker/entrypoint.sh docker/healthcheck.sh /opt/strata/
+# Both names, one wrapper: `nostroma` is the command, and `strata` is the name it had before (install.sh links both too).
 COPY docker/strata-wrapper.sh /usr/local/bin/strata
-RUN chmod 0755 /opt/strata/entrypoint.sh /opt/strata/healthcheck.sh /usr/local/bin/strata
+COPY docker/strata-wrapper.sh /usr/local/bin/nostroma
+RUN chmod 0755 /opt/strata/entrypoint.sh /opt/strata/healthcheck.sh /usr/local/bin/strata /usr/local/bin/nostroma
 # The account the container runs as, and the folders it writes. /data is created here and belongs to that account, so a NEW named
 # volume mounted there inherits the ownership (Docker fills an empty volume from the image's folder). This runs before VOLUME:
 # the builder discards any change made to a folder after it has been declared a volume. The components folder belongs to the
-# account down to its files too: the feed cache and `strata update` write there, and an update removes the old engine's folders (a
+# account down to its files too: the feed cache and `nostroma update` write there, and an update removes the old engine's folders (a
 # tree left owned by root cannot be deleted by the account).
 RUN set -e; \
     groupadd --gid "${APP_GID}" "${APP_USER}"; \
@@ -117,7 +119,7 @@ ENV STRATA_COMPONENTS_DIR=/opt/strata/components STRATA_INSTALL_DIR=/data/instal
     NVIDIA_VISIBLE_DEVICES=all NVIDIA_DRIVER_CAPABILITIES=compute,utility
 VOLUME ["/data"]
 EXPOSE 8080
-LABEL org.opencontainers.image.title="Strata" com.strata.flavor="cuda" com.strata.build="from-source" org.opencontainers.image.version="${STRATA_VERSION}"
+LABEL org.opencontainers.image.title="Nostroma" com.strata.flavor="cuda" com.strata.build="from-source" org.opencontainers.image.version="${STRATA_VERSION}"
 HEALTHCHECK --interval=30s --timeout=8s --start-period=2h --retries=3 CMD ["/opt/strata/healthcheck.sh"]
 STOPSIGNAL SIGTERM
 # Everything above ran as root (packages, copies, the linker check). From here every process in the container is this account, and

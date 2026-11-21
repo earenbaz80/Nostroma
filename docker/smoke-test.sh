@@ -5,8 +5,8 @@
 #   RUN_FLAGS="--device /dev/dri -p 18080:8080" ENVS="-e MODEL=IQ3_S -e MODEL_PATH=/models -e API_KEY=..." VOLS="-v $HOME/dt/data:/data -v /m:/models:ro" \
 #   GPU_USED_CMD='nvidia-smi --query-gpu=memory.used --format=csv,noheader' OUT=$HOME/dt/out docker/smoke-test.sh
 #
-# Steps: run -> wait for the model (health check) -> GET /v1/models -> pong chat -> tool call -> docker exec strata monitor --once ->
-# strata connect opencode --check (from inside) -> docker stop (time, exit code, log) -> GPU memory back, no strata process left.
+# Steps: run -> wait for the model (health check) -> GET /v1/models -> pong chat -> tool call -> docker exec <name> nostroma monitor --once ->
+# nostroma connect opencode --check (from inside) -> docker stop (time, exit code, log) -> GPU memory back, no strata process left.
 set -u
 : "${IMAGE:?}" "${NAME:?}" "${BASE:?}" "${OUT:?}"
 DOCKER=${DOCKER:-docker}
@@ -67,12 +67,12 @@ m=json.load(sys.stdin)["choices"][0]["message"]; tc=m.get("tool_calls") or []
 print("tool_calls:",[(t["function"]["name"],t["function"]["arguments"]) for t in tc])
 sys.exit(0 if tc and tc[0]["function"]["name"]=="get_weather" and "paris" in tc[0]["function"]["arguments"].lower() else 1)' && ok "tool call get_weather(Paris)" || bad "tool call"
 
-step "docker exec strata monitor --once (no key typed: the wrapper supplies it)"
-$DOCKER exec "$NAME" strata monitor --once 2>&1 | head -40 && ok "monitor --once ran" || bad "monitor --once"
-step "docker exec strata status"
-$DOCKER exec "$NAME" strata status 2>&1 | head -12
-step "docker exec strata connect opencode --check (inside the container)"
-chk=$($DOCKER exec "$NAME" strata connect opencode --check 2>&1); echo "$chk" | tail -8
+step "docker exec <name> nostroma monitor --once (no key typed: the wrapper supplies it)"
+$DOCKER exec "$NAME" nostroma monitor --once 2>&1 | head -40 && ok "monitor --once ran" || bad "monitor --once"
+step "docker exec <name> nostroma status"
+$DOCKER exec "$NAME" nostroma status 2>&1 | head -12
+step "docker exec <name> nostroma connect opencode --check (inside the container)"
+chk=$($DOCKER exec "$NAME" nostroma connect opencode --check 2>&1); echo "$chk" | tail -8
 echo "$chk" | grep -q "^FAIL" && bad "connect opencode --check reported a failure (model answered in words instead of calling the tool? see above)" || ok "connect opencode --check: prompt and tool call"
 step "GPU used while serving: $(gpu_used)"
 step "docker stats / health"

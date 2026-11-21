@@ -1,4 +1,4 @@
-STRATA @APP_VERSION@ FOR LINUX - TESTER BUILD FOR AMD RX 9000 (RDNA4) CARDS (RX 9070 XT)
+NOSTROMA @APP_VERSION@ FOR LINUX - TESTER BUILD FOR AMD RX 9000 (RDNA4) CARDS (RX 9070 XT)
 =====================================================================
 
 This is a private test version of Nostroma for Linux with an AMD graphics card. Please keep it to yourself: it is not a public release.
@@ -56,7 +56,7 @@ THE TERMINAL APP (zip)
       unzip Strata-Terminal-Linux-tester-amd-rx9070.zip
       cd strata-tester-linux-amd-rx9070
       sh install-tester.sh
-      strata launch
+      nostroma launch            (if that name is not found: strata launch)
 It needs python3, curl and tar (normally present). Everything is explained in README-TESTER.md inside the zip (AI-SETUP.md is the same for an AI assistant:
 give it that file and it can do the setup for you). The installer starts a tiny web server on your own computer only and stops it again; nothing is sent anywhere.
 
@@ -65,10 +65,10 @@ WHAT TO SEND BACK
 -----------------
 * The desktop app:  Settings > Engine > Diagnostics > View logs > Save logs. Send the saved file. If the window crashed or would not open, run
   ./@APPIMAGE@ --save-logs  in a terminal instead and send the file it writes in your Downloads folder (it includes the crash log).
-* The terminal app: the output of   strata doctor   (and   uname -r ,  id ,  ls /dev/kfd /dev/dri ).
+* The terminal app: the output of   nostroma doctor   (and   uname -r ,  id ,  ls /dev/kfd /dev/dri ).
 * The speed: the tokens-per-second numbers. The app shows "generating - N tok/s" while it answers. In the terminal app,
-  with the server running:   strata bench run --url http://127.0.0.1:8080 --suite serving-smoke --repeat 2 --out ~/strata-bench-1
-  prints "output ... tok/s" lines; please send ~/strata-bench-1/results.json too.
+  with the server running:   nostroma bench run --url http://127.0.0.1:8080 --suite serving-smoke --repeat 2 --out ~/nostroma-bench-1
+  prints "output ... tok/s" lines; please send ~/nostroma-bench-1/results.json too.
   A line like "model iq2_xs, 32K context, RX 9070 XT: 40 tok/s" is perfect.
 * A few words about what you did and what you saw (a photo of the screen is fine).
 Please do not send API keys.
@@ -90,5 +90,5 @@ WHERE THINGS ARE (to remove Nostroma completely, delete the files and these fold
 ---------------------------------------------------------------------------------
   ~/.strata                      settings, chats, prepared model files
   ~/.local/share/strata          the unpacked engine and the terminal app, and logs/ (what the app printed, and a crash log if the window ever crashes)
-  ~/.local/bin/strata            the terminal app's command
+  ~/.local/bin/nostroma          the terminal app's command (strata is the older name)
   ~/Documents/Strata             downloaded models (Models) and your work folder (Workspace)

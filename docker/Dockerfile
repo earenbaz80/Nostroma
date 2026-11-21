@@ -100,8 +100,10 @@ RUN set -e; \
 COPY --chown=${APP_UID}:${APP_GID} --from=terminal /opt/strata/terminal /opt/strata/terminal
 COPY --chown=${APP_UID}:${APP_GID} --from=verify /engine/ /opt/strata/components/engine/
 COPY docker/entrypoint.sh docker/healthcheck.sh /opt/strata/
+# Both names, one wrapper: `nostroma` is the command, and `strata` is the name it had before (install.sh links both too).
 COPY docker/strata-wrapper.sh /usr/local/bin/strata
-RUN chmod 0755 /opt/strata/entrypoint.sh /opt/strata/healthcheck.sh /usr/local/bin/strata
+COPY docker/strata-wrapper.sh /usr/local/bin/nostroma
+RUN chmod 0755 /opt/strata/entrypoint.sh /opt/strata/healthcheck.sh /usr/local/bin/strata /usr/local/bin/nostroma
 
 # Does the dynamic linker find every library of the package inside this image? (the GPU driver's libcuda / libnvidia-* come from the host)
 RUN set -e; \
@@ -117,7 +119,7 @@ RUN set -e; \
 # The account the container runs as, and the folders it writes. /data belongs to that account, so a NEW named volume mounted there
 # inherits the ownership (Docker fills an empty volume from the image's folder); this runs before VOLUME, because the builder discards
 # any change made to a folder after it has been declared a volume. The components folder belongs to the account down to its files too:
-# `strata update` renames and deletes engine packages there (whole folders, as root-owned files it could not remove), and the feed
+# `nostroma update` renames and deletes engine packages there (whole folders, as root-owned files it could not remove), and the feed
 # cache is written beside them. video and render exist in the hip and sycl images so that `--group-add video|render` resolves.
 RUN set -e; \
     groupadd --gid "${APP_GID}" "${APP_USER}"; \
@@ -145,7 +147,7 @@ ENV STRATA_COMPONENTS_DIR=/opt/strata/components \
 VOLUME ["/data"]
 EXPOSE 8080
 
-LABEL org.opencontainers.image.title="Strata" \
+LABEL org.opencontainers.image.title="Nostroma" \
       org.opencontainers.image.source="https://github.com/Niko1221/Strata" \
       org.opencontainers.image.url="https://github.com/Niko1221/Strata" \
       org.opencontainers.image.documentation="https://github.com/Niko1221/Strata/blob/main/docs/DOCKER.md" \
@@ -159,7 +161,7 @@ LABEL org.opencontainers.image.title="Strata" \
 # start period is long: "starting" is not "unhealthy".
 HEALTHCHECK --interval=30s --timeout=8s --start-period=2h --retries=3 CMD ["/opt/strata/healthcheck.sh"]
 
-# `docker stop` sends SIGTERM to tini, which passes it to the entrypoint; the entrypoint runs `strata launch --stop` (drain, unload,
+# `docker stop` sends SIGTERM to tini, which passes it to the entrypoint; the entrypoint runs `nostroma launch --stop` (drain, unload,
 # free the GPU memory). Give it time: docker run --stop-timeout 120 (compose: stop_grace_period: 2m).
 STOPSIGNAL SIGTERM
 # Everything above ran as root (packages, copies, the linker check). From here every process in the container is this account, and

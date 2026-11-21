@@ -1,12 +1,12 @@
 #!/bin/sh
-# Entry point of the Nostroma container: `strata launch --no-tui` with the settings the TUI asks for, read from environment
+# Entry point of the Nostroma container: `nostroma launch --no-tui` with the settings the TUI asks for, read from environment
 # variables, then stay up and stop cleanly on SIGTERM (`docker stop`).
 #
 #   docker run ... strata              start the server (default)
-#   docker run ... strata strata ...   run any strata command instead (e.g. `strata launch --plan --model q2_0`)
+#   docker run ... strata nostroma ... run any nostroma command instead (e.g. `nostroma launch --plan --model q2_0`)
 #   docker run ... strata sh           a shell
 #
-# Settings (all optional; names match the screens of `strata launch`):
+# Settings (all optional; names match the screens of `nostroma launch`):
 #   MODEL         model size, e.g. IQ3_XXS, Q2_0 (empty: Nostroma picks one for this card and says so)
 #   FAMILY        model family when a size is offered by several (qwen, swift, coder, ...)
 #   MODEL_PATH    GGUF files you already have, a folder or one .gguf, inside the container (mount it read-only)
@@ -22,7 +22,7 @@
 #   API_KEY / API_KEY_FILE   the key clients must send. The server listens on every address inside the container, and Nostroma does
 #                 not serve beyond loopback without a key, so one is always on: yours, or one made on the first start and kept in /data.
 #   PRESET        preset name in /data (default "docker"). Settings above are saved into it; with no settings given a saved preset is reused.
-#   STRATA_SET    advanced engine settings, space separated KEY=VALUE (like `strata launch --set`)
+#   STRATA_SET    advanced engine settings, space separated KEY=VALUE (like `nostroma launch --set`)
 set -u
 
 APP=/opt/strata
@@ -52,9 +52,9 @@ legacy_models_guard() {
   if [ "${ALLOW_DOWNLOAD:-0}" = "1" ]; then warn "$msg Going on, because ALLOW_DOWNLOAD=1."; else die "$msg" 2; fi
 }
 
-# ---- other commands: `docker run image strata ...`, `docker run image sh`
+# ---- other commands: `docker run image nostroma ...`, `docker run image sh`
 if [ "$#" -gt 0 ] && [ "$1" != "run" ] && [ "$1" != "serve" ]; then
-  case "$1" in strata) shift; exec "$STRATA" "$@" ;; *) exec "$@" ;; esac
+  case "$1" in strata|nostroma) shift; exec "$STRATA" "$@" ;; *) exec "$@" ;; esac
 fi
 
 mkdir -p /data/state /data/home /data/install /data/config /data/Strata-data /run 2>/dev/null || die "/data is not writable by uid $(id -u):$(id -g). Mount a volume there: -v strata-data:/data. A volume made by an image that ran as root belongs to root: give it to this account once with: docker run --rm -u 0 -v strata-data:/data <image> chown -R $(id -u):$(id -g) /data"
@@ -164,7 +164,7 @@ if [ -z "$key" ] && [ -n "${API_KEY_FILE:-}" ]; then
   key=$(tr -d '\r\n' < "$API_KEY_FILE")
 fi
 
-# ---- settings -> `strata launch` flags
+# ---- settings -> `nostroma launch` flags
 set -- launch --no-tui --access lan --port "$PORT" --data-dir /data/Strata-data
 have=""
 
@@ -286,18 +286,18 @@ launch_pid=""
 [ -n "$stopping" ] && exit 0
 if [ "$rc" -ne 0 ]; then
   phase failed
-  die "strata launch stopped with code $rc (the lines above say why). The container ends. Fix that and start it again: finished steps are not repeated, and an interrupted download continues where it stopped." "$rc"
+  die "nostroma launch stopped with code $rc (the lines above say why). The container ends. Fix that and start it again: finished steps are not repeated, and an interrupted download continues where it stopped." "$rc"
 fi
 
-# keep the key where `docker exec ... strata monitor` and the health check can read it (private file on the volume)
+# keep the key where `docker exec ... nostroma monitor` and the health check can read it (private file on the volume)
 ( umask 077; "$STRATA" launch --show-key --preset "$PRESET" > "$KEY_FILE" 2>/dev/null ) || true
 [ -s "$KEY_FILE" ] || rm -f "$KEY_FILE"
 if [ -z "$key" ]; then
   warn "No API_KEY was set, so Nostroma made one (the server listens on all addresses in the container and will not run without a key)."
-  warn "Show it with: docker exec <container> strata launch --show-key --preset $PRESET   Set your own with -e API_KEY=..."
+  warn "Show it with: docker exec <container> nostroma launch --show-key --preset $PRESET   Set your own with -e API_KEY=..."
 fi
 phase serving
-say "Serving on port $PORT. Watch it: docker exec -it <container> strata monitor    Stop: docker stop <container>"
+say "Serving on port $PORT. Watch it: docker exec -it <container> nostroma monitor    Stop: docker stop <container>"
 
 # ---- stay up; leave (so a restart policy can act) if the server is gone
 bad=0
