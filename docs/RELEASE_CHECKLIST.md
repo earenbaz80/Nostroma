@@ -132,9 +132,11 @@ Every name below is flat in the release: GitHub release assets have no folders.
    model entry. It exits 3 when Control would drop one.
 
 8. **Assemble and upload.** Copy `packaging/install.sh` and `packaging/install.ps1` into the folder, add every archive,
-   installer, `.sig`, `latest.json`, both feeds and `install-manifest.txt`, then write the sums:
+   installer, `.sig`, `latest.json`, both feeds and `install-manifest.txt`, then check the folder against the manifest
+   and write the sums:
 
    ```sh
+   python packaging/check_assets.py <upload folder>
    python packaging/sha256sums.py <upload folder>
    ```
 
