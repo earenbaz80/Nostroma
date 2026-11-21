@@ -1,4 +1,4 @@
-"""docker/entrypoint.sh: environment variables become `strata launch` flags, the key never appears on a command line, an engine
+"""docker/entrypoint.sh: environment variables become `nostroma launch` flags, the key never appears on a command line, an engine
 that does not fit the card ends the start with a plain message, a started server is kept up, and SIGTERM runs `launch --stop`.
 
 Runs the real script in a temporary tree with a stub for the `strata` command (POSIX sh needed: skipped on Windows).

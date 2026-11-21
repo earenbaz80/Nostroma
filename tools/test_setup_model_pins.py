@@ -234,7 +234,7 @@ class InstalledModelsNeedNoNetwork(unittest.TestCase):
                 quiet(setup.download, pinned_url("Q2_0/x.gguf"), Path(d) / "x.gguf")
 
     def test_the_runtime_has_no_model_host_in_it(self):
-        """strata launch, serve, the monitor and the API reach no model host: the names are in setup.py and the install
+        """nostroma launch, serve, the monitor and the API reach no model host: the names are in setup.py and the install
         tools only (and nostroma_control.acquisition refuses a download under STRATA_NO_ACQUIRE=1)."""
         hosts = re.compile(r"huggingface\.co|hf-mirror|HF_ENDPOINT|modelscope|hf_hub_download", re.I)
         # The harmless mentions: the model-card link a benchmark result file names (nothing opens it), and the pinned

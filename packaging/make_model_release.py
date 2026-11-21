@@ -293,7 +293,7 @@ def builtin_sizes() -> set | None:
 
 
 def launch_lines(entry: dict, sizes: set | None) -> list[str]:
-    """The `strata launch` lines for each size of the feed entry, with the size name a person types: the quant's name, or <quant>-<id> when that
+    """The `nostroma launch` lines for each size of the feed entry, with the size name a person types: the quant's name, or <quant>-<id> when that
     name is a built-in size (nostroma_control/feed_models.py _flash_next takes the same decision)."""
     out = []
     mid = entry.get("id")
@@ -304,8 +304,8 @@ def launch_lines(entry: dict, sizes: set | None) -> list[str]:
         else:
             keys = ["%s-%s" % (name, mid) if name in sizes else name]
         for key in keys:
-            out.append("strata launch --family %s --model %s" % (mid, key.lower()))
-            out.append("strata launch --family %s --model %s --model-path <the folder with the files>   # files already on the computer (an Intel Arc card: always)" % (mid, key.lower()))
+            out.append("nostroma launch --family %s --model %s" % (mid, key.lower()))
+            out.append("nostroma launch --family %s --model %s --model-path <the folder with the files>   # files already on the computer (an Intel Arc card: always)" % (mid, key.lower()))
     if sizes is None:
         out.append("# setup.py could not be read here: the size is the first spelling unless its quant name is a built-in size")
     return out

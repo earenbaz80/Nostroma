@@ -92,10 +92,12 @@ AREAS: dict[str, Area] = {
     # The desktop app's window and the example pages it can show.
     "desktop": Area(paths=("apps/host/index.html", "apps/host/public/**/*.html"),
                     keep=KEEP + (r"\bstrata-[\w-]+\b", r"\bdata-strata[\w-]*")),
-    # The Terminal's screens: the launch steps, the monitor and the connect view.
+    # The Terminal's screens: the launch steps, the monitor and the connect view, and the harness file whose model
+    # names the coding apps list (OpenCode's, Claude Code's, the rest). Its provider is called strata and stays so.
     "tui": Area(paths=("nostroma_cli/launch/app.py", "nostroma_cli/launch/screens.py",
-                       "nostroma_cli/launch/monitor_ext.py", "nostroma_cli/monitor.py"),
-                keep=KEEP + (r"\bstrata[a-z_]*\b",), word=BRAND),
+                       "nostroma_cli/launch/monitor_ext.py", "nostroma_cli/monitor.py",
+                       "nostroma_cli/launch/harness.py"),
+                keep=KEEP + (r"\bstrata[a-z_]*\b", r'"strata"', r"'strata'", r"\bstrata/[\w.{}-]*"), word=BRAND),
     # The desktop app's screens: chat, models, serving, settings and the rest.
     "app": Area(paths=("apps/host/src/screens/*.tsx",),
                 keep=KEEP + (r"\bstrata\.[\w.-]+", r"\bstrata:[\w:-]+", r"\bstrata-[\w-]+\b"), word=BRAND),

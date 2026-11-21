@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 import setup  # noqa: E402
 
-APPROVED_HINT = ("Free some space, move Nostroma's data folder to a bigger drive (strata launch --data-dir), "
+APPROVED_HINT = ("Free some space, move Nostroma's data folder to a bigger drive (nostroma launch --data-dir), "
                  "or set Low-RAM mode to Automatic to run without the copy.")
 
 

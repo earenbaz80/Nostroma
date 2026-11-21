@@ -1036,7 +1036,7 @@ class Strata:
         except Exception:                               # noqa: BLE001 - unknown stays unknown: the app then keeps its safety default
             pass
         try:                                            # the reserve setup writes for this chip when a run config names none (nostroma_control/setup_config.py UMA_WIN_RESERVE_MIB, G16):
-            # the app's Load uses it on a one-card run whose config has no reserve of setup's, so the app and `strata launch` start the same engine line (QAGUI-STRIX 11-09).
+            # the app's Load uses it on a one-card run whose config has no reserve of setup's, so the app and `nostroma launch` start the same engine line (QAGUI-STRIX 11-09).
             # The same condition as setup_config.config_for: Windows, the HIP engine (an AMD card), unified memory, gfx1151 exactly (gfx_arch_is: "gfx1151" or "gfx1151:...").
             if WIN and amd:
                 if str(self.src) not in sys.path:

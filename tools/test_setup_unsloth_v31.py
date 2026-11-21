@@ -267,7 +267,7 @@ class FitLabels(Base):
 
 
 class OwnFiles(unittest.TestCase):
-    """#444: strata launch --model-path and the app's "Use a local GGUF" go through gguf_dir_shards / gguf_choice / gguf_unsupported."""
+    """#444: nostroma launch --model-path and the app's "Use a local GGUF" go through gguf_dir_shards / gguf_choice / gguf_unsupported."""
 
     def test_the_new_files_are_no_longer_refused(self):
         for model in NEW:

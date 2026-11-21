@@ -2091,7 +2091,7 @@ def choose_roles(a, found) -> list:
     roles = gpu_roles.normalize(roles, cards)
     lst = gpu_roles.order(roles, cards)
     if not lst:
-        fail("every graphics card is Off", "setup needs one card for Main (the app and `strata launch` can start with all cards Off)")
+        fail("every graphics card is Off", "setup needs one card for Main (the app and `nostroma launch` can start with all cards Off)")
     a._roles = roles
     a._roles_cards = cards
     ok(gpu_roles.describe(roles, cards))
@@ -2429,7 +2429,7 @@ def disk_room_problem(models_dir, pack_dir, other_gb, copy_gb, other_note="", fr
     packs = pack_dir.parent
     free_models = free(models_dir)
     models_problem = (f"not enough free disk space in {models_dir}: need ~{other_gb:.0f} GB, {free_models:.0f} GB free" + other_note,
-                      "use --data-dir on a bigger drive (strata launch --data-dir)" if CONTROL else "use --models-dir on a bigger drive")
+                      "use --data-dir on a bigger drive (nostroma launch --data-dir)" if CONTROL else "use --models-dir on a bigger drive")
     if free_models < other_gb:
         return models_problem
     if not copy_gb:
@@ -2443,7 +2443,7 @@ def disk_room_problem(models_dir, pack_dir, other_gb, copy_gb, other_note="", fr
     if free_packs < needs:
         return (f"not enough free disk space for the low-RAM copy of the experts in {pack_dir}: it needs about {needs:.0f} GB "
                 f"and {free_packs:.0f} GB are free there.",
-                "Free some space, move Nostroma's data folder to a bigger drive (strata launch --data-dir), or set Low-RAM mode to Automatic to run without the copy.")
+                "Free some space, move Nostroma's data folder to a bigger drive (nostroma launch --data-dir), or set Low-RAM mode to Automatic to run without the copy.")
     return None
 
 
@@ -3850,8 +3850,8 @@ MONITOR_REQUIREMENTS = ROOT / "requirements-monitor.txt"
 
 
 def runtime_packages() -> list[str]:
-    """The packages setup installs for a run: the pinned runtime ones, plus the Terminal's screens (textual, which brings rich: `strata launch`
-    and `strata monitor` need them; the packaged Terminal bundles them, a source install gets them here)."""
+    """The packages setup installs for a run: the pinned runtime ones, plus the Terminal's screens (textual, which brings rich: `nostroma launch`
+    and `nostroma monitor` need them; the packaged Terminal bundles them, a source install gets them here)."""
     base = requirement_lines() if REQUIREMENTS.exists() else list(PY_PACKAGES)
     if MONITOR_REQUIREMENTS.exists():
         base += [r for r in requirement_lines(MONITOR_REQUIREMENTS) if r not in base]
@@ -4213,7 +4213,7 @@ def mem_have(model: str, ram: float, vram: float = 0.0) -> float:
 # below the tiers' names (40 / 48 / 64 GB) because the OS reports a little less than the installed memory.  64 GB and
 # up: IQ3_S (the original; Swift 1.5's IQ3_S is an equal choice), 48 GB: IQ3_XXS, 40 GB: Swift 1.5's IQ2_XS, with Gyro-M
 # (35 GB) as the other choice.  Below 40 GB the older rules stand (Gyro-S, or the Coder for code).  The Mac has its own
-# rules (nostroma_control/mac_fit.py).  tools/strata_mcp.py's recommend() holds the same floors (the app and `strata launch`).
+# rules (nostroma_control/mac_fit.py).  tools/strata_mcp.py's recommend() holds the same floors (the app and `nostroma launch`).
 MEMORY_TIERS = ((62.0, "qwen", "IQ3_S"), (46.0, "qwen", "IQ3_XXS"), (38.0, "swift", "IQ2_XS"))
 # #3425 (owner's rule): the tiers count RAM + VRAM less this much, which Windows and the system keep for themselves.  A PC
 # with a 16 GB card and 32 GB of RAM used to land in the 48 GB tier and then read ~11 GB of it from the SSD on every answer.
@@ -8429,7 +8429,7 @@ def control_engine_step(gpu, vision):
     except EC.EngineMissing as e:
         plain = getattr(e, "plain_notice", None) or getattr(e, "driver_notice", None)
         if os.environ.get("STRATA_NEED_ENGINE") == "1" and os.environ.get("STRATA_ALLOW_NO_ENGINE") != "1":
-            # strata launch needs an engine now: stop before step 5 instead of after the download, unless launch itself asked to go on
+            # nostroma launch needs an engine now: stop before step 5 instead of after the download, unless launch itself asked to go on
             # (STRATA_ALLOW_NO_ENGINE: the person said yes to "download the model anyway").  The app does not stop (owner decision
             # 2026-10-18): it says so in its download card and still downloads the model.
             fail(plain or "no engine is installed for this PC",
@@ -8790,7 +8790,7 @@ def install_own_path(a, family, gpu, hip, amd, cuda_tk, multi, port, ram, adopte
         return p.exists() and (done(p) or bool(a.gguf_dir))
     left = 0 if have(gguf) else (size - (part.stat().st_size if part.is_file() else 0)) / 1e9
     if left and free_gb(folder) < left:
-        fail(f"not enough free disk space in {folder}: need ~{left:.0f} GB, {free_gb(folder):.0f} GB free", ("use --data-dir on a bigger drive (strata launch --data-dir)" if CONTROL else "use --models-dir on a bigger drive"))
+        fail(f"not enough free disk space in {folder}: need ~{left:.0f} GB, {free_gb(folder):.0f} GB free", ("use --data-dir on a bigger drive (nostroma launch --data-dir)" if CONTROL else "use --models-dir on a bigger drive"))
     if left and free_gb(folder) < left + 1:
         warn(f"little free disk space in {folder}: {free_gb(folder):.1f} GB free for about {left:.1f} GB. Setup goes on and should fit")
 
@@ -8947,7 +8947,7 @@ def preview_family(a) -> int:
                                            if f.with_name(f.name + ".part").is_file() else 0)
                for f in files if not (f.exists() and done(f))) / 1e9
     if left and free_gb(folder) < left:
-        fail(f"not enough free disk space in {folder}: need ~{left:.0f} GB, {free_gb(folder):.0f} GB free", ("use --data-dir on a bigger drive (strata launch --data-dir)" if CONTROL else "use --models-dir on a bigger drive"))
+        fail(f"not enough free disk space in {folder}: need ~{left:.0f} GB, {free_gb(folder):.0f} GB free", ("use --data-dir on a bigger drive (nostroma launch --data-dir)" if CONTROL else "use --models-dir on a bigger drive"))
     if left and free_gb(folder) < left + 1:
         warn(f"little free disk space in {folder}: {free_gb(folder):.1f} GB free for about {left:.1f} GB. Setup goes on and should fit")
     step(5, f"downloading {fam['title']} {model}")
@@ -9105,7 +9105,7 @@ def mac_repack(files: list, model: str, native: Path) -> None:
 
 
 def mac_control_setup(a) -> int:
-    """The app (and the Terminal's `strata launch`) on a Mac, STRATA_CONTROL_INSTALL=1: the same job as on Windows and Linux. It
+    """The app (and the Terminal's `nostroma launch`) on a Mac, STRATA_CONTROL_INSTALL=1: the same job as on Windows and Linux. It
     downloads and prepares the model files and writes a run config whose engine is "component:strata-engine"; it builds nothing
     (the Metal engine is a component: a ready-made package from the feed, or the one inside the installer) and runs no
     metal/setup_mac.py. Which sizes a Mac can run, whether one stays in memory or streams its experts from the SSD, and the
@@ -9434,7 +9434,7 @@ def main() -> int:
                          "(mainland China: the same files, checked against ModelScope's published SHA-256; "
                          "STRATA_SOURCE)")
     ap.add_argument("--prepare-pack", metavar="PACK_DIR",
-                    help="only build the pack of the GGUF files in --gguf-dir into PACK_DIR (what `strata launch` runs for an Intel Arc card): "
+                    help="only build the pack of the GGUF files in --gguf-dir into PACK_DIR (what `nostroma launch` runs for an Intel Arc card): "
                          "fetches llama.cpp's gguf-py by itself, runs tools/iq_pack.py, changes nothing else")
     ap.add_argument("--inspect", nargs="+", metavar=("SOURCE", "VARIANT"),
                     help="what a GGUF is and whether Nostroma runs it, from its headers only (no download): a file, a "

@@ -3695,7 +3695,7 @@ def card_roles_lines(cfg: dict) -> list[str]:
             out.append("[strata] every graphics card is Off: " + gpu_roles.CPU_ONLY_LINE)
             return out
         raise SystemExit("[strata] every graphics card is set to Off, and this engine cannot start without one. Turn a card on "
-                         "(Main or Helper) in the app or with strata launch --gpu-roles.")
+                         "(Main or Helper) in the app or with nostroma launch --gpu-roles.")
     word = {"main": "Main", "helper": "Helper", "off": "Off"}
     out.append("[strata] card roles: " + ", ".join(f"{word[r]} GPU {i}" for r in ("main", "helper", "off")
                                                     for i in sorted(roles) if roles[i] == r) + " (numbers as nvidia-smi gives them)")
@@ -3890,7 +3890,7 @@ def engine_args(cfg: dict, exe: str | None = None, *, announce: bool = True) -> 
     # so a setup run or the app rewriting "args" cannot undo them (#3216 #3215 #3270)
     if cfg.get("user_args"):
         args = user_args.merge(args, cfg["user_args"])
-    # "drafting": auto | mtp | dflash2 | off (nostroma_control/drafting.py; the Models screen and `strata launch --drafting` write it): which drafter
+    # "drafting": auto | mtp | dflash2 | off (nostroma_control/drafting.py; the Models screen and `nostroma launch --drafting` write it): which drafter
     # guesses ahead. ONE drafter per run: DFlash2 alone (no --mtp, --draft-fallback none) or the MTP alone (no DFlash2 option). Auto is DFlash2 where the engine
     # has it, on one card and on a layer split over several cards. A choice that cannot be applied (no drafter file yet, several requests at once) starts the other one if it is on this computer,
     # else none, and says why in the engine's /metrics ("drafting_note"). The start never downloads.
@@ -3931,7 +3931,7 @@ def engine_args(cfg: dict, exe: str | None = None, *, announce: bool = True) -> 
             print(f"[strata] {too_big}", flush=True)
     if fit_parallel is not None:
         cfg = {**cfg, "parallel": fit_parallel}
-    # "mtp": false (the Models settings, `strata launch --mtp off`, or by hand): no draft layer, whatever the args say.  A setup run
+    # "mtp": false (the Models settings, `nostroma launch --mtp off`, or by hand): no draft layer, whatever the args say.  A setup run
     # that writes --mtp back into the args cannot undo it, because this is applied at every start. (A DFlash2 start keeps its own --mtp DIR, which only names
     # the vocabulary for an engine that takes it that way.)
     if draft_layer.is_off(cfg) and not decision.flags:
@@ -4308,7 +4308,7 @@ def ordered_gpus(cfg: dict, scores=None, vrams=None, archs=None) -> list[int]:
     sc = scores if scores is not None else (hip_speed_scores(gl) if hip else gpu_speed_scores(gl))
     if not sc or any(i not in sc for i in gl):
         return gl
-    # the decision itself (5% rule #1760, faster card last #1352, VRAM guard #1576) is nostroma_control/gpu_roles.speed_stage_order, which `strata launch --plan`
+    # the decision itself (5% rule #1760, faster card last #1352, VRAM guard #1576) is nostroma_control/gpu_roles.speed_stage_order, which `nostroma launch --plan`
     # calls too (gpu_roles.from_legacy), so the plan names the same Main card as this start
     out, why, seen = gpu_roles.speed_stage_order(
         gl, sc, vrams if vrams is not None else (None if scores is not None else (lambda: gpu_vram_mib(gl, hip))))
