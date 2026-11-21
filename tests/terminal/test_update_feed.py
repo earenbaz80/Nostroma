@@ -390,16 +390,25 @@ class AppPlatform(unittest.TestCase):
             self.run_tool()
         self.assertIn("root", str(caught.exception))
 
-    def test_there_is_no_app_key_because_app_updates_are_off(self):
+    def test_the_app_key_defaults_to_the_one_this_build_ships(self):
+        """App updates are off, so the key a release checks against is the one Control carries in update_keys.json."""
         from feed_tool import _default_app_pubkey
         conf = json.loads((fx.ROOT / "apps/desktop/src-tauri/tauri.conf.json").read_text())
-        self.assertEqual(_default_app_pubkey(), "")
+        shipped = json.loads((fx.ROOT / "nostroma_control/update_keys.json").read_text())["app_minisign_public"]
         self.assertNotIn("updater", conf.get("plugins", {}))
+        self.assertEqual(_default_app_pubkey(), shipped)
+
+    def test_without_the_flag_the_shipped_key_is_checked(self):
+        """The .sig here is made by another key, so the failure names that key, not a missing one."""
+        with self.assertRaises(SystemExit) as caught:
+            self.run_tool(pubkey=None)
+        self.assertIn("different key than the one this build trusts", str(caught.exception))
 
     def test_a_missing_key_says_what_to_pass(self):
         """This build names no updater key, so the error must say which key to pass, not that the empty key has no line."""
-        with self.assertRaises(SystemExit) as caught:
-            self.run_tool(pubkey="")
+        with mock.patch("feed_tool._default_app_pubkey", return_value=""):
+            with self.assertRaises(SystemExit) as caught:
+                self.run_tool(pubkey="")
         message = str(caught.exception)
         self.assertIn("plugins.updater.pubkey", message)
         self.assertIn("--pubkey", message)

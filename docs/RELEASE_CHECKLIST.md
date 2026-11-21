@@ -93,11 +93,11 @@ download of the files, not a build. When one did change, build it on its box, th
 
    ```sh
    npx tauri signer sign -f tauri-updater.key <installer>
-   python packaging/feed_tool.py set-app-platform --app-json RELEASE/tauri-latest.json --target <target> --version <product version> --archive <installer> --sig <installer>.sig --pubkey <app_minisign_public>
+   python packaging/feed_tool.py set-app-platform --app-json RELEASE/tauri-latest.json --target <target> --version <product version> --archive <installer> --sig <installer>.sig
    ```
 
-   `tauri.conf.json` names no updater key in this build, so pass `--pubkey` with `app_minisign_public` from
-   `nostroma_control/update_keys.json`; without it the command checks against an empty key and stops.
+   `tauri.conf.json` names no updater key in this build, so the command checks against `app_minisign_public` from
+   `nostroma_control/update_keys.json`; pass `--pubkey` only to check against another key.
 
    On the Mac, run `packaging/mac/sign-and-notarize.sh --updater-archive` first: notarising changes the bytes, and a
    signature made before that does not verify.

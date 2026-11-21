@@ -387,9 +387,17 @@ TAURI_TARGET_NAMES = tuple(feedmod.TAURI_TARGETS.values())
 
 
 def _default_app_pubkey() -> str:
-    conf = Path(__file__).resolve().parents[1] / "apps" / "desktop" / "src-tauri" / "tauri.conf.json"
-    # App updates are off in this build: tauri.conf.json names no updater, so there is no key to sign an app update with.
-    return json.loads(conf.read_text(encoding="utf-8")).get("plugins", {}).get("updater", {}).get("pubkey", "")
+    """The key a release checks an app installer against: the one in tauri.conf.json, else the one this build ships."""
+    conf = ROOT / "apps" / "desktop" / "src-tauri" / "tauri.conf.json"
+    key = json.loads(conf.read_text(encoding="utf-8")).get("plugins", {}).get("updater", {}).get("pubkey", "")
+    if key:
+        return key
+    # App updates are off in this build: tauri.conf.json names no updater, so the key an app update would be verified
+    # with is the one Control ships in update_keys.json.
+    try:
+        return json.loads(signing.BUILTIN_KEYS.read_text(encoding="utf-8-sig")).get("app_minisign_public") or ""
+    except (OSError, ValueError):
+        return ""
 
 
 def _check_mac_archive(archive: Path) -> None:
@@ -413,7 +421,8 @@ def set_app_platform(app_json: Path, *, target: str, archive: Path, signature_fi
     """Add or replace one platform in the Tauri updater JSON (the file ``build-feed --app-json`` takes; it becomes ``latest.json``).
 
     The ``.sig`` is made by ``npx tauri signer sign`` (or by ``tauri build`` for the Windows / Linux installers) and is only READ here;
-    this tool never touches the Tauri private key. It is checked against the public key in ``tauri.conf.json`` (or ``pubkey``) over the
+    this tool never touches the Tauri private key. It is checked against the public key in ``tauri.conf.json``, or
+    ``app_minisign_public`` from ``update_keys.json`` when it names none (``pubkey`` checks against another key), over the
     exact archive bytes, so a signature of an older or unsigned file, or one from another key, is refused before it can be published.
     ``sha256`` and ``size`` are taken from the archive."""
     if target not in TAURI_TARGET_NAMES:
@@ -424,8 +433,9 @@ def set_app_platform(app_json: Path, *, target: str, archive: Path, signature_fi
     signature = signature_file.read_text(encoding="utf-8").strip()
     key = pubkey or _default_app_pubkey()
     if not key.strip():
-        raise SystemExit(f"tauri.conf.json has no plugins.updater.pubkey, so there is no key to check {signature_file.name} against; "
-                         "pass --pubkey with app_minisign_public from nostroma_control/update_keys.json")
+        raise SystemExit(f"tauri.conf.json names no plugins.updater.pubkey and nostroma_control/update_keys.json has no "
+                         f"app_minisign_public, so there is no key to check {signature_file.name} against; pass --pubkey with the key "
+                         "made by tauri signer generate")
     try:
         with archive.open("rb") as stream:
             signing.minisign_verify(key, signature, iter(lambda: stream.read(1 << 20), b""))
@@ -507,7 +517,7 @@ def main(argv: list[str] | None = None) -> int:
     sa.add_argument("--version")
     sa.add_argument("--notes")
     sa.add_argument("--pub-date")
-    sa.add_argument("--pubkey", help="the Tauri public key (default: tauri.conf.json plugins.updater.pubkey; this build names none, so pass app_minisign_public from nostroma_control/update_keys.json)")
+    sa.add_argument("--pubkey", help="the Tauri public key (default: tauri.conf.json plugins.updater.pubkey, else app_minisign_public from nostroma_control/update_keys.json)")
     vf = sub.add_parser("verify-feed")
     vf.add_argument("source")
     vf.add_argument("--pub", type=Path, required=True)
