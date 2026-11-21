@@ -8,7 +8,10 @@ here is a second program: it is the same one, presenting under the name it was t
 from __future__ import annotations
 
 import os
+import re
+import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -64,12 +67,37 @@ class TheLaunchers(unittest.TestCase):
         self.assertIn("$env:NOSTROMA_PROG = $prog", ps1)
         self.assertNotIn('"strata: ', ps1)
 
+    def test_no_message_that_cannot_expand_names_the_program(self):
+        # a quoted heredoc ('MSG') is literal: a $prog written inside one would print as $prog
+        quoted = None
+        for number, line in enumerate((ROOT / "bin" / "strata").read_text(encoding="utf-8").splitlines(), 1):
+            if quoted:
+                if line == quoted:
+                    quoted = None
+                else:
+                    self.assertNotIn("$prog", line, f"line {number} sits in a heredoc that does not expand")
+            elif (found := re.search(r"<<'([A-Za-z_]+)'", line)):
+                quoted = found.group(1)
+
+    def test_a_person_with_no_python_reads_their_own_name(self):
+        # the one message that cannot be checked by reading: run the launcher through a link called nostroma
+        with tempfile.TemporaryDirectory() as tmp:
+            link = Path(tmp) / "nostroma"
+            link.symlink_to(ROOT / "bin" / "strata")
+            r = subprocess.run([str(link)], capture_output=True, text=True,
+                               env={**os.environ, "STRATA_PYTHON": str(Path(tmp) / "no-python-here")}, timeout=60)
+        self.assertEqual(r.returncode, 5, r.stdout + r.stderr)
+        self.assertIn("nostroma: no usable Python found.", r.stderr, r.stderr)
+        self.assertNotIn("$prog", r.stderr)
+
 
 class TheInstallers(unittest.TestCase):
     def test_both_names_go_on_the_path(self):
         sh = (ROOT / "packaging" / "install.sh").read_text(encoding="utf-8")
-        self.assertIn('put_on_path "$BIN_DIR/nostroma"', sh)
-        self.assertIn('put_on_path "$BIN_DIR/strata"', sh)
+        self.assertIn('check_name "$BIN_DIR/nostroma"', sh)
+        self.assertIn('check_name "$BIN_DIR/strata"', sh)
+        self.assertIn('ln -sf "$DATA_DIR/terminal/current/bin/strata" "$BIN_DIR/nostroma"', sh)
+        self.assertIn('ln -sf "$DATA_DIR/terminal/current/bin/strata" "$BIN_DIR/strata"', sh)
         self.assertIn("${NOSTROMA_FEED:-${STRATA_FEED:-", sh)          # the new setting wins, the old one still works
         self.assertIn("the old name, 'strata', still works", sh)
         ps1 = (ROOT / "packaging" / "install.ps1").read_text(encoding="utf-8")
@@ -79,9 +107,19 @@ class TheInstallers(unittest.TestCase):
         self.assertIn(r"bin\nostroma.cmd", ps1)                   # an older archive gets the second name too
 
     def test_a_name_someone_else_owns_is_not_replaced(self):
-        # a plain file called nostroma in the bin folder is its owner's; the install stops instead of overwriting it
-        sh = (ROOT / "packaging" / "install.sh").read_text(encoding="utf-8")
-        self.assertIn("is not a link this installer made", sh)
+        # a plain file called nostroma in the bin folder is its owner's; the install stops instead of overwriting it,
+        # and it stops before downloading, so nothing of the release is on disk when it says nothing was changed
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            (home / ".local" / "bin").mkdir(parents=True)
+            (home / ".local" / "bin" / "nostroma").write_text("someone else's command\n")
+            r = subprocess.run(["sh", str(ROOT / "packaging" / "install.sh")], capture_output=True, text=True, timeout=120,
+                               env={**os.environ, "HOME": str(home), "STRATA_FEED": "http://127.0.0.1:1",
+                                    "XDG_DATA_HOME": "", "STRATA_NO_ACQUIRE": ""})
+            self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+            self.assertIn("nostroma already exists and is not a link this installer made", r.stderr, r.stderr)
+            self.assertFalse((home / ".local" / "share" / "strata").exists(), "the install downloaded before refusing")
+            self.assertEqual((home / ".local" / "bin" / "nostroma").read_text(), "someone else's command\n")
 
     def test_the_windows_archive_carries_both_names(self):
         # a Windows PATH lists files, and the installer puts no link of its own there
