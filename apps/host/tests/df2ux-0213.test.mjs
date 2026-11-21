@@ -1,7 +1,7 @@
 /**
  * 0.2.13: the app fetches the tuned DFlash2 drafter on every path where Auto resolves to it (a plain load, a restart of the stopped models, a tuning run), like the Models screen
  * own Load does, with the 12 hour rule (--throttle); a drafter the person named or saved wins; the plan and the Settings hint carry the size of the drafter that is really fetched.
- * The decision is Control (strata drafting plan / fetch; tests/terminal/test_df2ux_0213.py); this file drives the host with a fake Control.
+ * The decision is Control (nostroma drafting plan / fetch; tests/terminal/test_df2ux_0213.py); this file drives the host with a fake Control.
  */
 import './helpers/isolate-profile.mjs';   // a test run never writes the owner's real Nostroma profile
 import test from 'node:test';

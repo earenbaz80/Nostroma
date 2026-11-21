@@ -130,7 +130,7 @@ def rttime_limit_note() -> str:
     return (f"This session has a real-time CPU limit (RLIMIT_RTTIME hard limit {hard}; the desktop's audio system sets "
             "it to 0 when rtkit is not installed). Linux can then end a program with signal 9 for no visible reason. "
             "Install rtkit, or start Nostroma outside the desktop session's limits, for example: "
-            "systemd-run --user --collect -p LimitRTTIME=infinity -- strata serve ...")
+            "systemd-run --user --collect -p LimitRTTIME=infinity -- nostroma serve ...")
 
 
 LEFTOVER_SETTLE_S = 120.0       # #4051: how long an engine ended at a start is waited for to give its memory back
@@ -9737,7 +9737,7 @@ def with_current_reader(cfg: dict, package: Path) -> dict:
         if isinstance(old, str) and old and not engine_component.is_reference(old) and os.path.isabs(old):
             new = package / old.replace("\\", "/").rsplit("/", 1)[-1]
             gone = not os.path.exists(old)
-            # #4658: the old engine folder is kept after `strata update`, so the old reader still exists; one in a SIBLING engine folder
+            # #4658: the old engine folder is kept after `nostroma update`, so the old reader still exists; one in a SIBLING engine folder
             # (components/engine/<version>-...) is the engine's reader from before the update, and the engine in use has its own
             older = (not gone and Path(old).parent != package and Path(old).parent.parent == package.parent
                      and package.parent.name.lower() == "engine")
@@ -9909,8 +9909,8 @@ def tool_call_recovery_setting(cfg: dict) -> bool:
 
 
 def main(argv=None, *, lifecycle_event=None, interrupt_exit_code: int = 0) -> int:
-    """Serve until stopped. For as long as it runs this server holds the shared activity lease of the runtime folder (the same one `strata serve` and
-    a runtime host take), so `strata update` and a calibration run see an engine that was started by running this file directly - the desktop app's
+    """Serve until stopped. For as long as it runs this server holds the shared activity lease of the runtime folder (the same one `nostroma serve` and
+    a runtime host take), so `nostroma update` and a calibration run see an engine that was started by running this file directly - the desktop app's
     source install does - and wait for it or refuse, instead of test-starting a second copy of the model beside it (#4463). A lease that cannot be
     taken (an exclusive holder, a runtime folder that is not usable) never stops the server.
 

@@ -9,7 +9,7 @@ const listOf = (names: string[]) => {
 };
 
 /**
- * Update engine with a model loaded (Settings > About). Nostroma Control does the work (`strata update --stop-model --output jsonl`, through the host); this is the
+ * Update engine with a model loaded (Settings > About). Nostroma Control does the work (`nostroma update --stop-model --output jsonl`, through the host); this is the
  * conversation around it, in four plain steps:
  *  1. Warn, naming the model, and ask. Nothing happens before the yes. With no model loaded the older dialog of Settings is used instead.
  *  2. Progress in words: the new engine downloads while the model keeps working; then the model stops; then the engine is updated.

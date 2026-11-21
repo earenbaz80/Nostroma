@@ -1,6 +1,6 @@
 name: Config snapshot
 
-# tests/snapshot: what `strata launch`, the app's plain Load and the app's Models-screen Load hand the engine (arguments, environment, drafter,
+# tests/snapshot: what `nostroma launch`, the app's plain Load and the app's Models-screen Load hand the engine (arguments, environment, drafter,
 # confidence), for every simulated machine class and model set, against the golden files in tests/snapshot/golden.  Nothing is loaded,
 # downloaded or run on a GPU.  Windows and Linux must give byte-identical output, so both run.  A change that moves what users
 # get has to update the golden files in the same commit (STRATA_SNAPSHOT_UPDATE=1 python -m pytest tests/snapshot, see tests/snapshot/README.md).

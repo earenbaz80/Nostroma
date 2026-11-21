@@ -65,10 +65,10 @@ export function createNativeControl({directory,requests=()=>[],changed=()=>{},sp
  const neverFinishedAppUpdate=j=>closedForAppUpdate(j)&&j.kind==='update-strata'&&typeof j.appUpdateFrom==='string'&&!!thisAppVersion()&&thisAppVersion()===j.appUpdateFrom;
  for(const j of (Array.isArray(savedJobs)?savedJobs:[]).slice(-12))jobs.set(j.id,{...j,...(settledByAppUpdate(j)?{state:'done',error:null,summary:`Nostroma is updated to ${thisAppVersion()}.`,finishedAt:new Date().toISOString()}:neverFinishedAppUpdate(j)?{state:'error',error:`The update to ${j.appUpdateTo??'the new version'} did not finish: the app closed for the installer, but the old version ${j.appUpdateFrom} started again. Try Update again, or download the installer from the Nostroma release page (https://github.com/Niko1221/Strata/releases/latest).`,summary:'The app update did not finish',finishedAt:new Date().toISOString()}:j.state==='running'?{state:'error',error:'The host restarted before completion. Check diagnostics, then retry; completed files are kept.',summary:'Interrupted operation'}:{})});
  /* Packaged mode: the app ships Nostroma Control (control-runtime.mjs). Models are run configs in an install folder, the engine
-    comes from the component folder, and a start is `strata runtime start` under the owner runtime. Nothing is installed,
+    comes from the component folder, and a start is `nostroma runtime start` under the owner runtime. Nothing is installed,
     updated or fetched from here. Without `control` (a source checkout) every path below is the original one. */
  const packaged=!!control;
- /* The auto-tuner and the saved tunings are Nostroma Control's (`strata tune auto`, `strata presets`): the app runs them and follows their status file. */
+ /* The auto-tuner and the saved tunings are Nostroma Control's (`nostroma tune auto`, `nostroma presets`): the app runs them and follows their status file. */
  const autotuner=createAutoTune({spawnProcess,workDir:join(directory,'native-tune'),launcher:()=>{if(packaged)return {command:control.control.python,prefix:[control.control.cli],cwd:control.control.dir,env:controlEnvironment(control.control)};const py=python();return {command:py.command,prefix:[...py.args,join(repo(),'strata.py')],cwd:repo(),env:{...process.env,PYTHONUNBUFFERED:'1',PYTHONUTF8:'1',PYTHONIOENCODING:'utf-8'}};}});
  /* In the packaged app the model catalog, the GPU probe and the install job are Control's bundled tools/strata_mcp.py and
     setup.py, run on Control's own Python in the installer's mode (STRATA_CONTROL_INSTALL: no pip, no engine, no compiler).
@@ -273,7 +273,7 @@ return {summary:result.summary??'Deleted',removed:result.plan?.gb??null};}
  /* A DeepSeek run config (Nostroma 0.2.13 and earlier; nostroma_control/retired.py): this Nostroma does not start it, and no app setting ever writes it. */
  const retiredDeepSeek=config=>/^deepseek/i.test(String(config?.arch??''))||/strata-dsv41/i.test(String(config?.exe??''));
  /* Control's ceiling for one start wait, read from the Control this app actually found rather than guessed from its version. The
-    app starts a model with `strata runtime start --wait`, and that wait is checked three times before the engine is reached: by
+    app starts a model with `nostroma runtime start --wait`, and that wait is checked three times before the engine is reached: by
     management.runtime_action, by the operation record written before the start (journal), and by runtime.start itself. 27cbbfe6
     raised only the runtime's, so a longer wait died with `start wait must be finite seconds in 0..600` and then with
     `direct runtime intent has an invalid timeout`. The app therefore asks for the longer wait only when a Control's own sources
@@ -304,7 +304,7 @@ return {summary:result.summary??'Deleted',removed:result.plan?.gb??null};}
   }catch{value=START_WAIT_CEILING;}
   ceilingCache={dir,time,value};return value;
  }
- /* How long a start waits for this model, in the same shape as `strata launch`'s figure (#3949 #3459 #4191): ten minutes, about eight
+ /* How long a start waits for this model, in the same shape as `nostroma launch`'s figure (#3949 #3459 #4191): ten minutes, about eight
     more seconds per GB above 40 GB, never more than this Control accepts. A model nobody can size keeps the 300 s it always had.
     The run config's engine_ready_s is the floor, not the ceiling: the server reads that number and ends the engine when it runs out,
     so the start must never give up before the server does. */
@@ -511,7 +511,7 @@ return {summary:result.summary??'Deleted',removed:result.plan?.gb??null};}
   let proc=null,started=null,retried=null,startWait=null,adopted=false;
   if(packaged){
    /* How long this start waits, and the server's own engine wait kept above it. The server ends the engine when its engine wait runs
-      out (900 s, or the config's engine_ready_s), so a start that waits longer than that can never win: as in `strata launch`, the
+      out (900 s, or the config's engine_ready_s), so a start that waits longer than that can never win: as in `nostroma launch`, the
       server gets a wait above the start's. It is only ever raised, never lowered, so a config that already names a longer one
       is left alone. */
    startWait=startWaitFor(config,entry,args.model);
@@ -521,7 +521,7 @@ return {summary:result.summary??'Deleted',removed:result.plan?.gb??null};}
    /* The engine starts under Control's owner runtime, not as our child: a saved profile per slot, then `runtime start`. */
    const used=new Set([...instances.values()].map(i=>i.profile));let slot=1;while(used.has('app-'+slot))slot++;instance.profile='app-'+slot;
    instances.set(id,instance);if(!defaultId||!args.multiple||wasDefault)defaultId=id;emit();
-   /* The all-cards split engine: where the plan says it takes this start, Control turns the run config into the split engine's (the step `strata launch` does itself: the rule, the engine package and the draft layer are checked on this computer) and says so in one line. Any "no" leaves the layer split config as it is. The second try after a failed start is never split. */
+   /* The all-cards split engine: where the plan says it takes this start, Control turns the run config into the split engine's (the step `nostroma launch` does itself: the rule, the engine package and the draft layer are checked on this computer) and says so in one line. Any "no" leaves the layer split config as it is. The second try after a failed start is never split. */
    const splitStart=async value=>{
     if(noSplit||drafts?.split!==true||typeof control.splitEngine!=='function')return value;
     const input=join(work,id+'.layer.json'),output=join(work,id+'.split.json');
@@ -595,8 +595,8 @@ return {summary:result.summary??'Deleted',removed:result.plan?.gb??null};}
   else throw new Error('Unsupported native operation.');
   return new Promise((resolve,reject)=>{const proc=spawnProcess(command,[...prefix,...argv],{cwd:folder,windowsHide:true,detached:process.platform!=='win32',stdio:['ignore','pipe','pipe'],env:{...process.env,PYTHONUNBUFFERED:'1',PYTHONUTF8:'1',PYTHONIOENCODING:'utf-8'}});job.process=proc;for(const stream of [proc.stdout,proc.stderr])stream.on('data',chunk=>{chunk.toString().split('\n').filter(Boolean).forEach(line=>append(job.id,line));job.summary=chunk.toString().trim().slice(-500);emit();});proc.on('error',reject);proc.on('exit',code=>{delete job.process;code===0?resolve({summary:job.kind==='calibrate'?'Calibration complete. Native settings were saved.':'Native installation updated.'}):reject(new Error(`Operation stopped (exit ${code}). Open diagnostics for details.`));});});
  }
- /* Packaged app: engine and Control updates and the engine rollback go through Control's explicit update step (`strata update`,
-    `strata components rollback`), never through git, setup.py or a download in this process. The app itself is updated by the
+ /* Packaged app: engine and Control updates and the engine rollback go through Control's explicit update step (`nostroma update`,
+    `nostroma components rollback`), never through git, setup.py or a download in this process. The app itself is updated by the
     shell's signed Tauri updater. Models are not part of any of it. */
  async function componentProgram(job,args={}){
   if(!COMPONENT_KINDS.includes(job.kind)||typeof control.update!=='function')throw new Error(NO_INSTALL);
@@ -668,7 +668,7 @@ return {summary:result.summary??'Deleted',removed:result.plan?.gb??null};}
   }
   return {summary:notes.filter(Boolean).join(' '),result:done};
  }
- /* The engine update with a model loaded (strata update --stop-model --output jsonl). The `models` events say what Control is doing to the models; this turns them into the app's own
+ /* The engine update with a model loaded (nostroma update --stop-model --output jsonl). The `models` events say what Control is doing to the models; this turns them into the app's own
     state: the model leaves the list when it is stopped, and a model the app did not start is never stopped (the update is ended before anything is downloaded). */
  function updateGate(job){
   const mine=new Map([...instances.values()].filter(i=>i.profile).map(i=>[i.profile,i])),stopped=[],gate={refusal:null,event(e){
@@ -758,7 +758,7 @@ return {summary:result.summary??'Deleted',removed:result.plan?.gb??null};}
   return autotuner.start(job,job.kind==='recheck'?'recheck':'tune',{configPath:path,presetId:args.presetId,mode:args.mode,use:args.use,goal:room?'room':'speed',leaveRam:room?20:0,allowSmallDifferences:args.allowSmallDifferences===true,name:args.name},{onProgress:p=>{job.summary=p.text??job.summary;emit();}});
  }
  function operation(kind,args={}){/* App updates are off in this build: this checkout has no feed of its own, so this step would fetch another product's app installer (and its Control package). Nothing starts. */if(kind==='update-strata')throw new Error(APP_UPDATES_OFF);if(!['install','load','pictures','benchmark','tune','autotune','recheck','calibrate','update-engine','update-strata','rollback','install-engine-file','remove','restart-models'].includes(kind))throw new Error('Choose a supported native operation.');if(kind==='restart-models'&&!packaged)throw new Error('Choose a supported native operation.');if(!snapshot.available&&!(packaged&&(COMPONENT_KINDS.includes(kind)||kind==='restart-models')))throw new Error(snapshot.error??'Connect the native Nostroma installation first.');if(kind==='install'||kind==='load'){const refusal=engineRefusal(snapshot.catalog,args.model,snapshot.engineInfo);if(refusal)throw new Error(refusal);}return begin(kind,job=>kind==='install'?install(job,args):kind==='load'?loadEngine(job,args):kind==='pictures'?picturesOnly(job,args):kind==='benchmark'?benchmark(job,args):kind==='tune'?tune(job,args):kind==='autotune'||kind==='recheck'?autotune(job,args):kind==='remove'?removeModel(job,args):kind==='restart-models'?restartStopped(job):program(job,args),{guided:args.guided===true,model:args.model,...(args.family?{family:args.family}:{})});}
- /* ---- The models folder card (0.2.2): what a picked folder means, and the three choices. The copying is Control's (strata models move). ---- */
+ /* ---- The models folder card (0.2.2): what a picked folder means, and the three choices. The copying is Control's (nostroma models move). ---- */
  const currentModelsFolder=()=>preferences.downloadDirectory??(modelsDirectory?modelsDirectory():snapshot.installed?.data_folder)??null;
  const moveFile=()=>join(directory,'models-move.cancel');
  const folderWords=error=>({message:error.message,details:error.details||''});

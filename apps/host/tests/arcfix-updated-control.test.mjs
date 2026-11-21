@@ -8,7 +8,7 @@ import { tmpdir as osTmpdir } from 'node:os';
 import { bundledPython, createControl, findControl } from '../server/control-runtime.mjs';
 import { createNativeControl } from '../server/native-control.mjs';
 
-// ARCFIX (0.2.13): a Control-only feed update (`strata update`, or Settings > Updates > Nostroma) writes <components>/control/active.json.
+// ARCFIX (0.2.13): a Control-only feed update (`nostroma update`, or Settings > Updates > Nostroma) writes <components>/control/active.json.
 // The packaged app must then run the model setup (tools/strata_mcp.py and the setup.py it starts) from THAT Control, not from the bundled one.
 const isWin = process.platform === 'win32';
 const tmp = () => realpathSync(osTmpdir());

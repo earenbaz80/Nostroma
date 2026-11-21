@@ -836,7 +836,7 @@ async function stopTrial(id) {
  * Tuning, from the App Host.
  *
  * The job contract is Nostroma Control's (`nostroma_control/tuning.py`) and is driven through
- * `strata tune`. Two things the UI needs and neither is computable here:
+ * `nostroma tune`. Two things the UI needs and neither is computable here:
  *
  *   * **what a sweep would search, and why the rest was excluded** — that depends on the selected
  *     engine binary's own flag list, so it is asked of the CLI rather than guessed;
@@ -1062,7 +1062,7 @@ async function api(req, res, path, method, url) {
   if(path==='/api/native'&&method==='GET')return json(res,200,await native.refresh(url.searchParams.get('refresh')==='1'));
   if(path==='/api/native'&&method==='PATCH')return json(res,200,await native.configure(await readBody(req)));
   if(path==='/api/native/directory'&&method==='POST')return json(res,200,native.setDownloadDirectory((await readBody(req)).directory));
-  /* Settings > Storage > Models folder: pick (or type) a folder, say what it means, then start the choice. Copying is Control's (strata models move). */
+  /* Settings > Storage > Models folder: pick (or type) a folder, say what it means, then start the choice. Copying is Control's (nostroma models move). */
   if(path==='/api/native/models-folder/plan'&&method==='POST'){
    const typed=await typedFolder((await readBody(req)).path,{isAbsolute});
    const picked=typed?{path:typed}:await chooseFolder('Choose a folder for your models');

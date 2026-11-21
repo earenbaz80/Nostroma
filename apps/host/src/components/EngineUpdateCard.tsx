@@ -4,7 +4,7 @@ import { Btn, Icon } from './ui';
 import { nativeAction, type NativeState } from '../lib/native';
 
 /** Nostroma Control's last check found a newer engine than the one installed: its numbers come from the
- *  check kept on this PC (`update_available` of `strata components engine`), so showing the card reads no network. After an app or Control update this is how a
+ *  check kept on this PC (`update_available` of `nostroma components engine`), so showing the card reads no network. After an app or Control update this is how a
  *  person with an older engine is told (#4848). */
 export const engineUpdateOffered = (native: NativeState | null | undefined) => {
   const offer = native?.engine?.updateAvailable;

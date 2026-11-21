@@ -2,7 +2,7 @@
  * Time-skip, from the App Host.
  *
  * Nostroma Control owns the job: checkpointing, isolated candidates, the checks and the decision all
- * live in `nostroma_control/time_skip.py` and are driven through the `strata timeskip` CLI. This
+ * live in `nostroma_control/time_skip.py` and are driven through the `nostroma timeskip` CLI. This
  * module is only the bridge — it starts that command, streams its output, and reads back the durable
  * `run.json` the job writes.
  *
@@ -281,7 +281,7 @@ export function diffRun(record) {
 }
 
 /**
- * Run one `strata timeskip …` command and collect its result.
+ * Run one `nostroma timeskip …` command and collect its result.
  *
  * The command is given a bounded time. A Time-skip run can legitimately take many minutes (each
  * attempt is an agent turn), so the default bound is generous, and exceeding it is reported as a

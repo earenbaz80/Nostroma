@@ -91,7 +91,7 @@ export const RECOMMENDED: { family: string; model: string; note: string }[] = [
  *  (the running version's group used to stay open whatever was clicked). */
 export const groupOpen = (opened: Record<string, boolean>, id: string, containsSelected: boolean): boolean => opened[id] ?? containsSelected;
 
-/** What the engine's own pick for this PC is (catalog.recommendation: the memory tiers of setup.py and tools/strata_mcp.py, the same answer `strata launch` shows). */
+/** What the engine's own pick for this PC is (catalog.recommendation: the memory tiers of setup.py and tools/strata_mcp.py, the same answer `nostroma launch` shows). */
 export interface PcPick { family?: string | null; model?: string | null; why?: string }
 export const PICK_NOTE = 'the pick for this PC';
 export const OTHER_NOTE = 'the other choice';
@@ -99,7 +99,7 @@ export const OTHER_NOTE = 'the other choice';
 /**
  * The recommended set, found in a version list (a version the catalog does not offer is skipped). The four fixed cards are only a display list;
  * the pick comes from the engine's own recommendation for this PC (RAM + VRAM tiers: 40 GB Swift 1.5 IQ2_XS, 48 GB IQ3_XXS, 64 GB and up IQ3_S), so
- * the page and `strata launch` agree. The pick comes first and is marked; when the engine names Gyro-M as the other choice (40 GB tier, NVIDIA and AMD only,
+ * the page and `nostroma launch` agree. The pick comes first and is marked; when the engine names Gyro-M as the other choice (40 GB tier, NVIDIA and AMD only,
  * which the engine decides) that card follows it. Without a pick the list is the fixed four.
  */
 export function recommendedVersions<V extends { sourceFamily: string; model: string }>(versions: V[], pick?: PcPick | null): { r: typeof RECOMMENDED[number]; v: V }[] {

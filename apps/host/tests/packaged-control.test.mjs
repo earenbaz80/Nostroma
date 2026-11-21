@@ -735,7 +735,7 @@ test("onboarding 'use your own GGUF' (#3507, #3424): the models folder the perso
   } finally { await f.native.close(); f.cleanup(); }
 });
 
-/* The start wait follows the model's size, as `strata launch` does since #3949, and never asks an older Control for more than it takes.
+/* The start wait follows the model's size, as `nostroma launch` does since #3949, and never asks an older Control for more than it takes.
    Reported on the app side by #3459 and #4191: a big model on a slow disk was stopped at 300 s while the engine went on reading. */
 test('packaged: a big model is waited for by its size, inside the ceiling of the Control this app has (#3459 #4191)', async () => {
   const run = async (cliStartWait, downloadGb) => {

@@ -9,7 +9,7 @@ import { createNativeControl } from '../server/native-control.mjs';
 
 const src = name => read(new URL(`../${name}`, import.meta.url), 'utf8');
 
-/** A packaged host with one installed model and a fake Control whose `update` plays the events of `strata update --stop-model --output jsonl`. */
+/** A packaged host with one installed model and a fake Control whose `update` plays the events of `nostroma update --stop-model --output jsonl`. */
 function fixture({ updateScript } = {}) {
   const root = mkdtempSync(join(tmpdir(), 'strata-update-model-'));
   const install = join(root, 'install'), data = join(root, 'data');

@@ -2112,8 +2112,8 @@ def split_mmap(cfg: dict) -> bool:
     a[a.index("--resident-experts")] = "--mmap-experts"
     warn("the low-RAM mode's resident variant (--resident-experts) has no layer split yet: on several GPUs the experts "
          "the GPUs do not hold are read through the OS file cache (--mmap-experts) instead, and RAM can fill up to 0 "
-         "free during long prompts. One GPU keeps them in RAM (steady RAM use): START-HERE --setup, or --gpu N for a "
-         "start")
+         "free during long prompts. One GPU keeps them in RAM (steady RAM use): run nostroma install with --gpu N "
+         "(source checkout: ./setup.sh --setup --gpu N, or START-HERE.bat --setup --gpu N)")
     return True
 
 

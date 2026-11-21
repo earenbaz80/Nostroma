@@ -1,6 +1,6 @@
 /**
  * QAGUI-STRIX 11-09 (APP-WIN item 3): on a chip that shares the PC's memory the app's Load keeps the reserve setup wrote (Windows Strix Halo: 700, pictures on
- * or off), so it starts the engine as `strata launch` does; with none of setup's in the run config it takes the one Control says setup would write for this
+ * or off), so it starts the engine as `nostroma launch` does; with none of setup's in the run config it takes the one Control says setup would write for this
  * chip (hardware report `setup_reserve_mib`, Windows gfx1151, one card); without that it keeps the floor of before (1024, 2048 with pictures), so an old
  * Windows config never falls to the engine's own 2560 MiB floor (G16). A card with its own memory is unchanged.
  */

@@ -2,7 +2,7 @@ import type { NativeState } from './native';
 import { nativeCatalogModels } from './native-catalog';
 
 /** The parts of Settings > Engine that need no React: the list's shape, sizes, makes, version order, and which models need a newer engine. */
-/** One engine package installed on this computer, as Control lists it (`strata components engines`, nostroma_control/engine_library.py). */
+/** One engine package installed on this computer, as Control lists it (`nostroma components engines`, nostroma_control/engine_library.py). */
 /** qwen, or the engine of a Qwen4 model shape: shape:<shape> (nostroma_control/engine_library.py SHAPE_PREFIX; an id, never shown). */
 export type EngineFamily = 'qwen' | `shape:${string}`;
 export interface InstalledEngine {

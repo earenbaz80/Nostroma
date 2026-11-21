@@ -1,7 +1,7 @@
 import { plainEngineError } from './update-messages.mjs';
 
 /**
- * Settings > Engine: the engines installed on this computer, switched and deleted through Control (`strata components engines | use | remove`),
+ * Settings > Engine: the engines installed on this computer, switched and deleted through Control (`nostroma components engines | use | remove`),
  * the same code the Terminal runs. This module only asks, and turns Control's answer into plain words; it never touches an engine folder itself.
  * Nothing here downloads: a switch uses what is installed.
  */

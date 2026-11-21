@@ -38,7 +38,7 @@ export function defaultReserves(config,hardware,baselineReserve=0){
  const shared=placed.length>0&&placed.some(g=>g.uma===true||g.unified===true);
  /* A chip that shares the PC's memory has no memory of its own for the driver to page out of (#2065 is a display card's): the reserve is the one setup wrote into
   *  the run config (Windows Strix Halo: 700, nostroma_control/setup_config.py UMA_WIN_RESERVE_MIB, pictures on or off), on both profiles, so the app's Load starts the
-  *  engine as `strata launch` does (QAGUI-STRIX 11-09: the Load made it 1024, 2048 with pictures). A config with none of setup's (an old one): the one setup would
+  *  engine as `nostroma launch` does (QAGUI-STRIX 11-09: the Load made it 1024, 2048 with pictures). A config with none of setup's (an old one): the one setup would
   *  write for this chip, which Control's hardware report carries (setup_reserve_mib, one-card runs only, as setup's rule); without that (Linux, an older Control)
   *  the floor below, as before (with no reserve at all a Windows engine applies its own 2560 MiB floor, which hung UD-Q4_K_XL on Strix Halo: G16). */
  if(shared){const own=baselineReserve>0?baselineReserve:placement.length===1&&placed.length===1&&wholeMib(placed[0].setup_reserve_mib)>0?wholeMib(placed[0].setup_reserve_mib):null;if(own!==null)return {work:own,performance:own};}
@@ -87,7 +87,7 @@ export function resourceSettings(config,hardware,profile,model={},values={}){
  // that leaves max(W, its own safety headroom) free. An env variable and not the flag --ram-keep-gib, so that an engine without the setting never meets an argument it does not know. The engine in use
  // is the one the Engine tab selected (its version, model.engineVersion, or the folder named in the run config's exe); an older engine, or one whose version cannot be read, gets the rule of 0.2.9
  // unchanged, which every engine understands: a RAM budget of 80% of the PC (--resident-budget-gib, which implies --mmap-experts) when the model's experts do not fit there (the setup rule: experts plus
- // 10 GB), and a STRATA_RESIDENT_HEADROOM_GIB of 20% of the RAM. Full performance (and `strata serve`) pass nothing: the whole system, the arena whenever it fits; either rule is taken out again.
+ // 10 GB), and a STRATA_RESIDENT_HEADROOM_GIB of 20% of the RAM. Full performance (and `nostroma serve`) pass nothing: the whole system, the arena whenever it fits; either rule is taken out again.
  if(baseline.ramBudget)remove('--resident-budget-gib');
  let env=null;
  const dropEnv=name=>{if(config.env&&name in config.env){env={...(env??config.env)};delete env[name];}};

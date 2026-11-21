@@ -16,7 +16,7 @@ export async function checkUpdates({ appVersion, engineVersion }) {
 export const engineFailedBeforeText = (offered, installed) => `Engine ${offered ?? 'update'} didn't start correctly on this computer, so Nostroma kept engine ${installed ?? 'in use'}. Press Update engine to try again.`;
 
 /**
- * The packaged app's update check: the signed feed, read by Control (`strata update --check`), for the engine row. The app row
+ * The packaged app's update check: the signed feed, read by Control (`nostroma update --check`), for the engine row. The app row
  * is always off (see below). Same result shape as `checkUpdates`, so the Settings screen needs no change. This is the only
  * place the host reaches the feed, and only when the user presses "Check for updates".
  */

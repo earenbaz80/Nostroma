@@ -32,7 +32,7 @@ export function componentsDirectory({ env = process.env, platform = process.plat
 }
 
 /**
- * A Control that the component updater installed (`strata update` writes `<components>/control/active.json` after the new
+ * A Control that the component updater installed (`nostroma update` writes `<components>/control/active.json` after the new
  * bundle ran once). Null when there is none.
  */
 export function updatedControlDirectory({ env = process.env, platform = process.platform, components = null } = {}) {
@@ -99,7 +99,7 @@ export function controlEnvironment(control, { env = process.env, components = co
     ...(components ? { STRATA_SETTINGS_FILE: (env.NOSTROMA_SETTINGS_FILE ?? env.STRATA_SETTINGS_FILE) || join(dirname(components), 'app-settings.json') } : {}),
     ...(control?.dir ? { STRATA_CONTROL_DIR: control.dir } : {}),
   };
-  // Only the explicit update step (`strata update`) may acquire; every other Control process keeps the switch on.
+  // Only the explicit update step (`nostroma update`) may acquire; every other Control process keeps the switch on.
   if (acquire) delete result.STRATA_NO_ACQUIRE;
   return childEnv(result);   // Control reads the older STRATA_* names; both names go to it
 }
@@ -229,19 +229,19 @@ export function createControl({ control = findControl(), env = process.env, run 
       if (result.json?.ok) return result.json;
       throw failure(result, 'The engine could not be rolled back.');
     },
-    /** The engines installed on this computer, by family (`strata components engines`): the one list the Terminal prints too. Reads files only. */
+    /** The engines installed on this computer, by family (`nostroma components engines`): the one list the Terminal prints too. Reads files only. */
     async engines() {
       const result = await call(['components', 'engines', '--output', 'json'], { timeoutMs: 60_000 });
       if (result.json?.ok) return result.json;
       throw failure(result, 'The installed engines could not be read.');
     },
-    /** Switch to an installed engine (`strata components use`): nothing is downloaded. `root` is kept for older callers. */
+    /** Switch to an installed engine (`nostroma components use`): nothing is downloaded. `root` is kept for older callers. */
     async useEngine({ family, folder }) {
       const result = await call(['components', 'use', folder, '--family', family, '--output', 'json'], { timeoutMs: 600_000 });
       if (result.json?.ok) return result.json;
       throw failure(result, 'The engine could not be switched.');
     },
-    /** Delete an installed engine (`strata components remove`); Control refuses the one in use. */
+    /** Delete an installed engine (`nostroma components remove`); Control refuses the one in use. */
     async removeEngine({ family, folder }) {
       const result = await call(['components', 'remove', folder, '--family', family, '--output', 'json'], { timeoutMs: 600_000 });
       if (result.json?.ok) return result.json;
@@ -283,7 +283,7 @@ export function createControl({ control = findControl(), env = process.env, run 
       const error = result.json?.error;
       throw Object.assign(new ControlError(error?.message ?? (result.stderr.split(/\r?\n/).filter(Boolean).pop() || 'The models could not be moved.'), { exitCode: result.code, output: result.json }), { code: error?.code ?? 'move_failed', details: error?.details ?? '' });
     },
-    /** A move of the models folder that the last run left unfinished (`strata models move --status`): null, or {state, from, to, bytes}. */
+    /** A move of the models folder that the last run left unfinished (`nostroma models move --status`): null, or {state, from, to, bytes}. */
     async interruptedModelsMove(dataFolder) {
       const result = await call(['models', 'move', '--status', ...(dataFolder ? ['--from', dataFolder] : []), '--output', 'json'], { timeoutMs: 30_000 });
       if (result.json?.ok) return result.json.interrupted ?? null;
@@ -304,7 +304,7 @@ export function createControl({ control = findControl(), env = process.env, run 
       throw Object.assign(failure(result, 'The partial copies could not be removed.'), { code: result.json?.error?.code ?? 'leave_failed', details: result.json?.error?.details ?? '' });
     },
     /**
-     * The drafter for a model's run config and the drafting choice (`strata drafting plan`): { needed, tuned_needed, gb, drafter_gb, tuned, file, line, note, drafter, split, mtp_needed, mtp_gb }. `model` (with `family`) names a model that has no run config yet. Control decides
+     * The drafter for a model's run config and the drafting choice (`nostroma drafting plan`): { needed, tuned_needed, gb, drafter_gb, tuned, file, line, note, drafter, split, mtp_needed, mtp_gb }. `model` (with `family`) names a model that has no run config yet. Control decides
      * (the table of nostroma_control/drafting.py and the all-cards split engine's rule, nostroma_control/split_engine.py: the same answer as the Terminal's); the app never reads
      * it. Nothing is downloaded. `noSplit` asks as if the split engine will not take the start (only after the draft layer for the split could not be downloaded).
      */
@@ -313,7 +313,7 @@ export function createControl({ control = findControl(), env = process.env, run 
       if (result.json?.ok) return result.json;
       throw failure(result, 'The drafter could not be checked.');
     },
-    /** Fetch and pack the drafter when the choice would use it and it is not here (`strata drafting fetch --if-needed`); `onEvent` gets {step, done, total}. */
+    /** Fetch and pack the drafter when the choice would use it and it is not here (`nostroma drafting fetch --if-needed`); `onEvent` gets {step, done, total}. */
     async draftingFetch({ configPath, mode = null, noSplit = false, unloading = false, throttle = false, onEvent = null, signal = null } = {}) {
       const args = ['drafting', 'fetch', '--config', configPath, ...(mode ? ['--mode', mode] : []), ...(noSplit ? ['--no-split'] : []), ...(unloading ? ['--engines-unloading'] : []), '--if-needed', ...(throttle ? ['--throttle'] : []), '--output', 'jsonl'];
       const result = await call(args, { timeoutMs: 3 * 3600_000, acquire: true, onLine: onEvent ?? (() => {}), signal });
@@ -321,7 +321,7 @@ export function createControl({ control = findControl(), env = process.env, run 
       throw Object.assign(new ControlError(result.json?.error?.message ?? (result.stderr.split(/\r?\n/).filter(Boolean).pop() || 'The DFlash2 drafter could not be downloaded.'), { exitCode: result.code, output: result.json }), { code: 'drafting_failed' });
     },
     /**
-     * The all-cards split engine for the run config the app is about to start (`strata split-engine apply`, the step `strata launch` does itself): Control checks the rule, the
+     * The all-cards split engine for the run config the app is about to start (`nostroma split-engine apply`, the step `nostroma launch` does itself): Control checks the rule, the
      * engine package and the draft layer on this computer and writes the split engine's run config to `outPath` when the answer is yes. Resolves { split, line, warn, reasons, cards, written };
      * `configPath` is never changed, nothing is downloaded.
      */
@@ -359,7 +359,7 @@ export function createControl({ control = findControl(), env = process.env, run 
       if (result.code !== 0 || !result.json?.ok) throw failure(result, 'The engine did not start.');
       return result.json;
     },
-    /** Give the user back Nostroma files in their own folders that a run as administrator locked (`strata repair-access`). Never throws. */
+    /** Give the user back Nostroma files in their own folders that a run as administrator locked (`nostroma repair-access`). Never throws. */
     async repairAccess() {
       try {
         const result = await call(['repair-access', '--output', 'json'], { timeoutMs: 60_000 });
