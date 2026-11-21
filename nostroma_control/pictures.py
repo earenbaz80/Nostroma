@@ -329,7 +329,7 @@ def fetch(config_path: str | Path, *, engine_dir: str | Path, asked: str = "yes"
     fetched = False
     if found is None:
         out = target_for(data, named, projector)
-        acquisition.require("the picture files", "Load in the app, or strata install")
+        acquisition.require("the picture files", "Load in the app, or nostroma install")
         url = projector.url(endpoint)
         _room(out.parent, projector.size)
         if not (online or _online)(url):

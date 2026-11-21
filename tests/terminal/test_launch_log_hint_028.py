@@ -42,7 +42,7 @@ class LogHint(unittest.TestCase):
             self.assertEqual(R._log_hint(self.config(h, log), RuntimeError("x")), f"The engine's log has the reason: {log}")
 
     def test_without_a_config_the_general_sentence_stays(self):
-        self.assertIn("strata logs", R._log_hint(None))
+        self.assertIn("nostroma logs", R._log_hint(None))
 
     def test_explain_engine_exit_does_not_name_a_missing_log_either(self):
         with Home() as h:

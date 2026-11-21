@@ -1,7 +1,7 @@
 """The oldest NVIDIA driver the CUDA 12 engine package runs on, taken from the package's own metadata (#4247, #4188).
 
 Setup used to say "the CUDA 12 engine works from driver 528 (525 on Linux)", a number copied from NVIDIA's minor-version-compatibility table,
-while the signed feed's cuda12 packages (built with CUDA 12.9) carry `min_driver` 575.51 / 576.02 and `strata update` refuses them below
+while the signed feed's cuda12 packages (built with CUDA 12.9) carry `min_driver` 575.51 / 576.02 and `nostroma update` refuses them below
 that: a PC on driver 556 was told its engine would work and then told the feed had no engine for it. The floor is now read from
 the package that would run:
 

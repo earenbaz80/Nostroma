@@ -3,7 +3,7 @@
 
     python tests/terminal/ssh_disconnect.py --host p2003ssh.claryel.space --src /data/split-life/src --python /data/venv/bin/python
 
-Runs from any machine with ssh: it starts `strata serve` on the box in an `ssh -tt` session (a pty, like an interactive
+Runs from any machine with ssh: it starts `nostroma serve` on the box in an `ssh -tt` session (a pty, like an interactive
 login), kills the LOCAL ssh client (the connection drops, sshd hangs up the pty), and then checks on the box that the
 server and the fake engine are gone, the port is free and the lease is free. The engine is the fake package of
 lifecycle_matrix.py (no GPU, no model). It prints one line, `PASS ssh-disconnect ...` or `FAIL ...`, and exits 0/1.

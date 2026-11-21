@@ -41,7 +41,7 @@ ROW = "DeepSeek - no longer supported."
 ROW_FILES = "DeepSeek - no longer supported. {size} in {folder}."
 #: D3: DeepSeek asked for by name (`nostroma launch --model`, `--family deepseek41`, setup, a DeepSeek-only flag)
 NOT_OFFERED = "Nostroma no longer offers DeepSeek models. Run `nostroma launch` to choose one of the Qwen models."
-#: D4: the person's own DeepSeek files (`nostroma launch --model-path`, the own-files screen, `strata models import`)
+#: D4: the person's own DeepSeek files (`nostroma launch --model-path`, the own-files screen, `nostroma models import`)
 OWN_FILES = ("These are DeepSeek model files ({size} in {folder}). This version of Nostroma no longer runs DeepSeek models; "
              "nothing in the folder was changed. Choose a Qwen model instead.")
 OWN_FILES_NOSIZE = ("These are DeepSeek model files (in {folder}). This version of Nostroma no longer runs DeepSeek models; "

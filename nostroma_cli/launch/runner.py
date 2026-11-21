@@ -3,12 +3,12 @@
 Every step reports plain-word events through one callback (`emit`), so the TUI (progress screen), `--no-tui` (printed lines) and the
 tests see the same thing. Nothing here prints or reads the keyboard. The steps reuse what is already in the Terminal:
 
-* the engine comes from the signed feed (`strata update`, the one explicit step that downloads);
+* the engine comes from the signed feed (`nostroma update`, the one explicit step that downloads);
 * the model comes from setup.py in the app's own installer mode (STRATA_CONTROL_INSTALL), the same job the desktop app runs;
 * the run config the engine uses is a private copy of the installed one with this launch's choices applied; the profile
   `launch-<name>` (the shared profiles store) points at it, and carries host, port and parallel;
-* tuning is `strata tune auto`, its result lives in the shared presets store and is applied at every start;
-* start and stop are `strata runtime start|stop` (a background service: it keeps serving after this terminal closes).
+* tuning is `nostroma tune auto`, its result lives in the shared presets store and is applied at every start;
+* start and stop are `nostroma runtime start|stop` (a background service: it keeps serving after this terminal closes).
 """
 
 from __future__ import annotations
@@ -121,7 +121,7 @@ def setup_failure(lines: list[str], err: str, hint: str, details: str | None, ow
         where = f" The whole setup output is in {details}." if details else ""
         if missing_file(crashed):
             return LaunchError(f"The model could not be installed. A file that setup needs is missing from this Nostroma install ({crashed}).",
-                               "Update Nostroma (`strata update`) and run it again." + where, 6)
+                               "Update Nostroma (`nostroma update`) and run it again." + where, 6)
         if crashed.startswith("PermissionError"):
             folder = re.findall(r"'([^']+)'", crashed)
             shown = folder[-1] if folder else None
@@ -169,11 +169,11 @@ class Result:
     reused: bool = False                   # the same choices were already serving: nothing was stopped or started
 
 
-NO_ENGINE_NEXT = ("Update Nostroma (`strata update`) and run `nostroma launch` again. Nothing was downloaded, and any model files you already have are kept.")
+NO_ENGINE_NEXT = ("Update Nostroma (`nostroma update`) and run `nostroma launch` again. Nothing was downloaded, and any model files you already have are kept.")
 
 STAGES = ("engine", "model", "config", "tune", "start", "access")
 
-NO_ENGINE_STEP = ("run `strata update` to get the newest engines and start again; if this stays, your graphics card is not one Nostroma supports yet, "
+NO_ENGINE_STEP = ("run `nostroma update` to get the newest engines and start again; if this stays, your graphics card is not one Nostroma supports yet, "
                   "and the model files stay on this computer for when it is")
 
 #: no graphics card Nostroma can use at all (an Intel UHD/Iris only, an AMD APU-only laptop, a virtual machine, Windows on ARM)
@@ -228,7 +228,7 @@ def tune_words(result: dict | None, code: int | None = None) -> tuple[str, str]:
         return "already fastest", "Your computer already runs at its best with the standard settings. Nothing needed changing."
     if out == "inconclusive":
         return "busy PC", ("The computer was too busy to tell a real gain from noise, so the standard settings run. "
-                           "Close other programs and tune again later (strata tune auto).")
+                           "Close other programs and tune again later (nostroma tune auto).")
     if out == "cancelled":
         return "stopped", "Tuning was stopped. Your settings were not changed."
     return "failed", (result.get("message") or "Tuning could not run here.") + " The standard settings run."
@@ -747,14 +747,14 @@ class Runner:
             now = (after.get("engine") or {}).get("version") if after.get("usable") else None
             still = self.stale_engine(now) if now else stale
             if still:
-                self.notices.append(still + " Run `strata update`, then start it again.")
+                self.notices.append(still + " Run `nostroma update`, then start it again.")
                 self.emit("engine", still + (" The update did not bring a newer one." if code == 0 else " The update did not finish.") +
-                          " Run `strata update`, then start it again.", 100, level="warn")
+                          " Run `nostroma update`, then start it again.", 100, level="warn")
             else:
                 self.emit("engine", f"Engine {now} is installed.", 100)
             return
         if code == 0:
-            # `strata update` exits 0 when the feed simply has no engine for this PC (or only one for another card family). That is not an
+            # `nostroma update` exits 0 when the feed simply has no engine for this PC (or only one for another card family). That is not an
             # engine: refuse here, before the model (tens of GB) is touched.
             after = ec.status(root)
             if not after.get("usable"):
@@ -787,12 +787,12 @@ class Runner:
         if models:
             names = ", ".join(m.label for m in models)
             return (f"{stale} {names} {'is' if len(models) == 1 else 'are'} running, so Nostroma did not update the engine. "
-                    "Stop it (`nostroma launch --stop`), run `strata update`, then start again.")
+                    "Stop it (`nostroma launch --stop`), run `nostroma update`, then start again.")
         if self.assume_yes:
             return None
         if self.confirm is not None and self.confirm("Update the engine?", stale + " Update it now? Nothing else is changed; your models are kept."):
             return None
-        return stale + " Nostroma did not update it. Run `strata update` (or start with --yes) and start again."
+        return stale + " Nostroma did not update it. Run `nostroma update` (or start with --yes) and start again."
 
     def model_shape(self) -> str | None:
         """The model shape whose own engine runs the chosen model (a feed model of a shape other than Flash-Next's: setup's FAMILIES entry has "shape"), or None."""
@@ -2347,7 +2347,7 @@ class Runner:
         if not engine and here:
             # B03: an engine IS installed, but this plan cannot use it (its signature cannot be checked here, or it is for another card): not "missing"
             text += (f" An engine ({', '.join(here[:3])}) is installed, but it did not pass Nostroma's check on this computer, so Nostroma looks for a working one "
-                     "first. `strata components engine` says why.")
+                     "first. `nostroma components engine` says why.")
         elif not engine:
             text += " The engine for your graphics card is downloaded first (from the update source; its size is shown when it starts)."
         if intel:
@@ -2387,7 +2387,7 @@ class Runner:
             if report.get("usable"):
                 stale = self.stale_engine(report["engine"].get("version"))
                 if stale:
-                    out.append(stale + " Nostroma will ask before updating it (`strata update` does it now).")
+                    out.append(stale + " Nostroma will ask before updating it (`nostroma update` does it now).")
         except Exception:                                    # noqa: BLE001
             pass
         try:
@@ -2624,9 +2624,9 @@ KNOWN_CAUSES = (
     (re.compile(r"out of memory|not enough (gpu |video |free )?memory|cudaerrormemory|allocation failed", re.I),
      "The card or memory ran out. Close other programs that use the card, or choose a smaller context (`--context 16k`) and start again."),
     (re.compile(r"tqk\d|no kernel|unsupported (quant|type|model)|unknown (quant|tensor) type", re.I),
-     "This engine is too old for this model. Update it with `strata update` and start again."),
+     "This engine is too old for this model. Update it with `nostroma update` and start again."),
     (re.compile(r"dll|libcu|cannot open shared object|0xc0000135", re.I),
-     "A library the engine needs is missing. Update the engine (`strata update`) or install the graphics driver again."),
+     "A library the engine needs is missing. Update the engine (`nostroma update`) or install the graphics driver again."),
     # a Strix Halo with --batch N: the engine's own line after a failed start (src/program/generate.cpp); it must stay the LAST entry (explain_engine_exit reads KNOWN_CAUSES[-1])
     (re.compile(r"requests at once do not fit", re.I),
      "This PC's memory cannot hold that many requests at once. Lower Concurrent requests in the app (or `--parallel` in the Terminal) by one and start again."),
@@ -2778,8 +2778,8 @@ def _log_sentence(log: str | None) -> str:
     if log and os.path.isfile(log):
         return f" The engine's log: {log}"
     if log:
-        return " The engine did not get as far as writing its log, so the reason is in the lines above (`strata logs` has the server's own)."
-    return " The engine's log has the reason (strata logs, or the log named in the run config)."
+        return " The engine did not get as far as writing its log, so the reason is in the lines above (`nostroma logs` has the server's own)."
+    return " The engine's log has the reason (nostroma logs, or the log named in the run config)."
 
 
 #: the states of a launch's own runtime that must be ended before a new start: a server that runs, and one that stopped but whose host is still
@@ -2803,5 +2803,5 @@ def _log_hint(config: Path | None, error: object = None) -> str:
     if log and os.path.isfile(log):
         return f"The engine's log has the reason: {log}"
     if log:
-        return "The engine did not get as far as writing its log, so the reason is the message above (`strata logs` has the server's own)."
-    return "The engine's log has the reason (strata logs, or the log named in the run config)."
+        return "The engine did not get as far as writing its log, so the reason is the message above (`nostroma logs` has the server's own)."
+    return "The engine's log has the reason (nostroma logs, or the log named in the run config)."

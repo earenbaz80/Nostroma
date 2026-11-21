@@ -534,7 +534,7 @@ def _logs(snapshot: dict, *, heights: tuple[int, int, int], filter_text: str,
               _txt(""),
               _txt(f"Newest sequence {number(activity.get('last_seq'))}"),
               _txt(f"Visible after filter {len(events)}"),
-              _txt("Use strata logs for a one-shot redacted snapshot.", "dim")]
+              _txt("Use nostroma logs for a one-shot redacted snapshot.", "dim")]
     return Group(_visual_pair(_panel(top_left, "LOGS / REQUEST ACTIVITY", palette["cyan"], color, top_h),
                               _panel(top_right, "CONTINUITY / SOURCE", palette["amber"], color, top_h), 1, 1),
                  _panel(timeline, "RECENT EVENT TIMELINE", palette["green"], color, mid_h),

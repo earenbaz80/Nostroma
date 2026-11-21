@@ -14,7 +14,7 @@ run config from them once (``nostroma_cli/launch/runner.py derive_config``):
    over 1 or 2, and drops them when the model or the context is another.
 4. **Auto**: what setup and the policies (drafting, cards, memory fit) generate.
 
-``"args"`` of the written config is the result, so the file, the start and ``strata status`` show the same value for
+``"args"`` of the written config is the result, so the file, the start and ``nostroma status`` show the same value for
 an option. ``"user_args"`` stays authoritative at every start (``serve/server.py engine_args``).
 """
 

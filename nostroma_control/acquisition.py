@@ -2,7 +2,7 @@
 
 Starting a model and serving an API never install, download or compile anything. Everything that
 reaches the network or runs pip, git, cmake or a package manager lives behind an explicit command:
-SETUP, UPDATE or `strata install`. This module is that line, in one place:
+SETUP, UPDATE or `nostroma install`. This module is that line, in one place:
 
 * `forbidden()` marks a stretch of code (a start, a serve) in which acquiring is not allowed;
 * `require(what, command)` is called by every acquiring primitive (a download, a pip install, a
@@ -10,7 +10,7 @@ SETUP, UPDATE or `strata install`. This module is that line, in one place:
 * `AcquisitionRefused` is the typed error: it says what is missing and names the explicit command.
 
 The environment variable `STRATA_NO_ACQUIRE=1` forbids acquiring for a whole process. A process
-that serves (`strata serve`, `strata runtime start`, the API server) never imports the installer, so
+that serves (`nostroma serve`, `nostroma runtime start`, the API server) never imports the installer, so
 for it this is a second line of defence, not the first.
 
 Nothing here imports anything outside the standard library.
@@ -46,8 +46,8 @@ class AcquisitionRefused(RuntimeError):
 def explicit_commands() -> str:
     """The commands that acquire, named for this platform."""
     if os.name == "nt":
-        return "SETUP.bat (first-time setup), UPDATE.bat (update) or `strata install`"
-    return "./setup.sh (first-time setup), ./update.sh (update) or `strata install`"
+        return "SETUP.bat (first-time setup), UPDATE.bat (update) or `nostroma install`"
+    return "./setup.sh (first-time setup), ./update.sh (update) or `nostroma install`"
 
 
 def is_forbidden() -> bool:

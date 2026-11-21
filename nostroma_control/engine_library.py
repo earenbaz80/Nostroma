@@ -1,6 +1,6 @@
 """The engines installed on this computer: list them, switch to any of them, delete one. Local only: nothing here downloads.
 
-One truth for the app (Settings > Engine) and the Terminal (`strata components engines | use | remove | rollback`). Updates keep every older
+One truth for the app (Settings > Engine) and the Terminal (`nostroma components engines | use | remove | rollback`). Updates keep every older
 engine (nostroma_control/updater.py), so a person can go back to an older engine to test something and return to the newest later.
 
 The Qwen engine (every model): packages in ``<components>/engine/<version>-<platform>-<backend>[-<variant>]/``. What a start runs is the pinned
@@ -191,7 +191,7 @@ def find_entry(listing: dict, spec: str, family: str | None = None) -> dict:
         picks = [e for e in entries if e["folder"] == spec] or [e for e in entries if e["version"] == spec]
     if not picks:
         have = ", ".join(sorted({e["version"] for e in entries})) or "none"
-        raise updater.UpdateError(f"no installed engine matches {spec!r} (installed: {have}); `strata components engines` lists them", 2)
+        raise updater.UpdateError(f"no installed engine matches {spec!r} (installed: {have}); `nostroma components engines` lists them", 2)
     if len(picks) > 1:
         raise updater.UpdateError(f"{spec!r} matches more than one installed engine ({', '.join(p['folder'] for p in picks)}); use the folder name", 2)
     return picks[0]

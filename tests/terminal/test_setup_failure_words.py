@@ -46,7 +46,7 @@ class SetupFailureWords(unittest.TestCase):
         self.assertIn("The model could not be installed.", error.text)
         self.assertIn("missing from this Nostroma install", error.text)
         self.assertIn("No module named 'calibrate'", error.text)
-        self.assertIn("strata update", error.next)
+        self.assertIn("nostroma update", error.next)
         self.assertIn(r"C:\Users\x\launch\a.setup.log", error.next)
 
     def test_another_python_error_keeps_its_line_and_the_path(self):

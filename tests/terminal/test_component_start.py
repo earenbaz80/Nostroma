@@ -1,7 +1,7 @@
 """A start through the owner runtime finds its engine in the component folder, or says clearly that there is none.
 
 The engine here is the fake one the runtime tests use (a script behind a manifest-declared entrypoint), so this proves
-the path the installed app takes: run config "component:strata-engine" -> `strata runtime start` -> the server resolves
+the path the installed app takes: run config "component:strata-engine" -> `nostroma runtime start` -> the server resolves
 the package -> the engine runs from the component folder -> stop ends it. It also proves the absence is a notice, not a
 fetch: with an empty component folder and the no-acquire switch set, a start fails with the typed message, starts no
 engine, and the state ends up stopped."""

@@ -19,7 +19,7 @@ the screen. The rule here:
    and the time are written to a small note in Nostroma's own state folder (RefusalNote, REFUSED_NOTE_S = 6 hours; nothing
    else is written). Only automatic reads (open_url(..., automatic=True): the launch's check for a newer engine of a model's own
    shape while one is installed) read it and fail at once with the "offline" words. Every read the person asked for by name
-   (strata update, setup, a download) ignores it and tries. The first success from that host removes it. A damaged or unreadable
+   (nostroma update, setup, a download) ignores it and tries. The first success from that host removes it. A damaged or unreadable
    note counts as no note, without a message.
 5. Once the answer has come, a read that gets no byte for ``STALL_S`` ends that connection (the caller resumes from the byte it
    reached). A download stops only after ``GIVE_UP_S`` in a row without a new byte (``StallClock``); there is no total time cap, so a

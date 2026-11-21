@@ -87,7 +87,7 @@ class ConfigsNeverWritten(unittest.TestCase):
 
 
 class ModelList(unittest.TestCase):
-    """The app's model list and `strata models` read nostroma_control/models.py."""
+    """The app's model list and `nostroma models` read nostroma_control/models.py."""
 
     def test_listed_as_retired_without_inspection(self):
         with tempfile.TemporaryDirectory() as d:

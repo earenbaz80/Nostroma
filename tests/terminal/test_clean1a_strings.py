@@ -49,8 +49,8 @@ class FetchHint(unittest.TestCase):
         with TemporaryDirectory() as d:
             self.assertEqual(self.hint(d), "", "no miss mark")
             self.miss(d)
-            self.assertEqual(self.hint(d), "Run strata drafting fetch to get the DFlash2 drafter now.")
-            self.assertEqual(self.hint(d, drafting.Decision("dflash2", "off", drafting.NONE_HERE)), "Run strata drafting fetch to get the DFlash2 drafter now.")
+            self.assertEqual(self.hint(d), "Run nostroma drafting fetch to get the DFlash2 drafter now.")
+            self.assertEqual(self.hint(d, drafting.Decision("dflash2", "off", drafting.NONE_HERE)), "Run nostroma drafting fetch to get the DFlash2 drafter now.")
             self.assertEqual(self.hint(d, drafting.Decision("mtp", "off", drafting.NONE_HERE)), "", "MTP chosen: nothing to fetch")
             self.assertEqual(self.hint(d, drafting.Decision("auto", "mtp", "")), "", "a drafter runs")
             self.assertEqual(self.hint(d, drafting.Decision("auto", "off", drafting.DIDNT_FIT)), "", "off for another reason")

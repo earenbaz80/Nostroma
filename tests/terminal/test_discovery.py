@@ -1,4 +1,4 @@
-"""Tester report 2026-10-18, T03 / T04 / T05: existing models are found the same way by the launch screens, `strata models list`, the
+"""Tester report 2026-10-18, T03 / T04 / T05: existing models are found the same way by the launch screens, `nostroma models list`, the
 own-files import and `nostroma launch` (nostroma_control/discovery.py), with a mock of the desktop app's folders and a Gyro-S file header
 (TQK6 / TQK7 experts, the one-file layout)."""
 

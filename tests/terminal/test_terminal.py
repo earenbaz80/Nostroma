@@ -449,7 +449,7 @@ class ContractTests(unittest.TestCase):
             self.assertLessEqual(len(output.splitlines()), height)
             self.assertTrue(all(len(line) <= width for line in output.splitlines()))
             if (width, height) == (40, 12):
-                self.assertEqual(output.count("More: strata status --json"), 1)
+                self.assertEqual(output.count("More: nostroma status --json"), 1)
 
     def test_recent_request_detail_scrolls_and_wide_serving_tabs_select_panes(self):
         s = four_gpu_snapshot()
@@ -1584,10 +1584,10 @@ class HeadlessMonitorTests(unittest.TestCase):
                     self.assertEqual(app.selected_identity, identity)
                     self.assertTrue(app.detail)
                     if (width, height) == (40, 12):
-                        self.assertIn("More: strata status --json", content)
+                        self.assertIn("More: nostroma status --json", content)
                         self.assertIn("q keeps server on", str(app.query_one("#message").render()))
                     elif (width, height) == (110, 30):
-                        self.assertNotIn("More: strata status --json", content)
+                        self.assertNotIn("More: nostroma status --json", content)
                 await pilot.press("q")
         asyncio.run(exercise())
 

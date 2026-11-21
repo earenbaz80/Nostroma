@@ -1,6 +1,6 @@
 """The Advanced table: every engine setting with its default, the tuned value and the person's own value.
 
-The list comes from the engine itself (its `--help`, the same read `strata tune` uses), plus the environment variables the tuner
+The list comes from the engine itself (its `--help`, the same read `nostroma tune` uses), plus the environment variables the tuner
 knows (nostroma_control/tune_knobs.py). Nothing is invented here: a setting the engine does not list is shown as unknown, with a
 warning and never a refusal, because newer engines have flags this one has not heard of.
 """

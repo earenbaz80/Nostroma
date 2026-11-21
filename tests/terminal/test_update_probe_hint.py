@@ -15,7 +15,7 @@ class ProbeHint(unittest.TestCase):
             exc = updater._test_start_failure(component, {"error": "process_exited", "state": "failed"}, ctx, " | boom")
         text = str(exc)
         self.assertIn("test-start-0.1.54.log", text)
-        self.assertIn("strata update --force", text)
+        self.assertIn("nostroma update --force", text)
         self.assertNotIn("boom", text)                      # the engine's own words stay out of the sentence
 
 

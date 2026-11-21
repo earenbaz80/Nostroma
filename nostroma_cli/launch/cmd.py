@@ -188,8 +188,8 @@ def unknown_option_message(command: str, extras: list[str], parser: argparse.Arg
             continue
         name = bad.split("=", 1)[0]
         near = S.closest(name, known)
-        lines.append(f"'{name}' is not a strata {command} option." + (f" Did you mean '{near}'?" if near else ""))
-    return " ".join(lines) + f" See: strata {command} --help"
+        lines.append(f"'{name}' is not a nostroma {command} option." + (f" Did you mean '{near}'?" if near else ""))
+    return " ".join(lines) + f" See: nostroma {command} --help"
 
 
 # ------------------------------------------------------------------------------------------------ settings from flags
@@ -480,7 +480,7 @@ def _interrupted_move_notice() -> None:
     except Exception:
         return
     if st:
-        _say("A move of your models was interrupted. Finish it with `strata models move --resume`, or keep them where they are with `strata models move --leave`.")
+        _say("A move of your models was interrupted. Finish it with `nostroma models move --resume`, or keep them where they are with `nostroma models move --leave`.")
 
 
 def _printer(quiet: bool = False):
@@ -943,7 +943,7 @@ def run_launch(a: argparse.Namespace) -> int:
                  + (f" --preset \"{s.name}\")" if (a.preset or a.save_preset) else ")"))
         engine_log = _engine_log_of(result.config)
         if engine_log:
-            _say(f"  {'Engine log':<14} {engine_log}   (follow it: strata logs --follow)")
+            _say(f"  {'Engine log':<14} {engine_log}   (follow it: nostroma logs --follow)")
         for n in result.notices:
             _say(f"[!] {n}")
         local = next((u for u in result.urls if "127.0.0.1" in u), result.urls[0] if result.urls else "")

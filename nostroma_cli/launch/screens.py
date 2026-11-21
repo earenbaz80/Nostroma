@@ -820,7 +820,7 @@ class FolderScreen(Base):
         moving = self.models_that_would_move(value)
         if moving:
             out.append(f"\nModel files Nostroma already keeps in {moving} stay there and keep working. This folder is used for new downloads. "
-                       "To move them here, use: strata models move.", style=MUTE)
+                       "To move them here, use: nostroma models move.", style=MUTE)
         self.query_one("#folderinfo", Static).update(out)
 
     def models_that_would_move(self, value: str) -> str | None:

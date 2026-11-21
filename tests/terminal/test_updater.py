@@ -222,7 +222,7 @@ class EngineUpdate(UpdaterCase):
         self.assertIn("did not start correctly on this computer", result["error"])
         self.assertIn("unchanged", result["error"])
         self.assertNotIn("server_exited", result["error"], "the engine's own words stay out of the sentence")
-        self.assertIn("strata update --force", result["error"])
+        self.assertIn("nostroma update --force", result["error"])
         self.assertEqual(self.resolved(), "0.1.45")
         self.assertEqual(self.engine_folders(), [f"0.1.45-{PLATFORM}-cuda-cuda13"], "the failed engine was never put in the live folder")
         self.assertEqual(sorted(p.name for p in (self.components / ".s").iterdir()), [])
@@ -669,7 +669,7 @@ class OtherComponents(UpdaterCase):
 
 
 class Cli(UpdaterCase):
-    """`strata update`, `strata components update|rollback` against a feed in a folder, with the test key file the way the
+    """`nostroma update`, `nostroma components update|rollback` against a feed in a folder, with the test key file the way the
     owner's local setup uses it (STRATA_UPDATE_TRUSTED_KEYS)."""
 
     def setUp(self):
@@ -702,7 +702,7 @@ class Cli(UpdaterCase):
         self.install_current()
         self.publish(("0.1.46", fx.GOOD_ENGINE))
         self.assertEqual(self.cli("update", "--check", *self.common())[0], 0)
-        notice = "update available (engine 0.1.46): run `strata update`"
+        notice = "update available (engine 0.1.46): run `nostroma update`"
         self.assertEqual(ec.cached_notice(self.components), notice)
         state_file = self.components / ec.UPDATE_STATE
         saved = json.loads(state_file.read_text(encoding="utf-8"))
@@ -727,16 +727,16 @@ class Cli(UpdaterCase):
         code, text, _ = self.cli("update", "--check", *self.common())
         self.assertEqual(code, 0)
         self.assertIn("update available: 0.1.45 -> 0.1.46", text)
-        self.assertEqual(ec.cached_notice(self.components), "update available (engine 0.1.46): run `strata update`")
+        self.assertEqual(ec.cached_notice(self.components), "update available (engine 0.1.46): run `nostroma update`")
         code, listing, _ = self.cli("components", "engine", "--components-dir", str(self.components))
-        self.assertIn("update available (engine 0.1.46): run `strata update`", listing)
+        self.assertIn("update available (engine 0.1.46): run `nostroma update`", listing)
         code, text, _ = self.cli("update", "--check", "--json", *self.common())
         self.assertEqual((code, json.loads(text)["engine"]["status"]), (0, "available"))
         code, text, _ = self.cli("update", *self.common())
         self.assertEqual(code, 0, text)
         self.assertIn("0.1.45 -> 0.1.46   updated (tested: started, answered one token, stopped)", text)
         self.assertIn("Saved tuning presets: marked for the short re-check (nothing was deleted).", text)
-        self.assertIn("strata components rollback", text)
+        self.assertIn("nostroma components rollback", text)
         self.assertEqual(self.resolved(), "0.1.46")
         self.assertIsNone(ec.cached_notice(self.components))
         code, text, _ = self.cli("update", *self.common())

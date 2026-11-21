@@ -207,7 +207,7 @@ def parser() -> argparse.ArgumentParser:
         "runtime", help="manage an owned local Nostroma server instance",
         description="`runtime start` starts a background service: the engine keeps serving after this terminal "
                     "closes and until `runtime stop` (or the process named by --die-with-pid ends). "
-                    "`strata serve` is the foreground form: it ends with this terminal.")
+                    "`nostroma serve` is the foreground form: it ends with this terminal.")
     runtime_sp = runtime.add_subparsers(dest="runtime_command", required=True)
     runtime_start = runtime_sp.add_parser(
         "start", help="start a saved profile as a background service under the local owner host (it keeps "
@@ -671,11 +671,11 @@ def _models_move(a: argparse.Namespace) -> int:
 
 def _interrupted_words(st: dict) -> str:
     return (f"A move of your models was interrupted. They are in {st['from']} and {st['to']}. "
-            "Finish it: strata models move --resume. Leave it (keep the models in the first folder): strata models move --leave.")
+            "Finish it: nostroma models move --resume. Leave it (keep the models in the first folder): nostroma models move --leave.")
 
 
 def _models_move_unfinished(a: argparse.Namespace, old: Path) -> int:
-    """`strata models move --status | --resume | --leave`: the move the last run left unfinished (A move was interrupted. Finish it or leave it)."""
+    """`nostroma models move --status | --resume | --leave`: the move the last run left unfinished (A move was interrupted. Finish it or leave it)."""
     from nostroma_control import models, models_move as mm
     machine = a.output in ("json", "jsonl")
     st = mm.interrupted(old)
@@ -715,7 +715,7 @@ def _models_move_unfinished(a: argparse.Namespace, old: Path) -> int:
 
 
 def _import_words(plan: dict) -> str:
-    """The plain-words result of `strata models import --plan`: what the files are, what is already set up, what changes (nothing)."""
+    """The plain-words result of `nostroma models import --plan`: what the files are, what is already set up, what changes (nothing)."""
     cand = plan.get("candidate_selection") or {}
     lines = [f"{plan['file_count']} GGUF file(s): {plan['file_set_status']}"]
     if cand.get("family"):
@@ -1132,7 +1132,7 @@ def _calibration(a: argparse.Namespace) -> int:
         print("Measure engine settings for roughly 15–30 minutes with exclusive GPU access.")
         print("This preview did not start the engine or change configuration.")
         if not components["ok"]:
-            print("Required components are missing; run strata doctor --profile first.")
+            print("Required components are missing; run nostroma doctor --profile first.")
     return 0 if components["ok"] else 5
 
 
@@ -1251,7 +1251,7 @@ def _usable_key(value):
 
 
 def _bench_standard(a: argparse.Namespace, machine: bool) -> int:
-    """`strata bench run` for docs/BENCHMARK_PROTOCOL.md: against a running server (--url, or a profile that is already serving),
+    """`nostroma bench run` for docs/BENCHMARK_PROTOCOL.md: against a running server (--url, or a profile that is already serving),
     or by starting the profile's engine for the run and stopping it afterwards."""
     from nostroma_cli import bench_facts, bench_standard
     fixed = [name for name, value in (("--concurrency", a.concurrency), ("--repeat", a.repeat),
@@ -1286,7 +1286,7 @@ def _bench_standard(a: argparse.Namespace, machine: bool) -> int:
     from nostroma_cli.client import server_url
     target = bench_standard.Target(server_url(url), key)
     redact = bench_facts.redactor(key or "")
-    command = redact("strata " + " ".join(str(part) for part in (a.raw_argv or ["bench", "run", "--suite", "standard-v1"])))
+    command = redact("nostroma " + " ".join(str(part) for part in (a.raw_argv or ["bench", "run", "--suite", "standard-v1"])))
     declared = {"track": a.track, "track_notes": a.track_notes or "no notes given by the operator",
                 "model_revision": a.model_revision, "source_revision": a.source_revision,
                 "tokenizer_revision": a.tokenizer_revision, "quantization": a.quantization,
@@ -1416,7 +1416,7 @@ def _ops(a: argparse.Namespace) -> int:
         items = recipes.list_recipes(a.profile)
         return _success({"profile": a.profile, "recipes": items}, machine=machine,
                         human="\n".join(f"{item['id']}  {item.get('kind', item.get('error'))}" for item in items)
-                              or "No recipes; use strata ops init --profile NAME")
+                              or "No recipes; use nostroma ops init --profile NAME")
     if action == "runs":
         runs = journal.list_runs(a.profile, limit=a.limit)
         return _success({"profile": a.profile, "runs": runs}, machine=machine,
@@ -1611,8 +1611,8 @@ def _timeskip(a: argparse.Namespace) -> int:
         print(f"  decision: {dec.get('outcome')} ({dec.get('reason')})")
         if dec.get("needs_user_review"):
             print("  the evidence does not justify an automatic choice; compare and select")
-    print(f"  inspect: strata timeskip status {result['id']}")
-    print(f"  preview: strata timeskip apply {result['id']} --dry-run")
+    print(f"  inspect: nostroma timeskip status {result['id']}")
+    print(f"  preview: nostroma timeskip apply {result['id']} --dry-run")
     if result["state"] in ("failed", "interrupted"):
         return _error(result.get("error") or result["state"], 6, False)
     return 0
@@ -1858,8 +1858,8 @@ def _tune_run(a: argparse.Namespace, *, store_root: Path) -> int:
     else:
         print("  measured through the engine's own serve protocol, which is not what a user waits")
         print("  for. Confirm any recommendation with --mode api before trusting it.")
-    print("  Apply it as a separate reviewed step: strata tune apply <job>. No profile has changed.")
-    print(f"  report: strata tune status {result['id']}")
+    print("  Apply it as a separate reviewed step: nostroma tune apply <job>. No profile has changed.")
+    print(f"  report: nostroma tune status {result['id']}")
     return 0
 
 
@@ -1929,7 +1929,7 @@ def _tune_apply(a: argparse.Namespace, *, store_root: Path) -> int:
     for item in plan["removed"]:
         print(f"  - {item}")
     print(f"  before {plan['before_sha256'][:16]}  after {plan['after_sha256'][:16]}")
-    print(f"  rollback: strata tune rollback {result['application']['application_id']}")
+    print(f"  rollback: nostroma tune rollback {result['application']['application_id']}")
     print()
     print("  The candidate was NOT verified against a running model: no supported model fits this")
     print("  machine. The configuration was checked for staleness, identity and diff, and the")
@@ -2088,7 +2088,7 @@ def _install(a: argparse.Namespace) -> int:
         return _error("this folder has no installer (setup.py). Engines, models and updates are installed from a "
                       "full Nostroma folder with SETUP.bat / ./setup.sh and UPDATE.bat / ./update.sh; "
                       "set STRATA_INSTALL_DIR to that folder to run it from here. To update the engine and Control "
-                      "from the signed update feed, run `strata update`", 5)
+                      "from the signed update feed, run `nostroma update`", 5)
     extra = [x for x in a.setup_args if x != "--"]
     env = dict(os.environ)
     if (ROOT / "python").is_dir() and (ROOT / "VERSION").is_file():
@@ -2236,9 +2236,9 @@ class _QuietCapture:
 
 
 def _install_argv(argv: list[str]) -> list[str]:
-    """`strata install` hands everything after it to setup.py (`strata install --family qwen --model IQ3_XXS --yes`). argparse cannot do that
+    """`nostroma install` hands everything after it to setup.py (`nostroma install --family qwen --model IQ3_XXS --yes`). argparse cannot do that
     by itself: an option it does not know ahead of the first plain word (--source, --family) was refused as "unrecognized arguments", or
-    split from its value (#4188). So the options of setup.py go behind a `--`, and only `--update` and --help stay strata's own."""
+    split from its value (#4188). So the options of setup.py go behind a `--`, and only `--update` and --help stay nostroma's own."""
     if not argv or argv[0] != "install":
         return argv
     rest = list(argv[1:])

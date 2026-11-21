@@ -1,4 +1,4 @@
-"""The packaged Terminal (#4188 parts 2 and 3): setup.py without a CMakeLists.txt, and `strata install` handing setup its options.
+"""The packaged Terminal (#4188 parts 2 and 3): setup.py without a CMakeLists.txt, and `nostroma install` handing setup its options.
 Nothing here starts an engine, downloads anything or reads the real profile."""
 from __future__ import annotations
 
@@ -42,7 +42,7 @@ class PackagedSetupWithoutCMake(unittest.TestCase):
 
 
 class InstallForwardsSetupOptions(unittest.TestCase):
-    """#4188: `strata install --source modelscope --family qwen ...` was refused by strata's own parser."""
+    """#4188: `nostroma install --source modelscope --family qwen ...` was refused by strata's own parser."""
 
     def test_the_options_of_setup_go_behind_a_double_dash_and_update_stays_strata_s(self):
         self.assertEqual(cli._install_argv(["install", "--source", "modelscope", "--yes"]), ["install", "--", "--source", "modelscope", "--yes"])

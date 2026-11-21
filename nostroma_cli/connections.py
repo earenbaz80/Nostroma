@@ -135,7 +135,7 @@ def load(name: str) -> tuple[dict, str]:
         data = path.read_bytes()
         value = json.loads(data.decode("utf-8"))
     except FileNotFoundError:
-        raise ConnectionError(f"connection {name!r} is not saved; use strata connection create", 5) from None
+        raise ConnectionError(f"connection {name!r} is not saved; use nostroma connection create", 5) from None
     except (OSError, UnicodeError, ValueError) as exc:
         if isinstance(exc, ConnectionError):
             raise

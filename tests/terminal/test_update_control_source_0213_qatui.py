@@ -1,5 +1,5 @@
-"""Round 0213 QATUI: `strata update --check` on a SOURCE checkout printed `Control  ?: available (0.1.56)`: no installed Control and no VERSION file, so the version
-was unknown. A checkout runs its own tree: what is PRINTED is the project version in CMakeLists.txt, as `strata --version` says (build 0.1.56).
+"""Round 0213 QATUI: `nostroma update --check` on a SOURCE checkout printed `Control  ?: available (0.1.56)`: no installed Control and no VERSION file, so the version
+was unknown. A checkout runs its own tree: what is PRINTED is the project version in CMakeLists.txt, as `nostroma --version` says (build 0.1.56).
 Display only (owner 11-04): `decide_control`, which decides whether a Control copy is staged, works exactly as before.
 
     python -m pytest tests/terminal/test_update_control_source_0213_qatui.py

@@ -1,7 +1,7 @@
 """The all-cards split engine and the parallel setting: no collision, and the number means the split's lanes.
 
 The split's run config (nostroma_control/split_engine.split_config) always carries `--batch N`.  The launcher used to write a launch-profile override
-`parallel=<card fit>` beside it even when nobody asked, and `strata serve --profile` (nostroma_cli/cli.py _effective) refuses a parallel override next to
+`parallel=<card fit>` beside it even when nobody asked, and `nostroma serve --profile` (nostroma_cli/cli.py _effective) refuses a parallel override next to
 --batch: every 2-card NVIDIA start with the split on Auto stopped with "parallel override conflicts with --batch/--slots in run config args".
 Now: the launcher writes no parallel override when the run config holds the slots; `--parallel N` is the split's lanes; the app's Concurrent requests
 (a profile override on the saved run config) is accepted for a split config and sets --batch in the engine's arguments.  Nothing is started.
@@ -218,7 +218,7 @@ class AutoFetchesTheDraftLayer(Base):
 
     def test_the_size_in_the_plan_is_the_size_setup_fetches(self):
         """tools/mtp_fetch.py reads the same 31 pinned tensors of the checkpoint for every set (5.214 GB) and packs them into the 0.9 GB layer the engine loads; the plan, the
-        plan line, `strata drafting plan` and setup's own disk check all use that one number."""
+        plan line, `nostroma drafting plan` and setup's own disk check all use that one number."""
         from nostroma_control.discovery import MTP_FETCH_GB
         r = self.runner(cards(2), gpus=[0, 1])
         part = next(p for p in r.download_plan()["parts"] if p["kind"] == "mtp")
@@ -330,7 +330,7 @@ class SummaryTellsWhatRuns(Base):
 
 
 class PlanTellsTheApp(Base):
-    """`strata drafting plan` is what the app reads (native-control.mjs): with the split taking the start it says choice mtp and split true."""
+    """`nostroma drafting plan` is what the app reads (native-control.mjs): with the split taking the start it says choice mtp and split true."""
 
     def plan(self, probe, *extra):
         from tests.terminal.launch_support import run_cli
@@ -384,7 +384,7 @@ def flag_of(cfg: dict, flag: str) -> str:
 
 
 class AppPlanEqualsTerminalPlan(Base):
-    """0.2.10.1: the app asks `strata drafting plan` / `fetch` WITHOUT --no-split, so its plan is the Terminal's: where the split rule says yes, Auto is the split with the MTP draft
+    """0.2.10.1: the app asks `nostroma drafting plan` / `fetch` WITHOUT --no-split, so its plan is the Terminal's: where the split rule says yes, Auto is the split with the MTP draft
     layer (fetched through the app's existing MTP step), and a person's DFlash2 or Off keeps the layer split."""
 
     def plan(self, probe, *extra, config=None):
@@ -497,7 +497,7 @@ class AppPlanEqualsTerminalPlan(Base):
 
 class AppStartsTheSplit(Base):
     """The app's engine start (apps/host: buildConfig, then `profile` + `runtime start`) never went through the Terminal's apply_split_engine; Control now answers it
-    (`strata split-engine apply`, nostroma_control/split_engine.apply_run_config) from the same rule, engine package and draft layer."""
+    (`nostroma split-engine apply`, nostroma_control/split_engine.apply_run_config) from the same rule, engine package and draft layer."""
 
     @staticmethod
     def model():
@@ -678,7 +678,7 @@ class LaneClamp(Base):
 
 
 class AppPath(Base):
-    """The app's Settings 'Concurrent requests = N' is a profile override on the saved run config (nostroma_control/profiles); `strata serve --profile` reads it."""
+    """The app's Settings 'Concurrent requests = N' is a profile override on the saved run config (nostroma_control/profiles); `nostroma serve --profile` reads it."""
 
     def engine_argv(self, cfg: dict, overrides: dict) -> list[str]:
         from serve.server import engine_args
@@ -699,7 +699,7 @@ class AppPath(Base):
         self.assertEqual(argv[argv.index("--batch") + 1], "5")
 
     def test_the_servers_parallel_flag_is_accepted_for_the_split_and_still_refused_beside_another_batch(self):
-        """`strata serve --profile` hands the profile's parallel to the server as --parallel N; the server refused it next to any --batch in the saved args."""
+        """`nostroma serve --profile` hands the profile's parallel to the server as --parallel N; the server refused it next to any --batch in the saved args."""
         from serve.server import parallel_flag_conflicts
         self.assertFalse(parallel_flag_conflicts(split_cfg()))
         self.assertFalse(parallel_flag_conflicts(layer_cfg()))

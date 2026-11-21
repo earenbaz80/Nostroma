@@ -1,7 +1,7 @@
 """POSIX 'owner-only' checks that repair what is ours and explain what is not.
 
 Nostroma keeps its private state in folders (0700) and files (0600) of the user. The checks used to refuse as soon as a mode had drifted
-(a `chmod -R`, an rsync, a restored backup) or the owner was not the current user (one `sudo strata ...` leaves root-owned folders behind).
+(a `chmod -R`, an rsync, a restored backup) or the owner was not the current user (one `sudo nostroma ...` leaves root-owned folders behind).
 Now:
 
 * the folder or file is ours and only the mode bits are wrong: the mode is put back (0700 / 0600) and the command goes on;

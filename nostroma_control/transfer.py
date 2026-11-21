@@ -1,6 +1,6 @@
 """Fetching update files: small documents, and large archives with resume and progress.
 
-This is the only network code of the update path. It is reached from `strata update` / `strata components update` and
+This is the only network code of the update path. It is reached from `nostroma update` / `nostroma components update` and
 the app's explicit "Update" step, never from a start or a serve: ``require_acquisition`` is called by the caller before
 anything here runs, and it refuses under ``STRATA_NO_ACQUIRE``.
 

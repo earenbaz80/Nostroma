@@ -718,7 +718,7 @@ def uses_selector_q4(data_dir: str | Path | None, engine: str | os.PathLike[str]
 
 def engine_has_selector_q4() -> bool:
     """Does the engine installed on this computer read the Q4_0-selector pack ("selector codebooks: Q4_0 rows": CUDA, HIP and Metal engines; not the SYCL one)? Setup, Load and
-    `strata drafting fetch` make that pack only then: where the engine cannot read it the 340 MB file would never be used. No engine installed yet: False (made at the next Load)."""
+    `nostroma drafting fetch` make that pack only then: where the engine cannot read it the 340 MB file would never be used. No engine installed yet: False (made at the next Load)."""
     return engine_reads_selector_q4(installed_engine_exe())
 
 
@@ -834,7 +834,7 @@ NOT_DOWNLOADED = "the DFlash2 drafter isn't downloaded yet"
 NOT_THIS_CARD = "DFlash2 isn't available on this graphics card"
 NO_MTP = "the MTP drafter isn't downloaded yet"
 NONE_HERE = "no drafter is downloaded yet"
-FETCH_HINT = "Run strata drafting fetch to get the DFlash2 drafter now."
+FETCH_HINT = "Run nostroma drafting fetch to get the DFlash2 drafter now."
 DIDNT_START = "DFlash2 didn't start"          # Auto picked DFlash2, the engine ended before it was ready, and the start was repeated once with the MTP (serve/server.py)
 NOT_SERVED = NOT_HERE
 SHORT_OF_VRAM = "the cards were short of memory"   # the engine ended before it was ready for lack of graphics memory: the start was repeated once with no drafter (serve/server.py), never with the MTP
@@ -1454,7 +1454,7 @@ def needs_pack(mode: Any, *, klass: str = "other", model_name: str | None = None
 
 def needs_tuned(mode: Any, *, klass: str = "other", model_name: str | None = None, family: str | None = None, data_dir: str | Path | None = None,
                 backend: str | None = None, archs: Any = None, args: list[Any] | None = None, vram_mib: float | None = None, **_ignored: Any) -> bool:
-    """Would this choice use DFlash2 with the tuned drafter (this set has an entry in SET_DEFAULTS) and is that file not here yet? (Setup, Load and `strata drafting fetch`
+    """Would this choice use DFlash2 with the tuned drafter (this set has an entry in SET_DEFAULTS) and is that file not here yet? (Setup, Load and `nostroma drafting fetch`
     fetch it, once; offline they skip it and the stock pack or the MTP runs.)"""
     return (choice_of(mode, model_name=model_name, family=family, backend=backend, archs=archs, args=args, vram_mib=vram_mib) == "dflash2"
             and tuned_applies(backend, model_name, archs, args=args, vram_mib=vram_mib) and bool(data_dir) and not tuned_ok(data_dir, tuned_variant(backend, model_name)))
@@ -1648,7 +1648,7 @@ def recent_miss(data_dir: str | Path) -> bool:
 def fetch_hint(decision: Decision, *, model_name: str | None, backend: str | None, archs: Any = None, data_dir: str | Path | None, args: list[Any] | None = None,
                vram_mib: float | None = None) -> str:
     """The line after "Drafting: off (no drafter is downloaded yet)": only when the choice is DFlash2 or Auto on a set with a tuned drafter and a load has just
-    found the feed empty (a recent miss mark), so the person knows `strata drafting fetch` asks again now. "" in every other case."""
+    found the feed empty (a recent miss mark), so the person knows `nostroma drafting fetch` asks again now. "" in every other case."""
     if decision.drafter != "off" or decision.note != NONE_HERE or normalize(decision.asked) not in ("auto", "dflash2") or not data_dir:
         return ""
     if not tuned_applies(backend, model_name, archs, args=args, vram_mib=vram_mib) or not recent_miss(data_dir):

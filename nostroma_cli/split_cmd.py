@@ -1,4 +1,4 @@
-"""``strata split-engine apply``: the all-cards split engine for a run config the app wrote (the Terminal does the same inside ``nostroma launch``).
+"""``nostroma split-engine apply``: the all-cards split engine for a run config the app wrote (the Terminal does the same inside ``nostroma launch``).
 
 The desktop app builds its run config itself and starts it as a saved profile, so the step that turns a layer-split run config into the split engine's
 (nostroma_control/split_engine.py ``apply_run_config``) is asked of Control here, with the rule, the engine package and the draft layer checked on this computer.

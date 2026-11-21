@@ -1,9 +1,9 @@
-"""#4463: `strata update` on a source install.
+"""#4463: `nostroma update` on a source install.
 
 Gap 1: with no folder named, it used the per-user component folder even when the checkout has its own engine store (`engine-feed`, which setup.py
 fills); the download, its half-written state and its part file then sat in a folder the checkout never read.
 Gap 2: the busy check did not see an engine the desktop app's source install had started (it runs serve/server.py directly, which took no lease), so
-`strata update` test-started a second copy of the model beside it.
+`nostroma update` test-started a second copy of the model beside it.
 
     python -m pytest tests/terminal/test_update_source_install.py
 """

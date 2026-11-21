@@ -287,7 +287,7 @@ class Feed:
     #: entries this Control does not know how to use (a platform, a backend or an archive format added after it was built): left out, one plain line each.
     #: A feed with such an entry is still a feed; only an entry of a kind this Control knows and that is malformed refuses the feed.
     skipped: tuple[str, ...] = ()
-    #: the DFlash2 drafter files (feed member ``drafters``, DrafterPackage): fetched by setup, `strata drafting fetch` and Load for a set that has one. Older Controls ignore the member.
+    #: the DFlash2 drafter files (feed member ``drafters``, DrafterPackage): fetched by setup, `nostroma drafting fetch` and Load for a set that has one. Older Controls ignore the member.
     drafters: tuple[DrafterPackage, ...] = ()
     #: the models Nostroma lists after the built-in ones (feed member ``models``, FeedModel). An entry that is malformed is left out of this tuple with one plain line in
     #: ``models_dropped`` (and the log); the rest of the feed, and the other models, work. Older Controls ignore the member.
@@ -296,7 +296,7 @@ class Feed:
     #: the detached signature that went with ``raw`` (fetch fills it for a feed that has models: the cache of the model list keeps both)
     signature: bytes = b""
     #: the engines of model shapes (feed member ``shape_engines``, EnginePackage with ``shape``): a separate component for each shape, fetched when a model of that shape is
-    #: chosen (nostroma_control/shape_engine.py). Kept out of ``engine`` so that `strata update` never picks one as THE engine. Older Controls ignore the member.
+    #: chosen (nostroma_control/shape_engine.py). Kept out of ``engine`` so that `nostroma update` never picks one as THE engine. Older Controls ignore the member.
     shape_engines: tuple[EnginePackage, ...] = ()
 
     def url(self, ref: str) -> str:

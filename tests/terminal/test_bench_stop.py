@@ -1,6 +1,6 @@
-"""#4260: `strata bench run --profile` ends the engine it started, with the program it started, and says so only when something is left.
+"""#4260: `nostroma bench run --profile` ends the engine it started, with the program it started, and says so only when something is left.
 
-The engine tree is the server (`strata serve`), the engine it starts and whatever those start. On Windows the tree is put in a job object this run owns,
+The engine tree is the server (`nostroma serve`), the engine it starts and whatever those start. On Windows the tree is put in a job object this run owns,
 so a per-process `taskkill` that is refused ("Access is denied" on a tree this very user started) no longer leaves it running; on Linux and macOS it is the
 process group. An unrelated process with the same program name is never touched.
 

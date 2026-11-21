@@ -1,8 +1,8 @@
 """A PC with an NVIDIA card and an AMD card (the lent boxia: RTX 3080 + RX 6700 XT gfx1031, 11-15).
 
-Before: `strata update --backend amd` said "The feed has no engine package for this PC" (the word amd was never turned into the hip family, and the
-hardware the choice read stayed the NVIDIA card's), `strata components engine --backend amd` exited 5 ("this PC needs amd (requested)"), and
-`strata components engines` marked the installed hip-rx6000 engine "not for this computer" although the PC has the card it is for.
+Before: `nostroma update --backend amd` said "The feed has no engine package for this PC" (the word amd was never turned into the hip family, and the
+hardware the choice read stayed the NVIDIA card's), `nostroma components engine --backend amd` exited 5 ("this PC needs amd (requested)"), and
+`nostroma components engines` marked the installed hip-rx6000 engine "not for this computer" although the PC has the card it is for.
 
 Proves, with a faked two-card detection: amd / hip / hip-rx6000 / nvidia name their family; --backend amd reads the AMD card (gfx1031) and picks
 the rx6000 package from a feed that also has the CUDA, rx9070, rx7900 and halo builds; resolve / status accept the make's word; the engines list marks

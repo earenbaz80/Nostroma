@@ -1,5 +1,5 @@
 """Intel Arc engine package (owner test round 8, track L3): the stable feed had no `linux-x86_64-sycl` package, so a clean Arc PC got a
-Terminal that could not run a model and `strata update` kept saying the feed had no engine for it. The feed is whatever packages the release
+Terminal that could not run a model and `nostroma update` kept saying the feed had no engine for it. The feed is whatever packages the release
 builds (packaging/feed_tool.py takes every `*.entry.json`), so the gap was the missing build recipe, not the choice code. These tests keep the
 choice honest once the package exists: an Arc PC (found by its PCI vendor, with no oneAPI tools installed) gets it by itself, nobody else does,
 and the recipe that makes it carries the checks that a clean PC needs."""

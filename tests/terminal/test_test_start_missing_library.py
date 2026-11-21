@@ -46,14 +46,14 @@ class Words(unittest.TestCase):
             self.assertIsNone(updater.linux_family(str(Path(tmp) / "missing")))
 
     def test_one_next_step_with_the_package(self):
-        self.assertEqual(updater.library_hint("libatomic.so.1", "debian"), "Install it with `sudo apt install libatomic1`, then run `strata update` again.")
-        self.assertEqual(updater.library_hint("libatomic.so.1", "fedora"), "Install it with `sudo dnf install libatomic`, then run `strata update` again.")
-        self.assertEqual(updater.library_hint("libatomic.so.1", "arch"), "Install it with `sudo pacman -S gcc-libs`, then run `strata update` again.")
+        self.assertEqual(updater.library_hint("libatomic.so.1", "debian"), "Install it with `sudo apt install libatomic1`, then run `nostroma update` again.")
+        self.assertEqual(updater.library_hint("libatomic.so.1", "fedora"), "Install it with `sudo dnf install libatomic`, then run `nostroma update` again.")
+        self.assertEqual(updater.library_hint("libatomic.so.1", "arch"), "Install it with `sudo pacman -S gcc-libs`, then run `nostroma update` again.")
         self.assertEqual(updater.library_hint("libatomic.so.1", None),
                          "Install it with your system's package manager (libatomic1 on Debian and Ubuntu, libatomic on Fedora, gcc-libs on Arch), "
-                         "then run `strata update` again.")
+                         "then run `nostroma update` again.")
         self.assertEqual(updater.library_hint("libfoo.so.3", "debian"),
-                         "Install the package that has it with your system's package manager, then run `strata update` again.")
+                         "Install the package that has it with your system's package manager, then run `nostroma update` again.")
 
     def test_the_plain_message_names_the_library(self):
         text = str(updater.TestStartFailed("0.1.60", f"--version exited 127: {LOADER}", busy=False, hint="NEXT"))
@@ -86,7 +86,7 @@ class BinarySmoke(unittest.TestCase):
         log = self.components / updater.STATE_DIR / "logs" / "test-start-0.1.60.log"
         text = str(caught.exception)
         self.assertIn("The engine needs the system library libatomic.so.1, and this computer does not have it.", text)
-        self.assertIn("Install it with `sudo apt install libatomic1`, then run `strata update` again.", text)
+        self.assertIn("Install it with `sudo apt install libatomic1`, then run `nostroma update` again.", text)
         self.assertIn(f"The engine's log from this test is in {log}.", text)
         self.assertFalse(caught.exception.busy)
         self.assertIn("libatomic.so.1", caught.exception.reason)
@@ -108,7 +108,7 @@ class BinarySmoke(unittest.TestCase):
         exe = make_engine(self.engine, "echo 'bad' >&2\nexit 3\n", "echo bad 1>&2\r\nexit /b 3\r\n")
         with self.assertRaises(updater.TestStartFailed) as caught:
             updater.binary_smoke(self.component(exe))
-        self.assertIn("Run `strata update --force` to try again; if it fails again, report it with the log.", str(caught.exception))
+        self.assertIn("Run `nostroma update --force` to try again; if it fails again, report it with the log.", str(caught.exception))
         self.assertFalse(self.components.exists())
 
     def test_the_default_test_start_with_no_model_keeps_the_log(self):

@@ -1521,7 +1521,7 @@ class StartWaitLimit(unittest.TestCase):
                 rt.start("x", wait=1800)
 
     def test_a_long_start_wait_reaches_the_runtime_through_the_cli(self):                     # #3459 #4191
-        # The desktop app starts models through `strata runtime start --wait`, and that wait is checked three times before
+        # The desktop app starts models through `nostroma runtime start --wait`, and that wait is checked three times before
         # the engine is reached: by management, by the operation record, and by the runtime itself. When only the runtime's
         # ceiling was raised (#3949), a long start died at each of the first two with
         # "start wait must be finite seconds in 0..600" / "direct runtime intent has an invalid timeout". So this walks the

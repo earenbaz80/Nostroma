@@ -1027,7 +1027,7 @@ class FlagsCommand(unittest.TestCase):
         self.assertEqual(code, 0, err)
         self.assertIn("Engine log", out)
         self.assertIn("office.engine.log", out)
-        self.assertIn("strata logs --follow", out)
+        self.assertIn("nostroma logs --follow", out)
 
     def test_run_without_screens_prints_the_address_and_saves_the_preset(self):
         fake = Result(profile="launch-office", urls=["http://127.0.0.1:8080", "http://192.168.1.5:8080"], key="sk-strata-abcdefghijkl",

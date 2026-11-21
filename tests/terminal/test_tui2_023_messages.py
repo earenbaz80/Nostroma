@@ -19,7 +19,7 @@ class TestStartText(unittest.TestCase):
         self.assertIn("so it was not installed", text)
         self.assertIn("Your current engine is unchanged", text)
         self.assertIn("The engine started but stopped before it answered a test question.", text)
-        self.assertIn("`strata update --force`", text)
+        self.assertIn("`nostroma update --force`", text)
         self.assertNotIn("server_exited", text)
         self.assertNotIn("probe", text)
         self.assertEqual(err.reason, "it did not answer a one-token probe (server_exited)")      # kept for the state file and the JSON
@@ -62,7 +62,7 @@ class RollbackText(test_updater.UpdaterCase):
         data = json.loads(state.read_text(encoding="utf-8"))
         data["engine"]["previous"] = data["engine"]["pinned"]          # the stale state a second run can meet
         state.write_text(json.dumps(data), encoding="utf-8")
-        with self.assertRaisesRegex(updater.UpdateError, "already the previous one .0.1.45.*strata update --force"):
+        with self.assertRaisesRegex(updater.UpdateError, "already the previous one .0.1.45.*nostroma update --force"):
             updater.rollback_engine(self.ctx())
 
 

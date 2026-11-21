@@ -1,7 +1,7 @@
 """The quiet line that says a newer engine is available, and the once-a-day check behind it (owner, 11-01).
 
 * the line comes from the last check's cached answer (a local file): one sentence, one next step, no network;
-* it is in the launch start screen and the launch monitor (and `strata update --check`), nowhere else;
+* it is in the launch start screen and the launch monitor (and `nostroma update --check`), nowhere else;
 * the daily check is made by the launch monitor only, in a thread of its own, once a day, with a short timeout, and says NOTHING when it cannot reach
   the feed: no internet, blocked DNS, a proxy that refuses, a captive portal that answers junk, a connection that never answers.  The attempt is
   written before the network is touched, so a failure is not retried until tomorrow.  Offline, the launch, the monitor and the line behave exactly as
@@ -57,7 +57,7 @@ class Cached(UpdaterCase):
         self.install_current("0.1.45")
         self.remember(engine="0.1.56")
         line = engine_update.notice_line(self.components)
-        self.assertEqual(line, "A new engine 0.1.56 (you have 0.1.45) is available. Update with `strata update`.")
+        self.assertEqual(line, "A new engine 0.1.56 (you have 0.1.45) is available. Update with `nostroma update`.")
         self.assertEqual(engine_update.monitor_note(self.components), "New engine 0.1.56 is available. Press u to update.")
         self.assertNotIn("\n", line)
 
@@ -220,7 +220,7 @@ class Offline(UpdaterCase):
 
 
 class OnTheScreens(TuiBase):
-    def note(self, text="A new engine 0.1.56 (you have 0.1.55) is available. Update with `strata update`."):
+    def note(self, text="A new engine 0.1.56 (you have 0.1.55) is available. Update with `nostroma update`."):
         patch = mock.patch.object(engine_update, "notice_line", return_value=text)
         patch.start()
         self.addCleanup(patch.stop)
@@ -231,7 +231,7 @@ class OnTheScreens(TuiBase):
         async def case(app, pilot, ctx):
             t = " ".join(text_of(app).split())
             self.assertEqual(t.count("A new engine 0.1.56"), 1)
-            self.assertIn("Update with `strata update`", t)
+            self.assertIn("Update with `nostroma update`", t)
         self.run_app(case)
 
     def test_the_start_screen_without_a_newer_engine_is_as_before(self):

@@ -1,4 +1,4 @@
-"""Settings > Engine and `strata components engines | use | remove` for the engine of a Qwen4 model shape (APP-WIN item 6, owner 11-08 "later, after 0.2.13").
+"""Settings > Engine and `nostroma components engines | use | remove` for the engine of a Qwen4 model shape (APP-WIN item 6, owner 11-08 "later, after 0.2.13").
 
 A shape's engine lives in <components>/shapes/<shape>/engine/ (nostroma_control/shape_engine.py). The list shows one family per installed shape ("shape:<shape>",
 an id the app never shows; the title is None and the app names the group with the model's catalog title), after the Qwen and DeepSeek families. Switching

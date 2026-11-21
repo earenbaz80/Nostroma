@@ -97,7 +97,7 @@ class Detection(unittest.TestCase):
 
 
 class FeedStyleBackendName(unittest.TestCase):
-    """#4013: `hip-<package>` named the AMD package for `strata update` through STRATA_ENGINE_BACKEND only. As `--backend` it offered nothing,
+    """#4013: `hip-<package>` named the AMD package for `nostroma update` through STRATA_ENGINE_BACKEND only. As `--backend` it offered nothing,
     and `nostroma launch` stopped with "STRATA_ENGINE_BACKEND='hip-rdna2' is not one of cpu, cuda, hip, metal, sycl"."""
 
     def test_split_backend(self):

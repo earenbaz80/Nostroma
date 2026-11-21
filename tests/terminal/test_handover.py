@@ -1,4 +1,4 @@
-"""`strata update` installs a newer Control; the Terminal on PATH hands over to it (it used to keep running the old one)."""
+"""`nostroma update` installs a newer Control; the Terminal on PATH hands over to it (it used to keep running the old one)."""
 
 import json
 import os

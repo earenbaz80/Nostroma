@@ -1,4 +1,4 @@
-"""`strata tune auto` (the real tuner) and `strata presets` (the saved results), for the Terminal and, through JSON output
+"""`nostroma tune auto` (the real tuner) and `nostroma presets` (the saved results), for the Terminal and, through JSON output
 and a status file, for the desktop app. The same code and the same store serve both."""
 
 from __future__ import annotations
@@ -299,7 +299,7 @@ def presets_command(a: argparse.Namespace) -> int:
             items = presets.list_presets(model=a.model)
             human = "\n".join(f"{'*' if p['active'] else ' '} {p['id'][:8]}  {p['name']}  "
                               f"{(p.get('measured') or {}).get('gain_pct') or 0:+.0f}%  {p['answers']['class']}"
-                              for p in items) or "No saved presets yet. Run: strata tune auto <profile>"
+                              for p in items) or "No saved presets yet. Run: nostroma tune auto <profile>"
             return _print({"presets": [_summary(p) for p in items]}, machine, human)
         if cmd == "status":
             return _status(a, machine)
@@ -313,7 +313,7 @@ def presets_command(a: argparse.Namespace) -> int:
         if cmd == "apply":
             p = presets.activate_preset(a.preset)
             return _print({"preset": _summary(p), "notice": presets.notice(p)}, machine,
-                          f"'{p['name']}' is now active. It is used the next time the model starts. Undo: strata presets undo {p['id'][:8]}")
+                          f"'{p['name']}' is now active. It is used the next time the model starts. Undo: nostroma presets undo {p['id'][:8]}")
         if cmd == "rename":
             p = presets.rename(a.preset, a.name)
             return _print({"preset": _summary(p)}, machine, f"Renamed to '{p['name']}'.")
@@ -341,7 +341,7 @@ def presets_command(a: argparse.Namespace) -> int:
         if cmd == "import":
             data = json.loads(Path(a.file).read_text(encoding="utf-8-sig"))
             p = presets.import_preset(data)
-            return _print({"preset": _summary(p)}, machine, f"Imported '{p['name']}'. Apply it with: strata presets apply {p['id'][:8]}")
+            return _print({"preset": _summary(p)}, machine, f"Imported '{p['name']}'. Apply it with: nostroma presets apply {p['id'][:8]}")
         if cmd == "recheck":
             return _recheck(a, machine)
     except presets.PresetError as e:
@@ -421,7 +421,7 @@ def _recheck(a: argparse.Namespace, machine: bool) -> int:
     ident = presets.current_identity(cfg, exe=exe)
     stale = presets.staleness(preset, ident)
     if stale["state"] == "hard":
-        return _fail("this PC changed too much for a re-check (" + "; ".join(stale["reasons"]) + "): tune again with strata tune auto", 5, machine)
+        return _fail("this PC changed too much for a re-check (" + "; ".join(stale["reasons"]) + "): tune again with nostroma tune auto", 5, machine)
     engine_changed = int((preset.get("identity", {}).get("engine") or {}).get("tuning_epoch") or 0) != \
         int((ident.get("engine") or {}).get("tuning_epoch") or 0)
     opts = autotune.Options(use=(preset.get("choices") or {}).get("use", "chat"))
@@ -447,7 +447,7 @@ def _recheck(a: argparse.Namespace, machine: bool) -> int:
     state.update({"state": "done", "result": {k: v for k, v in out.items() if k != "identity"}})
     _write_status(a.status_file, state)
     human = {"keep": "Still as fast as when it was saved. Kept.",
-             "retune": "Not as fast as before: " + str(out.get("reason")) + "\nYou can tune again with: strata tune auto",
+             "retune": "Not as fast as before: " + str(out.get("reason")) + "\nYou can tune again with: nostroma tune auto",
              "inconclusive": "Could not tell (the PC was busy). Kept; try again later."}[out["verdict"]]
     return _print({"verdict": out["verdict"], "reason": out.get("reason"), "result": {k: v for k, v in out.items() if k != "identity"},
                    "preset": _summary(updated)}, machine, human)

@@ -40,7 +40,7 @@ class KeyNextToHyphens(unittest.TestCase):
 
     def test_the_command_line_of_a_run_is_clean(self):
         clean = bench_facts.redactor(KEY)
-        line = f"strata bench run --profile p --custom-pack /home/alice/pack-{KEY} --track-notes 'key {KEY}'"
+        line = f"nostroma bench run --profile p --custom-pack /home/alice/pack-{KEY} --track-notes 'key {KEY}'"
         out = clean(line)
         self.assertNotIn(KEY, out)
         self.assertNotIn("alice", out)

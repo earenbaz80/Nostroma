@@ -99,7 +99,7 @@ class FailedStart(unittest.TestCase):
 
 
 class FolderChangeMovesNothing(unittest.TestCase):
-    """The Folder step text: changing the folder never moves the models Nostroma already keeps (only --move-data / strata models move do)."""
+    """The Folder step text: changing the folder never moves the models Nostroma already keeps (only --move-data / nostroma models move do)."""
 
     def setUp(self):
         self.home = Home().__enter__()

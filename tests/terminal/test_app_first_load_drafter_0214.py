@@ -1,7 +1,7 @@
 """The app's setup, the app's first load and the Terminal's start pick the same drafter for Auto (lane APP-LIN 0.2.14 item 7).
 
 Before: the app prepared every DFlash2-capable model for DFlash2 (the host's own rule), so on a card where Control's Auto means the MTP the setup skipped the MTP layer and the
-first load ran undrafted. Now the app asks `strata drafting plan` at the install (no run config yet: --family/--model) and at the load (--config). This pins that both answers
+first load ran undrafted. Now the app asks `nostroma drafting plan` at the install (no run config yet: --family/--model) and at the load (--config). This pins that both answers
 equal the start's own decision (drafting.choice_of, what serve/server.py's drafting.apply runs) on the card classes where they differ: a 12 GB CUDA card streaming IQ3_S (MTP)
 and a 24 GB one (DFlash2).
 

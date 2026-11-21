@@ -6,7 +6,7 @@ have their test beside their other tests:
   drafting_fetch         tests/terminal/test_drafting_tuned.py   test_a_feed_nobody_answers_for_is_silent_offline_refused_or_never_answering
   the daily check        tests/terminal/test_update_notice.py    test_dns_is_blocked / test_a_proxy_that_refuses / test_a_connection_that_never_answers
 
-and here: feed_models.load (the model list at setup's start) and driver_floor.from_feed. A run that DOES explicit work (`strata update`) keeps its
+and here: feed_models.load (the model list at setup's start) and driver_floor.from_feed. A run that DOES explicit work (`nostroma update`) keeps its
 sentence: feed.FeedUnreachable carries the approved words, and no caller decides by those words (only by the class)."""
 from __future__ import annotations
 

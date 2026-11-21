@@ -1,4 +1,4 @@
-"""`strata bench run` for the standard benchmark protocol (docs/BENCHMARK_PROTOCOL.md).
+"""`nostroma bench run` for the standard benchmark protocol (docs/BENCHMARK_PROTOCOL.md).
 
 The runner sends the frozen requests of bench/prompts/standard-v1 to a Nostroma server through streaming chat completions, in the
 protocol's order, and writes a `strata-standard-benchmark` result that other people's results can be compared with:
@@ -672,7 +672,7 @@ def _start_wait(target: Target, proc, timeout_s: float, log, log_path: Path | No
 
 
 def start_engine(ref: str, target: Target, log_path: Path, log, timeout_s: float):
-    """Start `strata serve --profile REF` as a child of this run. -> the process."""
+    """Start `nostroma serve --profile REF` as a child of this run. -> the process."""
     root = Path(__file__).resolve().parents[1]
     command = [sys.executable, str(root / "strata.py"), "serve", "--profile", ref, "--quiet"]
     handle = open(log_path, "wb")
@@ -707,7 +707,7 @@ def start_engine(ref: str, target: Target, log_path: Path, log, timeout_s: float
 
 
 def engine_log_since(console_log: Path, run_log: Path | None, offset: int) -> Path:
-    """The log to keep with a result when the runner started the engine. `strata serve --quiet` prints nothing, so the
+    """The log to keep with a result when the runner started the engine. `nostroma serve --quiet` prints nothing, so the
     console capture is empty; the engine's own lines are in the run config's `log` file, from `offset` (its size before
     the start). Falls back to the console capture when there is no such file or nothing new in it."""
     try:
@@ -825,7 +825,7 @@ def slug(text: str, limit: int = 40) -> str:
 
 def run(target: Target, out: Path | None, *, out_root: Path | None = None, optional_concurrency: bool = False,
         corpus: Corpus | None = None, declared: dict | None = None, plan: dict | None = None,
-        engine_log: Path | None = None, engine_run_log: tuple[Path | None, int] | None = None, command: str = "strata bench run --suite standard-v1",
+        engine_log: Path | None = None, engine_run_log: tuple[Path | None, int] | None = None, command: str = "nostroma bench run --suite standard-v1",
         log=lambda message: None, timeout_s: float = REQUEST_TIMEOUT_S, started_engine: bool = False,
         hash_model: bool = True) -> tuple[dict, Path]:
     """Run the protocol against `target` and write the report into the new directory `out` (or a new folder named
@@ -1233,7 +1233,7 @@ def report_markdown(doc: dict, redact=lambda text: text) -> str:
         "# Nostroma standard benchmark: %s" % (", ".join(g["name"] for g in hw["gpus"]) or "unknown GPU"), "",
         "Protocol `%s` (draft), run `%s`, started %s. **Status: %s.**" % (doc["protocol"]["id"], run_block["id"],
                                                                          run_block["started_at"], run_block["status"]), "",
-        "Written by `strata bench run`. The machine-readable result is [results.json](results.json); every request, its raw usage "
+        "Written by `nostroma bench run`. The machine-readable result is [results.json](results.json); every request, its raw usage "
         "and timings and the client event offsets are in [outputs.jsonl](outputs.jsonl).", ""]
     reasons = doc["extensions"]["status_reasons"]
     if run_block["status"] != "complete":

@@ -953,7 +953,7 @@ class FetchAndPack(unittest.TestCase):
 
 
 class TheAppAsksControl(unittest.TestCase):
-    """The app calls `strata drafting plan|fetch --config <run config> --mode <choice>` before a load; Control decides, the app never reads the table."""
+    """The app calls `nostroma drafting plan|fetch --config <run config> --mode <choice>` before a load; Control decides, the app never reads the table."""
 
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()

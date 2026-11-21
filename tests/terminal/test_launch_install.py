@@ -53,7 +53,7 @@ class Scripts(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
 
     def test_the_built_in_address_is_the_default_feed(self):
-        """install.sh / install.ps1 and `strata update` use the same GitHub Releases folder; STRATA_FEED stays an override."""
+        """install.sh / install.ps1 and `nostroma update` use the same GitHub Releases folder; STRATA_FEED stays an override."""
         from nostroma_cli import update_cmd
         self.assertEqual(update_cmd.DEFAULT_FEED, mlf.RELEASE_FEED + "/strata-feed.json")
         self.assertIn(":-" + mlf.RELEASE_FEED + "}", (ROOT / "packaging" / "install.sh").read_text(encoding="utf-8"))

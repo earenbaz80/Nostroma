@@ -78,7 +78,7 @@ def resolve_install(override: str | None = None) -> tuple[Path, str]:
 
 
 def all_installs(override: str | None = None) -> list[tuple[Path, str]]:
-    """Every folder with run configs, main one first: what `strata models list` shows and what the launch screens read."""
+    """Every folder with run configs, main one first: what `nostroma models list` shows and what the launch screens read."""
     directory, source = resolve_install(override)
     if source == "explicit":
         return [(directory, source)]

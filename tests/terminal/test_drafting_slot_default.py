@@ -250,7 +250,7 @@ class TheStart(unittest.TestCase):
         self.assertIn("--batch-mtp", c["args"])
 
     def plan_by_command(self, parallel, args=None, **env) -> str:
-        """The plan line `strata drafting plan` shows for this config (nostroma_cli/drafting_cmd.py: _inputs, then decide)."""
+        """The plan line `nostroma drafting plan` shows for this config (nostroma_cli/drafting_cmd.py: _inputs, then decide)."""
         from nostroma_cli import drafting_cmd
         cfg = {**self.cfg(), **({} if parallel is None else {"parallel": parallel}), "args": list(args if args is not None else self.args)}
         path = self.data / "plan.json"

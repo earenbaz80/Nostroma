@@ -276,7 +276,7 @@ class Signed(unittest.TestCase):
 
 
 class UpdaterKeepsTheList(Signed):
-    """`strata update` / the app's check reads the feed through updater.open_feed; the model list is kept there for the offline PC."""
+    """`nostroma update` / the app's check reads the feed through updater.open_feed; the model list is kept there for the offline PC."""
 
     def ctx(self, source: str):
         from nostroma_control import updater

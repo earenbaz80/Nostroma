@@ -1,5 +1,5 @@
 """`nostroma launch` settles the engine before it touches the model. With no usable engine and none to get it does NOT refuse (owner decision,
-2026-10-18): it warns in plain words (the reason from `strata update`, and the next step), asks whether to download the model anyway (the
+2026-10-18): it warns in plain words (the reason from `nostroma update`, and the next step), asks whether to download the model anyway (the
 answer is yes unless the person says no; --yes skips the question), downloads, and ends with a message that names the engine problem and the
 next step, exit code 0. Nothing is started without an engine."""
 
@@ -57,7 +57,7 @@ def runner(spawned: list) -> Runner:
 
 class EngineBeforeModel(unittest.TestCase):
     def run_ensure(self, statuses: list[dict], events: list[dict], code: int = 0):
-        """ensure_engine() with a fake `strata update` and a sequence of engine reports. Returns (spawn count, the error or None)."""
+        """ensure_engine() with a fake `nostroma update` and a sequence of engine reports. Returns (spawn count, the error or None)."""
         spawns, err, _r = self.run_ensure_runner(statuses, events, code)
         return spawns, err
 

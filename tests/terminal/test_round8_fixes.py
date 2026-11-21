@@ -76,12 +76,12 @@ class EngineExitIsExplained(unittest.TestCase):
         cfg, _ = self.config_with_log(["strata generate: CUDA error: out of memory"])
         self.assertIn("--context 16k", R.explain_engine_exit({"error": "server_exited"}, cfg)[1])
         cfg, _ = self.config_with_log(["strata generate: no kernel for TQK6 on this engine"])
-        self.assertIn("strata update", R.explain_engine_exit({"error": "server_exited"}, cfg)[1])
+        self.assertIn("nostroma update", R.explain_engine_exit({"error": "server_exited"}, cfg)[1])
 
     def test_an_unreadable_log_still_says_the_stage_and_where_to_look(self):
         text, nxt = R.explain_engine_exit({"state": "failed", "error": "server_exited", "log_tail": "boom | Error: cannot map the pack"}, None)
         self.assertIn("cannot map the pack", text)
-        self.assertIn("strata logs", nxt)
+        self.assertIn("nostroma logs", nxt)
         text, _ = R.explain_engine_exit({"state": "starting", "error": "startup_wait_expired"}, None)
         self.assertIn("did not finish loading in time", text)
 
@@ -281,7 +281,7 @@ class EngineIsFreshEnough(unittest.TestCase):
             with mock.patch.object(ec, "status", return_value=before), mock.patch.object(Runner, "_spawn", return_value=proc):
                 r.ensure_engine()
             self.assertTrue(any(level == "warn" and "older than this model needs" in text for level, text in events), events)
-            self.assertTrue(any("strata update" in n for n in r.notices), r.notices)
+            self.assertTrue(any("nostroma update" in n for n in r.notices), r.notices)
 
 
 class InstallIsNotHijacked(unittest.TestCase):

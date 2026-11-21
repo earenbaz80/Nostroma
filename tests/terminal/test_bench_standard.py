@@ -844,7 +844,7 @@ class CommandLineTests(StandardBase):
         self.assertEqual(doc["software"]["build_options"], ["cuda", "sm86"])
         self.assertTrue(doc["run"]["optional_concurrency"])
         self.assertIn("--track default", doc["run"]["command"])
-        self.assertTrue(doc["run"]["command"].startswith("strata bench run"))
+        self.assertTrue(doc["run"]["command"].startswith("nostroma bench run"))
 
     def test_results_json_is_redacted_like_the_other_files(self):
         """#4484: free text from the operator reached results.json as typed while the README and the other files were redacted."""

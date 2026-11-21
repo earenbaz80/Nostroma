@@ -422,7 +422,7 @@ def render_view(snapshot: dict, view: str, width: int = 80, height: int = 24,
                 selected: int = 0, frozen: bool = False, filter_text: str = "",
                 glyphs: str = "ascii", connection: str = "", serving_pane: str = "devices",
                 detail: bool = False, connection_state: str | None = None, connect: bool = False) -> str:
-    """Render the six views (seven with Connect, when `strata launch` opened the monitor) with explicit unavailable markers and no fake rates."""
+    """Render the six views (seven with Connect, when `nostroma launch` opened the monitor) with explicit unavailable markers and no fake rates."""
     width, height = max(width, 30), max(height, 8)
     tiny = width < 60 or height < 14
     view = view if view in VIEWS else "overview"
@@ -484,7 +484,7 @@ def render_view(snapshot: dict, view: str, width: int = 80, height: int = 24,
                      else "No telemetry snapshot available")
         lines += [title, message, action, last_seen]
         if tiny:
-            lines = lines[:height - 1] + ["More: strata status --json"]
+            lines = lines[:height - 1] + ["More: nostroma status --json"]
         return "\n".join(_line(line, width) for line in lines[:height])
     if connection_state is not None and (state != "connected" or frozen):
         lines.append(f"Sample age {number(age, ' s', 1)}  |  Source {safe(snapshot.get('source'))}")
@@ -572,9 +572,9 @@ def render_view(snapshot: dict, view: str, width: int = 80, height: int = 24,
                     if events else ["No request transitions retained"]
         else:
             if not tiny:
-                lines += ["More: strata status --json"]
+                lines += ["More: nostroma status --json"]
         if tiny:
-            lines = lines[:height - 1] + ["More: strata status --json"]
+            lines = lines[:height - 1] + ["More: nostroma status --json"]
         return "\n".join(_line(x, width) for x in lines[:height])
     lines += [f"Model {safe(model.get('id'), max(10, width-30))}  {model_state}",
               f"In flight {number(work.get('active'))}   Slots occupied {number(work.get('occupied_slots'))}/{number(work.get('slots_effective'))}   Engine waiting {number(work.get('waiting'))}   Pre-admit {number(work.get('queued'))}"]

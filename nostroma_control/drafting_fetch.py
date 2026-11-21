@@ -1,7 +1,7 @@
 """Getting the DFlash2 drafter onto this computer: a pinned download, checked against the repository's own SHA-256, packed for the engine.
 
-    strata drafting plan  [--data-dir DIR]      what it would download (nothing is changed)
-    strata drafting fetch [--data-dir DIR]      download, check, pack; progress in plain words
+    nostroma drafting plan  [--data-dir DIR]      what it would download (nothing is changed)
+    nostroma drafting fetch [--data-dir DIR]      download, check, pack; progress in plain words
 
 Only an explicit command reaches the network (nostroma_control/acquisition.py): a start never downloads. The drafter is
 incoai/Qwen3.8-Flash-Next-DFlash2 at one revision (nostroma_control/drafting.py has the revision, the file sizes and hashes). The 1.2 GB
@@ -118,7 +118,7 @@ def _present(folders: list[Path], spec) -> dict[str, Path]:
 def convert_selector(data_dir: str | Path, *, progress: Progress | None = None, source_bytes: int | None = None, source_sha256: str | None = None,
                      size: int | None = None, sha256: str | None = None) -> Path | None:
     """Make the pack with the Q4_0 selector (drafting.CONVERTED_NAME, 174 MiB less in graphics memory) from the verified Q4_0 pack, on this computer. No network, a second
-    or two on a fast machine, about 120 MB of memory. Called only by setup, `strata drafting fetch` and Load (launch), never by a start or a serve. The Q4_0 pack must be
+    or two on a fast machine, about 120 MB of memory. Called only by setup, `nostroma drafting fetch` and Load (launch), never by a start or a serve. The Q4_0 pack must be
     the pinned bytes (PACK_BYTES / PACK_SHA256) and the result the pinned bytes (CONVERTED_BYTES / CONVERTED_SHA256); anything else is deleted and None is returned:
     the Q4_0 pack with the bf16 selector keeps being used, nothing is reported as an error. The idea and the bytes are nazeshinjite's
     (https://huggingface.co/nazeshinjite/Qwen3.8-Flash-Next-DFlash2-GGUF). The keyword arguments are for tests, which convert a small synthetic pack."""
@@ -157,9 +157,9 @@ def convert_selector(data_dir: str | Path, *, progress: Progress | None = None, 
 
 
 FEED_TIMEOUT = 8.0
-RETRY_AFTER_S = drafting.RETRY_AFTER_S          # Load (nostroma launch) asks the feed for the tuned drafter at most this often when the answer was "nothing"; setup and `strata drafting fetch` always ask
+RETRY_AFTER_S = drafting.RETRY_AFTER_S          # Load (nostroma launch) asks the feed for the tuned drafter at most this often when the answer was "nothing"; setup and `nostroma drafting fetch` always ask
 MISS_MARK = drafting.MISS_MARK
-_recent_miss = drafting.recent_miss              # (the start's "Run strata drafting fetch" line reads the same mark: nostroma_control/drafting.py fetch_hint)
+_recent_miss = drafting.recent_miss              # (the start's "Run nostroma drafting fetch" line reads the same mark: nostroma_control/drafting.py fetch_hint)
 
 
 def _note_miss(data_dir: str | Path, missed: bool) -> None:
@@ -183,7 +183,7 @@ def _feed_source(feed: str | None = None) -> str:
 
 
 def _accepted_sequence(components: str | Path | None = None) -> tuple[int | None, Path | None]:
-    """(the last feed sequence this computer accepted, the file that remembers it): what `strata update` refuses to go below
+    """(the last feed sequence this computer accepted, the file that remembers it): what `nostroma update` refuses to go below
     (updater.open_feed, ``<components>/.updates/state.json``). (None, None) when nothing was accepted yet or the file cannot be read."""
     try:
         from nostroma_cli import update_cmd
@@ -200,7 +200,7 @@ def tuned_from_feed(*, feed: str | None = None, backend: str | None = None, size
                     variant: str | None = None, components: str | Path | None = None) -> tuple[str, int, str] | None:
     """(address, size, sha256) of the tuned drafter as the signed feed lists it (member ``drafters``), or None: the feed cannot be read (offline, the host is down: silent), has no
     such entry for this engine family, or lists other bytes than the ones this Nostroma was measured with (pinned size and SHA-256: then it is another drafter, not ours).
-    A feed that does not verify is DraftingError: a bad signature, an expired feed, or a feed older than the one `strata update` already accepted on this computer
+    A feed that does not verify is DraftingError: a bad signature, an expired feed, or a feed older than the one `nostroma update` already accepted on this computer
     (the update's own rule, updater.open_feed: a replayed older feed could name a drafter file the newer one no longer lists). Only the update moves the
     accepted sequence; this lookup reads it. A build that trusts no key (a source checkout from before the keys) is silent."""
     from nostroma_control import signing, updater
@@ -263,7 +263,7 @@ def ensure_tuned(data_dir: str | Path, *, progress: Progress | None = None, canc
     if drafting.converted_ok(data_dir, size=want_size, sha256=want_sha, name=file_name):
         provide_licence(data_dir)
         return out
-    acquisition.require("the tuned DFlash2 drafter", "strata drafting fetch")
+    acquisition.require("the tuned DFlash2 drafter", "nostroma drafting fetch")
     location = url or os.environ.get(drafting.TUNED_URL_ENV, "").strip()
     if location:                                          # a direct address (tests, a mirror): the pinned size and SHA-256 still decide
         if not _reachable(location):
@@ -341,7 +341,7 @@ def ensure(data_dir: str | Path, *, progress: Progress | None = None, cancel: th
             convert_selector(data_dir, progress=report)
         report("The DFlash2 drafter is ready.", 1, 1)
         return drafting.pack_path(data_dir)
-    acquisition.require("the DFlash2 drafter", "strata drafting fetch")
+    acquisition.require("the DFlash2 drafter", "nostroma drafting fetch")
     folder = out.parent
     src = folder / "src"
     spec = tuple(files if files is not None else drafting.FILES)

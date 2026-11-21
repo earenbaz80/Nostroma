@@ -12,7 +12,7 @@ built for Flash-Next. A Qwen4 model of a different shape therefore ships with it
 * use: the run config of a model of that shape says ``"exe": "component:strata-q4-lite"``. Every start asks ``engine_component.expand``, which resolves it in the shape's folder
   (checks every file's SHA-256 and the signature, as for the Nostroma engine). The Nostroma engine and every model that runs on it are not touched;
 * fetch: setup (the app's Download and the Terminal's launch) fetches the shape's engine through the signed feed when the model is chosen, as it does for DeepSeek's. An explicit
-  `strata update` brings an installed shape engine up to date. Starting a model never downloads anything.
+  `nostroma update` brings an installed shape engine up to date. Starting a model never downloads anything.
 
 Nothing in this module imports anything outside the standard library and ``nostroma_control`` at load time.
 """
@@ -35,7 +35,7 @@ RESERVED = frozenset({"strata-engine", "strata-dsv41", "strata-control", "strata
 NO_SHAPE_ANSWER = "it does not say which model shape it was built for"
 KEEP_VERSIONS = 2                                                           # the installed shape engine and the one before it
 #: What a person reads in the lines below where "{model}" stands: the model's title ("Q4 Lite Shape"), not the geometry's name (q4_lite). One switch: False puts the geometry
-#: name back everywhere (the owner decides; `strata components engine` and the JSON always name the shape).
+#: name back everywhere (the owner decides; `nostroma components engine` and the JSON always name the shape).
 USE_TITLE = True
 
 # ---- the words a person can see: approved by the owner 11-08 ("A ok"), pinned by tests/terminal/test_shape_engine.py ApprovedWords. {model} is the model's title (see USE_TITLE).
@@ -70,7 +70,7 @@ def shown(shape: str, title: str | None = None) -> str:
 
 
 def title_from_feed(feed, shape: str) -> str | None:
-    """The title of the feed's model of `shape` (the first one), for a line of `strata update`, which does not know which model asked."""
+    """The title of the feed's model of `shape` (the first one), for a line of `nostroma update`, which does not know which model asked."""
     for model in getattr(feed, "models", ()) or ():
         if model.shape == shape and model.title:
             return model.title
@@ -177,7 +177,7 @@ class ShapeEngineMissing(ec.EngineMissing):
 
 
 def status(components: Path | None = None) -> list[dict]:
-    """The shape engines installed here, for `strata components engine` and the app: one row per shape with its packages. Empty when there are none (a PC that
+    """The shape engines installed here, for `nostroma components engine` and the app: one row per shape with its packages. Empty when there are none (a PC that
     never had a model of another shape reports exactly what it did before)."""
     rows = []
     for shape in installed_shapes(components):
@@ -194,7 +194,7 @@ def status(components: Path | None = None) -> list[dict]:
 # ---------------------------------------------------------------------------------------------- fetching from the signed feed
 
 def _test_start(exe: Path, timeout: float = 120.0, shape: str | None = None) -> tuple[bool, str]:
-    """The new engine starts: ``strata --version`` runs, loads its libraries and names itself (it needs no graphics card and no model). The package's own folders go on the
+    """The new engine starts: ``nostroma --version`` runs, loads its libraries and names itself (it needs no graphics card and no model). The package's own folders go on the
     library path first, as the start path does. With `shape`, ``strata --geometry`` (engine 0.2.13 and later) must name that shape: an engine compiled for another geometry than
     the signed manifest says is refused here, not at its first load, and so is one that cannot answer the flag (NO_SHAPE_ANSWER, owner 11-09)."""
     import subprocess
@@ -260,7 +260,7 @@ def _prune(shape_root: Path, shape: str, keep_name: str) -> list[str]:
 def update_one(ctx, feed, shape: str, *, install_missing: bool = True, title: str | None = None) -> dict:
     """Bring the engine of `shape` up to the feed's: fetch the newest package that fits this PC (resumable download, archive SHA-256, the manifest hash the signed feed names,
     the package signature, every file's hash, the shape named in the manifest), put it NEXT TO the older ones, start it once (`--version`) and only then keep it. The Nostroma engine is
-    never touched. `install_missing` False: nothing is done for a shape that has no engine installed yet (an explicit `strata update` only updates what is there).
+    never touched. `install_missing` False: nothing is done for a shape that has no engine installed yet (an explicit `nostroma update` only updates what is there).
     Returns the result row (``status``: installed, updated, current, none-installed, none-for-this-pc)."""
     from nostroma_control import feed as feedmod, longpath, updater
     comp = component_id(shape)

@@ -105,7 +105,7 @@ class OwnLaunchHoldsTheCardTests(test_updater.UpdaterCase):
         result = out["results"][0]
         self.assertEqual((out["exit_code"], result["status"]), (7, "failed"))
         self.assertIn("nostroma launch --stop", result["error"])
-        self.assertIn("run `strata update` again", result["error"])
+        self.assertIn("run `nostroma update` again", result["error"])
         self.assertNotIn("raw engine text", result["error"])
 
     def test_own_launch_serving_before_the_test_is_also_one_plain_step(self):

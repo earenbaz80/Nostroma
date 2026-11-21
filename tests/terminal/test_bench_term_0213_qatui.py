@@ -1,4 +1,4 @@
-"""Round 0213 QATUI: `strata bench run --profile` ended with SIGTERM must end the engine it started, like Ctrl+C does.
+"""Round 0213 QATUI: `nostroma bench run --profile` ended with SIGTERM must end the engine it started, like Ctrl+C does.
 
 Found on l620 (Linux, CUDA) and m1001 (macOS): after `kill -TERM <bench pid>` the runner was gone and its server and engine kept the port and the GPU
 (only KeyboardInterrupt was handled, so the `finally` that stops the engine never ran). The driver below runs the real `bench run` command line in a

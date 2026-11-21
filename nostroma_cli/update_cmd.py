@@ -1,13 +1,13 @@
-"""`strata update`, `strata components update|rollback`: the one explicit step that downloads and installs.
+"""`nostroma update`, `nostroma components update|rollback`: the one explicit step that downloads and installs.
 
-    strata update                 the engine for this PC and Control, from the signed feed; switches only after a test start
-    strata update --check         read the feed and say what would change; downloads nothing else
-    strata update --app           also download and verify the desktop app's installer
-    strata components update      the same as `strata update` (engine + Control)
-    strata components rollback    return to the previous engine version the last update kept
-    strata components engines     list the engines installed on this computer (sizes, which one is in use)
-    strata components use X       switch to an installed engine (a version or folder name; `newest` follows updates again)
-    strata components remove X    delete an installed engine (never the one in use)
+    nostroma update                 the engine for this PC and Control, from the signed feed; switches only after a test start
+    nostroma update --check         read the feed and say what would change; downloads nothing else
+    nostroma update --app           also download and verify the desktop app's installer
+    nostroma components update      the same as `nostroma update` (engine + Control)
+    nostroma components rollback    return to the previous engine version the last update kept
+    nostroma components engines     list the engines installed on this computer (sizes, which one is in use)
+    nostroma components use X       switch to an installed engine (a version or folder name; `newest` follows updates again)
+    nostroma components remove X    delete an installed engine (never the one in use)
 
 Starting and serving never come here. A process that has forbidden acquiring (STRATA_NO_ACQUIRE) is refused with exit 5.
 Exit codes: 0 done or nothing to do, 2 usage, 5 refused (signature, hash, downgrade, no key, acquiring forbidden),
@@ -67,7 +67,7 @@ def add_parsers(sp, components_sp) -> list:
     update.add_argument("--yes", action="store_true", help="ask nothing (a script); a loaded model is not stopped by this alone, see --stop-model")
     update.add_argument("--stop-model", action="store_true", help="let the update stop a loaded model first (the script's yes to the question a terminal asks)")
     update.add_argument("--start-again", action="store_true", help="after the update, start the model(s) that were stopped for it again with the same settings")
-    comp_update = components_sp.add_parser("update", help="the same as `strata update` (engine and Control)")
+    comp_update = components_sp.add_parser("update", help="the same as `nostroma update` (engine and Control)")
     _common(comp_update)
     comp_update.add_argument("--check", action="store_true")
     comp_update.add_argument("--app", action="store_true")
@@ -96,7 +96,7 @@ def add_parsers(sp, components_sp) -> list:
 
 
 class _EngineFamilies(tuple):
-    """The --family values of `strata components use | remove`: qwen, and the engine of a Qwen4 model shape as shape:<shape> (what the app
+    """The --family values of `nostroma components use | remove`: qwen, and the engine of a Qwen4 model shape as shape:<shape> (what the app
     passes, nostroma_control/engine_library.py SHAPE_PREFIX). "deepseek" is accepted but not listed: engine_library answers it in plain words
     (nostroma_control/retired.py)."""
 
@@ -191,7 +191,7 @@ def _line(name: str, result: dict) -> str:
         return f"{shape_engine.WORDS['update_label']}  {result.get('note') or status}"
     if result.get("component") == "control":
         if status == "updated":
-            return f"{name:<8}{result.get('installed_before') or '?'} -> {result.get('installed_after')}   updated. The next `strata` command already runs it; the app switches on its next start"
+            return f"{name:<8}{result.get('installed_before') or '?'} -> {result.get('installed_after')}   updated. The next `nostroma` command already runs it; the app switches on its next start"
         if status == "current":
             return f"{name:<8}{result.get('installed_before')}   up to date"
         if status == "not-in-feed":
@@ -242,7 +242,7 @@ def _print_check(report: dict) -> None:
         names = ", ".join(m.label for m in engine_update.running_models(report["serving"]))
         print(f"  {names} is running. An update asks before it stops it, downloads while it keeps serving, and asks whether to start it again.")
     if eng.get("status") in ("available", "install") and not report.get("serving"):
-        print("  To update: strata update")
+        print("  To update: nostroma update")
 
 
 def source_store(checkout: Path | None = None) -> Path | None:
@@ -259,8 +259,8 @@ def source_store(checkout: Path | None = None) -> Path | None:
 
 
 def default_components_dir(ec) -> Path:
-    """The folder `strata update` works in when none is named. STRATA_COMPONENTS_DIR and --components-dir win (ec.components_dir reads the first). A source
-    checkout that has its own engine store, and whose per-user folder holds no engine package, updates the checkout's: running `strata update` there used
+    """The folder `nostroma update` works in when none is named. STRATA_COMPONENTS_DIR and --components-dir win (ec.components_dir reads the first). A source
+    checkout that has its own engine store, and whose per-user folder holds no engine package, updates the checkout's: running `nostroma update` there used
     to download into the per-user folder instead, leave a half-written state.json and a part file nobody resumed, and then download everything again
     when the right folder was named (#4463)."""
     chosen = ec.components_dir()
@@ -327,8 +327,8 @@ def run(a) -> int:
                       f"Engine rolled back: {out['from']} -> {out['to']}.")
                 print("Saved tuning presets are marked for the short re-check; none were deleted." if out["presets_marked"] else
                       "Saved tuning presets are unchanged.")
-                print("Run `strata update --force` to try the newer version again, or `strata components rollback` to return to it." if not forward else
-                      "Run `strata components rollback` again to go back to the older one.")
+                print("Run `nostroma update --force` to try the newer version again, or `nostroma components rollback` to return to it." if not forward else
+                      "Run `nostroma components rollback` again to go back to the older one.")
             return 0
         if getattr(a, "components_command", None) in ("engines", "use", "remove"):
             return _engines_command(a, ctx, machine, fail)
@@ -342,7 +342,7 @@ def run(a) -> int:
             else:
                 print(out.get("note") or _line("Engine", out))
             return 0
-        acquisition.require("the update", "`strata update` from a terminal")
+        acquisition.require("the update", "`nostroma update` from a terminal")
         trusted = signing.load_trusted_keys()
         ctx.trusted = trusted
         ctx.source = _feed_source(a, root)
@@ -388,7 +388,7 @@ def _show_results(out: dict) -> None:
         print("Saved tuning presets: marked for the short re-check (nothing was deleted).")
     kept = next((r.get("previous") for r in out["results"] if r.get("status") == "updated" and r["component"] == "engine"), None)
     if kept:                                             # a first install has no earlier engine to keep
-        print("The previous engine version is kept; `strata components rollback` returns to it.")
+        print("The previous engine version is kept; `nostroma components rollback` returns to it.")
 
 
 def _ask_factory(a, machine: bool):
@@ -417,7 +417,7 @@ def _gb(n: int | None) -> str:
 
 
 def _engines_command(a, ctx, machine: bool, fail) -> int:
-    """`strata components engines | use | remove`: the same list and the same switch / delete the app's Settings > Engine uses (nostroma_control/engine_library.py)."""
+    """`nostroma components engines | use | remove`: the same list and the same switch / delete the app's Settings > Engine uses (nostroma_control/engine_library.py)."""
     from nostroma_control import engine_library as lib, updater
     ctx.serving = updater.serving_now
     command = a.components_command
@@ -434,7 +434,7 @@ def _engines_command(a, ctx, machine: bool, fail) -> int:
                 print(f"  {e['version']:<12}{_gb(e['bytes']):>9}  {e['backend'] + ('-' + e['variant'] if e['variant'] else ''):<14}{', '.join(t for t in tags if t)}")
                 if e["why_not"] and not e["fits"]:
                     print(f"      {e['why_not']}")
-        print("\n`strata components use <version>` switches, `strata components remove <version>` deletes. Nothing was changed.")
+        print("\n`nostroma components use <version>` switches, `nostroma components remove <version>` deletes. Nothing was changed.")
         return 0
     entry = lib.find_entry(lib.list_engines(ctx), a.engine, a.family)
     if command == "use":
@@ -459,7 +459,7 @@ def _engines_command(a, ctx, machine: bool, fail) -> int:
                       "`nostroma launch --backend auto` goes back to the PC's own choice.")
             print("Saved tuning presets are marked for the short re-check; none were deleted." if out.get("presets_marked") else
                   "Saved tuning presets are unchanged.")
-            print("`strata update` makes the newest engine the one in use again." if not out.get("automatic") else
+            print("`nostroma update` makes the newest engine the one in use again." if not out.get("automatic") else
                   "This is the newest engine, so it follows updates again.")
         return 0
     out = lib.delete_engine(ctx, entry["family"], entry["folder"], entry.get("root"))

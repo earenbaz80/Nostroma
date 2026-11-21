@@ -1,6 +1,6 @@
-"""Hand the Terminal over to a newer Control that `strata update` installed.
+"""Hand the Terminal over to a newer Control that `nostroma update` installed.
 
-`strata update` stages a newer Control in ``<components>/control/<ver>/`` and writes ``<components>/control/active.json``. The
+`nostroma update` stages a newer Control in ``<components>/control/<ver>/`` and writes ``<components>/control/active.json``. The
 desktop app follows that pointer; the Terminal on PATH is a different install, so without this it kept running the old one.
 `maybe_hand_over` runs at the very start of ``strata.py``, before any heavy import, and (only when that Control is newer and whole)
 runs the same command line with the newer Control's own interpreter and entry point.
@@ -141,7 +141,7 @@ def maybe_hand_over(argv, environ=None, root=None, running=None, execv=None, run
         return None
     if problem:
         what = f"Control {version}" if version else "Control"
-        warn(f"strata: a newer {what} was installed but {problem}; running {running} instead. Run `strata update` again to repair it.")
+        warn(f"strata: a newer {what} was installed but {problem}; running {running} instead. Run `nostroma update` again to repair it.")
         return None
     if folder is None:
         return None

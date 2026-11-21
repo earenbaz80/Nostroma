@@ -1,4 +1,4 @@
-"""``strata drafting plan|fetch``: the DFlash2 drafter file (nostroma_control/drafting_fetch.py). The app calls it with ``--output jsonl``.
+"""``nostroma drafting plan|fetch``: the DFlash2 drafter file (nostroma_control/drafting_fetch.py). The app calls it with ``--output jsonl``.
 
 With ``--config`` (a model's run config) and ``--mode`` (the choice, default: the config's own ``drafting``) the command decides what this
 model needs: ``needed`` is true only when the choice would use the drafter and its file is not here yet. ``fetch --if-needed`` then downloads
@@ -77,11 +77,11 @@ def _planned_model_name(a) -> str | None:
         return None
 
 
-SEVERAL_MODELS = "Several models are set up here. Say which one: strata drafting fetch --model <name>, or --config <file>."
+SEVERAL_MODELS = "Several models are set up here. Say which one: nostroma drafting fetch --model <name>, or --config <file>."
 
 
 def _installed_dflash2_configs(a) -> list[dict]:
-    """A bare ``strata drafting fetch`` (no run config, no model, no family): the installed models DFlash2 is for; [] for any other command line or when none can be read."""
+    """A bare ``nostroma drafting fetch`` (no run config, no model, no family): the installed models DFlash2 is for; [] for any other command line or when none can be read."""
     if a.config or getattr(a, "model", None) or a.family or a.drafting_command != "fetch":
         return []
     try:
@@ -92,7 +92,7 @@ def _installed_dflash2_configs(a) -> list[dict]:
 
 
 def _only_installed_config(a) -> str | None:
-    """A bare ``strata drafting fetch``: the run config of the installed model when exactly one model DFlash2 is for is set up here, so the
+    """A bare ``nostroma drafting fetch``: the run config of the installed model when exactly one model DFlash2 is for is set up here, so the
     fetch takes the drafter that model would use (the tuned one where it applies) and not the stock one. Several: `run` asks which one (SEVERAL_MODELS); none: None, the fetch is the generic one as before."""
     found = _installed_dflash2_configs(a)
     return str(found[0]["path"]) if len(found) == 1 else None

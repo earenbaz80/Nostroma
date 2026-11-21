@@ -110,7 +110,7 @@ class TheLaunchPlan(unittest.TestCase):
 
 
 class AnAutomaticFetch(unittest.TestCase):
-    """`strata drafting fetch --if-needed --throttle`: what the app's plain load, restart and tuning run call."""
+    """`nostroma drafting fetch --if-needed --throttle`: what the app's plain load, restart and tuning run call."""
 
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -161,7 +161,7 @@ class AnAutomaticFetch(unittest.TestCase):
 
 
 class ABareFetch(AnAutomaticFetch):
-    """`strata drafting fetch` with nothing named: the one installed model's run config decides (coordinator 11-07)."""
+    """`nostroma drafting fetch` with nothing named: the one installed model's run config decides (coordinator 11-07)."""
 
     def installed(self, *names):
         rows = [{"path": str(self.cfg), "model_name": n} for n in names]
@@ -191,9 +191,9 @@ class ABareFetch(AnAutomaticFetch):
         ensure.assert_not_called()
         said = json.loads(out.strip().splitlines()[-1])
         self.assertFalse(said["ok"])
-        self.assertEqual(said["error"]["message"], "Several models are set up here. Say which one: strata drafting fetch --model <name>, or --config <file>.")
+        self.assertEqual(said["error"]["message"], "Several models are set up here. Say which one: nostroma drafting fetch --model <name>, or --config <file>.")
         self.assertEqual(code_text, 2)
-        self.assertIn("Several models are set up here. Say which one: strata drafting fetch --model <name>, or --config <file>.", err)
+        self.assertIn("Several models are set up here. Say which one: nostroma drafting fetch --model <name>, or --config <file>.", err)
 
     def test_naming_the_model_still_fetches_with_several_set_up(self):
         with serving(), hardware(STRIX), self.installed(Q4, "qwen3.8-flash-next-iq3_s"), mock.patch.object(drafting_fetch, "ensure_for", return_value=self.data / "x") as ensure:

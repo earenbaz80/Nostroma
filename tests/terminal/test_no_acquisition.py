@@ -1,7 +1,7 @@
 """Starting and serving never acquire anything.
 
 The owner's rule: a user must never download random packages from the internet while starting or serving. Everything
-that installs, downloads or compiles lives behind an explicit command (SETUP, UPDATE, `strata install`). Three layers
+that installs, downloads or compiles lives behind an explicit command (SETUP, UPDATE, `nostroma install`). Three layers
 are checked here:
 
 * the import graph of the start/serve entry points does not reach installer code;
@@ -47,11 +47,11 @@ NETWORK_ALLOWED = {
     ("nostroma_control/tune_api.py", "urlopen"): "the loopback engine/server of a tuning job the user started",
     ("nostroma_control/tune_session.py", "urlopen"): "the loopback engine (127.0.0.1) the auto-tuner a user started measures",
     ("nostroma_control/loopback.py", "urlopen"): "the one opener for this computer's own servers (no proxy); any other address is passed on unchanged",
-    ("nostroma_control/components.py", "urlopen"): "the component fetcher: only `strata install`/UPDATE call it",
+    ("nostroma_control/components.py", "urlopen"): "the component fetcher: only `nostroma install`/UPDATE call it",
 }
 #: Modules that import the installer on purpose, with the explicit command that reaches them.
 INSTALLER_IMPORT_ALLOWED = {
-    "nostroma_control/calibration.py": "`strata engine calibrate`: an explicit tuning command, imports setup lazily",
+    "nostroma_control/calibration.py": "`nostroma engine calibrate`: an explicit tuning command, imports setup lazily",
 }
 
 SERVING_DIRS = ("serve", "nostroma_cli", "nostroma_control")

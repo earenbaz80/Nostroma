@@ -444,7 +444,7 @@ def busy_sigterm(rig, proc):
 
 
 def nohup_case(rig: Rig, name: str = "serve-nohup-keeps-serving", *, vram: bool = False) -> Result:
-    """`nohup strata serve &` asks to outlive its terminal: a hangup that was ignored at start is still ignored, and the
+    """`nohup nostroma serve &` asks to outlive its terminal: a hangup that was ignored at start is still ignored, and the
     server stops on SIGTERM as usual. (An ordinary server stops on SIGHUP: serve-sighup.)"""
     rig.clear_marks()
     before = vram_used_mib() if vram else None
@@ -516,7 +516,7 @@ def pty_close_case(rig: Rig, name: str = "serve-terminal-closed", *, vram: bool 
             pass
 
 
-# --- the detached service (`strata runtime start`) ------------------------------------------------
+# --- the detached service (`nostroma runtime start`) ------------------------------------------------
 
 def runtime_start(rig: Rig, die_with: int | None = None) -> dict:
     argv = [sys.executable, str(ROOT / "strata.py"), "runtime", "start", "--profile", "app", "--wait", "400" if rig.real else "240",
@@ -727,7 +727,7 @@ def monitor_case(rig: Rig, how: str) -> Result:
 
 
 SCENARIOS = {
-    # foreground `strata serve`
+    # foreground `nostroma serve`
     "serve-ctrl-c": lambda rig, v: serve_case(rig, "serve-ctrl-c", win_ctrl_c if WINDOWS else sigint_group,
                                               graceful=True, vram=v, new_console=WINDOWS),
     "serve-sigterm": lambda rig, v: serve_case(rig, "serve-sigterm", sigterm, graceful=True, vram=v),
@@ -739,7 +739,7 @@ SCENARIOS = {
     "serve-busy-stop": lambda rig, v: serve_case(rig, "serve-busy-stop", busy_sigterm, graceful=True, vram=v),
     "serve-terminal-closed": lambda rig, v: pty_close_case(rig, vram=v),
     "serve-nohup-keeps-serving": lambda rig, v: nohup_case(rig, vram=v),
-    # `strata runtime start` (a background service by design)
+    # `nostroma runtime start` (a background service by design)
     "runtime-stop": lambda rig, v: runtime_case(rig, "runtime-stop", "stop", vram=v),
     "runtime-survives-terminal": lambda rig, v: runtime_case(rig, "runtime-survives-terminal", "terminal-gone", vram=v),
     "runtime-owner-killed": lambda rig, v: runtime_case(rig, "runtime-owner-killed", "owner-killed", vram=v),

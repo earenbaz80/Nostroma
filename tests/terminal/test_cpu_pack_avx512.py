@@ -1,5 +1,5 @@
 """A CPU without AVX-512 (Ryzen 3000-5000, Intel Core 12th-14th generation) and the pack for AVX-512 CPUs: the Terminal says so
-plainly (strata doctor before the start, the launcher after an engine stop), and does not blame the CPU for a pack that is simply
+plainly (nostroma doctor before the start, the launcher after an engine stop), and does not blame the CPU for a pack that is simply
 not the native one."""
 
 import json

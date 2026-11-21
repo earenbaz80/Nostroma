@@ -171,7 +171,7 @@ def installer_folder(explicit: str | os.PathLike | None = None) -> Path:
 
 
 def install_places(explicit: str | os.PathLike | None = None, src: str | os.PathLike | None = None) -> list:
-    """Every folder with run configs, main one first: the SAME discovery `strata models list` and the own-files import use
+    """Every folder with run configs, main one first: the SAME discovery `nostroma models list` and the own-files import use
     (nostroma_control/discovery.py). An explicit folder (the argument, or STRATA_INSTALL_DIR) is the only one."""
     from nostroma_control import discovery
     return discovery.places(here=installer_folder(src), explicit=explicit)

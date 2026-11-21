@@ -101,7 +101,7 @@ class Resolution(unittest.TestCase):
                 ec.resolve(self.root, backend="cuda")
         text = str(caught.exception)
         self.assertIn("never downloads an engine", text)
-        self.assertIn("strata install", text)
+        self.assertIn("nostroma install", text)
         self.assertIsInstance(caught.exception, acquisition.AcquisitionRefused)
         self.assertEqual(caught.exception.exit_code, 5)
         self.assertFalse((self.root / "engine").exists(), "looking must not create the folder")

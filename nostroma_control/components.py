@@ -527,7 +527,7 @@ class ComponentStore:
         verified by the caller before anything is unpacked.
         """
         from nostroma_control import acquisition
-        acquisition.require(f"the download of {artifact.name}", "strata install")
+        acquisition.require(f"the download of {artifact.name}", "nostroma install")
         import urllib.error
         import urllib.request
         from nostroma_control import tls

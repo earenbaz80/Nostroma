@@ -403,7 +403,7 @@ class WithoutAGate(ModelCase):
 
 
 class TheCommand(ModelCase):
-    """`strata update` as a person or a script runs it."""
+    """`nostroma update` as a person or a script runs it."""
 
     def setUp(self):
         super().setUp()

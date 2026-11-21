@@ -785,7 +785,7 @@ def _stop_lost(name: str) -> dict | None:
 
 
 def cleanup(profile: str | None = None) -> dict:
-    """End the servers and engines Nostroma started whose owner is gone (`strata runtime cleanup`). Owned instances
+    """End the servers and engines Nostroma started whose owner is gone (`nostroma runtime cleanup`). Owned instances
     that are running are not touched, and neither is any process that is not exactly what Nostroma recorded."""
     if profile is not None:
         profile = _name(profile)

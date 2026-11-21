@@ -254,7 +254,7 @@ class Fetch(Base):
         return out
 
     def accept(self, sequence):
-        """What `strata update` leaves after it accepted a feed: <components>/.updates/state.json feed.sequence."""
+        """What `nostroma update` leaves after it accepted a feed: <components>/.updates/state.json feed.sequence."""
         from nostroma_control import updater
         state = updater.State(self.root / "components")
         state.section("feed").update({"sequence": sequence, "key_id": "k", "source": "x", "channel": "stable"})
@@ -280,7 +280,7 @@ class Fetch(Base):
         self.assertEqual(drafting_fetch.tuned_from_feed(feed=str(same))[1:], (len(TUNED_BYTES), hashlib.sha256(TUNED_BYTES).hexdigest()))
         newer = self.make_feed(sub="newer", sequence=127)
         self.assertEqual(drafting_fetch.ensure_tuned(self.data, feed=str(newer)), drafting.tuned_path(self.data))
-        self.assertEqual(json.loads(state_file.read_text(encoding="utf-8"))["feed"]["sequence"], 126, "only `strata update` accepts a feed")
+        self.assertEqual(json.loads(state_file.read_text(encoding="utf-8"))["feed"]["sequence"], 126, "only `nostroma update` accepts a feed")
 
     def test_nothing_accepted_yet_takes_any_sequence_and_offline_stays_silent_with_one_accepted(self):
         self.assertIsNotNone(drafting_fetch.tuned_from_feed(feed=str(self.make_feed(sub="first", sequence=5))))

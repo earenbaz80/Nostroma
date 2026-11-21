@@ -8,7 +8,7 @@ What these tests pin:
   * the install (a local signed feed over loopback, a stub engine, a throwaway key): the package is fetched, checked (signature, hashes, shape), placed in
     <components>/shapes/<shape>/engine/, started once, and the Nostroma engine's files are byte for byte what they were; a bad package or a failed start changes nothing;
   * use: component:strata-q4-lite resolves to that engine, component:strata-engine still to the Nostroma engine; a missing shape engine is a plain refusal, not a fetch;
-  * update: `strata update` brings an installed shape engine up to date beside the older one and prunes beyond two; a PC with none has no such step;
+  * update: `nostroma update` brings an installed shape engine up to date beside the older one and prunes beyond two; a PC with none has no such step;
   * older Controls: the feed.py of the Control before this (git) reads the same feed as one without the new member and does not offer the model.
 """
 from __future__ import annotations
@@ -627,7 +627,7 @@ class Update(Base):
 
 
 class TitleInLines(Base):
-    """A person reads the model's title ("Qwen4 Lite Test"), not the geometry's name (q4_lite), in every line; the shape stays in the keys, the JSON and `strata components engine`.
+    """A person reads the model's title ("Qwen4 Lite Test"), not the geometry's name (q4_lite), in every line; the shape stays in the keys, the JSON and `nostroma components engine`.
     shape_engine.USE_TITLE is the one switch back."""
     TITLE = "Qwen4 Lite Test"
 

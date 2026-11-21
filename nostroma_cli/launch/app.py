@@ -169,7 +169,7 @@ class Ctx:
         s = self.settings
         name = "launch-" + S.slug(s.name or self.default_name())
         cfg = self.base_config()
-        line = f"strata runtime start --profile {name}"
+        line = f"nostroma runtime start --profile {name}"
         if cfg is None:
             return line + "   (the engine command is shown once the model is installed)"
         try:

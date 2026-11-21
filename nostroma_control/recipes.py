@@ -188,7 +188,7 @@ def load(profile: str, name: str) -> tuple[dict, str]:
         data = path.read_bytes()
         value = json.loads(data.decode("utf-8-sig"))
     except FileNotFoundError:
-        raise ProfileError(f"recipe {name!r} is missing; use strata ops init --profile {profile}", 5) from None
+        raise ProfileError(f"recipe {name!r} is missing; use nostroma ops init --profile {profile}", 5) from None
     except (OSError, UnicodeError, ValueError) as exc:
         if isinstance(exc, ProfileError):
             raise
@@ -300,7 +300,7 @@ def edit(profile: str, name: str) -> tuple[dict, str, str]:
     current, revision = load(profile, name)
     editor = os.environ.get("VISUAL") or os.environ.get("EDITOR")
     if not editor:
-        raise ProfileError("set VISUAL or EDITOR, or use strata ops set")
+        raise ProfileError("set VISUAL or EDITOR, or use nostroma ops set")
     command = shlex.split(editor, posix=os.name != "nt")
     if not command:
         raise ProfileError("VISUAL or EDITOR is empty")

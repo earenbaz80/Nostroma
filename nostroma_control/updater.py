@@ -17,8 +17,8 @@ What an engine update does, in order, and what keeps the old engine safe at each
    previous version for a manual rollback, and mark saved tuning presets for the short re-check.
 
 If any step fails, the live ``engine/`` folder has not changed: the previous engine keeps working, and what failed is
-named. Every older engine stays installed until the person deletes it (Settings > Engine, ``strata components remove``);
-``strata components use`` / ``rollback`` switch between them.
+named. Every older engine stays installed until the person deletes it (Settings > Engine, ``nostroma components remove``);
+``nostroma components use`` / ``rollback`` switch between them.
 Models and presets are never read, moved, deleted or downloaded here.
 """
 
@@ -66,7 +66,7 @@ class UpdateError(RuntimeError):
         self.exit_code = exit_code
 
 
-LAUNCH_NEXT_STEP = "Stop the model first (`nostroma launch --stop`), then run `strata update` again. Nothing was changed."
+LAUNCH_NEXT_STEP = "Stop the model first (`nostroma launch --stop`), then run `nostroma update` again. Nothing was changed."
 
 
 class Busy(UpdateError):
@@ -118,8 +118,8 @@ class TestStartFailed(UpdateError):
         else:
             cause = "The engine reported a problem while it started."
         if hint is None:
-            hint = ("Run `strata update --force` to try again; if it fails again, report it with the log." if not busy and what == "engine"
-                    else "Run `strata update` again.")
+            hint = ("Run `nostroma update --force` to try again; if it fails again, report it with the log." if not busy and what == "engine"
+                    else "Run `nostroma update` again.")
         return f"{head} {cause} {hint}"
 
     def __init__(self, label: str, reason: str, *, busy: bool | None = None, hint: str | None = None):
@@ -128,7 +128,7 @@ class TestStartFailed(UpdateError):
         self.busy = bool(self.BUSY.search(reason)) if busy is None else busy
         if hint is None and self.busy:
             hint = ("The graphics card or memory looks busy: close programs that use the card (games, video, other models) "
-                    "and run `strata update` again.")
+                    "and run `nostroma update` again.")
         super().__init__(self.plain(label, reason, self.busy, hint), 6)
         self.label = label
         self.reason = reason
@@ -179,11 +179,11 @@ def library_hint(library: str, family: str | None = None) -> str:
     family is not known, then run the update again."""
     packages = LIBRARY_PACKAGES.get(library)
     if packages and family in packages:
-        return f"Install it with `{_INSTALL[family].format(packages[family])}`, then run `strata update` again."
+        return f"Install it with `{_INSTALL[family].format(packages[family])}`, then run `nostroma update` again."
     if packages:
         return (f"Install it with your system's package manager ({packages['debian']} on Debian and Ubuntu, {packages['fedora']} on Fedora, "
-                f"{packages['arch']} on Arch), then run `strata update` again.")
-    return "Install the package that has it with your system's package manager, then run `strata update` again."
+                f"{packages['arch']} on Arch), then run `nostroma update` again.")
+    return "Install the package that has it with your system's package manager, then run `nostroma update` again."
 
 
 # ---------------------------------------------------------------------------------------------- state
@@ -340,7 +340,7 @@ def detect_hardware(environ=None) -> dict:
 
 def serving_now() -> list[dict]:
     """Engines that are serving: managed instances of the owner runtime and anything holding the shared activity lease
-    (`strata serve`, a runtime host). Empty when nothing is. The exclusive lease is only tried, never kept."""
+    (`nostroma serve`, a runtime host). Empty when nothing is. The exclusive lease is only tried, never kept."""
     from nostroma_control import profiles, runtime
     try:
         managed = runtime.active_managed_instances()
@@ -419,7 +419,7 @@ class Context:
 
 def require_acquisition(what: str) -> None:
     """The update path acquires by definition; a process that has forbidden acquiring (a start, a serve) may not run it."""
-    acquisition.require(what, "`strata update` from a terminal")
+    acquisition.require(what, "`nostroma update` from a terminal")
 
 
 def downgrade_words(sequence, accepted, state_file: Path) -> str:
@@ -702,7 +702,7 @@ def _choose_engine(feed: feedmod.Feed, ctx: Context, state: State) -> tuple[dict
         if bad and bad.get("manifest_sha256") == offered.manifest_sha256:
             report["status"] = "failed-before"
             report["note"] = (f"{offered.version} failed its test start on {bad.get('at', 'an earlier try')} ({bad.get('reason')}); "
-                              "run `strata update --force` to try it again")
+                              "run `nostroma update --force` to try it again")
     return report, offered
 
 
@@ -898,7 +898,7 @@ def binary_smoke(component: ec.EngineComponent, timeout: float = 60, ctx: "Conte
         where = f" The engine's log from this test is in {kept}." if kept else ""
         if library:
             raise TestStartFailed(component.version, reason, busy=False, hint=library_hint(library, linux_family()) + where)
-        hint = f"Run `strata update --force` to try again; if it fails again, report it with the log: {kept}" if kept else None
+        hint = f"Run `nostroma update --force` to try again; if it fails again, report it with the log: {kept}" if kept else None
         raise TestStartFailed(component.version, reason, hint=hint)
     return {"mode": "binary-only", "detail": "no model is installed yet, so the engine was run with --version only",
             "output": done.stdout.strip()[:200]}
@@ -1019,14 +1019,14 @@ def _test_start_failure(component: ec.EngineComponent, started: dict, ctx: Conte
         kept = f" The engine's log from this test is in {log}."
         if phase == "verifying_generation":
             return TestStartFailed(component.version, f"it loaded the model but did not answer one token within {minutes} minutes",
-                                   busy=False, hint="Nothing was changed. Run `strata update` again; if it happens again, report it with the log." + kept)
+                                   busy=False, hint="Nothing was changed. Run `nostroma update` again; if it happens again, report it with the log." + kept)
         if phase == "ready_file_not_matched":
             return TestStartFailed(component.version, f"it reported that it was ready, but Nostroma could not match it to the engine process it "
                                    f"started", busy=False,
                                    hint="This looks like a problem in Strata, not in your engine or card. Nothing was changed; report it with the log." + kept)
         return TestStartFailed(component.version, f"it was still loading the model after {minutes} minutes", busy=True,
                                hint="Nothing was changed. A slow disk or a card that other programs are using can do this: close them and run "
-                                    "`strata update` again." + kept)
+                                    "`nostroma update` again." + kept)
     reason = f"it did not answer a one-token probe ({error or started.get('state')}){tail}"
     try:
         library = missing_library(tail) or missing_library(log.read_text(errors="replace"))
@@ -1038,7 +1038,7 @@ def _test_start_failure(component: ec.EngineComponent, started: dict, ctx: Conte
         return TestStartFailed(component.version, reason, busy=False, hint=library_hint(library, linux_family()) + f" The engine's log from this test is in {log}.")
     # #4692: "report it with the log" named no log. The engine's words stay out of the sentence, but the person is told where the kept log is.
     hint = (None if TestStartFailed.BUSY.search(reason) else
-            f"Run `strata update --force` to try again; if it fails again, report it with the log: {log}")
+            f"Run `nostroma update --force` to try again; if it fails again, report it with the log: {log}")
     return TestStartFailed(component.version, reason, hint=hint)
 
 
@@ -1309,7 +1309,7 @@ def _finish_engine_install(ctx: Context, state: State, pkg: feedmod.EnginePackag
         section["skipped"] = skipped
         after_identity = preset_marks.identity_of(chosen, pkg.manifest_sha256)
         mark = preset_marks.mark_engine_changed(before_identity, after_identity, base=ctx.state_base)
-        removed: list[str] = []                           # every older engine stays until the person deletes it (Settings > Engine, `strata components remove`)
+        removed: list[str] = []                           # every older engine stays until the person deletes it (Settings > Engine, `nostroma components remove`)
         state.history({"at": (ctx.now or dt.datetime.now(dt.timezone.utc)).isoformat(), "action": "update-engine",
                        "from": before_installed.version if before_installed else None, "to": pkg.version, "ok": True,
                        "detail": smoke.get("mode")})
@@ -1400,7 +1400,7 @@ def switch_engine(ctx: Context, state: State, name: str, target: ec.EngineCompon
     """Make the installed package folder ``name`` the engine a start uses. Nothing is downloaded or removed; the package was verified by the
     caller. A pin makes the package the one a start picks even though a newer one is installed. With ``unpin_if_automatic`` the pin is dropped
     when the package is what a start picks anyway (the newest one), so the engine follows updates again. One writer of the pin and of the
-    previous / skipped bookkeeping: `strata components rollback` and `use_engine` (Settings > Engine, `strata components use`) both come here."""
+    previous / skipped bookkeeping: `nostroma components rollback` and `use_engine` (Settings > Engine, `nostroma components use`) both come here."""
     section = state.section("engine")
     current, _ = installed_engine(ctx.components, ctx.hardware)
     leaving = current.root.name if current else None
@@ -1468,7 +1468,7 @@ def rollback_engine(ctx: Context) -> dict:
         if current is not None and current.root.name == previous:
             # an earlier rollback is still in force (S3: the text said "0.1.45.3 -> 0.1.45.3"): there is nothing to leave behind
             raise UpdateError(f"the engine is already the previous one ({current.version}); there is nothing older to return to. "
-                              "Run `strata update --force` to try the newer version again.", 2)
+                              "Run `nostroma update --force` to try the newer version again.", 2)
         return switch_engine(ctx, state, previous, target, what="previous engine")
 
 
@@ -1487,7 +1487,7 @@ def active_control(root: Path) -> dict | None:
 
 
 def source_tree_version(root: Path | None = None) -> str | None:
-    """The version of a source checkout (it has no VERSION file): the project version in its CMakeLists.txt, the same rule `strata --version` uses.
+    """The version of a source checkout (it has no VERSION file): the project version in its CMakeLists.txt, the same rule `nostroma --version` uses.
     Used only to PRINT what a checkout runs (`update --check` said `Control  ?: available`); the decision to stage a Control copy does not use it."""
     root = root or Path(__file__).resolve().parents[1]
     try:
@@ -1721,7 +1721,7 @@ def _shape_steps(ctx: Context, feed: feedmod.Feed, engine: bool) -> list:
 
 
 def run_update(ctx: Context, *, engine: bool = True, control: bool = True, app: bool = False) -> dict:
-    """`strata update`: the feed once, then the engine, Control and (if asked) the app installer, each reported separately.
+    """`nostroma update`: the feed once, then the engine, Control and (if asked) the app installer, each reported separately.
     A component that fails does not undo one that succeeded; the exit code is the worst one."""
     require_acquisition("the update")
     results, failure = [], None

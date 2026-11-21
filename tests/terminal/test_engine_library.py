@@ -1,4 +1,4 @@
-"""Settings > Engine and `strata components engines | use | remove`: the engines installed on this computer, listed, switched and deleted.
+"""Settings > Engine and `nostroma components engines | use | remove`: the engines installed on this computer, listed, switched and deleted.
 
 The same stub packages the updater tests use (real schema-2 packages, a real test start). Proves: an update keeps every older engine; the list shows
 size, the engine in use and the newest; a switch to an older engine and back to the newest holds across a fresh read (a restart); the newest is

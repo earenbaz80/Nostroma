@@ -1,4 +1,4 @@
-"""Moving the models to another folder (strata models move): same drive, another drive, stop, a failed check, disk full, resume."""
+"""Moving the models to another folder (nostroma models move): same drive, another drive, stop, a failed check, disk full, resume."""
 from __future__ import annotations
 
 import hashlib

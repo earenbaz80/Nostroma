@@ -50,7 +50,7 @@ class QwenStaleEngine(unittest.TestCase):
     def test_no_yes_no_update(self):
         spawns, r, _ = self.ensure([OLD])
         self.assertEqual(spawns, [])
-        self.assertIn("Nostroma did not update it. Run `strata update` (or start with --yes)", r.notices[0])
+        self.assertIn("Nostroma did not update it. Run `nostroma update` (or start with --yes)", r.notices[0])
 
     def test_no_to_the_question_no_update(self):
         asked = []

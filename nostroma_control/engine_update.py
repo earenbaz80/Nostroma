@@ -32,7 +32,7 @@ from nostroma_control import engine_component as ec, updater
 
 EXIT_BUSY = 7                                                       # a loaded model, nothing was changed (the updater's own code)
 EXIT_NOT_RESTARTED = 8                                              # the update is done (or failed and the old engine is in use) but a model did not start again
-NEXT_STEP = "`strata update`"
+NEXT_STEP = "`nostroma update`"
 
 
 # ---------------------------------------------------------------------------------------------------- the notice
@@ -283,7 +283,7 @@ class Declined(updater.UpdateError):
 class ModelGate:
     """What the updater asks when a model is loaded.  ``ask(question, default) -> bool`` is a person (None: nobody can be asked);
     ``allow_stop`` is the explicit yes of a script; ``start_again`` the explicit yes to the start-again question of a script.  ``say`` shows a
-    line; ``emit`` gets one event per step (the app's host reads them from ``strata update --output jsonl``)."""
+    line; ``emit`` gets one event per step (the app's host reads them from ``nostroma update --output jsonl``)."""
 
     def __init__(self, *, ask: Callable[[str, bool], bool] | None = None, say: Callable[[str], None] = lambda text: None,
                  emit: Callable[[dict], None] = lambda event: None, allow_stop: bool = False, start_again: bool = False, settle_s: float = 120.0,
@@ -301,7 +301,7 @@ class ModelGate:
         loose = [m for m in models if not m.can_stop]
         if loose:
             raise updater.UpdateError(
-                f"{_names(loose)} is serving, and Nostroma did not start it from here (a service, `strata serve` or another program), so it cannot be "
+                f"{_names(loose)} is serving, and Nostroma did not start it from here (a service, `nostroma serve` or another program), so it cannot be "
                 f"stopped for you. Stop it yourself, then run {NEXT_STEP} again. Nothing was changed.", EXIT_BUSY)
         names = _names(models)
         self.emit({"event": "models", "phase": "consent", "models": [m.to_dict() for m in models], "message": f"{names} is running"})
@@ -424,7 +424,7 @@ def update_with_models(ctx: "updater.Context", gate: ModelGate, show: Callable[[
 
 
 def build_context(root=None, feed: str | None = None, emit: Callable[[dict], None] = lambda event: None) -> "updater.Context":
-    """The update's context as `strata update` builds it: this computer's hardware, the trusted keys, the feed the person or the install uses."""
+    """The update's context as `nostroma update` builds it: this computer's hardware, the trusted keys, the feed the person or the install uses."""
     import argparse
     from nostroma_cli import update_cmd
     from nostroma_control import signing

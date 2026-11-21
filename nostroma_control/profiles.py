@@ -161,7 +161,7 @@ def load(name: str) -> tuple[dict, str]:
             raise ProfileError("profile is larger than 1 MiB", 5)
         value = json.loads(data.decode("utf-8-sig"))
     except FileNotFoundError:
-        raise ProfileError(f"profile {name!r} is not saved; use strata profile create", 5) from None
+        raise ProfileError(f"profile {name!r} is not saved; use nostroma profile create", 5) from None
     except (OSError, ValueError, UnicodeError) as exc:
         if isinstance(exc, ProfileError):
             raise
@@ -353,7 +353,7 @@ def edit(name: str) -> tuple[dict, str, str]:
     current, revision = load(name)
     editor = os.environ.get("VISUAL") or os.environ.get("EDITOR")
     if not editor:
-        raise ProfileError("set VISUAL or EDITOR, or use strata profile set")
+        raise ProfileError("set VISUAL or EDITOR, or use nostroma profile set")
     command = shlex.split(editor, posix=os.name != "nt")
     if not command:
         raise ProfileError("VISUAL or EDITOR is empty")

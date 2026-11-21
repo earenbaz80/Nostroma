@@ -60,7 +60,7 @@ def _full_folder(name: str):
                 pass
     raise ProfileError(
         "engine calibrate needs a full Nostroma folder (setup.py and tools/calibrate.py); this terminal archive has "
-        "neither. Set STRATA_INSTALL_DIR to such a folder, or use `strata tune run --mode api` to tune from the "
+        "neither. Set STRATA_INSTALL_DIR to such a folder, or use `nostroma tune run --mode api` to tune from the "
         "archive", 5) from None
 
 
@@ -148,7 +148,7 @@ def _identity(path: Path, cfg: dict, profile: dict | None, revision: str | None)
     engine = _resolved(cfg["exe"], cfg, path)
     components = inspect_components(path, profile_id=profile["id"] if profile else None)
     if not components["ok"]:
-        raise ProfileError("required engine/model components are missing; run strata doctor --profile first", 5)
+        raise ProfileError("required engine/model components are missing; run nostroma doctor --profile first", 5)
     files = []
     for item in components["components"]:
         if item.get("required") and item.get("kind") == "file" and item.get("name") != "engine":

@@ -59,7 +59,7 @@ COMPONENT_ID = "strata-engine"
 ENV_DIR = "STRATA_COMPONENTS_DIR"
 ENV_BACKEND = "STRATA_ENGINE_BACKEND"
 ENV_REQUIRE_SIGNED = "STRATA_REQUIRE_SIGNED_COMPONENTS"
-#: The updater's state (``strata update``, ``strata components rollback``) lives in the component folder; the only member the
+#: The updater's state (``nostroma update``, ``nostroma components rollback``) lives in the component folder; the only member the
 #: start path reads is ``engine.pinned``: the folder a manual rollback chose, which wins over a newer installed package.
 UPDATE_STATE = Path(".updates") / "state.json"
 
@@ -83,9 +83,9 @@ class EngineMissing(acquisition.AcquisitionRefused):
             self,
             (f"{notice} (" if notice else "") + f"No engine for this PC was found{where}: {reason}" + (")" if notice else "") + ". The app never downloads an engine while it "
             f"starts or serves. Download the engine for your GPU with Update engine in the app's Settings, or with "
-            f"`strata update` (or `strata install`) in the Terminal, or copy an engine package into the component folder.")
+            f"`nostroma update` (or `nostroma install`) in the Terminal, or copy an engine package into the component folder.")
         self.what = "the engine component"
-        self.command = "strata install"
+        self.command = "nostroma install"
 
 
 class EngineIntegrityError(EngineMissing):
@@ -101,10 +101,10 @@ class EngineIntegrityError(EngineMissing):
         RuntimeError.__init__(
             self,
             f"The engine package failed its integrity check, so it was not started: {reason}. Repair or reinstall "
-            f"the engine component with Update engine in the app's Settings or `strata update` in the Terminal "
-            f"(`strata install` also works); the app never downloads one while it runs.")
+            f"the engine component with Update engine in the app's Settings or `nostroma update` in the Terminal "
+            f"(`nostroma install` also works); the app never downloads one while it runs.")
         self.what = "the engine component"
-        self.command = "strata install"
+        self.command = "nostroma install"
 
 
 class ComponentProblem(ValueError):
@@ -202,14 +202,14 @@ def newest_installed_version(root: Path | None = None) -> str | None:
 
 
 def cached_notice(root: Path | None = None) -> str | None:
-    """"update available (x.y.z): run `strata update`" from the last explicit check, or None. Reads one small local file; it never
+    """"update available (x.y.z): run `nostroma update`" from the last explicit check, or None. Reads one small local file; it never
     touches the network, so showing it at a start does not break the rule that only an update step downloads.
 
     The notice belongs to the versions the check was made for: it is dropped when Control or the installed engine is not the one
     recorded then (an app install, an update, a rollback), and an engine that is not newer than the installed one is never offered."""
     offers = cached_offers(root)
     parts = ([f"engine {offers['engine']}"] if offers.get("engine") else []) + ([f"app {offers['app']}"] if offers.get("app") else [])
-    return f"update available ({', '.join(parts)}): run `strata update`" if parts else None
+    return f"update available ({', '.join(parts)}): run `nostroma update`" if parts else None
 
 
 def cached_offers(root: Path | None = None) -> dict:
@@ -476,7 +476,7 @@ def runtime_version() -> str | None:
 def split_backend(value) -> tuple[str, str]:
     """(backend, variant) for a name the person typed: "hip-rdna2" is the hip family and its rdna2 package (the way the feed labels an AMD
     package, #4013), "hip" is the family alone, a make's own name is its family ("amd" -> hip, "nvidia" -> cuda, "intel" -> sycl: the words
-    `nostroma launch --backend` takes, so `strata update --backend amd` means the same), any other name is returned as it is with no variant."""
+    `nostroma launch --backend` takes, so `nostroma update --backend amd` means the same), any other name is returned as it is with no variant."""
     name = str(value or "").strip().lower()
     if name not in BACKEND_MATRIX and name.startswith("hip-") and len(name) > 4:
         return "hip", name[4:]
@@ -1198,7 +1198,7 @@ def expand(value: str, cfg: dict | None = None, *, root: Path | None = None, ful
 
 
 def status(root: Path | None = None, *, backend: str | None = None, full: bool = False) -> dict:
-    """What `strata components engine` and the app's host report. Always answers; never raises for a missing engine."""
+    """What `nostroma components engine` and the app's host report. Always answers; never raises for a missing engine."""
     base = root or components_dir()
     found, problems = scan(base)
     backend = split_backend(backend)[0] or None if backend else backend    # `components engine --backend amd` = the hip family
