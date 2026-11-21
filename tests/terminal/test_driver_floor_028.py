@@ -77,7 +77,7 @@ class SetupUsesThePackagesFloor(unittest.TestCase):
             self.assertIn("576.02", note)
             self.assertIn("as the installed engine package says", note)
             self.assertIn("556", note)
-            self.assertIn("strata update", note)
+            self.assertIn("nostroma update", note)
             self.assertIsNone(S.cuda12_driver_warning(576))
             self.assertIsNone(S.cuda12_driver_warning(591))
             self.assertIsNone(S.cuda12_driver_warning(0), "driver unknown: nothing to say")
