@@ -17,13 +17,17 @@ DeepSeek (`dsv41`) packages are carried as they were.
   `STRATA_*` variable as the fallback, so a launch script or a preset you already have keeps working. The
   Python packages are now `nostroma_cli` and `nostroma_control`; `strata.py` still runs the program, and it is
   still the file the Control archive ships.
-- **The app moves an existing install.** A `~/.strata` folder and a `Documents/Strata/Models` library are moved
-  to the new names with their contents, and the app identifies itself as `ai.nostroma.desktop`. The Terminal
-  offers `Documents/Nostroma` first and still reads `Documents/Strata`, so models an older install put there are
-  found.
-- **A new look: amber phosphor.** Square corners, amber accents and a face that covers every language, in both
-  themes; text keeps WCAG AA contrast. The icon is a new N monogram on an amber tile, and the header sets the
-  rest of the name beside it, so the mark and the wordmark read as one: **N** + *ostroma*.
+- **The app moves an existing install.** A `~/.strata` folder, a `Documents/Strata/Models` library and a
+  `Documents/Strata/Workspace` are renamed to the new names with their contents, and the app identifies itself as
+  `ai.nostroma.desktop`. When a folder cannot be moved (another volume, no permission) it is read where it is.
+  The Terminal offers `Documents/Nostroma` first and still counts `Documents/Strata`, so models an older install
+  put there are found.
+- **A new look: amber phosphor.** Square corners, amber accents and one typeface across the app (Korean and
+  Chinese still come from the system fonts), in both themes; text keeps WCAG AA contrast. The tab icon and the
+  header mark are a new N monogram on an amber tile, and the header sets the rest of the name beside it, so the
+  mark and the wordmark read as one: **N** + *ostroma*. The Windows `.ico` and the macOS `.icns` could not be
+  regenerated on the machine where this was drawn, so the installed app's own icon still carries the old drawing;
+  the window, the tab and the header do not.
 - **Artifact previews no longer reach the internet.** A preview now uses the same document builder and content
   policy as the Time-skip comparison: `default-src 'none'` and `connect-src 'none'`, so a generated page cannot
   fetch, beacon or load a script. When a preview needs a file from the internet, the app says so instead.
@@ -36,8 +40,9 @@ DeepSeek (`dsv41`) packages are carried as they were.
 
 ## What stays the same
 
-- The model files, the engine packages and the signed feed. This release changes no engine code, so a PC that
-  already has its engine downloads nothing new.
+- The model files, the engine packages and the signed feed. No engine package was rebuilt for 0.2.15: the engine
+  sources changed only in comments and messages, and its targets, `STRATA_*` macros and output names are
+  untouched, so a PC that already has its engine downloads nothing new.
 - `nostroma launch`, its flags and the run presets; `strata` as the second name of the command.
 - The `STRATA_*` variables, `~/.strata`, `Documents/Strata` and `strata.py`, for installs and scripts made
   before the rename.
@@ -65,7 +70,9 @@ DeepSeek (`dsv41`) packages are carried as they were.
 ## Updating
 
 - **App:** this build has no in-app updater. Download the installer for your system from the release page and
-  install it over the old app; the app's data and models are moved on first start.
+  install it over the old app; the app's data and models are moved on first start. `nostroma update --app`
+  downloads and verifies that installer for you (SHA-256 from the signed feed and its minisign signature) and
+  leaves it in `.updates/app`; running it is still the platform installer's job.
 - **Terminal:** run `nostroma update`. It fetches Control 0.1.61 and keeps the previous Control package, so
   `nostroma components rollback` can return to it. The engine is unchanged, so no engine is downloaded.
 - **Older installs:** `strata` and the `STRATA_*` variables keep working, so a script that has not been touched
@@ -79,5 +86,5 @@ Three installers (Windows, Linux AppImage, Mac dmg) and the Mac updater archive 
 (`strata-feed.json` and `strata-feed-linux-aarch64.json`) with their signatures; `install.sh`, `install.ps1`,
 `install-manifest.txt` and `SHA256SUMS.txt`.
 
-`latest.json` is also in the folder because the feed build writes it, but no app in 0.2.15 reads it: this
-build's own update row is off, as described above.
+`latest.json` is also in the folder because the feed build writes it. This build's app does not read it — its
+own update row is off — and `nostroma update --app` reads the signed feed, not this file.
