@@ -22,6 +22,14 @@ sys.path.insert(0, str(ROOT))
 from nostroma_cli import cli  # noqa: E402
 
 
+def _install(home: Path, **settings: str) -> subprocess.CompletedProcess:
+    """Run install.sh with that HOME and a feed that refuses the connection, so nothing is downloaded: enough to see
+    whether the names on the PATH were accepted or refused."""
+    return subprocess.run(["sh", str(ROOT / "packaging" / "install.sh")], capture_output=True, text=True, timeout=120,
+                          env={**os.environ, "HOME": str(home), "STRATA_FEED": "http://127.0.0.1:1",
+                               "XDG_DATA_HOME": "", "STRATA_NO_ACQUIRE": "", **settings})
+
+
 def _env(**names: str):
     """The environment with NOSTROMA_PROG set to `names` and nothing else of it, so a stray export cannot answer."""
     clean = {k: v for k, v in os.environ.items() if k != "NOSTROMA_PROG"}
@@ -120,6 +128,44 @@ class TheInstallers(unittest.TestCase):
             self.assertIn("nostroma already exists and is not a link this installer made", r.stderr, r.stderr)
             self.assertFalse((home / ".local" / "share" / "strata").exists(), "the install downloaded before refusing")
             self.assertEqual((home / ".local" / "bin" / "nostroma").read_text(), "someone else's command\n")
+
+    def test_an_old_link_stays_ours_however_the_data_folder_is_spelled_or_moved(self):
+        # the install that made the link may have used another spelling of the same folder, or a data folder the user
+        # has since left behind: either way the name is the installer's to replace, not someone's file
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            data = home / "share" / "strata"
+            (data / "terminal" / "9.9.9" / "bin").mkdir(parents=True)
+            (data / "terminal" / "9.9.9" / "bin" / "strata").write_text("#!/bin/sh\n", encoding="utf-8")
+            (data / "terminal" / "current").symlink_to(data / "terminal" / "9.9.9")
+            (home / "reached-through-a-link").symlink_to(data)
+            old = home / "old-data" / "terminal" / "0.2.14" / "bin"
+            old.mkdir(parents=True)
+            (old / "strata").write_text("#!/bin/sh\n", encoding="utf-8")
+            (home / ".local" / "bin").mkdir(parents=True)
+            name = home / ".local" / "bin" / "nostroma"
+            for spelling in (home / "reached-through-a-link" / "terminal" / "current" / "bin" / "strata",
+                             old / "strata"):
+                with self.subTest(spelling=str(spelling)):
+                    name.unlink(missing_ok=True)
+                    name.symlink_to(spelling)
+                    r = _install(home, NOSTROMA_DATA_DIR=str(data))
+                    # a refusal would name that path; accepted, the run goes on and stops at the feed
+                    self.assertNotIn(".local/bin/nostroma", r.stderr, r.stderr)
+        # and a link to anything else is refused, including a terminal of another kind one folder over
+        for foreign in ("/usr/bin/python3", "other-app/terminal/tools/bin/strata"):
+            with tempfile.TemporaryDirectory() as tmp, self.subTest(foreign=foreign):
+                home = Path(tmp)
+                target = home / foreign if not foreign.startswith("/") else Path(foreign)
+                if not foreign.startswith("/"):
+                    target.parent.mkdir(parents=True)
+                    target.write_text("#!/bin/sh\n", encoding="utf-8")
+                name = home / ".local" / "bin" / "nostroma"
+                name.parent.mkdir(parents=True)
+                name.symlink_to(target)
+                r = _install(home)
+                self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+                self.assertIn(f".local/bin/nostroma is a link to {target}", r.stderr, r.stderr)
 
     def test_the_windows_archive_carries_both_names(self):
         # a Windows PATH lists files, and the installer puts no link of its own there
