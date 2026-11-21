@@ -2,10 +2,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { transform } from 'esbuild';
+import { fileURLToPath } from 'node:url';
+import { build } from 'esbuild';
 
-const { code } = await transform(await readFile(new URL('../src/lib/gpu-roles.ts', import.meta.url), 'utf8'), { loader: 'ts', format: 'esm' });
-const R = await import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`);
+// Bundle: the module now imports tr() from ./i18n, which a bare transform would leave unresolved in a data: URL.
+const bundled = await build({ stdin: { contents: "export * from './src/lib/gpu-roles';", resolveDir: fileURLToPath(new URL('..', import.meta.url)), loader: 'ts' }, bundle: true, write: false, format: 'esm', platform: 'node', loader: { '.json': 'json' } });
+const R = await import(`data:text/javascript;base64,${Buffer.from(bundled.outputFiles[0].text).toString('base64')}`);
 const S = await import('../server/gpu-roles.mjs');
 const V = JSON.parse(await readFile(new URL('../../../tests/data/gpu_roles_vectors.json', import.meta.url), 'utf8'));
 const roles = d => d === null || d === undefined ? d : Object.fromEntries(Object.entries(d).map(([k, v]) => [Number(k), v]));

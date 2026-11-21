@@ -8,6 +8,8 @@
  *
  * The engine takes the cards in stage order (`gpu: [helper, ..., main]`, `gpu_order: "as_given"`), so Main is the LAST one.
  */
+import { localeTag, tr } from './i18n';
+
 export type Role = 'main' | 'helper' | 'off';
 export const ROLES: Role[] = ['main', 'helper', 'off'];
 export type Roles = Record<number, Role>;
@@ -235,22 +237,26 @@ export function noteText(code: string | null, cards: RoleCard[]): string {
   return '';
 }
 
+/** Names joined the way the language lists them, with the plain fallback for runtimes without Intl.ListFormat. */
+const names = (items: string[]) => { try { return new Intl.ListFormat(localeTag(), { style: 'long', type: 'conjunction' }).format(items); } catch { return items.join(', '); } };
+
 /** The one plain line above the cards. */
 export function sentence(cards: RoleCard[] | null | undefined, vendor?: string | null): string {
   const cs = rows(cards, vendor), rec = recommend(cards, vendor);
-  if (rec.main === null) return 'No graphics card that Nostroma can use was found.';
+  if (rec.main === null) return tr('No graphics card that Nostroma can use was found.');
   const byi = new Map(cs.map(c => [c.index, c]));
   const m = byi.get(rec.main)!;
-  if (cs.length === 1) return `Nostroma will use your ${shortName(m)}.`;
+  if (cs.length === 1) return tr('Nostroma will use your {0}.', [shortName(m)]);
   const why = { same: 'the cards are alike', memory: 'it has more memory', faster: 'it is faster', only: 'it is the only card', none: '' }[rec.why];
-  let s = `${shortName(m)} is Main: ${why}.`;
+  const parts = [tr('{0} is Main: {1}.', [shortName(m), tr(why)])];
   const helpers = byNumber(rec.roles).filter(i => rec.roles[i] === 'helper').map(i => shortName(byi.get(i)!));
-  if (helpers.length) s += ` ${helpers.join(' and ')} ${helpers.length > 1 ? 'help' : 'helps'}.`;
+  if (helpers.length) parts.push(tr(helpers.length > 1 ? '{0} help.' : '{0} helps.', [names(helpers)]));
   for (const i of byNumber(rec.roles)) if (rec.roles[i] === 'off') {
     const code = rec.reasons[i], c = byi.get(i)!;
-    s += ` ${shortName(c)} starts Off: ${code === 'cannot_run' ? 'Nostroma cannot run it.' : code === 'igpu' ? 'built-in graphics.' : `${OFF_AT_OR_BELOW_GB} GB or less.`}`;
+    const reason = code === 'cannot_run' ? 'Nostroma cannot run it.' : code === 'igpu' ? 'built-in graphics.' : `${OFF_AT_OR_BELOW_GB} GB or less.`;
+    parts.push(tr('{0} starts Off: {1}', [shortName(c), tr(reason)]));
   }
-  return s;
+  return parts.join(' ');
 }
 
 /** `Main: GPU 2 RTX 4070 Ti. Helper: GPU 1 RTX 3060.` */
