@@ -3645,5 +3645,14 @@
   "s9176": "La mise à jour vers {0} ne s’est pas terminée : l’application s’est fermée pour l’installateur, mais l’ancienne version {1} a redémarré. Relancez Mettre à jour ou téléchargez l’installateur depuis la page des versions de Nostroma ({2}).",
   "s9177": "Ce moteur ne peut pas lire les images.",
   "s9178": "Nostroma Control ne propose pas {0}.",
-  "s9179": "Cette installation de Nostroma ne prend pas en charge {0}. Mettez d’abord l’installation à jour."
+  "s9179": "Cette installation de Nostroma ne prend pas en charge {0}. Mettez d’abord l’installation à jour.",
+  "s9180": "Vos modèles ont été déplacés.",
+  "s9181": "Le déplacement s’est arrêté. Rien n’a été perdu.",
+  "s9182": "Benchmark mesuré terminé.",
+  "s9183": "Opération interrompue",
+  "s9184": "La mise à jour de l’application ne s’est pas terminée",
+  "s9185": "Nostroma Control indique que le moteur est prêt.",
+  "s9186": "Nostroma Control indique que le moteur est prêt (deuxième essai).",
+  "s9187": "Nostroma Control a réparé l’accès à ses propres fichiers ; redémarrage.",
+  "s9188": "Le premier démarrage s’est arrêté ({0}). Nouvel essai : {1}"
 }

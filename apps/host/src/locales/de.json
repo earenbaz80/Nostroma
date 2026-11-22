@@ -3645,5 +3645,14 @@
   "s9176": "Das Update auf {0} wurde nicht abgeschlossen: Die App wurde für das Installationsprogramm geschlossen, aber die alte Version {1} wurde erneut gestartet. Wähle erneut Aktualisieren oder lade das Installationsprogramm von der Nostroma-Release-Seite herunter ({2}).",
   "s9177": "Diese Engine kann keine Bilder lesen.",
   "s9178": "Nostroma Control bietet {0} nicht.",
-  "s9179": "Diese Nostroma-Installation unterstützt {0} nicht. Aktualisiere zuerst die Installation."
+  "s9179": "Diese Nostroma-Installation unterstützt {0} nicht. Aktualisiere zuerst die Installation.",
+  "s9180": "Deine Modelle sind verschoben.",
+  "s9181": "Das Verschieben wurde gestoppt. Nichts ist verloren gegangen.",
+  "s9182": "Gemessener Benchmark abgeschlossen.",
+  "s9183": "Unterbrochener Vorgang",
+  "s9184": "Das App-Update wurde nicht abgeschlossen",
+  "s9185": "Nostroma Control meldet, dass die Engine bereit ist.",
+  "s9186": "Nostroma Control meldet, dass die Engine bereit ist (zweiter Versuch).",
+  "s9187": "Nostroma Control hat den Zugriff auf die eigenen Dateien repariert; startet erneut.",
+  "s9188": "Der erste Start wurde gestoppt ({0}). Noch ein Versuch: {1}"
 }

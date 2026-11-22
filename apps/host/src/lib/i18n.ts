@@ -94,3 +94,11 @@ export function tr<T>(value:T,values?:readonly unknown[]):T{
  if(!id&&!values)return brandName(decode(value)) as T;
  return (leading+brandName(text)+trailing) as T;
 }
+
+/** The catalogue's words for a line the host wrote, or null when it has none: a log keeps engine output and paths exactly as they are, with no brand swap. */
+export function knownTranslation(value:string):string|null{
+ if(!value.trim())return null;
+ const key=decode(value.trim());
+ if(!ids.has(key)&&!patterns.some(candidate=>candidate.pattern.test(key)))return null;
+ return tr(value);
+}

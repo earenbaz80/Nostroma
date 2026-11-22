@@ -3645,5 +3645,14 @@
   "s9176": "The update to {0} did not finish: the app closed for the installer, but the old version {1} started again. Try Update again, or download the installer from the Nostroma release page ({2}).",
   "s9177": "This engine has no picture reader.",
   "s9178": "Nostroma Control has no {0}.",
-  "s9179": "This Nostroma installation does not support {0}. Update the installation first."
+  "s9179": "This Nostroma installation does not support {0}. Update the installation first.",
+  "s9180": "Your models are moved.",
+  "s9181": "Moving stopped. Nothing was lost.",
+  "s9182": "Measured benchmark complete.",
+  "s9183": "Interrupted operation",
+  "s9184": "The app update did not finish",
+  "s9185": "Nostroma Control reports the engine is ready.",
+  "s9186": "Nostroma Control reports the engine is ready (second try).",
+  "s9187": "Nostroma Control repaired access to its own files; starting again.",
+  "s9188": "The first start stopped ({0}). Starting once more: {1}"
 }

@@ -1,5 +1,5 @@
 import {localeTag} from '../lib/i18n';
-import { tr } from '../lib/i18n';
+import { knownTranslation, tr } from '../lib/i18n';
 import { useEffect, useState } from 'react';
 import { api } from '../lib/client';
 import { nativeAction, useNative, type NativeJob } from '../lib/native';
@@ -86,7 +86,7 @@ export function NativeOperations() {
  <SettingsEngine />
  <section className="st-card"><div className="section-toolbar"><h2 className="h3">{tr("Diagnostics")}</h2><Btn size="sm" onClick={() => setShowLogs(true)}>{tr("View logs")}</Btn></div><p className="small muted">{tr("Downloads, preparation and engine failures include their original messages here.")}</p>{tr(native?.jobs.filter(j => j.state === 'error').slice(-3).map(j => <ErrorNotice key={j.id} message={jobErrorText(j, native.jobs)} detail={j.details}/>))}</section>
  <Dialog open={showLogs} wide compact title={tr("Engine logs")} onClose={() => setShowLogs(false)} actions={<><Btn icon="download" disabled={saving} onClick={() => void saveLogs()}>{tr(saving ? 'Working…' : 'Save logs')}</Btn><Btn variant="primary" onClick={() => setShowLogs(false)}>{tr("Close")}</Btn></>}>
-  <pre className="native-log" aria-label={tr("Engine log")}>{logs.length ? logs.map(l => `${l.at} · ${l.line}`).join(String.fromCharCode(10)) : tr('No engine messages yet.')}</pre>
+  <pre className="native-log" aria-label={tr("Engine log")}>{logs.length ? logs.map(l => `${l.at} · ${knownTranslation(l.line) ?? l.line}`).join(String.fromCharCode(10)) : tr('No engine messages yet.')}</pre>
   {tr(saved ? <p className="small" role="status">{tr("Saved to {0}", [saved])}</p> : null)}
  </Dialog>
  {tr(active ? <NativeProgress job={active}/> : null)}{tr(error ? <ErrorNotice message={error}/> : null)}

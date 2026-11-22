@@ -3645,5 +3645,14 @@
   "s9176": "A atualização para {0} não terminou: o app fechou para o instalador, mas a versão antiga {1} voltou a iniciar. Tente Atualizar de novo ou baixe o instalador na página de versões do Nostroma ({2}).",
   "s9177": "Este mecanismo não consegue ler imagens.",
   "s9178": "O Nostroma Control não oferece {0}.",
-  "s9179": "Esta instalação do Nostroma não oferece suporte a {0}. Atualize a instalação primeiro."
+  "s9179": "Esta instalação do Nostroma não oferece suporte a {0}. Atualize a instalação primeiro.",
+  "s9180": "Seus modelos foram movidos.",
+  "s9181": "A movimentação parou. Nada foi perdido.",
+  "s9182": "Teste de desempenho medido concluído.",
+  "s9183": "Operação interrompida",
+  "s9184": "A atualização do app não terminou",
+  "s9185": "O Nostroma Control informa que o mecanismo está pronto.",
+  "s9186": "O Nostroma Control informa que o mecanismo está pronto (segunda tentativa).",
+  "s9187": "O Nostroma Control reparou o acesso aos próprios arquivos; iniciando de novo.",
+  "s9188": "O primeiro início parou ({0}). Tentando mais uma vez: {1}"
 }

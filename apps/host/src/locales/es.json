@@ -3645,5 +3645,14 @@
   "s9176": "La actualización a {0} no terminó: la app se cerró para el instalador, pero volvió a iniciarse la versión anterior {1}. Vuelve a intentar Actualizar o descarga el instalador desde la página de versiones de Nostroma ({2}).",
   "s9177": "Este motor no puede leer imágenes.",
   "s9178": "Nostroma Control no ofrece {0}.",
-  "s9179": "Esta instalación de Nostroma no admite {0}. Actualiza primero la instalación."
+  "s9179": "Esta instalación de Nostroma no admite {0}. Actualiza primero la instalación.",
+  "s9180": "Tus modelos se movieron.",
+  "s9181": "El traslado se detuvo. No se perdió nada.",
+  "s9182": "Prueba de rendimiento medida y terminada.",
+  "s9183": "Operación interrumpida",
+  "s9184": "La actualización de la app no terminó",
+  "s9185": "Nostroma Control informa que el motor está listo.",
+  "s9186": "Nostroma Control informa que el motor está listo (segundo intento).",
+  "s9187": "Nostroma Control reparó el acceso a sus propios archivos; vuelve a iniciar.",
+  "s9188": "El primer inicio se detuvo ({0}). Se intenta una vez más: {1}"
 }
