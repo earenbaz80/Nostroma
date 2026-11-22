@@ -188,6 +188,20 @@ export interface EngineConfig {
   };
 }
 
+/** The engine installer's own state (server/engine-install.mjs): it fetches the llama.cpp build for this machine. */
+export interface EngineInstallState {
+  status: 'idle' | 'checking' | 'downloading' | 'extracting' | 'done' | 'error';
+  pct: number;
+  mbps: number;
+  /** The step it is on, in the installer's words: 'Looking up the current llama.cpp build', 'Unpacking the engine'… */
+  stage: string;
+  asset: string | null;
+  version: string | null;
+  error: string | null;
+  installedPath: string | null;
+  engineDir: string;
+}
+
 export interface RuntimeModel {
   id:string; apiModelId:string; variantId:string; family:string; name:string; quant:string;
   gpuIds:string[]; loadedAt:string; status:'ready'; phase:MonitorState['phase'];

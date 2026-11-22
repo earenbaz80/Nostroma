@@ -7,6 +7,7 @@ import { Btn, Dialog, ErrorNotice, Select } from './ui';
 import { NativeProgress } from './NativeModels';
 import { jobErrorText } from '../lib/native-job-diagnostics';
 import { SettingsEngine } from './SettingsEngine';
+import { EngineInstall } from './EngineInstall';
 export function NativeBenchmark({ open, onClose }: {
     open: boolean;
     onClose: () => void;
@@ -83,6 +84,7 @@ export function NativeOperations() {
         }
     }
     return <div className="stack stack--lg native-engine-settings">
+ <EngineInstall />
  <SettingsEngine />
  <section className="st-card"><div className="section-toolbar"><h2 className="h3">{tr("Diagnostics")}</h2><Btn size="sm" onClick={() => setShowLogs(true)}>{tr("View logs")}</Btn></div><p className="small muted">{tr("Downloads, preparation and engine failures include their original messages here.")}</p>{tr(native?.jobs.filter(j => j.state === 'error').slice(-3).map(j => <ErrorNotice key={j.id} message={jobErrorText(j, native.jobs)} detail={j.details}/>))}</section>
  <Dialog open={showLogs} wide compact title={tr("Engine logs")} onClose={() => setShowLogs(false)} actions={<><Btn icon="download" disabled={saving} onClick={() => void saveLogs()}>{tr(saving ? 'Working…' : 'Save logs')}</Btn><Btn variant="primary" onClick={() => setShowLogs(false)}>{tr("Close")}</Btn></>}>

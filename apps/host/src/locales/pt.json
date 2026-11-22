@@ -3673,5 +3673,9 @@
   "s9204": "É preciso um prompt",
   "s9205": "A tarefa disse que deu certo, mas não gravou nenhum registro da execução",
   "s9206": "A tarefa do Time-skip não começou a tempo",
-  "s9207": "O comando do Time-skip terminou sem nenhuma execução"
+  "s9207": "O comando do Time-skip terminou sem nenhuma execução",
+  "s9208": "Instalar o motor",
+  "s9209": "Arquivos do motor",
+  "s9210": "Baixa a compilação do llama.cpp que corresponde a este computador.",
+  "s9211": "Instalando o motor…"
 }

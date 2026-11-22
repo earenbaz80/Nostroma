@@ -36,14 +36,14 @@ add("The installed engines couldn't be read. Try again in a moment.",
     "Die installierten Engines konnten nicht gelesen werden. Versuche es gleich noch einmal.", "No se pudieron leer los motores instalados. Inténtalo de nuevo en un momento.",
     "Не удалось прочитать список установленных движков. Попробуйте ещё раз через минуту.", "Não foi possível ler os motores instalados. Tente novamente em instantes.",
     "설치된 엔진을 읽지 못했습니다. 잠시 후 다시 시도하세요.", "Les moteurs installés n'ont pas pu être lus. Réessayez dans un instant.")
-add("No engine is installed on this computer yet. Update in About downloads the right one.",
-    "此电脑上还没有安装引擎。在“关于”中点击更新即可下载合适的引擎。", "このコンピューターにはまだエンジンがありません。「情報」で更新すると、合ったものがダウンロードされます。",
-    "Auf diesem Computer ist noch keine Engine installiert. Das Update unter „Über“ lädt die passende herunter.",
-    "Todavía no hay ningún motor instalado en este equipo. Actualizar en «Acerca de» descarga el adecuado.",
-    "На этом компьютере ещё не установлен движок. Обновление в разделе «О программе» скачает подходящий.",
-    "Ainda não há nenhum motor instalado neste computador. Atualizar em «Sobre» baixa o adequado.",
-    "이 컴퓨터에는 아직 설치된 엔진이 없습니다. '정보'에서 업데이트하면 알맞은 엔진을 내려받습니다.",
-    "Aucun moteur n'est encore installé sur cet ordinateur. La mise à jour dans « À propos » télécharge le bon.")
+add("No engine is installed on this computer yet. Install engine downloads the right one.",
+    "此电脑上还没有安装引擎。点击“安装引擎”即可下载合适的引擎。", "このコンピューターにはまだエンジンがありません。「エンジンをインストール」で合ったものがダウンロードされます。",
+    "Auf diesem Computer ist noch keine Engine installiert. „Engine installieren“ lädt die passende herunter.",
+    "Todavía no hay ningún motor instalado en este equipo. «Instalar el motor» descarga el adecuado.",
+    "На этом компьютере ещё не установлен движок. «Установить движок» скачает подходящий.",
+    "Ainda não há nenhum motor instalado neste computador. «Instalar o motor» baixa o adequado.",
+    "이 컴퓨터에는 아직 설치된 엔진이 없습니다. '엔진 설치'를 누르면 알맞은 엔진을 내려받습니다.",
+    "Aucun moteur n'est encore installé sur cet ordinateur. « Installer le moteur » télécharge le bon.")
 add("Engines take {0} on this computer.",
     "引擎在此电脑上共占用 {0}。", "エンジンはこのコンピューターで {0} を使っています。", "Die Engines belegen auf diesem Computer {0}.", "Los motores ocupan {0} en este equipo.",
     "Движки занимают на этом компьютере {0}.", "Os motores ocupam {0} neste computador.", "엔진이 이 컴퓨터에서 {0}을(를) 차지합니다.", "Les moteurs occupent {0} sur cet ordinateur.")
@@ -93,11 +93,11 @@ add("This frees {0}. Your models and settings are kept.",
     "这将释放 {0}。你的模型和设置会保留。", "{0} が空きます。モデルと設定はそのまま残ります。", "Das gibt {0} frei. Deine Modelle und Einstellungen bleiben erhalten.",
     "Esto libera {0}. Tus modelos y ajustes se conservan.", "Это освободит {0}. Ваши модели и настройки сохранятся.", "Isso libera {0}. Seus modelos e ajustes são mantidos.",
     "{0}의 공간이 확보됩니다. 모델과 설정은 그대로 유지됩니다.", "Cela libère {0}. Vos modèles et réglages sont conservés.")
-add("The newest engine can be downloaded again with Update in About.",
-    "最新的引擎可以在“关于”中通过更新重新下载。", "最新のエンジンは、「情報」の更新でもう一度ダウンロードできます。",
-    "Die neueste Engine lässt sich über das Update unter „Über“ erneut herunterladen.", "El motor más reciente se puede volver a descargar con Actualizar en «Acerca de».",
-    "Новейший движок можно скачать снова через обновление в разделе «О программе».", "O motor mais recente pode ser baixado de novo com Atualizar em «Sobre».",
-    "최신 엔진은 '정보'의 업데이트로 다시 내려받을 수 있습니다.", "Le moteur le plus récent peut être retéléchargé avec la mise à jour dans « À propos ».")
+add("The newest engine can be downloaded again with Install engine.",
+    "最新的引擎可以点击“安装引擎”重新下载。", "最新のエンジンは「エンジンをインストール」でもう一度ダウンロードできます。",
+    "Die neueste Engine lässt sich mit „Engine installieren“ erneut herunterladen.", "El motor más reciente se puede volver a descargar con «Instalar el motor».",
+    "Новейший движок можно снова скачать с помощью «Установить движок».", "O motor mais recente pode ser baixado de novo com «Instalar o motor».",
+    "최신 엔진은 '엔진 설치'로 다시 내려받을 수 있습니다.", "Le moteur le plus récent peut être retéléchargé avec « Installer le moteur ».")
 add("Strata can only download the newest engine, so a deleted older engine can't be brought back.",
     "Strata 只能下载最新的引擎，所以删除后无法找回较旧的引擎。", "Strata がダウンロードできるのは最新のエンジンだけなので、削除した古いエンジンは元に戻せません。",
     "Strata kann nur die neueste Engine herunterladen. Eine gelöschte ältere Engine lässt sich deshalb nicht wiederherstellen.",
@@ -140,29 +140,30 @@ add("This engine's description is missing or damaged, so it can't be started.",
     "Описание этого движка отсутствует или повреждено, поэтому его нельзя запустить.", "A descrição deste motor está ausente ou danificada, então ele não pode ser iniciado.",
     "이 엔진의 설명 파일이 없거나 손상되어 시작할 수 없습니다.", "La description de ce moteur est absente ou endommagée : il ne peut pas démarrer.")
 
-# ---- updating moved to About: the words that sent people to Settings > Engine
-add("Strata didn’t recognise an engine for this computer. The model will download, but it may not run until the right engine is installed (Settings → About).",
-    "Strata 未能识别这台电脑的引擎。模型会下载，但在安装合适的引擎之前可能无法运行（设置 → 关于）。",
-    "Strata はこのコンピューター用のエンジンを認識できませんでした。モデルはダウンロードされますが、合ったエンジンをインストールするまで動かない可能性があります（設定 → 情報）。",
-    "Strata hat für diesen Computer keine Engine erkannt. Das Modell wird heruntergeladen, läuft aber möglicherweise erst, wenn die passende Engine installiert ist (Einstellungen → Über).",
-    "Strata no reconoció ningún motor para este equipo. El modelo se descargará, pero puede que no funcione hasta que se instale el motor adecuado (Ajustes → Acerca de).",
-    "Strata не распознала движок для этого компьютера. Модель скачается, но может не запуститься, пока не установлен подходящий движок (Настройки → О программе).",
-    "O Strata não reconheceu um motor para este computador. O modelo será baixado, mas pode não funcionar até que o motor certo seja instalado (Configurações → Sobre).",
-    "Strata가 이 컴퓨터용 엔진을 인식하지 못했습니다. 모델은 내려받지만, 알맞은 엔진이 설치되기 전에는 실행되지 않을 수 있습니다(설정 → 정보).",
-    "Strata n’a pas reconnu de moteur pour cet ordinateur. Le modèle sera téléchargé, mais il risque de ne pas fonctionner tant que le bon moteur n’est pas installé (Réglages → À propos).")
-add("Strata didn’t recognise an engine for this computer. The model is downloaded, but it can’t run until the right engine is installed. Open Settings → About.",
-    "Strata 未能识别这台电脑的引擎。模型已下载，但在安装合适的引擎之前无法运行。请打开 设置 → 关于。",
-    "Strata はこのコンピューター用のエンジンを認識できませんでした。モデルはダウンロード済みですが、合ったエンジンをインストールするまで動きません。設定 → 情報 を開いてください。",
-    "Strata hat für diesen Computer keine Engine erkannt. Das Modell ist heruntergeladen, läuft aber erst, wenn die passende Engine installiert ist. Öffne Einstellungen → Über.",
-    "Strata no reconoció ningún motor para este equipo. El modelo está descargado, pero no puede funcionar hasta que se instale el motor adecuado. Abre Ajustes → Acerca de.",
-    "Strata не распознала движок для этого компьютера. Модель скачана, но не запустится, пока не установлен подходящий движок. Откройте Настройки → О программе.",
-    "O Strata não reconheceu um motor para este computador. O modelo foi baixado, mas não pode funcionar até que o motor certo seja instalado. Abra Configurações → Sobre.",
-    "Strata가 이 컴퓨터용 엔진을 인식하지 못했습니다. 모델은 내려받았지만, 알맞은 엔진이 설치되기 전에는 실행할 수 없습니다. 설정 → 정보를 여세요.",
-    "Strata n’a pas reconnu de moteur pour cet ordinateur. Le modèle est téléchargé, mais il ne peut pas fonctionner tant que le bon moteur n’est pas installé. Ouvrez Réglages → À propos.")
-add("Update the engine (Settings, About), then try again.",
-    "请更新引擎（设置，关于），然后重试。", "エンジンを更新して（設定、情報）、もう一度お試しください。", "Aktualisiere die Engine (Einstellungen, Über) und versuche es dann erneut.",
-    "Actualiza el motor (Ajustes, Acerca de) y vuelve a intentarlo.", "Обновите движок (Настройки, О программе) и попробуйте снова.", "Atualize o motor (Configurações, Sobre) e tente novamente.",
-    "엔진을 업데이트(설정, 정보)한 뒤 다시 시도하세요.", "Mettez le moteur à jour (Réglages, À propos), puis réessayez.")
+# ---- no engine for this computer, and an engine that is too old: the model still downloads, and the next step is
+# Settings > Engine, where Install engine fetches the right one
+add("Strata didn’t recognise an engine for this computer. The model will download, but it may not run until the right engine is installed (Settings → Engine).",
+    "Strata 未能识别这台电脑的引擎。模型会下载，但在安装合适的引擎之前可能无法运行（设置 → 引擎）。",
+    "Strata はこのコンピューター用のエンジンを認識できませんでした。モデルはダウンロードされますが、合ったエンジンをインストールするまで動かない可能性があります（設定 → エンジン）。",
+    "Strata hat für diesen Computer keine Engine erkannt. Das Modell wird heruntergeladen, läuft aber möglicherweise erst, wenn die passende Engine installiert ist (Einstellungen → Engine).",
+    "Strata no reconoció ningún motor para este equipo. El modelo se descargará, pero puede que no funcione hasta que se instale el motor adecuado (Ajustes → Motor).",
+    "Strata не распознала движок для этого компьютера. Модель скачается, но может не запуститься, пока не установлен подходящий движок (Настройки → Движок).",
+    "O Strata não reconheceu um motor para este computador. O modelo será baixado, mas pode não funcionar até que o motor certo seja instalado (Configurações → Mecanismo).",
+    "Strata가 이 컴퓨터용 엔진을 인식하지 못했습니다. 모델은 내려받지만, 알맞은 엔진이 설치되기 전에는 실행되지 않을 수 있습니다(설정 → 엔진).",
+    "Strata n’a pas reconnu de moteur pour cet ordinateur. Le modèle sera téléchargé, mais il risque de ne pas fonctionner tant que le bon moteur n’est pas installé (Réglages → Moteur).")
+add("Strata didn’t recognise an engine for this computer. The model is downloaded, but it can’t run until the right engine is installed. Open Settings → Engine.",
+    "Strata 未能识别这台电脑的引擎。模型已下载，但在安装合适的引擎之前无法运行。请打开 设置 → 引擎。",
+    "Strata はこのコンピューター用のエンジンを認識できませんでした。モデルはダウンロード済みですが、合ったエンジンをインストールするまで動きません。設定 → エンジン を開いてください。",
+    "Strata hat für diesen Computer keine Engine erkannt. Das Modell ist heruntergeladen, läuft aber erst, wenn die passende Engine installiert ist. Öffne Einstellungen → Engine.",
+    "Strata no reconoció ningún motor para este equipo. El modelo está descargado, pero no puede funcionar hasta que se instale el motor adecuado. Abre Ajustes → Motor.",
+    "Strata не распознала движок для этого компьютера. Модель скачана, но не запустится, пока не установлен подходящий движок. Откройте Настройки → Движок.",
+    "O Strata não reconheceu um motor para este computador. O modelo foi baixado, mas não pode funcionar até que o motor certo seja instalado. Abra Configurações → Mecanismo.",
+    "Strata가 이 컴퓨터용 엔진을 인식하지 못했습니다. 모델은 내려받았지만, 알맞은 엔진이 설치되기 전에는 실행할 수 없습니다. 설정 → 엔진을 여세요.",
+    "Strata n’a pas reconnu de moteur pour cet ordinateur. Le modèle est téléchargé, mais il ne peut pas fonctionner tant que le bon moteur n’est pas installé. Ouvrez Réglages → Moteur.")
+add("Update the engine (Settings → Engine), then try again.",
+    "请更新引擎（设置 → 引擎），然后重试。", "エンジンを更新して（設定 → エンジン）、もう一度お試しください。", "Aktualisiere die Engine (Einstellungen → Engine) und versuche es dann erneut.",
+    "Actualiza el motor (Ajustes → Motor) y vuelve a intentarlo.", "Обновите движок (Настройки → Движок) и попробуйте снова.", "Atualize o motor (Configurações → Mecanismo) e tente novamente.",
+    "엔진을 업데이트(설정 → 엔진)한 뒤 다시 시도하세요.", "Mettez le moteur à jour (Réglages → Moteur), puis réessayez.")
 
 # ---- answers of the host (shown as they are, so each one is a catalog entry)
 add("A model is running, so nothing was changed. Unload the model in Models, then try again.",
@@ -224,16 +225,16 @@ def _rest(lang):
 
 add(*[_SHAPE_FIRST[l] + ("" if l in ("zh", "ja") else " ") + _rest(l) for l in LANGS])
 # ---- the setup wizard after an install whose files are all in, while the engine for this PC is missing or can't be used (DL99; owner's wording 11-15, with
-# the screen's real name: an engine is installed from Settings > About; Settings > Engine lists the installed ones)
-add("Your model is downloaded, but the engine for this PC isn't ready yet. Open Settings > About to install it.",
-    "模型已下载，但这台电脑的引擎还没有准备好。请打开 设置 > 关于 来安装它。",
-    "モデルはダウンロード済みですが、このPC用のエンジンはまだ準備できていません。設定 > 情報 を開いてインストールしてください。",
-    "Dein Modell ist heruntergeladen, aber die Engine für diesen PC ist noch nicht bereit. Öffne Einstellungen > Über, um sie zu installieren.",
-    "Tu modelo está descargado, pero el motor para este equipo aún no está listo. Abre Ajustes > Acerca de para instalarlo.",
-    "Модель скачана, но движок для этого компьютера ещё не готов. Откройте Настройки > О программе, чтобы установить его.",
-    "Seu modelo foi baixado, mas o motor para este computador ainda não está pronto. Abra Configurações > Sobre para instalá-lo.",
-    "모델은 내려받았지만, 이 PC용 엔진이 아직 준비되지 않았습니다. 설정 > 정보를 열어 설치하세요.",
-    "Votre modèle est téléchargé, mais le moteur pour cet ordinateur n'est pas encore prêt. Ouvrez Réglages > À propos pour l'installer.")
+# the screen's real name: an engine is installed from Settings > Engine, with its Install engine button)
+add("Your model is downloaded, but the engine for this PC isn't ready yet. Open Settings > Engine to install it.",
+    "模型已下载，但这台电脑的引擎还没有准备好。请打开 设置 > 引擎 来安装它。",
+    "モデルはダウンロード済みですが、このPC用のエンジンはまだ準備できていません。設定 > エンジン を開いてインストールしてください。",
+    "Dein Modell ist heruntergeladen, aber die Engine für diesen PC ist noch nicht bereit. Öffne Einstellungen > Engine, um sie zu installieren.",
+    "Tu modelo está descargado, pero el motor para este equipo aún no está listo. Abre Ajustes > Motor para instalarlo.",
+    "Модель скачана, но движок для этого компьютера ещё не готов. Откройте Настройки > Движок, чтобы установить его.",
+    "Seu modelo foi baixado, mas o motor para este computador ainda não está pronto. Abra Configurações > Mecanismo para instalá-lo.",
+    "모델은 내려받았지만, 이 PC용 엔진이 아직 준비되지 않았습니다. 설정 > 엔진을 열어 설치하세요.",
+    "Votre modèle est téléchargé, mais le moteur pour cet ordinateur n'est pas encore prêt. Ouvrez Réglages > Moteur pour l'installer.")
 
 here = Path(__file__).resolve().parent.parent / "src" / "locales"
 NBSP = " "

@@ -3673,5 +3673,9 @@
   "s9204": "Ein Prompt ist erforderlich",
   "s9205": "Die Aufgabe meldete Erfolg, schrieb aber keinen Eintrag zur Ausführung",
   "s9206": "Die Time-skip-Aufgabe startete nicht rechtzeitig",
-  "s9207": "Der Time-skip-Befehl endete ohne Ausführung"
+  "s9207": "Der Time-skip-Befehl endete ohne Ausführung",
+  "s9208": "Engine installieren",
+  "s9209": "Engine-Dateien",
+  "s9210": "Lädt den llama.cpp-Build herunter, der zu diesem Computer passt.",
+  "s9211": "Die Engine wird installiert…"
 }

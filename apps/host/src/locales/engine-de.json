@@ -3,7 +3,7 @@
  "et02": "Wechsle zu einer älteren Engine, um etwas zu testen, und danach zurück zur neuesten. Das Update auf die neueste Version findest du unter „Über“.",
  "et03": "Engines lassen sich in der installierten Strata-App wechseln und löschen.",
  "et04": "Die installierten Engines konnten nicht gelesen werden. Versuche es gleich noch einmal.",
- "et05": "Auf diesem Computer ist noch keine Engine installiert. Das Update unter „Über“ lädt die passende herunter.",
+ "et05": "Auf diesem Computer ist noch keine Engine installiert. „Engine installieren“ lädt die passende herunter.",
  "et06": "Die Engines belegen auf diesem Computer {0}.",
  "et07": "Neueste",
  "et08": "Diese verwenden",
@@ -20,7 +20,7 @@
  "et19": "Engine behalten",
  "et20": "Engine löschen",
  "et21": "Das gibt {0} frei. Deine Modelle und Einstellungen bleiben erhalten.",
- "et22": "Die neueste Engine lässt sich über das Update unter „Über“ erneut herunterladen.",
+ "et22": "Die neueste Engine lässt sich mit „Engine installieren“ erneut herunterladen.",
  "et23": "Strata kann nur die neueste Engine herunterladen. Eine gelöschte ältere Engine lässt sich deshalb nicht wiederherstellen.",
  "et24": "Diese Engine wurde für ein anderes Betriebssystem gebaut.",
  "et25": "Diese Engine wurde für eine andere Art von Grafikkarte gebaut als die in diesem Computer.",
@@ -29,9 +29,9 @@
  "et28": "Diese Engine braucht den NVIDIA-Treiber {0} oder neuer. Dieser Computer hat {1}.",
  "et29": "Einige Dateien dieser Engine fehlen oder wurden verändert, deshalb lässt sie sich nicht starten.",
  "et30": "Die Beschreibung dieser Engine fehlt oder ist beschädigt, deshalb lässt sie sich nicht starten.",
- "et31": "Strata hat für diesen Computer keine Engine erkannt. Das Modell wird heruntergeladen, läuft aber möglicherweise erst, wenn die passende Engine installiert ist (Einstellungen → Über).",
- "et32": "Strata hat für diesen Computer keine Engine erkannt. Das Modell ist heruntergeladen, läuft aber erst, wenn die passende Engine installiert ist. Öffne Einstellungen → Über.",
- "et33": "Aktualisiere die Engine (Einstellungen, Über) und versuche es dann erneut.",
+ "et31": "Strata hat für diesen Computer keine Engine erkannt. Das Modell wird heruntergeladen, läuft aber möglicherweise erst, wenn die passende Engine installiert ist (Einstellungen → Engine).",
+ "et32": "Strata hat für diesen Computer keine Engine erkannt. Das Modell ist heruntergeladen, läuft aber erst, wenn die passende Engine installiert ist. Öffne Einstellungen → Engine.",
+ "et33": "Aktualisiere die Engine (Einstellungen → Engine) und versuche es dann erneut.",
  "et34": "Ein Modell läuft, deshalb wurde nichts geändert. Entlade das Modell unter „Modelle“ und versuche es dann erneut.",
  "et35": "Das ist die verwendete Engine. Wechsle zuerst zu einer anderen und lösche sie dann.",
  "et36": "Ein Programm benutzt diese Engine noch, deshalb wurde sie nicht gelöscht. Entlade deine Modelle und versuche es erneut.",
@@ -43,5 +43,5 @@
  "et42": "Wähle eine Engine aus der Liste.",
  "et43": "Auf diesem Computer ist schon eine neuere Engine. Das Update wechselt zu ihr; es wird nichts heruntergeladen.",
  "et44": "{0} läuft ab dem nächsten Start mit Engine {1}. Deine Modelle und Einstellungen bleiben unverändert. Du kannst jederzeit zurückwechseln.",
- "et45": "Dein Modell ist heruntergeladen, aber die Engine für diesen PC ist noch nicht bereit. Öffne Einstellungen > Über, um sie zu installieren."
+ "et45": "Dein Modell ist heruntergeladen, aber die Engine für diesen PC ist noch nicht bereit. Öffne Einstellungen > Engine, um sie zu installieren."
 }

@@ -3,7 +3,7 @@
  "et02": "Troque para um motor mais antigo para testar algo e depois volte ao mais recente. A atualização para a versão mais recente fica em «Sobre».",
  "et03": "Os motores podem ser trocados e excluídos no aplicativo Strata instalado.",
  "et04": "Não foi possível ler os motores instalados. Tente novamente em instantes.",
- "et05": "Ainda não há nenhum motor instalado neste computador. Atualizar em «Sobre» baixa o adequado.",
+ "et05": "Ainda não há nenhum motor instalado neste computador. «Instalar o motor» baixa o adequado.",
  "et06": "Os motores ocupam {0} neste computador.",
  "et07": "Mais recente",
  "et08": "Usar este",
@@ -20,7 +20,7 @@
  "et19": "Manter motor",
  "et20": "Excluir motor",
  "et21": "Isso libera {0}. Seus modelos e ajustes são mantidos.",
- "et22": "O motor mais recente pode ser baixado de novo com Atualizar em «Sobre».",
+ "et22": "O motor mais recente pode ser baixado de novo com «Instalar o motor».",
  "et23": "O Strata só pode baixar o motor mais recente, então um motor antigo excluído não pode ser recuperado.",
  "et24": "Este motor foi feito para outro sistema operacional.",
  "et25": "Este motor foi feito para um tipo de placa de vídeo diferente da deste computador.",
@@ -29,9 +29,9 @@
  "et28": "Este motor precisa do driver NVIDIA {0} ou mais recente. Este computador tem o {1}.",
  "et29": "Alguns arquivos deste motor estão ausentes ou foram alterados, então ele não pode ser iniciado.",
  "et30": "A descrição deste motor está ausente ou danificada, então ele não pode ser iniciado.",
- "et31": "O Strata não reconheceu um motor para este computador. O modelo será baixado, mas pode não funcionar até que o motor certo seja instalado (Configurações → Sobre).",
- "et32": "O Strata não reconheceu um motor para este computador. O modelo foi baixado, mas não pode funcionar até que o motor certo seja instalado. Abra Configurações → Sobre.",
- "et33": "Atualize o motor (Configurações, Sobre) e tente novamente.",
+ "et31": "O Strata não reconheceu um motor para este computador. O modelo será baixado, mas pode não funcionar até que o motor certo seja instalado (Configurações → Mecanismo).",
+ "et32": "O Strata não reconheceu um motor para este computador. O modelo foi baixado, mas não pode funcionar até que o motor certo seja instalado. Abra Configurações → Mecanismo.",
+ "et33": "Atualize o motor (Configurações → Mecanismo) e tente novamente.",
  "et34": "Há um modelo em execução, então nada foi alterado. Descarregue o modelo em «Modelos» e tente novamente.",
  "et35": "Este é o motor em uso. Troque primeiro para outro e depois exclua-o.",
  "et36": "Um programa ainda está usando este motor, então ele não foi excluído. Descarregue seus modelos e tente novamente.",
@@ -43,5 +43,5 @@
  "et42": "Escolha um motor da lista.",
  "et43": "Este computador já tem um motor mais novo. Atualizar troca para ele; nada é baixado.",
  "et44": "{0} roda no motor {1} a partir da próxima inicialização. Seus modelos e ajustes continuam como estão. Você pode voltar quando quiser.",
- "et45": "Seu modelo foi baixado, mas o motor para este computador ainda não está pronto. Abra Configurações > Sobre para instalá-lo."
+ "et45": "Seu modelo foi baixado, mas o motor para este computador ainda não está pronto. Abra Configurações > Mecanismo para instalá-lo."
 }

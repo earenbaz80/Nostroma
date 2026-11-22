@@ -58,7 +58,7 @@ test('DL99: once every file is in, the bar says 100%, not 99% (and never 0.7 / 0
   assert.equal(almost.percent, 99, 'a part still downloading stays below 100');
 });
 
-const NOT_READY = "Your model is downloaded, but the engine for this PC isn't ready yet. Open Settings > About to install it.";
+const NOT_READY = "Your model is downloaded, but the engine for this PC isn't ready yet. Open Settings > Engine to install it.";
 
 test('DL99: an install that ended with every file in, for a model the missing engine keeps from being ready, says so on the wizard page', async () => {
   const { readFileSync } = await import('node:fs');

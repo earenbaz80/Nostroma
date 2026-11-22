@@ -3673,5 +3673,9 @@
   "s9204": "prompt is required",
   "s9205": "the job reported success but wrote no run record",
   "s9206": "the Time-skip job did not start in time",
-  "s9207": "the Time-skip command ended without a run"
+  "s9207": "the Time-skip command ended without a run",
+  "s9208": "Install engine",
+  "s9209": "Engine files",
+  "s9210": "Downloads the llama.cpp build that matches this computer.",
+  "s9211": "Installing the engine…"
 }

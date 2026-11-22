@@ -45,6 +45,7 @@ import type {
   ChatMessage,
   ToolCall,
   EngineConfig,
+  EngineInstallState,
   Hardware,
   ModelLibrary,
   RuntimeModels,
@@ -116,6 +117,8 @@ export interface AppState {
   providers: ModelProviders | null;
   remoteModel: RemoteModelSelection | null;
   engine: EngineConfig | null;
+  /** The llama.cpp download the installer is running, or the last one it finished: nothing paints it yet. */
+  engineInstall: EngineInstallState | null;
   serving: ServingState | null;
   monitor: MonitorState | null;
   setup: SetupState | null;
@@ -322,6 +325,7 @@ let state: AppState = {
   /** The open chat's API model, or null for the local model (the default for every chat). */
   remoteModel: null,
   engine: null,
+  engineInstall: null,
   serving: null,
   monitor: null,
   setup: null,
@@ -861,6 +865,9 @@ function applyEvent(e: StreamEvent) {
     case 'engine':
       set({ engine: data as unknown as EngineConfig });
       break;
+    case 'engine-install':
+      set({ engineInstall: data as unknown as EngineInstallState });
+      break;
     case 'serving':
       set({ serving: newestServingState(state.serving, data as unknown as ServingState) });
       break;
@@ -929,6 +936,7 @@ export async function bootstrap() {
       providers: soft<ModelProviders>('/api/model-providers'),
       imageModels: soft<ImageModelLibrary>('/api/image-models'),
       runtime: soft<RuntimeModels>('/api/runtime'),
+      engineInstall: soft<EngineInstallState>('/api/engine/binary'),
     };
     const [setup, library, engine, serving, workspaceState] = await Promise.all([
       getWithRetry<SetupState>('/api/setup'),
@@ -954,6 +962,7 @@ export async function bootstrap() {
     void late.providers.then(providers => { if (providers) applyProviders(providers); });
     void late.imageModels.then(imageModels => { if (imageModels) set({ imageModels }); });
     void late.runtime.then(runtime => { if (runtime) set({ runtime }); });
+    void late.engineInstall.then(engineInstall => { if (engineInstall) set({ engineInstall }); });
     if (!shellAnnounced) { shellAnnounced = true; void announcePortNotice(); rememberShellLanguage(state.language); }
     closeEvents?.();
     let reconnect = false;
@@ -1146,6 +1155,13 @@ export function dismissActionError() {
 export async function resetEngine() {
   set({ engine: await api.post<EngineConfig>('/api/engine/reset') });
   pushToast('info', 'Back to recommended', 'Every value returned to the safe default.');
+}
+
+/** Starts the engine download (server/engine-install.mjs). Each step arrives as an 'engine-install' event; the POST answers with the last state when it ends. */
+export async function installEngine() {
+  const result = await api.post<EngineInstallState>('/api/engine/binary');
+  set({ engineInstall: result });
+  return result;
 }
 
 /**
