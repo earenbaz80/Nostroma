@@ -3617,5 +3617,12 @@
   "s9145": "cannot reach {0} ({1}) - check your internet connection and run `nostroma install` again; behind a company or school proxy, set HTTPS_PROXY (for example HTTPS_PROXY=http://host:port) in this terminal first; if huggingface.co does not reach you (mainland China), the same files are on ModelScope: run `nostroma install` with --source modelscope (docs/INSTALL.md)",
   "s9146": "cannot reach {0} ({1}) - check your internet connection and run `nostroma install` again; behind a company or school proxy, set HTTPS_PROXY (for example HTTPS_PROXY=http://host:port) in this terminal first",
   "s9147": "cannot reach {0} ({1}) - check your internet connection and run `nostroma install` again; a proxy is set in this terminal (HTTPS_PROXY): check that it is the right one and that it is running; if huggingface.co does not reach you (mainland China), the same files are on ModelScope: run `nostroma install` with --source modelscope (docs/INSTALL.md)",
-  "s9148": "cannot reach {0} ({1}) - check your internet connection and run `nostroma install` again; a proxy is set in this terminal (HTTPS_PROXY): check that it is the right one and that it is running"
+  "s9148": "cannot reach {0} ({1}) - check your internet connection and run `nostroma install` again; a proxy is set in this terminal (HTTPS_PROXY): check that it is the right one and that it is running",
+  "s9149": "the Intel Arc engine runs on Linux only - there is no Windows or Mac Intel engine yet",
+  "s9150": "cannot set up {0} for an Intel Arc card - choose a Qwen3.8-Flash-Next, Swift, Coder, Gyro or Unsloth size",
+  "s9151": "an Intel Arc setup needs --model, e.g. --model Q2_0",
+  "s9152": "Nostroma cannot start this model on the Intel Arc card yet: {0}",
+  "s9153": "the app on a Mac runs the Qwen3.8-Flash-Next sizes ({0}); {1} is not one of them - choose Qwen3.8-Flash-Next",
+  "s9154": "{0} is not offered on a Mac in the app - choose one of: {1}",
+  "s9155": "preparing NVIDIA's FP4-Local checkpoint needs PyTorch and transformers, which the app does not include - install this model from the source download (SETUP.bat on Windows, ./setup.sh on Linux), or pick another version in the app"
 }

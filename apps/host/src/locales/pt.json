@@ -3617,5 +3617,12 @@
   "s9145": "não é possível alcançar {0} ({1}) - verifique sua conexão e execute `nostroma install` de novo; atrás de um proxy da empresa ou da escola, defina primeiro neste terminal HTTPS_PROXY (por exemplo HTTPS_PROXY=http://host:port); se o huggingface.co não chega até você (China continental), os mesmos arquivos estão no ModelScope: execute `nostroma install` com --source modelscope (docs/INSTALL.md)",
   "s9146": "não é possível alcançar {0} ({1}) - verifique sua conexão e execute `nostroma install` de novo; atrás de um proxy da empresa ou da escola, defina primeiro neste terminal HTTPS_PROXY (por exemplo HTTPS_PROXY=http://host:port)",
   "s9147": "não é possível alcançar {0} ({1}) - verifique sua conexão e execute `nostroma install` de novo; há um proxy definido neste terminal (HTTPS_PROXY): confira se é o certo e se está funcionando; se o huggingface.co não chega até você (China continental), os mesmos arquivos estão no ModelScope: execute `nostroma install` com --source modelscope (docs/INSTALL.md)",
-  "s9148": "não é possível alcançar {0} ({1}) - verifique sua conexão e execute `nostroma install` de novo; há um proxy definido neste terminal (HTTPS_PROXY): confira se é o certo e se está funcionando"
+  "s9148": "não é possível alcançar {0} ({1}) - verifique sua conexão e execute `nostroma install` de novo; há um proxy definido neste terminal (HTTPS_PROXY): confira se é o certo e se está funcionando",
+  "s9149": "o motor Intel Arc só funciona no Linux - ainda não há motor Intel para Windows ou Mac",
+  "s9150": "não é possível preparar {0} para uma placa Intel Arc - escolha um tamanho Qwen3.8-Flash-Next, Swift, Coder, Gyro ou Unsloth",
+  "s9151": "uma instalação Intel Arc precisa de --model, por exemplo --model Q2_0",
+  "s9152": "o Nostroma ainda não consegue iniciar este modelo na placa Intel Arc: {0}",
+  "s9153": "o app no Mac executa os tamanhos Qwen3.8-Flash-Next ({0}); {1} não é um deles - escolha Qwen3.8-Flash-Next",
+  "s9154": "{0} não é oferecido no Mac no app - escolha um de: {1}",
+  "s9155": "preparar o checkpoint FP4-Local da NVIDIA precisa de PyTorch e transformers, que o app não inclui - instale este modelo pela instalação do código-fonte (SETUP.bat no Windows, ./setup.sh no Linux), ou escolha outra versão no app"
 }

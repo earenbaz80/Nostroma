@@ -3617,5 +3617,12 @@
   "s9145": "impossible d'atteindre {0} ({1}) - vérifiez votre connexion internet et relancez `nostroma install` ; derrière un proxy d'entreprise ou d'école, définissez d'abord HTTPS_PROXY (par exemple HTTPS_PROXY=http://host:port) dans ce terminal ; si huggingface.co ne vous atteint pas (Chine continentale), les mêmes fichiers sont sur ModelScope : lancez `nostroma install` avec --source modelscope (docs/INSTALL.md)",
   "s9146": "impossible d'atteindre {0} ({1}) - vérifiez votre connexion internet et relancez `nostroma install` ; derrière un proxy d'entreprise ou d'école, définissez d'abord HTTPS_PROXY (par exemple HTTPS_PROXY=http://host:port) dans ce terminal",
   "s9147": "impossible d'atteindre {0} ({1}) - vérifiez votre connexion internet et relancez `nostroma install` ; un proxy est défini dans ce terminal (HTTPS_PROXY) : vérifiez qu'il est le bon et qu'il fonctionne ; si huggingface.co ne vous atteint pas (Chine continentale), les mêmes fichiers sont sur ModelScope : lancez `nostroma install` avec --source modelscope (docs/INSTALL.md)",
-  "s9148": "impossible d'atteindre {0} ({1}) - vérifiez votre connexion internet et relancez `nostroma install` ; un proxy est défini dans ce terminal (HTTPS_PROXY) : vérifiez qu'il est le bon et qu'il fonctionne"
+  "s9148": "impossible d'atteindre {0} ({1}) - vérifiez votre connexion internet et relancez `nostroma install` ; un proxy est défini dans ce terminal (HTTPS_PROXY) : vérifiez qu'il est le bon et qu'il fonctionne",
+  "s9149": "le moteur Intel Arc ne fonctionne que sous Linux - il n'y a pas encore de moteur Intel pour Windows ou Mac",
+  "s9150": "impossible de préparer {0} pour une carte Intel Arc - choisissez une taille Qwen3.8-Flash-Next, Swift, Coder, Gyro ou Unsloth",
+  "s9151": "une installation Intel Arc a besoin de --model, par exemple --model Q2_0",
+  "s9152": "Nostroma ne peut pas encore démarrer ce modèle sur la carte Intel Arc : {0}",
+  "s9153": "l'application sur un Mac exécute les tailles Qwen3.8-Flash-Next ({0}) ; {1} n'en fait pas partie - choisissez Qwen3.8-Flash-Next",
+  "s9154": "{0} n'est pas proposé sur un Mac dans l'application - choisissez l'un de : {1}",
+  "s9155": "préparer le point de contrôle FP4-Local de NVIDIA demande PyTorch et transformers, que l'application n'inclut pas - installez ce modèle depuis l'installation source (SETUP.bat sous Windows, ./setup.sh sous Linux), ou choisissez une autre version dans l'application"
 }

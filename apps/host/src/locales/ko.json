@@ -3617,5 +3617,12 @@
   "s9145": "{0}에 연결할 수 없습니다({1}) - 인터넷 연결을 확인하고 `nostroma install`을 다시 실행하세요. 회사나 학교 프록시를 쓰는 경우 이 터미널에서 먼저 HTTPS_PROXY(예: HTTPS_PROXY=http://host:port)를 설정하세요. huggingface.co에 연결되지 않으면(중국 본토) 같은 파일이 ModelScope에 있습니다: `nostroma install`을 --source modelscope와 함께 실행하세요(docs/INSTALL.md)",
   "s9146": "{0}에 연결할 수 없습니다({1}) - 인터넷 연결을 확인하고 `nostroma install`을 다시 실행하세요. 회사나 학교 프록시를 쓰는 경우 이 터미널에서 먼저 HTTPS_PROXY(예: HTTPS_PROXY=http://host:port)를 설정하세요",
   "s9147": "{0}에 연결할 수 없습니다({1}) - 인터넷 연결을 확인하고 `nostroma install`을 다시 실행하세요. 이 터미널에는 프록시가 설정되어 있습니다(HTTPS_PROXY): 올바른 프록시인지, 실행 중인지 확인하세요. huggingface.co에 연결되지 않으면(중국 본토) 같은 파일이 ModelScope에 있습니다: `nostroma install`을 --source modelscope와 함께 실행하세요(docs/INSTALL.md)",
-  "s9148": "{0}에 연결할 수 없습니다({1}) - 인터넷 연결을 확인하고 `nostroma install`을 다시 실행하세요. 이 터미널에는 프록시가 설정되어 있습니다(HTTPS_PROXY): 올바른 프록시인지, 실행 중인지 확인하세요"
+  "s9148": "{0}에 연결할 수 없습니다({1}) - 인터넷 연결을 확인하고 `nostroma install`을 다시 실행하세요. 이 터미널에는 프록시가 설정되어 있습니다(HTTPS_PROXY): 올바른 프록시인지, 실행 중인지 확인하세요",
+  "s9149": "Intel Arc 엔진은 Linux에서만 실행됩니다 - Windows나 Mac용 Intel 엔진은 아직 없습니다",
+  "s9150": "Intel Arc 카드용으로 {0}을(를) 준비할 수 없습니다 - Qwen3.8-Flash-Next, Swift, Coder, Gyro, Unsloth 크기 중에서 고르세요",
+  "s9151": "Intel Arc 설정에는 --model이 필요합니다(예: --model Q2_0)",
+  "s9152": "Nostroma는 아직 이 모델을 Intel Arc 카드에서 시작할 수 없습니다: {0}",
+  "s9153": "Mac의 앱은 Qwen3.8-Flash-Next 크기({0})를 실행합니다. {1}은(는) 그중 하나가 아닙니다 - Qwen3.8-Flash-Next를 고르세요",
+  "s9154": "{0}은(는) Mac의 앱에서 제공되지 않습니다 - 다음 중 하나를 고르세요: {1}",
+  "s9155": "NVIDIA의 FP4-Local 체크포인트를 준비하려면 PyTorch와 transformers가 필요하며 앱에는 포함되어 있지 않습니다 - 이 모델을 소스 설치(Windows는 SETUP.bat, Linux는 ./setup.sh)로 설치하거나, 앱에서 다른 버전을 고르세요"
 }

@@ -3617,5 +3617,12 @@
   "s9145": "无法连接 {0}（{1}） - 请检查网络连接并重新运行 `nostroma install`；在公司或学校代理后面，请先在此终端设置 HTTPS_PROXY（例如 HTTPS_PROXY=http://host:port）；如果 huggingface.co 无法访问（中国大陆），同样的文件在 ModelScope 上：用 --source modelscope 运行 `nostroma install`（docs/INSTALL.md）",
   "s9146": "无法连接 {0}（{1}） - 请检查网络连接并重新运行 `nostroma install`；在公司或学校代理后面，请先在此终端设置 HTTPS_PROXY（例如 HTTPS_PROXY=http://host:port）",
   "s9147": "无法连接 {0}（{1}） - 请检查网络连接并重新运行 `nostroma install`；此终端已设置代理（HTTPS_PROXY）：请检查它是否正确、是否在运行；如果 huggingface.co 无法访问（中国大陆），同样的文件在 ModelScope 上：用 --source modelscope 运行 `nostroma install`（docs/INSTALL.md）",
-  "s9148": "无法连接 {0}（{1}） - 请检查网络连接并重新运行 `nostroma install`；此终端已设置代理（HTTPS_PROXY）：请检查它是否正确、是否在运行"
+  "s9148": "无法连接 {0}（{1}） - 请检查网络连接并重新运行 `nostroma install`；此终端已设置代理（HTTPS_PROXY）：请检查它是否正确、是否在运行",
+  "s9149": "Intel Arc 引擎只能在 Linux 上运行 - 目前还没有适用于 Windows 或 Mac 的 Intel 引擎",
+  "s9150": "无法为 Intel Arc 显卡准备 {0} - 请选择 Qwen3.8-Flash-Next、Swift、Coder、Gyro 或 Unsloth 的一个尺寸",
+  "s9151": "Intel Arc 安装需要 --model，例如 --model Q2_0",
+  "s9152": "Nostroma 还不能在 Intel Arc 显卡上启动这个模型：{0}",
+  "s9153": "Mac 上的应用运行 Qwen3.8-Flash-Next 的尺寸（{0}）；{1} 不是其中之一 - 请选择 Qwen3.8-Flash-Next",
+  "s9154": "{0} 在 Mac 的应用中不提供 - 请选择：{1}",
+  "s9155": "准备 NVIDIA 的 FP4-Local 检查点需要 PyTorch 和 transformers，而应用不包含它们 - 请通过源码安装（Windows 用 SETUP.bat，Linux 用 ./setup.sh）安装这个模型，或在应用中选择其他版本"
 }
