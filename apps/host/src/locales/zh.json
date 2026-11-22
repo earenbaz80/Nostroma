@@ -3624,5 +3624,13 @@
   "s9152": "Nostroma 还不能在 Intel Arc 显卡上启动这个模型：{0}",
   "s9153": "Mac 上的应用运行 Qwen3.8-Flash-Next 的尺寸（{0}）；{1} 不是其中之一 - 请选择 Qwen3.8-Flash-Next",
   "s9154": "{0} 在 Mac 的应用中不提供 - 请选择：{1}",
-  "s9155": "准备 NVIDIA 的 FP4-Local 检查点需要 PyTorch 和 transformers，而应用不包含它们 - 请通过源码安装（Windows 用 SETUP.bat，Linux 用 ./setup.sh）安装这个模型，或在应用中选择其他版本"
+  "s9155": "准备 NVIDIA 的 FP4-Local 检查点需要 PyTorch 和 transformers，而应用不包含它们 - 请通过源码安装（Windows 用 SETUP.bat，Linux 用 ./setup.sh）安装这个模型，或在应用中选择其他版本",
+  "s9156": "正在下载：{0}%",
+  "s9157": "一切均已是最新。",
+  "s9158": "引擎已更新并准备就绪。",
+  "s9159": "Nostroma 已更新。下次打开应用时生效。",
+  "s9160": "Nostroma 已更新到 {0}。",
+  "s9161": "正在准备新引擎。{0} 会继续运行，直到它准备就绪。",
+  "s9162": "Nostroma Control 已就绪；引擎 {0}（{1}-{2}）。",
+  "s9163": "已停止。已完成的下载会保留。"
 }

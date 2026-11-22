@@ -3624,5 +3624,13 @@
   "s9152": "Nostroma cannot start this model on the Intel Arc card yet: {0}",
   "s9153": "the app on a Mac runs the Qwen3.8-Flash-Next sizes ({0}); {1} is not one of them - choose Qwen3.8-Flash-Next",
   "s9154": "{0} is not offered on a Mac in the app - choose one of: {1}",
-  "s9155": "preparing NVIDIA's FP4-Local checkpoint needs PyTorch and transformers, which the app does not include - install this model from the source download (SETUP.bat on Windows, ./setup.sh on Linux), or pick another version in the app"
+  "s9155": "preparing NVIDIA's FP4-Local checkpoint needs PyTorch and transformers, which the app does not include - install this model from the source download (SETUP.bat on Windows, ./setup.sh on Linux), or pick another version in the app",
+  "s9156": "Downloading: {0}%",
+  "s9157": "Everything is already up to date.",
+  "s9158": "The engine is updated and ready.",
+  "s9159": "Nostroma is updated. It takes effect the next time you open the app.",
+  "s9160": "Nostroma is updated to {0}.",
+  "s9161": "Getting the new engine ready. {0} keeps running until it is ready.",
+  "s9162": "Nostroma Control is ready; engine {0} ({1}-{2}).",
+  "s9163": "Stopped. Completed downloads are kept."
 }

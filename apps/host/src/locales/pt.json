@@ -3624,5 +3624,13 @@
   "s9152": "o Nostroma ainda não consegue iniciar este modelo na placa Intel Arc: {0}",
   "s9153": "o app no Mac executa os tamanhos Qwen3.8-Flash-Next ({0}); {1} não é um deles - escolha Qwen3.8-Flash-Next",
   "s9154": "{0} não é oferecido no Mac no app - escolha um de: {1}",
-  "s9155": "preparar o checkpoint FP4-Local da NVIDIA precisa de PyTorch e transformers, que o app não inclui - instale este modelo pela instalação do código-fonte (SETUP.bat no Windows, ./setup.sh no Linux), ou escolha outra versão no app"
+  "s9155": "preparar o checkpoint FP4-Local da NVIDIA precisa de PyTorch e transformers, que o app não inclui - instale este modelo pela instalação do código-fonte (SETUP.bat no Windows, ./setup.sh no Linux), ou escolha outra versão no app",
+  "s9156": "Baixando: {0}%",
+  "s9157": "Tudo já está atualizado.",
+  "s9158": "O motor está atualizado e pronto.",
+  "s9159": "O Nostroma está atualizado. Vale na próxima vez que você abrir o app.",
+  "s9160": "O Nostroma foi atualizado para {0}.",
+  "s9161": "Preparando o motor novo. {0} continua rodando até ele ficar pronto.",
+  "s9162": "O Nostroma Control está pronto; motor {0} ({1}-{2}).",
+  "s9163": "Parado. Os downloads concluídos são mantidos."
 }
