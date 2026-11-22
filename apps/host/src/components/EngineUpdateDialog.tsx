@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { localeTag, tr } from '../lib/i18n';
 import { Bar, Btn, Dialog } from './ui';
-import { nativeAction, useNative, type NativeJob } from '../lib/native';
+import { jobSummary, nativeAction, useNative, type NativeJob } from '../lib/native';
 
 /** "A", "A and B", "A, B and C" in the language of the app. */
 const listOf = (names: string[]) => {
@@ -103,20 +103,20 @@ export function EngineUpdateDialog({ open, onClose }: { open: boolean; onClose: 
       <p role="status" aria-live="polite">{step === 'stopping' ? tr("Stopping {0}. Answers in progress finish first.", [label])
         : step === 'stopped' ? tr("{0} is stopped. Updating the engine…", [label])
         : step === 'getting-ready' ? tr("Getting the new engine ready. {0} keeps working until it is ready.", [label])
-        : tr(job.summary || 'Starting…')}</p>
+        : (jobSummary(job) || tr('Starting…'))}</p>
       <div className="engine-update-progress">{step === 'getting-ready' && Number.isFinite(percent) ? <Bar value={percent} label={tr("Downloading…")}/> : <Bar value={0} indeterminate label={tr("Updating the engine")}/>}</div>
     </Dialog>;
   }
   // The update ended without stopping anything (declined, refused, or failed before the model was touched).
   if (job?.state === 'error') {
     return <Dialog open compact title={tr("The engine was not updated")} onClose={() => { setJobId(''); onClose(); }} actions={<Btn variant="primary" onClick={() => { setJobId(''); onClose(); }}>{tr("Close")}</Btn>}>
-      <p>{tr(job.error ?? job.summary)}</p>
+      <p>{job.error ? tr(job.error) : jobSummary(job)}</p>
       {details(job)}
     </Dialog>;
   }
   if (job?.state === 'done') {
     return <Dialog open compact title={tr("The engine is updated")} onClose={() => { setJobId(''); onClose(); }} actions={<Btn variant="primary" onClick={() => { setJobId(''); onClose(); }}>{tr("Close")}</Btn>}>
-      <p>{tr(job.summary)}</p>
+      <p>{jobSummary(job)}</p>
     </Dialog>;
   }
   // 1: warn and ask.

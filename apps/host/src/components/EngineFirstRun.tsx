@@ -4,7 +4,7 @@ import { Brand } from './Brand';
 import { Bar, Btn, Icon } from './ui';
 import { api } from '../lib/client';
 import { useDownloadEta } from '../lib/download-eta';
-import type { NativeJob } from '../lib/native';
+import { jobSummary, type NativeJob } from '../lib/native';
 import { megabytes } from '../lib/format';
 import { FirstRunLanguage } from './FirstRunLanguage';
 
@@ -140,7 +140,7 @@ export function EngineFirstRun({ onDone }: { onDone: () => void }) {
     }
     else if (running) {
         body = <><div className="onboard-welcome-copy"><h1 tabIndex={-1} data-initial-focus>{tr("Downloading the engine")}</h1>
-            <p>{bytes && job?.result?.install?.download ? `${doneMb} of ${mb(bytes)} MB${eta ? ' · ' + eta : ''}` : tr(job?.summary ?? 'Starting…')}</p></div>
+            <p>{bytes && job?.result?.install?.download ? `${doneMb} of ${mb(bytes)} MB${eta ? ' · ' + eta : ''}` : (jobSummary(job) || tr('Starting…'))}</p></div>
             <div className="onboard-error" style={{ maxWidth: 520, margin: '0 auto', width: '100%' }}><Bar value={percent} label="Downloading the engine"/><p className="small muted" style={{ textAlign: 'center' }}>{tr("You can close Nostroma; it continues where it stopped.")}</p></div></>;
     }
     else if (!info) {
