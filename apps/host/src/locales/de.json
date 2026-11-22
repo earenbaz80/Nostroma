@@ -3533,5 +3533,20 @@
   "s9060": "Benchmark fehlgeschlagen.",
   "s9061": "App-Updates sind in diesem Build ausgeschaltet. Engine-Updates funktionieren weiterhin.",
   "s9062": "Verbinde zuerst die native Nostroma-Installation.",
-  "s9063": "Native Installation aktualisiert."
+  "s9063": "Native Installation aktualisiert.",
+  "s9064": "Abgeschlossen",
+  "s9065": "Gelöscht",
+  "s9066": "Status der Vorbereitung wird wieder aufgenommen…",
+  "s9067": "Kalibrierung abgeschlossen. Die nativen Einstellungen wurden gespeichert.",
+  "s9068": "Modellvorbereitung abgeschlossen. Lade es unter Modelle.",
+  "s9069": "Die Modelldateien sind bereit. Die Engine für diesen Computer wird fertig eingerichtet…",
+  "s9070": "Heruntergeladene Dateien werden gelöscht…",
+  "s9071": "Warten, bis das laufende Modell stoppt…",
+  "s9072": "Suche nach einer neuen Version der App…",
+  "s9073": "Die besten Engine-Einstellungen für diesen Computer werden gemessen…",
+  "s9074": "Deine Ressourcenpräferenz wird angewendet und das Modell geladen…",
+  "s9075": "Die Geschwindigkeit deines Modells wird geprüft…",
+  "s9076": "Die vorherige Engine ist zurück. Deine Modelle und Einstellungen sind unverändert.",
+  "s9077": "Dein Modell ist abgestimmt und bereit.",
+  "s9078": "Verbinde eine lokale Nostroma-Installation."
 }

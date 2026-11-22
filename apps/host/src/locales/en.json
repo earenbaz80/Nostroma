@@ -3533,5 +3533,20 @@
   "s9060": "Benchmark failed.",
   "s9061": "App updates are off in this build. Engine updates still work.",
   "s9062": "Connect the native Nostroma installation first.",
-  "s9063": "Native installation updated."
+  "s9063": "Native installation updated.",
+  "s9064": "Complete",
+  "s9065": "Deleted",
+  "s9066": "Resuming preparation status…",
+  "s9067": "Calibration complete. Native settings were saved.",
+  "s9068": "Model preparation complete. Load it from Models.",
+  "s9069": "Model files are ready. Finishing the engine for this PC…",
+  "s9070": "Deleting downloaded files…",
+  "s9071": "Waiting for the running model to stop…",
+  "s9072": "Looking for a new version of the app…",
+  "s9073": "Measuring the best engine settings for this computer…",
+  "s9074": "Applying your resource preference and loading the model…",
+  "s9075": "Checking your model’s speed…",
+  "s9076": "The previous engine is back. Your models and settings are unchanged.",
+  "s9077": "Your model is tuned and ready.",
+  "s9078": "Connect a local Nostroma installation."
 }

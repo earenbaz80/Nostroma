@@ -3533,5 +3533,20 @@
   "s9060": "La prueba de rendimiento falló.",
   "s9061": "Las actualizaciones de la app están desactivadas en esta compilación. Las del motor siguen funcionando.",
   "s9062": "Conecta primero la instalación nativa de Nostroma.",
-  "s9063": "Instalación nativa actualizada."
+  "s9063": "Instalación nativa actualizada.",
+  "s9064": "Completado",
+  "s9065": "Eliminado",
+  "s9066": "Retomando el estado de la preparación…",
+  "s9067": "Calibración completada. Se guardaron los ajustes nativos.",
+  "s9068": "Preparación del modelo completada. Cárgalo desde Modelos.",
+  "s9069": "Los archivos del modelo están listos. Terminando el motor para este equipo…",
+  "s9070": "Eliminando los archivos descargados…",
+  "s9071": "Esperando a que se detenga el modelo en ejecución…",
+  "s9072": "Buscando una versión nueva de la app…",
+  "s9073": "Midiendo los mejores ajustes del motor para este equipo…",
+  "s9074": "Aplicando tu preferencia de recursos y cargando el modelo…",
+  "s9075": "Comprobando la velocidad de tu modelo…",
+  "s9076": "El motor anterior está de vuelta. Tus modelos y ajustes no cambiaron.",
+  "s9077": "Tu modelo está ajustado y listo.",
+  "s9078": "Conecta una instalación local de Nostroma."
 }

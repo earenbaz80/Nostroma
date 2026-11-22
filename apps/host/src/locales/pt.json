@@ -3533,5 +3533,20 @@
   "s9060": "O teste de desempenho falhou.",
   "s9061": "As atualizações do app estão desativadas nesta compilação. As do mecanismo continuam funcionando.",
   "s9062": "Conecte primeiro a instalação nativa do Nostroma.",
-  "s9063": "Instalação nativa atualizada."
+  "s9063": "Instalação nativa atualizada.",
+  "s9064": "Concluído",
+  "s9065": "Excluído",
+  "s9066": "Retomando o estado da preparação…",
+  "s9067": "Calibração concluída. As configurações nativas foram salvas.",
+  "s9068": "Preparação do modelo concluída. Carregue-o em Modelos.",
+  "s9069": "Os arquivos do modelo estão prontos. Finalizando o mecanismo para este computador…",
+  "s9070": "Excluindo os arquivos baixados…",
+  "s9071": "Aguardando a parada do modelo em execução…",
+  "s9072": "Procurando uma nova versão do app…",
+  "s9073": "Medindo as melhores configurações do mecanismo para este computador…",
+  "s9074": "Aplicando sua preferência de recursos e carregando o modelo…",
+  "s9075": "Verificando a velocidade do seu modelo…",
+  "s9076": "O mecanismo anterior está de volta. Seus modelos e configurações não mudaram.",
+  "s9077": "Seu modelo está ajustado e pronto.",
+  "s9078": "Conecte uma instalação local do Nostroma."
 }

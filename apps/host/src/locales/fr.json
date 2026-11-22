@@ -3533,5 +3533,20 @@
   "s9060": "Échec du test de performance.",
   "s9061": "Les mises à jour de l’app sont désactivées dans cette version. Celles du moteur fonctionnent toujours.",
   "s9062": "Connectez d’abord l’installation native de Nostroma.",
-  "s9063": "L’installation native est mise à jour."
+  "s9063": "L’installation native est mise à jour.",
+  "s9064": "Terminé",
+  "s9065": "Supprimé",
+  "s9066": "Reprise de l’état de la préparation…",
+  "s9067": "Calibration terminée. Les réglages natifs ont été enregistrés.",
+  "s9068": "Préparation du modèle terminée. Chargez-le depuis Modèles.",
+  "s9069": "Les fichiers du modèle sont prêts. Finalisation du moteur pour cet ordinateur…",
+  "s9070": "Suppression des fichiers téléchargés…",
+  "s9071": "En attente de l’arrêt du modèle en cours d’exécution…",
+  "s9072": "Recherche d’une nouvelle version de l’app…",
+  "s9073": "Mesure des meilleurs réglages du moteur pour cet ordinateur…",
+  "s9074": "Application de votre préférence de ressources et chargement du modèle…",
+  "s9075": "Vérification de la vitesse de votre modèle…",
+  "s9076": "Le moteur précédent est de retour. Vos modèles et réglages n’ont pas changé.",
+  "s9077": "Votre modèle est optimisé et prêt.",
+  "s9078": "Connectez une installation locale de Nostroma."
 }
