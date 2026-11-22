@@ -3532,5 +3532,6 @@
   "s9059": "La préparation ne s’est pas terminée. Réessayez pour réutiliser les fichiers déjà terminés.",
   "s9060": "Échec du test de performance.",
   "s9061": "Les mises à jour de l’app sont désactivées dans cette version. Celles du moteur fonctionnent toujours.",
-  "s9062": "Connectez d’abord l’installation native de Nostroma."
+  "s9062": "Connectez d’abord l’installation native de Nostroma.",
+  "s9063": "L’installation native est mise à jour."
 }

@@ -3532,5 +3532,6 @@
   "s9059": "Die Vorbereitung wurde nicht abgeschlossen. Versuche es erneut, um bereits fertige Dateien weiterzuverwenden.",
   "s9060": "Benchmark fehlgeschlagen.",
   "s9061": "App-Updates sind in diesem Build ausgeschaltet. Engine-Updates funktionieren weiterhin.",
-  "s9062": "Verbinde zuerst die native Nostroma-Installation."
+  "s9062": "Verbinde zuerst die native Nostroma-Installation.",
+  "s9063": "Native Installation aktualisiert."
 }

@@ -3532,5 +3532,6 @@
   "s9059": "Preparation did not finish. Retry to reuse completed files.",
   "s9060": "Benchmark failed.",
   "s9061": "App updates are off in this build. Engine updates still work.",
-  "s9062": "Connect the native Nostroma installation first."
+  "s9062": "Connect the native Nostroma installation first.",
+  "s9063": "Native installation updated."
 }
