@@ -3586,5 +3586,12 @@
   "s9113": "{0} no respondió hace un momento, así que no se volvió a intentar la comprobación de actualizaciones. Nostroma sigue funcionando con lo que está instalado.",
   "s9114": "los archivos del modelo",
   "s9115": "los archivos del lector de imágenes",
-  "s9116": "las herramientas que preparan modelos"
+  "s9116": "las herramientas que preparan modelos",
+  "s9117": "el componente del motor",
+  "s9118": "el motor para {0}",
+  "s9119": "el predictor de DFlash2",
+  "s9120": "el predictor de DFlash2 ajustado",
+  "s9121": "la capa de borrador",
+  "s9122": "el motor anterior",
+  "s9123": "la descarga"
 }

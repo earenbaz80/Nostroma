@@ -3586,5 +3586,12 @@
   "s9113": "{0} n’a pas répondu tout à l’heure, donc la vérification des mises à jour n’a pas été retentée. Nostroma continue de fonctionner avec ce qui est installé.",
   "s9114": "les fichiers du modèle",
   "s9115": "les fichiers du lecteur d’images",
-  "s9116": "les outils qui préparent les modèles"
+  "s9116": "les outils qui préparent les modèles",
+  "s9117": "le composant du moteur",
+  "s9118": "le moteur pour {0}",
+  "s9119": "le module d’anticipation DFlash2",
+  "s9120": "le module d’anticipation DFlash2 ajusté",
+  "s9121": "la couche de brouillon",
+  "s9122": "le moteur précédent",
+  "s9123": "le téléchargement"
 }

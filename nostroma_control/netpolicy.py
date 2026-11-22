@@ -82,7 +82,7 @@ WORDS = {
 WAITING_RE = re.compile(r"^\s*Waiting for (?P<host>\S+) to answer \((?P<seconds>\d+) s so far\)")
 
 
-def what_words(label: str | None, name: str | None = None) -> str:
+def what_words(label: str | None) -> str:
     """What a download is, in the words of a failure message: setup's internal labels become plain words."""
     low = (label or "").lower()
     if not label:

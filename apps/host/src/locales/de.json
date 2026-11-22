@@ -3586,5 +3586,12 @@
   "s9113": "{0} hat vorhin nicht geantwortet, deshalb wurde die Update-Prüfung nicht erneut versucht. Nostroma arbeitet mit dem weiter, was installiert ist.",
   "s9114": "die Modelldateien",
   "s9115": "die Bildleser-Dateien",
-  "s9116": "die Werkzeuge zum Vorbereiten von Modellen"
+  "s9116": "die Werkzeuge zum Vorbereiten von Modellen",
+  "s9117": "die Engine-Komponente",
+  "s9118": "der Motor für {0}",
+  "s9119": "der DFlash2-Entwurfsbaustein",
+  "s9120": "der abgestimmte DFlash2-Entwurfsbaustein",
+  "s9121": "die Entwurfsschicht",
+  "s9122": "die vorherige Engine",
+  "s9123": "der Download"
 }

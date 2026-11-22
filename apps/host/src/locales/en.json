@@ -3586,5 +3586,12 @@
   "s9113": "{0} did not answer a moment ago, so the update check was not tried again. Nostroma keeps working with what is installed.",
   "s9114": "the model files",
   "s9115": "the picture reader",
-  "s9116": "the tools that prepare models"
+  "s9116": "the tools that prepare models",
+  "s9117": "the engine component",
+  "s9118": "the engine for {0}",
+  "s9119": "the DFlash2 drafter",
+  "s9120": "the tuned DFlash2 drafter",
+  "s9121": "the draft layer",
+  "s9122": "previous engine",
+  "s9123": "the download"
 }
