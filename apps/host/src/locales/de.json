@@ -3602,5 +3602,17 @@
   "s9129": "die festgelegte Version von {0} ist nicht mehr auf Hugging Face - aktualisiere Nostroma: eine neuere Version legt die Dateien fest, die jetzt dort liegen",
   "s9130": "{0} stimmt nicht mit der veröffentlichten Datei überein (SHA-256 {1}, erwartet {2}) - sie ist vielleicht beschädigt oder eine andere Version; deine Datei blieb unverändert. Kopiere die ganze veröffentlichte Datei in den Ordner",
   "s9131": "{0} ist zu kurz: {1} von {2} Bytes ({3} fehlen) - lösche sie und führe `nostroma install` erneut aus (oder kopiere die ganze Datei in --gguf-dir)",
-  "s9132": "{0} konnte nicht fertig heruntergeladen werden: {1} von {2} Bytes - prüfe deine Internetverbindung und führe `nostroma install` erneut aus (der Download wird dort fortgesetzt, wo er aufgehört hat)"
+  "s9132": "{0} konnte nicht fertig heruntergeladen werden: {1} von {2} Bytes - prüfe deine Internetverbindung und führe `nostroma install` erneut aus (der Download wird dort fortgesetzt, wo er aufgehört hat)",
+  "s9133": "{0} hat {1} Bytes auf {2}, nicht die festgelegten {3} - aktualisiere Nostroma (die Datei dort hat sich geändert, seit diese Version sie festgelegt hat)",
+  "s9134": "{0} hat {1} Bytes; die veröffentlichte Datei hat {2} - sie ist vielleicht abgeschnitten oder eine andere Version; deine Datei blieb unverändert. Kopiere die ganze veröffentlichte Datei in den Ordner",
+  "s9135": "{0} hat {1} Bytes, nicht {2} - lösche sie und führe `nostroma install` erneut aus (der Download beginnt von vorn)",
+  "s9136": "{0} konnte nicht fertig heruntergeladen werden: {1} Bytes auf der Platte, der Server nennt {2} - prüfe deine Internetverbindung und führe `nostroma install` erneut aus (der Download wird dort fortgesetzt, wo er aufgehört hat)",
+  "s9137": "{0} kann nicht abgeschlossen werden: {1} - schließe jedes Programm, das die Datei offen hält, und führe `nostroma install` erneut aus",
+  "s9138": "{0} ist kein vollständiges GGUF-Shard ({1}) - lösche sie und führe `nostroma install` erneut aus",
+  "s9139": "{0} ist länger als ihr Tensor: {1} Bytes, {2} erwartet ({3} zu viel) - lösche {0} und ihre .done-Markierung und führe `nostroma install` erneut aus",
+  "s9140": "fehlt: {0}",
+  "s9141": "der Download der Draft-Schicht bricht immer wieder ab (Exit {0}): die Verbindung zu Hugging Face ist langsam oder bricht ab - führe `nostroma install` erneut aus - was heruntergeladen ist, bleibt. Wenn er weiter abbricht, setze STRATA_SOURCE=modelscope (nostroma install --source modelscope), um dieselben Dateien von ModelScope zu lesen",
+  "s9142": "{0} hat keine Modelldatei {1} - wähle eine von: {2}",
+  "s9143": "diese Engine ({0}) kann {1} noch nicht ausführen - aktualisiere Strata oder kompiliere die Engine mit --build und führe `nostroma install` erneut aus",
+  "s9144": "{0} fehlt - lege {1} in {2} ab, oder lass --gguf-dir weg, um sie herunterzuladen"
 }

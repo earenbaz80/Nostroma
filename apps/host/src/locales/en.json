@@ -3602,5 +3602,17 @@
   "s9129": "the pinned version of {0} is no longer on Hugging Face - update Nostroma: a newer version pins the files that are there now",
   "s9130": "{0} does not match the published file (SHA-256 {1}, expected {2}) - it may be damaged or another version; your file was left as it is. Copy the whole published file into the folder",
   "s9131": "{0} is short: {1} of {2} bytes ({3} missing) - delete it and run `nostroma install` again (or copy the whole file into --gguf-dir)",
-  "s9132": "could not finish downloading {0}: {1} of {2} bytes - check your internet connection and run `nostroma install` again (the download resumes where it stopped)"
+  "s9132": "could not finish downloading {0}: {1} of {2} bytes - check your internet connection and run `nostroma install` again (the download resumes where it stopped)",
+  "s9133": "{0} is {1} bytes on {2}, not the pinned {3} - update Nostroma (the file there has changed since this version pinned it)",
+  "s9134": "{0} is {1} bytes; the published file is {2} - it may be cut short or another version; your file was left as it is. Copy the whole published file into the folder",
+  "s9135": "{0} is {1} bytes, not {2} - delete it and run `nostroma install` again (the download restarts)",
+  "s9136": "could not finish downloading {0}: {1} bytes on disk, the server says {2} - check your internet connection and run `nostroma install` again (the download resumes where it stopped)",
+  "s9137": "cannot finish {0}: {1} - close any program that has the file open and run `nostroma install` again",
+  "s9138": "{0} is not a whole GGUF shard ({1}) - delete it and run `nostroma install` again",
+  "s9139": "{0} is longer than its tensor: {1} bytes, {2} expected ({3} extra) - delete {0} and its .done mark and run `nostroma install` again",
+  "s9140": "missing {0}",
+  "s9141": "the draft layer's download keeps stopping (exit {0}): the connection to Hugging Face is slow or drops - run `nostroma install` again - what is downloaded is kept. If it still stops, set STRATA_SOURCE=modelscope (nostroma install --source modelscope) to read the same files from ModelScope",
+  "s9142": "{0} has no {1} model file - choose one of: {2}",
+  "s9143": "this engine ({0}) does not run {1} yet - update Strata, or compile the engine with --build, and run `nostroma install` again",
+  "s9144": "{0} is missing - put {1} in {2}, or drop --gguf-dir to download it"
 }

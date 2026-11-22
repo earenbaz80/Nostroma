@@ -3602,5 +3602,17 @@
   "s9129": "la version épinglée de {0} n'est plus sur Hugging Face - mettez Nostroma à jour : une version plus récente épingle les fichiers qui s'y trouvent maintenant",
   "s9130": "{0} ne correspond pas au fichier publié (SHA-256 {1}, attendu {2}) - il est peut-être endommagé ou d'une autre version ; votre fichier est resté tel quel. Copiez le fichier publié complet dans le dossier",
   "s9131": "{0} est incomplet : {1} sur {2} octets ({3} manquants) - supprimez-le et relancez `nostroma install` (ou copiez le fichier complet dans --gguf-dir)",
-  "s9132": "impossible de terminer le téléchargement de {0} : {1} sur {2} octets - vérifiez votre connexion internet et relancez `nostroma install` (le téléchargement reprend là où il s'est arrêté)"
+  "s9132": "impossible de terminer le téléchargement de {0} : {1} sur {2} octets - vérifiez votre connexion internet et relancez `nostroma install` (le téléchargement reprend là où il s'est arrêté)",
+  "s9133": "{0} fait {1} octets sur {2}, et non les {3} épinglés - mettez Nostroma à jour (le fichier y a changé depuis que cette version l'a épinglé)",
+  "s9134": "{0} fait {1} octets ; le fichier publié en fait {2} - il est peut-être tronqué ou d'une autre version ; votre fichier est resté tel quel. Copiez le fichier publié complet dans le dossier",
+  "s9135": "{0} fait {1} octets, et non {2} - supprimez-le et relancez `nostroma install` (le téléchargement repart de zéro)",
+  "s9136": "impossible de terminer le téléchargement de {0} : {1} octets sur le disque, le serveur annonce {2} - vérifiez votre connexion internet et relancez `nostroma install` (le téléchargement reprend là où il s'est arrêté)",
+  "s9137": "impossible de terminer {0} : {1} - fermez tout programme qui garde le fichier ouvert et relancez `nostroma install`",
+  "s9138": "{0} n'est pas un fragment GGUF complet ({1}) - supprimez-le et relancez `nostroma install`",
+  "s9139": "{0} est plus long que son tenseur : {1} octets, {2} attendus ({3} en trop) - supprimez {0} et sa marque .done et relancez `nostroma install`",
+  "s9140": "{0} manque",
+  "s9141": "le téléchargement de la couche de brouillon n'arrête pas de s'interrompre (sortie {0}) : la connexion à Hugging Face est lente ou coupe - relancez `nostroma install` - ce qui est téléchargé est conservé. S'il s'interrompt encore, définissez STRATA_SOURCE=modelscope (nostroma install --source modelscope) pour lire les mêmes fichiers depuis ModelScope",
+  "s9142": "{0} n'a pas de fichier de modèle {1} - choisissez l'un de : {2}",
+  "s9143": "ce moteur ({0}) n'exécute pas encore {1} - mettez Strata à jour, ou compilez le moteur avec --build, et relancez `nostroma install`",
+  "s9144": "{0} manque - placez {1} dans {2}, ou retirez --gguf-dir pour le télécharger"
 }

@@ -3602,5 +3602,17 @@
   "s9129": "la versión fijada de {0} ya no está en Hugging Face - actualizá Nostroma: una versión más nueva fija los archivos que hay ahora",
   "s9130": "{0} no coincide con el archivo publicado (SHA-256 {1}, se esperaba {2}) - puede estar dañado o ser otra versión; tu archivo quedó como estaba. Copiá el archivo publicado completo en la carpeta",
   "s9131": "{0} está incompleto: {1} de {2} bytes (faltan {3}) - borralo y ejecutá `nostroma install` de nuevo (o copiá el archivo completo en --gguf-dir)",
-  "s9132": "no se pudo terminar de descargar {0}: {1} de {2} bytes - revisá tu conexión a internet y ejecutá `nostroma install` de nuevo (la descarga sigue donde se detuvo)"
+  "s9132": "no se pudo terminar de descargar {0}: {1} de {2} bytes - revisá tu conexión a internet y ejecutá `nostroma install` de nuevo (la descarga sigue donde se detuvo)",
+  "s9133": "{0} tiene {1} bytes en {2}, no los {3} fijados - actualizá Nostroma (el archivo de allí cambió desde que esta versión lo fijó)",
+  "s9134": "{0} tiene {1} bytes; el archivo publicado tiene {2} - puede estar cortado o ser otra versión; tu archivo quedó como estaba. Copiá el archivo publicado completo en la carpeta",
+  "s9135": "{0} tiene {1} bytes, no {2} - borralo y ejecutá `nostroma install` de nuevo (la descarga empieza otra vez)",
+  "s9136": "no se pudo terminar de descargar {0}: {1} bytes en disco, el servidor dice {2} - revisá tu conexión a internet y ejecutá `nostroma install` de nuevo (la descarga sigue donde se detuvo)",
+  "s9137": "no se puede completar {0}: {1} - cerrá cualquier programa que tenga el archivo abierto y ejecutá `nostroma install` de nuevo",
+  "s9138": "{0} no es un fragmento GGUF completo ({1}) - borralo y ejecutá `nostroma install` de nuevo",
+  "s9139": "{0} es más largo que su tensor: {1} bytes, se esperaban {2} ({3} de más) - borrá {0} y su marca .done y ejecutá `nostroma install` de nuevo",
+  "s9140": "falta {0}",
+  "s9141": "la descarga de la capa de borrador no deja de cortarse (salida {0}): la conexión con Hugging Face es lenta o se cae - ejecutá `nostroma install` de nuevo - lo descargado se conserva. Si sigue cortándose, poné STRATA_SOURCE=modelscope (nostroma install --source modelscope) para leer los mismos archivos desde ModelScope",
+  "s9142": "{0} no tiene el archivo de modelo {1} - elegí uno de: {2}",
+  "s9143": "este motor ({0}) todavía no ejecuta {1} - actualizá Strata, o compilá el motor con --build, y ejecutá `nostroma install` de nuevo",
+  "s9144": "falta {0} - poné {1} en {2}, o quitá --gguf-dir para descargarlo"
 }
