@@ -3632,5 +3632,18 @@
   "s9160": "Nostroma está actualizado a {0}.",
   "s9161": "Preparando el motor nuevo. {0} sigue funcionando hasta que esté listo.",
   "s9162": "Nostroma Control está listo; motor {0} ({1}-{2}).",
-  "s9163": "Detenido. Las descargas completas se conservan."
+  "s9163": "Detenido. Las descargas completas se conservan.",
+  "s9164": "El motor se detuvo. Abre el diagnóstico o vuelve a cargar.",
+  "s9165": "El motor se detuvo (código {0}). Abre el diagnóstico o vuelve a cargar.",
+  "s9166": "La operación se detuvo (código {0}). Abre el diagnóstico para ver los detalles.",
+  "s9167": "La carga tardó más de cinco minutos. Revisa el registro del motor y libera memoria.",
+  "s9168": "La GPU {0} ya la usa {1}, así que este modelo no entró ahí. Cárgalo en otra GPU o descarga {2} primero.",
+  "s9170": "El archivo de ajustes de este modelo tiene un error, así que el modelo no se inició. {0}",
+  "s9171": "Ya hay un servidor de Nostroma en ejecución fuera de esta interfaz. Detenlo antes de cargar aquí, o conecta su API en Ajustes → Modelos.",
+  "s9172": "No se encontró un motor para esta PC.",
+  "s9175": "El host se reinició antes de terminar. Revisa el diagnóstico y vuelve a intentarlo; los archivos completos se conservan.",
+  "s9176": "La actualización a {0} no terminó: la app se cerró para el instalador, pero volvió a iniciarse la versión anterior {1}. Vuelve a intentar Actualizar o descarga el instalador desde la página de versiones de Nostroma ({2}).",
+  "s9177": "Este motor no puede leer imágenes.",
+  "s9178": "Nostroma Control no ofrece {0}.",
+  "s9179": "Esta instalación de Nostroma no admite {0}. Actualiza primero la instalación."
 }

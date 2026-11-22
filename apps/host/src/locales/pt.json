@@ -3632,5 +3632,18 @@
   "s9160": "O Nostroma foi atualizado para {0}.",
   "s9161": "Preparando o motor novo. {0} continua rodando até ele ficar pronto.",
   "s9162": "O Nostroma Control está pronto; motor {0} ({1}-{2}).",
-  "s9163": "Parado. Os downloads concluídos são mantidos."
+  "s9163": "Parado. Os downloads concluídos são mantidos.",
+  "s9164": "O mecanismo parou. Abra o diagnóstico ou carregue de novo.",
+  "s9165": "O mecanismo parou (código {0}). Abra o diagnóstico ou carregue de novo.",
+  "s9166": "A operação parou (código {0}). Abra o diagnóstico para ver os detalhes.",
+  "s9167": "O carregamento levou mais de cinco minutos. Verifique o log do mecanismo e libere memória.",
+  "s9168": "A GPU {0} já está em uso por {1}, então este modelo não coube ali. Carregue-o em outra GPU ou descarregue {2} primeiro.",
+  "s9170": "O arquivo de configurações deste modelo tem um erro, por isso o modelo não foi iniciado. {0}",
+  "s9171": "Já há um servidor Nostroma em execução fora desta interface. Pare-o antes de carregar aqui, ou conecte a API dele em Configurações → Modelos.",
+  "s9172": "Não foi encontrado um mecanismo para este PC.",
+  "s9175": "O host reiniciou antes de concluir. Verifique o diagnóstico e tente de novo; os arquivos concluídos são mantidos.",
+  "s9176": "A atualização para {0} não terminou: o app fechou para o instalador, mas a versão antiga {1} voltou a iniciar. Tente Atualizar de novo ou baixe o instalador na página de versões do Nostroma ({2}).",
+  "s9177": "Este mecanismo não consegue ler imagens.",
+  "s9178": "O Nostroma Control não oferece {0}.",
+  "s9179": "Esta instalação do Nostroma não oferece suporte a {0}. Atualize a instalação primeiro."
 }

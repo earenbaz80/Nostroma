@@ -3632,5 +3632,18 @@
   "s9160": "Nostroma is updated to {0}.",
   "s9161": "Getting the new engine ready. {0} keeps running until it is ready.",
   "s9162": "Nostroma Control is ready; engine {0} ({1}-{2}).",
-  "s9163": "Stopped. Completed downloads are kept."
+  "s9163": "Stopped. Completed downloads are kept.",
+  "s9164": "Engine stopped. Open diagnostics or reload.",
+  "s9165": "Engine stopped (exit {0}). Open diagnostics or reload.",
+  "s9166": "Operation stopped (exit {0}). Open diagnostics for details.",
+  "s9167": "Loading took more than five minutes. Check the engine log and free memory.",
+  "s9168": "GPU {0} is already used by {1}, so this model did not fit there. Load it on another GPU, or unload {2} first.",
+  "s9170": "The settings file for this model has a mistake, so the model was not started. {0}",
+  "s9171": "A Nostroma server is already running outside this UI. Stop it before loading here, or connect its API in Settings → Models.",
+  "s9172": "No engine for this PC was found.",
+  "s9175": "The host restarted before completion. Check diagnostics, then retry; completed files are kept.",
+  "s9176": "The update to {0} did not finish: the app closed for the installer, but the old version {1} started again. Try Update again, or download the installer from the Nostroma release page ({2}).",
+  "s9177": "This engine has no picture reader.",
+  "s9178": "Nostroma Control has no {0}.",
+  "s9179": "This Nostroma installation does not support {0}. Update the installation first."
 }

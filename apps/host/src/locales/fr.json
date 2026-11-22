@@ -3632,5 +3632,18 @@
   "s9160": "Nostroma est passé à {0}.",
   "s9161": "Préparation du nouveau moteur. {0} continue de fonctionner jusqu'à ce qu'il soit prêt.",
   "s9162": "Nostroma Control est prêt ; moteur {0} ({1}-{2}).",
-  "s9163": "Arrêté. Les téléchargements terminés sont conservés."
+  "s9163": "Arrêté. Les téléchargements terminés sont conservés.",
+  "s9164": "Le moteur s’est arrêté. Ouvrez le diagnostic ou rechargez.",
+  "s9165": "Le moteur s’est arrêté (code {0}). Ouvrez le diagnostic ou rechargez.",
+  "s9166": "L’opération s’est arrêtée (code {0}). Ouvrez le diagnostic pour les détails.",
+  "s9167": "Le chargement a pris plus de cinq minutes. Consultez le journal du moteur et libérez de la mémoire.",
+  "s9168": "Le GPU {0} est déjà utilisé par {1}, ce modèle n’y tenait donc pas. Chargez-le sur un autre GPU ou déchargez {2} d’abord.",
+  "s9170": "Le fichier de réglages de ce modèle contient une erreur, le modèle n’a donc pas démarré. {0}",
+  "s9171": "Un serveur Nostroma tourne déjà hors de cette interface. Arrêtez-le avant de charger ici, ou connectez son API dans Paramètres → Modèles.",
+  "s9172": "Aucun moteur n’a été trouvé pour cet ordinateur.",
+  "s9175": "L’hôte a redémarré avant la fin. Consultez le diagnostic, puis réessayez ; les fichiers terminés sont conservés.",
+  "s9176": "La mise à jour vers {0} ne s’est pas terminée : l’application s’est fermée pour l’installateur, mais l’ancienne version {1} a redémarré. Relancez Mettre à jour ou téléchargez l’installateur depuis la page des versions de Nostroma ({2}).",
+  "s9177": "Ce moteur ne peut pas lire les images.",
+  "s9178": "Nostroma Control ne propose pas {0}.",
+  "s9179": "Cette installation de Nostroma ne prend pas en charge {0}. Mettez d’abord l’installation à jour."
 }

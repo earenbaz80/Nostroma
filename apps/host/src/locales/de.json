@@ -3632,5 +3632,18 @@
   "s9160": "Nostroma ist auf {0} aktualisiert.",
   "s9161": "Die neue Engine wird vorbereitet. {0} läuft weiter, bis sie bereit ist.",
   "s9162": "Nostroma Control ist bereit; Engine {0} ({1}-{2}).",
-  "s9163": "Gestoppt. Fertige Downloads bleiben erhalten."
+  "s9163": "Gestoppt. Fertige Downloads bleiben erhalten.",
+  "s9164": "Die Engine wurde gestoppt. Öffne die Diagnose oder starte das Modell neu.",
+  "s9165": "Die Engine wurde gestoppt (Exit {0}). Öffne die Diagnose oder starte das Modell neu.",
+  "s9166": "Vorgang gestoppt (Exit {0}). Öffne die Diagnose für Details.",
+  "s9167": "Das Laden hat mehr als fünf Minuten gedauert. Prüfe das Engine-Protokoll und gib Arbeitsspeicher frei.",
+  "s9168": "GPU {0} wird bereits von {1} verwendet, deshalb passte dieses Modell dort nicht hinein. Lade es auf eine andere GPU oder entlade zuerst {2}.",
+  "s9170": "Die Einstellungsdatei für dieses Modell enthält einen Fehler, deshalb wurde das Modell nicht gestartet. {0}",
+  "s9171": "Ein Nostroma-Server läuft bereits außerhalb dieser Oberfläche. Stoppe ihn, bevor du hier lädst, oder verbinde seine API unter Einstellungen → Modelle.",
+  "s9172": "Für diesen PC wurde keine Engine gefunden.",
+  "s9175": "Der Host wurde vor dem Abschluss neu gestartet. Prüfe die Diagnose und versuche es dann erneut; fertige Dateien bleiben erhalten.",
+  "s9176": "Das Update auf {0} wurde nicht abgeschlossen: Die App wurde für das Installationsprogramm geschlossen, aber die alte Version {1} wurde erneut gestartet. Wähle erneut Aktualisieren oder lade das Installationsprogramm von der Nostroma-Release-Seite herunter ({2}).",
+  "s9177": "Diese Engine kann keine Bilder lesen.",
+  "s9178": "Nostroma Control bietet {0} nicht.",
+  "s9179": "Diese Nostroma-Installation unterstützt {0} nicht. Aktualisiere zuerst die Installation."
 }
