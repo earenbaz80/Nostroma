@@ -3526,5 +3526,11 @@
   "s9052": "Nostroma liest deinen Modellordner noch. Versuche es gleich noch einmal.",
   "s9053": "Es wurde kein Verschieben unterbrochen.",
   "s9054": "Das Prüfen lokaler Modelldateien ist Teil der Nostroma-App.",
-  "s9055": "Wähle einen Ordner."
+  "s9055": "Wähle einen Ordner.",
+  "s9056": "Native Operation fehlgeschlagen.",
+  "s9058": "Installieren, Aktualisieren, Tuning mit Kalibrierung oder Zurückrollen von Modelldateien und Engines geschieht im Terminal (nostroma install), nie während die App läuft.",
+  "s9059": "Die Vorbereitung wurde nicht abgeschlossen. Versuche es erneut, um bereits fertige Dateien weiterzuverwenden.",
+  "s9060": "Benchmark fehlgeschlagen.",
+  "s9061": "App-Updates sind in diesem Build ausgeschaltet. Engine-Updates funktionieren weiterhin.",
+  "s9062": "Verbinde zuerst die native Nostroma-Installation."
 }

@@ -70,9 +70,13 @@ const escape=(value:string)=>value.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
    the host sends "Nostroma needs {0} or newer" and still finds the catalogue entry written with
    upstream's name. */
 const sentenceSources=Object.entries(english).flatMap(([id,value])=>value===brandName(value)?[[id,value]]:[[id,value],[id,brandName(value)]]);
+/* A label's slot holds a name, not a sentence: a full stop, question mark or exclamation mark means the
+   string is something else (the host's "Native operation failed."), which stays English instead of being
+   pasted into the label's template ("Nativo operation failed."). */
+const labelSlots=new Set(['s1111']);
 const patterns=sentenceSources.filter(([,value])=>/\{\d+\}/.test(value)).map(([id,value])=>{
  const slots:number[]=[];let expression='',at=0;
- for(const match of value.matchAll(/\{(\d+)\}/g)){expression+=escape(value.slice(at,match.index))+'([\\s\\S]*?)';slots.push(Number(match[1]));at=match.index!+match[0].length;}
+ for(const match of value.matchAll(/\{(\d+)\}/g)){expression+=escape(value.slice(at,match.index))+(labelSlots.has(id)?'([^.?!]+)':'([\\s\\S]*?)');slots.push(Number(match[1]));at=match.index!+match[0].length;}
  expression+=escape(value.slice(at));
  return{id,slots,pattern:new RegExp('^'+expression+'$'),specificity:value.replace(/\{\d+\}/g,'').length};
 }).sort((a,b)=>b.specificity-a.specificity);

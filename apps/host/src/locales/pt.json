@@ -3526,5 +3526,11 @@
   "s9052": "O Nostroma ainda está lendo a sua pasta de modelos. Tente de novo em instantes.",
   "s9053": "Nenhuma movimentação foi interrompida.",
   "s9054": "Verificar os arquivos de modelos locais faz parte do aplicativo Nostroma.",
-  "s9055": "Escolha uma pasta."
+  "s9055": "Escolha uma pasta.",
+  "s9056": "A operação nativa falhou.",
+  "s9058": "Instalar, atualizar, ajustar com calibração ou reverter arquivos de modelos e mecanismos é feito no Terminal (nostroma install), nunca enquanto o app está em execução.",
+  "s9059": "A preparação não terminou. Tente de novo para reutilizar os arquivos já concluídos.",
+  "s9060": "O teste de desempenho falhou.",
+  "s9061": "As atualizações do app estão desativadas nesta compilação. As do mecanismo continuam funcionando.",
+  "s9062": "Conecte primeiro a instalação nativa do Nostroma."
 }

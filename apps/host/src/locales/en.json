@@ -3526,5 +3526,11 @@
   "s9052": "Nostroma is still reading your models folder. Try again in a moment.",
   "s9053": "No move was interrupted.",
   "s9054": "Checking local model files is part of the Nostroma app.",
-  "s9055": "Choose a folder."
+  "s9055": "Choose a folder.",
+  "s9056": "Native operation failed.",
+  "s9058": "Installing, updating, tuning with calibration or rolling back model files and engines happens from the Terminal (nostroma install), never while the app runs.",
+  "s9059": "Preparation did not finish. Retry to reuse completed files.",
+  "s9060": "Benchmark failed.",
+  "s9061": "App updates are off in this build. Engine updates still work.",
+  "s9062": "Connect the native Nostroma installation first."
 }

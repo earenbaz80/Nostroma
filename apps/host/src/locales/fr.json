@@ -3526,5 +3526,11 @@
   "s9052": "Nostroma lit encore votre dossier des modèles. Réessayez dans un instant.",
   "s9053": "Aucun déplacement n’a été interrompu.",
   "s9054": "La vérification des fichiers de modèles locaux fait partie de l’application Nostroma.",
-  "s9055": "Choisissez un dossier."
+  "s9055": "Choisissez un dossier.",
+  "s9056": "Échec de l’opération native.",
+  "s9058": "L’installation, la mise à jour, le réglage par calibration ou le retour à une version précédente des fichiers de modèle et des moteurs se font depuis le Terminal (nostroma install), jamais pendant que l’app tourne.",
+  "s9059": "La préparation ne s’est pas terminée. Réessayez pour réutiliser les fichiers déjà terminés.",
+  "s9060": "Échec du test de performance.",
+  "s9061": "Les mises à jour de l’app sont désactivées dans cette version. Celles du moteur fonctionnent toujours.",
+  "s9062": "Connectez d’abord l’installation native de Nostroma."
 }
