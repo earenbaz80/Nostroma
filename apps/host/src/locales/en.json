@@ -3610,7 +3610,6 @@
   "s9137": "cannot finish {0}: {1} - close any program that has the file open and run `nostroma install` again",
   "s9138": "{0} is not a whole GGUF shard ({1}) - delete it and run `nostroma install` again",
   "s9139": "{0} is longer than its tensor: {1} bytes, {2} expected ({3} extra) - delete {0} and its .done mark and run `nostroma install` again",
-  "s9140": "missing {0}",
   "s9141": "the draft layer's download keeps stopping (exit {0}): the connection to Hugging Face is slow or drops - run `nostroma install` again - what is downloaded is kept. If it still stops, set STRATA_SOURCE=modelscope (nostroma install --source modelscope) to read the same files from ModelScope",
   "s9142": "{0} has no {1} model file - choose one of: {2}",
   "s9143": "this engine ({0}) does not run {1} yet - update Strata, or compile the engine with --build, and run `nostroma install` again",

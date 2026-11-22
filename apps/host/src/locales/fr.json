@@ -3610,7 +3610,6 @@
   "s9137": "impossible de terminer {0} : {1} - fermez tout programme qui garde le fichier ouvert et relancez `nostroma install`",
   "s9138": "{0} n'est pas un fragment GGUF complet ({1}) - supprimez-le et relancez `nostroma install`",
   "s9139": "{0} est plus long que son tenseur : {1} octets, {2} attendus ({3} en trop) - supprimez {0} et sa marque .done et relancez `nostroma install`",
-  "s9140": "{0} manque",
   "s9141": "le téléchargement de la couche de brouillon n'arrête pas de s'interrompre (sortie {0}) : la connexion à Hugging Face est lente ou coupe - relancez `nostroma install` - ce qui est téléchargé est conservé. S'il s'interrompt encore, définissez STRATA_SOURCE=modelscope (nostroma install --source modelscope) pour lire les mêmes fichiers depuis ModelScope",
   "s9142": "{0} n'a pas de fichier de modèle {1} - choisissez l'un de : {2}",
   "s9143": "ce moteur ({0}) n'exécute pas encore {1} - mettez Strata à jour, ou compilez le moteur avec --build, et relancez `nostroma install`",

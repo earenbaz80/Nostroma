@@ -3610,7 +3610,6 @@
   "s9137": "{0} kann nicht abgeschlossen werden: {1} - schließe jedes Programm, das die Datei offen hält, und führe `nostroma install` erneut aus",
   "s9138": "{0} ist kein vollständiges GGUF-Shard ({1}) - lösche sie und führe `nostroma install` erneut aus",
   "s9139": "{0} ist länger als ihr Tensor: {1} Bytes, {2} erwartet ({3} zu viel) - lösche {0} und ihre .done-Markierung und führe `nostroma install` erneut aus",
-  "s9140": "fehlt: {0}",
   "s9141": "der Download der Draft-Schicht bricht immer wieder ab (Exit {0}): die Verbindung zu Hugging Face ist langsam oder bricht ab - führe `nostroma install` erneut aus - was heruntergeladen ist, bleibt. Wenn er weiter abbricht, setze STRATA_SOURCE=modelscope (nostroma install --source modelscope), um dieselben Dateien von ModelScope zu lesen",
   "s9142": "{0} hat keine Modelldatei {1} - wähle eine von: {2}",
   "s9143": "diese Engine ({0}) kann {1} noch nicht ausführen - aktualisiere Strata oder kompiliere die Engine mit --build und führe `nostroma install` erneut aus",

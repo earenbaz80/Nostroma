@@ -3610,7 +3610,6 @@
   "s9137": "não é possível concluir {0}: {1} - feche qualquer programa que esteja com o arquivo aberto e execute `nostroma install` de novo",
   "s9138": "{0} não é um fragmento GGUF completo ({1}) - apague-o e execute `nostroma install` de novo",
   "s9139": "{0} é maior que o seu tensor: {1} bytes, {2} esperados ({3} a mais) - apague {0} e a sua marca .done e execute `nostroma install` de novo",
-  "s9140": "falta {0}",
   "s9141": "o download da camada de rascunho não para de cair (saída {0}): a conexão com o Hugging Face está lenta ou cai - execute `nostroma install` de novo - o que foi baixado é mantido. Se ainda cair, defina STRATA_SOURCE=modelscope (nostroma install --source modelscope) para ler os mesmos arquivos do ModelScope",
   "s9142": "{0} não tem o arquivo de modelo {1} - escolha um de: {2}",
   "s9143": "este motor ({0}) ainda não executa {1} - atualize o Strata, ou compile o motor com --build, e execute `nostroma install` de novo",

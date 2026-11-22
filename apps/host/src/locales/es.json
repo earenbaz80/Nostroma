@@ -3610,7 +3610,6 @@
   "s9137": "no se puede completar {0}: {1} - cerrá cualquier programa que tenga el archivo abierto y ejecutá `nostroma install` de nuevo",
   "s9138": "{0} no es un fragmento GGUF completo ({1}) - borralo y ejecutá `nostroma install` de nuevo",
   "s9139": "{0} es más largo que su tensor: {1} bytes, se esperaban {2} ({3} de más) - borrá {0} y su marca .done y ejecutá `nostroma install` de nuevo",
-  "s9140": "falta {0}",
   "s9141": "la descarga de la capa de borrador no deja de cortarse (salida {0}): la conexión con Hugging Face es lenta o se cae - ejecutá `nostroma install` de nuevo - lo descargado se conserva. Si sigue cortándose, poné STRATA_SOURCE=modelscope (nostroma install --source modelscope) para leer los mismos archivos desde ModelScope",
   "s9142": "{0} no tiene el archivo de modelo {1} - elegí uno de: {2}",
   "s9143": "este motor ({0}) todavía no ejecuta {1} - actualizá Strata, o compilá el motor con --build, y ejecutá `nostroma install` de nuevo",
