@@ -3654,5 +3654,12 @@
   "s9185": "Nostroma Control meldet, dass die Engine bereit ist.",
   "s9186": "Nostroma Control meldet, dass die Engine bereit ist (zweiter Versuch).",
   "s9187": "Nostroma Control hat den Zugriff auf die eigenen Dateien repariert; startet erneut.",
-  "s9188": "Der erste Start wurde gestoppt ({0}). Noch ein Versuch: {1}"
+  "s9188": "Der erste Start wurde gestoppt ({0}). Noch ein Versuch: {1}",
+  "s9189": "Nostroma kann die Einstellungen nur für die Dateien von Qwen3.8-Flash-Next, Swift, Coder und Gyro selbst schreiben, nicht für {0}",
+  "s9190": "die Modelldatei ist nicht in {0}",
+  "s9191": "die Modelldateien sind nicht alle in {0} (jede Teildatei -0000N-of-0000N.gguf wird gebraucht)",
+  "s9192": "das vorbereitete Paket {0} fehlt (dieses Installationsprogramm kann es für diese Grafikkarte nicht vorbereiten)",
+  "s9193": "der Tokenizer {0} fehlt",
+  "s9194": "das Expertenprofil {0} fehlt",
+  "s9195": "; "
 }

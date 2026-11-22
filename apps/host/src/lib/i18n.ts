@@ -81,6 +81,10 @@ const patterns=sentenceSources.filter(([,value])=>/\{\d+\}/.test(value)).map(([i
  return{id,slots,pattern:new RegExp('^'+expression+'$'),specificity:value.replace(/\{\d+\}/g,'').length};
 }).sort((a,b)=>b.specificity-a.specificity);
 const localizedTemplateSlots:Record<string,number[]>={s1242:[0],s2473:[1,2],s0825:[0,1],s2455:[0],s2456:[0],s7400:[1],s9105:[2],s9106:[1],s9107:[1],s9109:[1],s9050:[1]};
+/* A slot that holds a list of problems joined by "; " (setup.py's adopt.plan): each one is a sentence of its own, so each is translated on its own. The join is the catalogue's (s9195): French spaces the semicolon, Japanese and Chinese use the full-width one. */
+const listTemplateSlots:Record<string,number[]>={s9152:[0]};
+const listSeparator=()=>decode((catalogs[language]??english).s9195??english.s9195);
+const translatedSlot=(id:string,slot:number,captured:string)=>localizedTemplateSlots[id]?.includes(slot)?tr(captured):listTemplateSlots[id]?.includes(slot)?captured.split('; ').map(part=>tr(part)).join(listSeparator()):captured;
 
 /** Translate interface copy only. Non-string React children pass through unchanged. */
 export function tr<T>(value:T,values?:readonly unknown[]):T{
@@ -88,7 +92,7 @@ export function tr<T>(value:T,values?:readonly unknown[]):T{
  const leading=value.match(/^\s*/)?.[0]??'',trailing=value.match(/\s*$/)?.[0]??'',key=decode(value.trim());
  const dictionary=catalogs[language]??english;
  let id=ids.get(key),slots=values;
- if(!id&&language!=='en')for(const candidate of patterns){const match=candidate.pattern.exec(key);if(match){id=candidate.id;const found:unknown[]=[];candidate.slots.forEach((slot,index)=>{const captured=match[index+1];found[slot]=localizedTemplateSlots[candidate.id]?.includes(slot)?tr(captured):captured;});slots=found;break;}}
+ if(!id&&language!=='en')for(const candidate of patterns){const match=candidate.pattern.exec(key);if(match){id=candidate.id;const found:unknown[]=[];candidate.slots.forEach((slot,index)=>{const captured=match[index+1];found[slot]=translatedSlot(candidate.id,slot,captured);});slots=found;break;}}
  let text=decode(id?(dictionary[id]??english[id as keyof typeof english]):key);
  if(slots)text=text.replace(/\{(\d+)\}/g,(_,index)=>String(slots![Number(index)]??''));
  if(!id&&!values)return brandName(decode(value)) as T;

@@ -3654,5 +3654,12 @@
   "s9185": "O Nostroma Control informa que o mecanismo está pronto.",
   "s9186": "O Nostroma Control informa que o mecanismo está pronto (segunda tentativa).",
   "s9187": "O Nostroma Control reparou o acesso aos próprios arquivos; iniciando de novo.",
-  "s9188": "O primeiro início parou ({0}). Tentando mais uma vez: {1}"
+  "s9188": "O primeiro início parou ({0}). Tentando mais uma vez: {1}",
+  "s9189": "O Nostroma só consegue escrever as configurações para os arquivos Qwen3.8-Flash-Next, Swift, Coder e Gyro, não para {0}",
+  "s9190": "o arquivo do modelo não está em {0}",
+  "s9191": "os arquivos do modelo não estão todos em {0} (é preciso cada fragmento -0000N-of-0000N.gguf)",
+  "s9192": "falta o pacote preparado {0} (este instalador não consegue prepará-lo para esta placa de vídeo)",
+  "s9193": "falta o tokenizador {0}",
+  "s9194": "falta o perfil de especialistas {0}",
+  "s9195": "; "
 }

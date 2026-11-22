@@ -3654,5 +3654,12 @@
   "s9185": "Nostroma Control indique que le moteur est prêt.",
   "s9186": "Nostroma Control indique que le moteur est prêt (deuxième essai).",
   "s9187": "Nostroma Control a réparé l’accès à ses propres fichiers ; redémarrage.",
-  "s9188": "Le premier démarrage s’est arrêté ({0}). Nouvel essai : {1}"
+  "s9188": "Le premier démarrage s’est arrêté ({0}). Nouvel essai : {1}",
+  "s9189": "Nostroma ne peut écrire les réglages lui-même que pour les fichiers Qwen3.8-Flash-Next, Swift, Coder et Gyro, pas pour {0}",
+  "s9190": "le fichier du modèle n’est pas dans {0}",
+  "s9191": "les fichiers du modèle ne sont pas tous dans {0} (chaque fragment -0000N-of-0000N.gguf est nécessaire)",
+  "s9192": "le paquet préparé {0} manque (cet installateur ne peut pas le préparer pour cette carte graphique)",
+  "s9193": "le tokenizer {0} manque",
+  "s9194": "le profil d’experts {0} manque",
+  "s9195": " ; "
 }

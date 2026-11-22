@@ -3654,5 +3654,12 @@
   "s9185": "Nostroma Control reports the engine is ready.",
   "s9186": "Nostroma Control reports the engine is ready (second try).",
   "s9187": "Nostroma Control repaired access to its own files; starting again.",
-  "s9188": "The first start stopped ({0}). Starting once more: {1}"
+  "s9188": "The first start stopped ({0}). Starting once more: {1}",
+  "s9189": "Nostroma can write the settings itself only for the Qwen3.8-Flash-Next, Swift, Coder and Gyro files, not for {0}",
+  "s9190": "the model file is not in {0}",
+  "s9191": "the model files are not all in {0} (every -0000N-of-0000N.gguf shard is needed)",
+  "s9192": "the prepared pack {0} is missing (this installer cannot prepare it for this graphics card)",
+  "s9193": "the tokenizer {0} is missing",
+  "s9194": "the expert profile {0} is missing",
+  "s9195": "; "
 }
