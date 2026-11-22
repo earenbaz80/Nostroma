@@ -1535,7 +1535,7 @@ export function plainTimeSkipError(raw: string | null | undefined): string {
   if (/folder of your own/i.test(body)) return tr('Time-skip works on a folder of your own. Choose a workspace folder for this chat, then try again.');
   if (/Load a model|model first/i.test(body)) return tr('Load a model first, then try Time-skip again.');
   if (/needs the Nostroma app|could not be reached/i.test(body)) return tr('The assistant could not be reached. Try again.');
-  return body.length > 300 ? body.slice(0, 299) + '…' : body;
+  return tr(body.length > 300 ? body.slice(0, 299) + '…' : body);
 }
 
 /** The host says a Time-skip run moved on (phase, and what it is doing now): the working view shows the newest words. */

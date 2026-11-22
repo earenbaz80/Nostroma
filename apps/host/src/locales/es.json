@@ -3661,5 +3661,17 @@
   "s9192": "falta el paquete preparado {0} (este instalador no puede prepararlo para esta tarjeta gráfica)",
   "s9193": "falta el tokenizador {0}",
   "s9194": "falta el perfil de expertos {0}",
-  "s9195": "; "
+  "s9195": "; ",
+  "s9196": "El motor llama.cpp",
+  "s9197": "Buscando la compilación actual de llama.cpp",
+  "s9198": "Descomprimiendo el motor",
+  "s9199": "No se pudo instalar el motor",
+  "s9200": "No se pudo iniciar el comando de Time-skip: {0}",
+  "s9201": "El comando de Time-skip no terminó en {0}s",
+  "s9202": "El comando terminó con {0} y sin JSON",
+  "s9203": "Hace falta una carpeta de trabajo",
+  "s9204": "Hace falta un prompt",
+  "s9205": "El trabajo dijo que salió bien, pero no guardó ningún registro de la ejecución",
+  "s9206": "El trabajo de Time-skip no arrancó a tiempo",
+  "s9207": "El comando de Time-skip terminó sin ninguna ejecución"
 }

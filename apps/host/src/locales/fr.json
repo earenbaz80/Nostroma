@@ -3661,5 +3661,17 @@
   "s9192": "le paquet préparé {0} manque (cet installateur ne peut pas le préparer pour cette carte graphique)",
   "s9193": "le tokenizer {0} manque",
   "s9194": "le profil d’experts {0} manque",
-  "s9195": " ; "
+  "s9195": " ; ",
+  "s9196": "Le moteur llama.cpp",
+  "s9197": "Recherche de la version actuelle de llama.cpp",
+  "s9198": "Décompression du moteur",
+  "s9199": "L’installation du moteur a échoué",
+  "s9200": "Impossible de lancer la commande Time-skip : {0}",
+  "s9201": "La commande Time-skip ne s’est pas terminée en {0}s",
+  "s9202": "La commande s’est terminée avec {0} et sans JSON",
+  "s9203": "Un dossier de travail est nécessaire",
+  "s9204": "Un prompt est nécessaire",
+  "s9205": "La tâche a annoncé un succès, mais n’a écrit aucun enregistrement d’exécution",
+  "s9206": "La tâche Time-skip n’a pas démarré à temps",
+  "s9207": "La commande Time-skip s’est terminée sans exécution"
 }

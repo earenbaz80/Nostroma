@@ -3661,5 +3661,17 @@
   "s9192": "the prepared pack {0} is missing (this installer cannot prepare it for this graphics card)",
   "s9193": "the tokenizer {0} is missing",
   "s9194": "the expert profile {0} is missing",
-  "s9195": "; "
+  "s9195": "; ",
+  "s9196": "The llama.cpp engine",
+  "s9197": "Looking up the current llama.cpp build",
+  "s9198": "Unpacking the engine",
+  "s9199": "Engine install failed",
+  "s9200": "could not start the Time-skip command: {0}",
+  "s9201": "the Time-skip command did not finish within {0}s",
+  "s9202": "the command exited {0} with no JSON",
+  "s9203": "workspace is required",
+  "s9204": "prompt is required",
+  "s9205": "the job reported success but wrote no run record",
+  "s9206": "the Time-skip job did not start in time",
+  "s9207": "the Time-skip command ended without a run"
 }
