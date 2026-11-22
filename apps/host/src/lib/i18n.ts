@@ -73,7 +73,7 @@ const sentenceSources=Object.entries(english).flatMap(([id,value])=>value===bran
 /* A label's slot holds a name, not a sentence: a full stop, question mark or exclamation mark means the
    string is something else (the host's "Native operation failed."), which stays English instead of being
    pasted into the label's template ("Nativo operation failed."). */
-const labelSlots=new Set(['s1111']);
+const labelSlots=new Set(['s1111','gf06','s3271']);
 const patterns=sentenceSources.filter(([,value])=>/\{\d+\}/.test(value)).map(([id,value])=>{
  const slots:number[]=[];let expression='',at=0;
  for(const match of value.matchAll(/\{(\d+)\}/g)){expression+=escape(value.slice(at,match.index))+(labelSlots.has(id)?'([^.?!]+)':'([\\s\\S]*?)');slots.push(Number(match[1]));at=match.index!+match[0].length;}
