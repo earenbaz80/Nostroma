@@ -3548,5 +3548,14 @@
   "s9075": "Die Geschwindigkeit deines Modells wird geprüft…",
   "s9076": "Die vorherige Engine ist zurück. Deine Modelle und Einstellungen sind unverändert.",
   "s9077": "Dein Modell ist abgestimmt und bereit.",
-  "s9078": "Verbinde eine lokale Nostroma-Installation."
+  "s9078": "Verbinde eine lokale Nostroma-Installation.",
+  "s9105": "{0} hat nicht innerhalb von {1} Sekunden geantwortet, deshalb konnten {2} nicht heruntergeladen werden.",
+  "s9106": "Dieser Computer konnte keine Verbindung zu {0} herstellen (er wirkt offline), deshalb konnten {1} nicht heruntergeladen werden.",
+  "s9107": "{0} hat vorhin auch nicht geantwortet, deshalb konnten {1} nicht heruntergeladen werden.",
+  "s9108": "Prüfe, ob dieser Computer https://{0} öffnen kann, und führe denselben Befehl noch einmal aus: Was schon heruntergeladen ist, bleibt erhalten. Modelle, die bereits auf diesem Computer sind, starten auch ohne Internet.",
+  "s9109": "Für {0} Minuten kamen keine Daten, deshalb ließen sich {1} bei {2}% nicht weiter herunterladen.",
+  "s9110": "Führe denselben Befehl noch einmal aus: Er macht dort weiter, wo er aufgehört hat.",
+  "s9111": "{0} hat nicht innerhalb von {1} Sekunden geantwortet, deshalb konnte die Update-Prüfung nicht laufen. Prüfe, ob dieser Computer https://{0} öffnen kann, und versuche es dann erneut. Nostroma arbeitet mit dem weiter, was installiert ist.",
+  "s9112": "Dieser Computer konnte keine Verbindung zu {0} herstellen (er wirkt offline), deshalb konnte die Update-Prüfung nicht laufen. Nostroma arbeitet mit dem weiter, was installiert ist.",
+  "s9113": "{0} hat vorhin nicht geantwortet, deshalb wurde die Update-Prüfung nicht erneut versucht. Nostroma arbeitet mit dem weiter, was installiert ist."
 }

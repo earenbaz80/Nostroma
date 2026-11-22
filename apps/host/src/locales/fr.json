@@ -3548,5 +3548,14 @@
   "s9075": "Vérification de la vitesse de votre modèle…",
   "s9076": "Le moteur précédent est de retour. Vos modèles et réglages n’ont pas changé.",
   "s9077": "Votre modèle est optimisé et prêt.",
-  "s9078": "Connectez une installation locale de Nostroma."
+  "s9078": "Connectez une installation locale de Nostroma.",
+  "s9105": "{0} n’a pas répondu en {1} secondes, donc {2} n’ont pas pu être téléchargés.",
+  "s9106": "Cet ordinateur n’a pas pu se connecter à {0} (il semble hors ligne), donc {1} n’ont pas pu être téléchargés.",
+  "s9107": "{0} n’a pas répondu tout à l’heure non plus, donc {1} n’ont pas pu être téléchargés.",
+  "s9108": "Vérifiez que cet ordinateur peut ouvrir https://{0}, puis relancez la même commande : ce qui est déjà téléchargé est conservé. Les modèles déjà présents sur cet ordinateur démarrent toujours sans internet.",
+  "s9109": "Aucune donnée n’est arrivée pendant {0} minutes, donc {1} n’ont pas été téléchargés jusqu’au bout : arrêt à {2} %.",
+  "s9110": "Relancez la même commande : elle reprend là où elle s’est arrêtée.",
+  "s9111": "{0} n’a pas répondu en {1} secondes, donc la vérification des mises à jour n’a pas pu s’exécuter. Vérifiez que cet ordinateur peut ouvrir https://{0}, puis réessayez. Nostroma continue de fonctionner avec ce qui est installé.",
+  "s9112": "Cet ordinateur n’a pas pu se connecter à {0} (il semble hors ligne), donc la vérification des mises à jour n’a pas pu s’exécuter. Nostroma continue de fonctionner avec ce qui est installé.",
+  "s9113": "{0} n’a pas répondu tout à l’heure, donc la vérification des mises à jour n’a pas été retentée. Nostroma continue de fonctionner avec ce qui est installé."
 }

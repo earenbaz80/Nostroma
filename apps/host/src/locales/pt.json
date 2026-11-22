@@ -3548,5 +3548,14 @@
   "s9075": "Verificando a velocidade do seu modelo…",
   "s9076": "O mecanismo anterior está de volta. Seus modelos e configurações não mudaram.",
   "s9077": "Seu modelo está ajustado e pronto.",
-  "s9078": "Conecte uma instalação local do Nostroma."
+  "s9078": "Conecte uma instalação local do Nostroma.",
+  "s9105": "{0} não respondeu em {1} segundos, então não foi possível baixar {2}.",
+  "s9106": "Este computador não conseguiu ligar-se a {0} (parece estar offline), então não foi possível baixar {1}.",
+  "s9107": "{0} também não respondeu há pouco, então não foi possível baixar {1}.",
+  "s9108": "Verifique se este computador consegue abrir https://{0} e execute o mesmo comando outra vez: o que já foi baixado é mantido. Os modelos que já estão neste computador continuam a arrancar sem internet.",
+  "s9109": "Não chegaram dados durante {0} minutos, então o download parou aos {2}% antes de terminar {1}.",
+  "s9110": "Execute o mesmo comando outra vez: continua de onde parou.",
+  "s9111": "{0} não respondeu em {1} segundos, então a verificação de atualizações não pôde ser executada. Verifique se este computador consegue abrir https://{0} e tente outra vez. A Nostroma continua a funcionar com o que está instalado.",
+  "s9112": "Este computador não conseguiu ligar-se a {0} (parece estar offline), então a verificação de atualizações não pôde ser executada. A Nostroma continua a funcionar com o que está instalado.",
+  "s9113": "{0} não respondeu há pouco, então a verificação de atualizações não foi tentada outra vez. A Nostroma continua a funcionar com o que está instalado."
 }

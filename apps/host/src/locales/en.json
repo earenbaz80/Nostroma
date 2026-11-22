@@ -3548,5 +3548,14 @@
   "s9075": "Checking your model’s speed…",
   "s9076": "The previous engine is back. Your models and settings are unchanged.",
   "s9077": "Your model is tuned and ready.",
-  "s9078": "Connect a local Nostroma installation."
+  "s9078": "Connect a local Nostroma installation.",
+  "s9105": "{0} did not answer within {1} seconds, so {2} could not be downloaded.",
+  "s9106": "This computer could not connect to {0} (it looks offline), so {1} could not be downloaded.",
+  "s9107": "{0} did not answer a moment ago either, so {1} could not be downloaded.",
+  "s9108": "Check that this computer can open https://{0}, then run the same command again: what is already downloaded is kept. Models that are already on this computer still start without the internet.",
+  "s9109": "No data arrived for {0} minutes, so the download of {1} stopped at {2}%.",
+  "s9110": "Run the same command again: it continues where it stopped.",
+  "s9111": "{0} did not answer within {1} seconds, so the update check could not run. Check that this computer can open https://{0}, then try again. Nostroma keeps working with what is installed.",
+  "s9112": "This computer could not connect to {0} (it looks offline), so the update check could not run. Nostroma keeps working with what is installed.",
+  "s9113": "{0} did not answer a moment ago, so the update check was not tried again. Nostroma keeps working with what is installed."
 }
