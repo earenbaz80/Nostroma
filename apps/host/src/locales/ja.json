@@ -3615,5 +3615,7 @@
   "s9143": "このエンジン（{0}）はまだ {1} を実行できません - Strata を更新するか、--build でエンジンをコンパイルして、`nostroma install` を再実行してください",
   "s9144": "{0} がありません - {1} を {2} に置くか、--gguf-dir を外してダウンロードしてください",
   "s9145": "{0} に接続できません（{1}） - インターネット接続を確認して `nostroma install` を再実行してください。会社や学校のプロキシを使っている場合は、このターミナルで先に HTTPS_PROXY（例: HTTPS_PROXY=http://host:port）を設定してください。huggingface.co に届かない場合（中国本土）、同じファイルは ModelScope にあります: `nostroma install` を --source modelscope 付きで実行してください（docs/INSTALL.md）",
-  "s9146": "{0} に接続できません（{1}） - インターネット接続を確認して `nostroma install` を再実行してください。会社や学校のプロキシを使っている場合は、このターミナルで先に HTTPS_PROXY（例: HTTPS_PROXY=http://host:port）を設定してください"
+  "s9146": "{0} に接続できません（{1}） - インターネット接続を確認して `nostroma install` を再実行してください。会社や学校のプロキシを使っている場合は、このターミナルで先に HTTPS_PROXY（例: HTTPS_PROXY=http://host:port）を設定してください",
+  "s9147": "{0} に接続できません（{1}） - インターネット接続を確認して `nostroma install` を再実行してください。このターミナルにはプロキシが設定されています（HTTPS_PROXY）: 正しいものか、動作しているかを確認してください。huggingface.co に届かない場合（中国本土）、同じファイルは ModelScope にあります: `nostroma install` を --source modelscope 付きで実行してください（docs/INSTALL.md）",
+  "s9148": "{0} に接続できません（{1}） - インターネット接続を確認して `nostroma install` を再実行してください。このターミナルにはプロキシが設定されています（HTTPS_PROXY）: 正しいものか、動作しているかを確認してください"
 }

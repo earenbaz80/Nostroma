@@ -3615,5 +3615,7 @@
   "s9143": "este motor ({0}) ainda não executa {1} - atualize o Strata, ou compile o motor com --build, e execute `nostroma install` de novo",
   "s9144": "falta {0} - coloque {1} em {2}, ou tire o --gguf-dir para baixá-lo",
   "s9145": "não é possível alcançar {0} ({1}) - verifique sua conexão e execute `nostroma install` de novo; atrás de um proxy da empresa ou da escola, defina primeiro neste terminal HTTPS_PROXY (por exemplo HTTPS_PROXY=http://host:port); se o huggingface.co não chega até você (China continental), os mesmos arquivos estão no ModelScope: execute `nostroma install` com --source modelscope (docs/INSTALL.md)",
-  "s9146": "não é possível alcançar {0} ({1}) - verifique sua conexão e execute `nostroma install` de novo; atrás de um proxy da empresa ou da escola, defina primeiro neste terminal HTTPS_PROXY (por exemplo HTTPS_PROXY=http://host:port)"
+  "s9146": "não é possível alcançar {0} ({1}) - verifique sua conexão e execute `nostroma install` de novo; atrás de um proxy da empresa ou da escola, defina primeiro neste terminal HTTPS_PROXY (por exemplo HTTPS_PROXY=http://host:port)",
+  "s9147": "não é possível alcançar {0} ({1}) - verifique sua conexão e execute `nostroma install` de novo; há um proxy definido neste terminal (HTTPS_PROXY): confira se é o certo e se está funcionando; se o huggingface.co não chega até você (China continental), os mesmos arquivos estão no ModelScope: execute `nostroma install` com --source modelscope (docs/INSTALL.md)",
+  "s9148": "não é possível alcançar {0} ({1}) - verifique sua conexão e execute `nostroma install` de novo; há um proxy definido neste terminal (HTTPS_PROXY): confira se é o certo e se está funcionando"
 }
