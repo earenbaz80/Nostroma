@@ -3613,5 +3613,7 @@
   "s9141": "ドラフト層のダウンロードが何度も止まります（終了コード {0}）: Hugging Face への接続が遅いか切れています - `nostroma install` を再実行してください - ダウンロード済みのものは残ります。それでも止まる場合は、STRATA_SOURCE=modelscope（nostroma install --source modelscope）を設定して、同じファイルを ModelScope から読み込んでください",
   "s9142": "{0} には {1} のモデルファイルがありません - 次から選んでください: {2}",
   "s9143": "このエンジン（{0}）はまだ {1} を実行できません - Strata を更新するか、--build でエンジンをコンパイルして、`nostroma install` を再実行してください",
-  "s9144": "{0} がありません - {1} を {2} に置くか、--gguf-dir を外してダウンロードしてください"
+  "s9144": "{0} がありません - {1} を {2} に置くか、--gguf-dir を外してダウンロードしてください",
+  "s9145": "{0} に接続できません（{1}） - インターネット接続を確認して `nostroma install` を再実行してください。会社や学校のプロキシを使っている場合は、このターミナルで先に HTTPS_PROXY（例: HTTPS_PROXY=http://host:port）を設定してください。huggingface.co に届かない場合（中国本土）、同じファイルは ModelScope にあります: `nostroma install` を --source modelscope 付きで実行してください（docs/INSTALL.md）",
+  "s9146": "{0} に接続できません（{1}） - インターネット接続を確認して `nostroma install` を再実行してください。会社や学校のプロキシを使っている場合は、このターミナルで先に HTTPS_PROXY（例: HTTPS_PROXY=http://host:port）を設定してください"
 }

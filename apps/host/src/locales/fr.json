@@ -3613,5 +3613,7 @@
   "s9141": "le téléchargement de la couche de brouillon n'arrête pas de s'interrompre (sortie {0}) : la connexion à Hugging Face est lente ou coupe - relancez `nostroma install` - ce qui est téléchargé est conservé. S'il s'interrompt encore, définissez STRATA_SOURCE=modelscope (nostroma install --source modelscope) pour lire les mêmes fichiers depuis ModelScope",
   "s9142": "{0} n'a pas de fichier de modèle {1} - choisissez l'un de : {2}",
   "s9143": "ce moteur ({0}) n'exécute pas encore {1} - mettez Strata à jour, ou compilez le moteur avec --build, et relancez `nostroma install`",
-  "s9144": "{0} manque - placez {1} dans {2}, ou retirez --gguf-dir pour le télécharger"
+  "s9144": "{0} manque - placez {1} dans {2}, ou retirez --gguf-dir pour le télécharger",
+  "s9145": "impossible d'atteindre {0} ({1}) - vérifiez votre connexion internet et relancez `nostroma install` ; derrière un proxy d'entreprise ou d'école, définissez d'abord HTTPS_PROXY (par exemple HTTPS_PROXY=http://host:port) dans ce terminal ; si huggingface.co ne vous atteint pas (Chine continentale), les mêmes fichiers sont sur ModelScope : lancez `nostroma install` avec --source modelscope (docs/INSTALL.md)",
+  "s9146": "impossible d'atteindre {0} ({1}) - vérifiez votre connexion internet et relancez `nostroma install` ; derrière un proxy d'entreprise ou d'école, définissez d'abord HTTPS_PROXY (par exemple HTTPS_PROXY=http://host:port) dans ce terminal"
 }

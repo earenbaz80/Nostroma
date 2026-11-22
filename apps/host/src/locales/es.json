@@ -3613,5 +3613,7 @@
   "s9141": "la descarga de la capa de borrador no deja de cortarse (salida {0}): la conexión con Hugging Face es lenta o se cae - ejecutá `nostroma install` de nuevo - lo descargado se conserva. Si sigue cortándose, poné STRATA_SOURCE=modelscope (nostroma install --source modelscope) para leer los mismos archivos desde ModelScope",
   "s9142": "{0} no tiene el archivo de modelo {1} - elegí uno de: {2}",
   "s9143": "este motor ({0}) todavía no ejecuta {1} - actualizá Strata, o compilá el motor con --build, y ejecutá `nostroma install` de nuevo",
-  "s9144": "falta {0} - poné {1} en {2}, o quitá --gguf-dir para descargarlo"
+  "s9144": "falta {0} - poné {1} en {2}, o quitá --gguf-dir para descargarlo",
+  "s9145": "no se puede llegar a {0} ({1}) - revisá tu conexión a internet y ejecutá `nostroma install` de nuevo; detrás de un proxy de la empresa o la escuela, poné primero en esta terminal HTTPS_PROXY (por ejemplo HTTPS_PROXY=http://host:port); si huggingface.co no te llega (China continental), los mismos archivos están en ModelScope: ejecutá `nostroma install` con --source modelscope (docs/INSTALL.md)",
+  "s9146": "no se puede llegar a {0} ({1}) - revisá tu conexión a internet y ejecutá `nostroma install` de nuevo; detrás de un proxy de la empresa o la escuela, poné primero en esta terminal HTTPS_PROXY (por ejemplo HTTPS_PROXY=http://host:port)"
 }

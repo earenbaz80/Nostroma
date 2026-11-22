@@ -3613,5 +3613,7 @@
   "s9141": "the draft layer's download keeps stopping (exit {0}): the connection to Hugging Face is slow or drops - run `nostroma install` again - what is downloaded is kept. If it still stops, set STRATA_SOURCE=modelscope (nostroma install --source modelscope) to read the same files from ModelScope",
   "s9142": "{0} has no {1} model file - choose one of: {2}",
   "s9143": "this engine ({0}) does not run {1} yet - update Strata, or compile the engine with --build, and run `nostroma install` again",
-  "s9144": "{0} is missing - put {1} in {2}, or drop --gguf-dir to download it"
+  "s9144": "{0} is missing - put {1} in {2}, or drop --gguf-dir to download it",
+  "s9145": "cannot reach {0} ({1}) - check your internet connection and run `nostroma install` again; behind a company or school proxy, set HTTPS_PROXY (for example HTTPS_PROXY=http://host:port) in this terminal first; if huggingface.co does not reach you (mainland China), the same files are on ModelScope: run `nostroma install` with --source modelscope (docs/INSTALL.md)",
+  "s9146": "cannot reach {0} ({1}) - check your internet connection and run `nostroma install` again; behind a company or school proxy, set HTTPS_PROXY (for example HTTPS_PROXY=http://host:port) in this terminal first"
 }

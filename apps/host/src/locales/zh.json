@@ -3613,5 +3613,7 @@
   "s9141": "草稿层的下载反复中断（退出码 {0}）：到 Hugging Face 的连接很慢或会断开 - 请重新运行 `nostroma install` - 已下载的内容会保留。如果仍然中断，请设置 STRATA_SOURCE=modelscope（nostroma install --source modelscope），从 ModelScope 读取同样的文件",
   "s9142": "{0} 没有 {1} 模型文件 - 请选择：{2}",
   "s9143": "这个引擎（{0}）还不能运行 {1} - 请更新 Strata，或用 --build 编译引擎，然后重新运行 `nostroma install`",
-  "s9144": "缺少 {0} - 请把 {1} 放进 {2}，或去掉 --gguf-dir 以下载它"
+  "s9144": "缺少 {0} - 请把 {1} 放进 {2}，或去掉 --gguf-dir 以下载它",
+  "s9145": "无法连接 {0}（{1}） - 请检查网络连接并重新运行 `nostroma install`；在公司或学校代理后面，请先在此终端设置 HTTPS_PROXY（例如 HTTPS_PROXY=http://host:port）；如果 huggingface.co 无法访问（中国大陆），同样的文件在 ModelScope 上：用 --source modelscope 运行 `nostroma install`（docs/INSTALL.md）",
+  "s9146": "无法连接 {0}（{1}） - 请检查网络连接并重新运行 `nostroma install`；在公司或学校代理后面，请先在此终端设置 HTTPS_PROXY（例如 HTTPS_PROXY=http://host:port）"
 }
