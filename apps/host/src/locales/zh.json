@@ -3594,5 +3594,13 @@
   "s9121": "草稿层",
   "s9122": "之前的引擎",
   "s9123": "下载",
-  "s9124": "Nostroma 引擎"
+  "s9124": "Nostroma 引擎",
+  "s9125": "你的显卡都无法运行 Nostroma - 需要 NVIDIA RTX 20 系列或更新（compute capability 7.5+）",
+  "s9126": "未找到 NVIDIA 显卡（nvidia-smi 没有响应） - 请从 https://www.nvidia.com/drivers 安装 NVIDIA 驱动并重启电脑",
+  "s9127": "NVIDIA 驱动太旧（{0}；需要 {1} 或更新） - 请用 NVIDIA App 或从 https://www.nvidia.com/drivers 更新",
+  "s9128": "这颗 CPU 既没有 AVX2 也没有 SSE4.2；Nostroma 至少需要 SSE4.2（Intel Nehalem，2008 年或更新）",
+  "s9129": "{0} 的固定版本已不在 Hugging Face 上 - 请更新 Nostroma：新版本固定的是现在那里的文件",
+  "s9130": "{0} 与发布的文件不一致（SHA-256 {1}，应为 {2}） - 它可能已损坏或是另一个版本；你的文件保持原样。请把完整的发布文件复制到该文件夹",
+  "s9131": "{0} 不完整：{2} 字节中只有 {1} 字节（缺 {3} 字节） - 删除它并重新运行 `nostroma install`（或把整个文件复制到 --gguf-dir）",
+  "s9132": "无法完成 {0} 的下载：{2} 字节中只有 {1} 字节 - 请检查网络连接并重新运行 `nostroma install`（下载会从停止处继续）"
 }

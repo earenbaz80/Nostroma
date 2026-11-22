@@ -3594,5 +3594,13 @@
   "s9121": "la couche de brouillon",
   "s9122": "le moteur précédent",
   "s9123": "le téléchargement",
-  "s9124": "le moteur Nostroma"
+  "s9124": "le moteur Nostroma",
+  "s9125": "aucune de vos GPU ne peut exécuter Nostroma - il faut une NVIDIA RTX 20 ou plus récente (compute capability 7.5+)",
+  "s9126": "aucun GPU NVIDIA trouvé (nvidia-smi n'a pas répondu) - installez le pilote NVIDIA depuis https://www.nvidia.com/drivers et redémarrez le PC",
+  "s9127": "le pilote NVIDIA est trop ancien ({0} ; {1} ou plus récent est nécessaire) - mettez-le à jour avec l'application NVIDIA ou depuis https://www.nvidia.com/drivers",
+  "s9128": "ce processeur n'a ni AVX2 ni SSE4.2 ; Nostroma a besoin d'au moins SSE4.2 (Intel Nehalem, 2008, ou plus récent)",
+  "s9129": "la version épinglée de {0} n'est plus sur Hugging Face - mettez Nostroma à jour : une version plus récente épingle les fichiers qui s'y trouvent maintenant",
+  "s9130": "{0} ne correspond pas au fichier publié (SHA-256 {1}, attendu {2}) - il est peut-être endommagé ou d'une autre version ; votre fichier est resté tel quel. Copiez le fichier publié complet dans le dossier",
+  "s9131": "{0} est incomplet : {1} sur {2} octets ({3} manquants) - supprimez-le et relancez `nostroma install` (ou copiez le fichier complet dans --gguf-dir)",
+  "s9132": "impossible de terminer le téléchargement de {0} : {1} sur {2} octets - vérifiez votre connexion internet et relancez `nostroma install` (le téléchargement reprend là où il s'est arrêté)"
 }
