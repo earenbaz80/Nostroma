@@ -91,10 +91,10 @@ def what_words(label: str | None) -> str:
         return "the picture reader"
     if "llama.cpp" in low:
         return "the tools that prepare models"
+    if "engine" in low:                                # every engine asset ("Nostroma engine", "Nostroma AMD engine"): the one phrase the catalogues carry
+        return "the Nostroma engine"
     if low.startswith(("the ", "a ")):
         return label
-    if "engine" in low:
-        return "the " + label
     return label
 
 

@@ -3608,7 +3608,7 @@ def ready_fetch(model: str, models_dir: Path) -> None:
                 continue
             except OSError:
                 pass                                   # another drive: downloaded
-        download(f"{hf_endpoint()}/{f[1]}/resolve/{f[2]}/{f[3]}", dst, f"{f[1].split('/')[-1]}: {f[3]}")
+        download(f"{hf_endpoint()}/{f[1]}/resolve/{f[2]}/{f[3]}", dst)   # no label: the progress line shows the file's name and a failed download says "the model files"
         verify_sha256(dst, size, sha)
 
 
