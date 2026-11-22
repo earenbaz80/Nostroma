@@ -31,7 +31,7 @@
  "et30": "This engine's description is missing or damaged, so it can't be started.",
  "et31": "Strata didn’t recognise an engine for this computer. The model will download, but it may not run until the right engine is installed (Settings → Engine).",
  "et32": "Strata didn’t recognise an engine for this computer. The model is downloaded, but it can’t run until the right engine is installed. Open Settings → Engine.",
- "et33": "Update the engine (Settings → Engine), then try again.",
+ "et33": "Update the engine (Settings → About), then try again.",
  "et34": "A model is running, so nothing was changed. Unload the model in Models, then try again.",
  "et35": "This is the engine in use. Switch to another one first, then delete it.",
  "et36": "A program is still using this engine, so it was not deleted. Unload your models and try again.",

@@ -31,7 +31,7 @@
  "et30": "Falta la descripción de este motor o está dañada, así que no se puede iniciar.",
  "et31": "Strata no reconoció ningún motor para este equipo. El modelo se descargará, pero puede que no funcione hasta que se instale el motor adecuado (Ajustes → Motor).",
  "et32": "Strata no reconoció ningún motor para este equipo. El modelo está descargado, pero no puede funcionar hasta que se instale el motor adecuado. Abre Ajustes → Motor.",
- "et33": "Actualiza el motor (Ajustes → Motor) y vuelve a intentarlo.",
+ "et33": "Actualiza el motor (Ajustes → Acerca de) y vuelve a intentarlo.",
  "et34": "Hay un modelo en ejecución, así que no se cambió nada. Descarga el modelo en «Modelos» y vuelve a intentarlo.",
  "et35": "Este es el motor en uso. Cambia primero a otro y luego elimínalo.",
  "et36": "Un programa todavía usa este motor, así que no se eliminó. Descarga tus modelos y vuelve a intentarlo.",

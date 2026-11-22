@@ -117,7 +117,7 @@ export interface AppState {
   providers: ModelProviders | null;
   remoteModel: RemoteModelSelection | null;
   engine: EngineConfig | null;
-  /** The llama.cpp download the installer is running, or the last one it finished: nothing paints it yet. */
+  /** The llama.cpp download the installer is running, or the last one it finished: Settings > Engine paints it (EngineInstall). */
   engineInstall: EngineInstallState | null;
   serving: ServingState | null;
   monitor: MonitorState | null;

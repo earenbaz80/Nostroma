@@ -140,8 +140,8 @@ add("This engine's description is missing or damaged, so it can't be started.",
     "Описание этого движка отсутствует или повреждено, поэтому его нельзя запустить.", "A descrição deste motor está ausente ou danificada, então ele não pode ser iniciado.",
     "이 엔진의 설명 파일이 없거나 손상되어 시작할 수 없습니다.", "La description de ce moteur est absente ou endommagée : il ne peut pas démarrer.")
 
-# ---- no engine for this computer, and an engine that is too old: the model still downloads, and the next step is
-# Settings > Engine, where Install engine fetches the right one
+# ---- no engine for this computer (Settings > Engine installs it) and an engine that is too old (Settings > About updates
+# it, since the Engine panel only installs, switches and deletes): the model still downloads either way
 add("Strata didn’t recognise an engine for this computer. The model will download, but it may not run until the right engine is installed (Settings → Engine).",
     "Strata 未能识别这台电脑的引擎。模型会下载，但在安装合适的引擎之前可能无法运行（设置 → 引擎）。",
     "Strata はこのコンピューター用のエンジンを認識できませんでした。モデルはダウンロードされますが、合ったエンジンをインストールするまで動かない可能性があります（設定 → エンジン）。",
@@ -160,10 +160,10 @@ add("Strata didn’t recognise an engine for this computer. The model is downloa
     "O Strata não reconheceu um motor para este computador. O modelo foi baixado, mas não pode funcionar até que o motor certo seja instalado. Abra Configurações → Mecanismo.",
     "Strata가 이 컴퓨터용 엔진을 인식하지 못했습니다. 모델은 내려받았지만, 알맞은 엔진이 설치되기 전에는 실행할 수 없습니다. 설정 → 엔진을 여세요.",
     "Strata n’a pas reconnu de moteur pour cet ordinateur. Le modèle est téléchargé, mais il ne peut pas fonctionner tant que le bon moteur n’est pas installé. Ouvrez Réglages → Moteur.")
-add("Update the engine (Settings → Engine), then try again.",
-    "请更新引擎（设置 → 引擎），然后重试。", "エンジンを更新して（設定 → エンジン）、もう一度お試しください。", "Aktualisiere die Engine (Einstellungen → Engine) und versuche es dann erneut.",
-    "Actualiza el motor (Ajustes → Motor) y vuelve a intentarlo.", "Обновите движок (Настройки → Движок) и попробуйте снова.", "Atualize o motor (Configurações → Mecanismo) e tente novamente.",
-    "엔진을 업데이트(설정 → 엔진)한 뒤 다시 시도하세요.", "Mettez le moteur à jour (Réglages → Moteur), puis réessayez.")
+add("Update the engine (Settings → About), then try again.",
+    "请更新引擎（设置 → 关于），然后重试。", "エンジンを更新して（設定 → 情報）、もう一度お試しください。", "Aktualisiere die Engine (Einstellungen → Über) und versuche es dann erneut.",
+    "Actualiza el motor (Ajustes → Acerca de) y vuelve a intentarlo.", "Обновите движок (Настройки → О программе) и попробуйте снова.", "Atualize o motor (Configurações → Sobre) e tente novamente.",
+    "엔진을 업데이트(설정 → 정보)한 뒤 다시 시도하세요.", "Mettez le moteur à jour (Réglages → À propos), puis réessayez.")
 
 # ---- answers of the host (shown as they are, so each one is a catalog entry)
 add("A model is running, so nothing was changed. Unload the model in Models, then try again.",

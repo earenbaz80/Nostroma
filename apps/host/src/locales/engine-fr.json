@@ -31,7 +31,7 @@
  "et30": "La description de ce moteur est absente ou endommagée : il ne peut pas démarrer.",
  "et31": "Strata n’a pas reconnu de moteur pour cet ordinateur. Le modèle sera téléchargé, mais il risque de ne pas fonctionner tant que le bon moteur n’est pas installé (Réglages → Moteur).",
  "et32": "Strata n’a pas reconnu de moteur pour cet ordinateur. Le modèle est téléchargé, mais il ne peut pas fonctionner tant que le bon moteur n’est pas installé. Ouvrez Réglages → Moteur.",
- "et33": "Mettez le moteur à jour (Réglages → Moteur), puis réessayez.",
+ "et33": "Mettez le moteur à jour (Réglages → À propos), puis réessayez.",
  "et34": "Un modèle est en cours d’exécution, rien n’a donc été modifié. Déchargez le modèle dans « Modèles », puis réessayez.",
  "et35": "C’est le moteur utilisé. Passez d’abord à un autre, puis supprimez-le.",
  "et36": "Un programme utilise encore ce moteur : il n’a pas été supprimé. Déchargez vos modèles, puis réessayez.",

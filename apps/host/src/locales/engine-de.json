@@ -31,7 +31,7 @@
  "et30": "Die Beschreibung dieser Engine fehlt oder ist beschädigt, deshalb lässt sie sich nicht starten.",
  "et31": "Strata hat für diesen Computer keine Engine erkannt. Das Modell wird heruntergeladen, läuft aber möglicherweise erst, wenn die passende Engine installiert ist (Einstellungen → Engine).",
  "et32": "Strata hat für diesen Computer keine Engine erkannt. Das Modell ist heruntergeladen, läuft aber erst, wenn die passende Engine installiert ist. Öffne Einstellungen → Engine.",
- "et33": "Aktualisiere die Engine (Einstellungen → Engine) und versuche es dann erneut.",
+ "et33": "Aktualisiere die Engine (Einstellungen → Über) und versuche es dann erneut.",
  "et34": "Ein Modell läuft, deshalb wurde nichts geändert. Entlade das Modell unter „Modelle“ und versuche es dann erneut.",
  "et35": "Das ist die verwendete Engine. Wechsle zuerst zu einer anderen und lösche sie dann.",
  "et36": "Ein Programm benutzt diese Engine noch, deshalb wurde sie nicht gelöscht. Entlade deine Modelle und versuche es erneut.",

@@ -31,7 +31,7 @@
  "et30": "A descrição deste motor está ausente ou danificada, então ele não pode ser iniciado.",
  "et31": "O Strata não reconheceu um motor para este computador. O modelo será baixado, mas pode não funcionar até que o motor certo seja instalado (Configurações → Mecanismo).",
  "et32": "O Strata não reconheceu um motor para este computador. O modelo foi baixado, mas não pode funcionar até que o motor certo seja instalado. Abra Configurações → Mecanismo.",
- "et33": "Atualize o motor (Configurações → Mecanismo) e tente novamente.",
+ "et33": "Atualize o motor (Configurações → Sobre) e tente novamente.",
  "et34": "Há um modelo em execução, então nada foi alterado. Descarregue o modelo em «Modelos» e tente novamente.",
  "et35": "Este é o motor em uso. Troque primeiro para outro e depois exclua-o.",
  "et36": "Um programa ainda está usando este motor, então ele não foi excluído. Descarregue seus modelos e tente novamente.",
