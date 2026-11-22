@@ -3557,5 +3557,8 @@
   "s9110": "Execute o mesmo comando outra vez: continua de onde parou.",
   "s9111": "{0} não respondeu em {1} segundos, então a verificação de atualizações não pôde ser executada. Verifique se este computador consegue abrir https://{0} e tente outra vez. A Nostroma continua a funcionar com o que está instalado.",
   "s9112": "Este computador não conseguiu ligar-se a {0} (parece estar offline), então a verificação de atualizações não pôde ser executada. A Nostroma continua a funcionar com o que está instalado.",
-  "s9113": "{0} não respondeu há pouco, então a verificação de atualizações não foi tentada outra vez. A Nostroma continua a funcionar com o que está instalado."
+  "s9113": "{0} não respondeu há pouco, então a verificação de atualizações não foi tentada outra vez. A Nostroma continua a funcionar com o que está instalado.",
+  "s9114": "os arquivos do modelo",
+  "s9115": "os arquivos do leitor de imagens",
+  "s9116": "as ferramentas que preparam os modelos"
 }

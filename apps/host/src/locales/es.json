@@ -3557,5 +3557,8 @@
   "s9110": "Vuelve a ejecutar el mismo comando: continúa donde se detuvo.",
   "s9111": "{0} no respondió en {1} segundos, así que la comprobación de actualizaciones no pudo ejecutarse. Comprueba que este ordenador pueda abrir https://{0} y vuelve a intentarlo. Nostroma sigue funcionando con lo que está instalado.",
   "s9112": "Este ordenador no pudo conectar con {0} (parece estar sin conexión), así que la comprobación de actualizaciones no pudo ejecutarse. Nostroma sigue funcionando con lo que está instalado.",
-  "s9113": "{0} no respondió hace un momento, así que no se volvió a intentar la comprobación de actualizaciones. Nostroma sigue funcionando con lo que está instalado."
+  "s9113": "{0} no respondió hace un momento, así que no se volvió a intentar la comprobación de actualizaciones. Nostroma sigue funcionando con lo que está instalado.",
+  "s9114": "los archivos del modelo",
+  "s9115": "los archivos del lector de imágenes",
+  "s9116": "las herramientas que preparan modelos"
 }

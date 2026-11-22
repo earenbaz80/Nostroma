@@ -80,7 +80,7 @@ const patterns=sentenceSources.filter(([,value])=>/\{\d+\}/.test(value)).map(([i
  expression+=escape(value.slice(at));
  return{id,slots,pattern:new RegExp('^'+expression+'$'),specificity:value.replace(/\{\d+\}/g,'').length};
 }).sort((a,b)=>b.specificity-a.specificity);
-const localizedTemplateSlots:Record<string,number[]>={s1242:[0],s2473:[1,2],s0825:[0,1],s2455:[0],s2456:[0],s7400:[1]};
+const localizedTemplateSlots:Record<string,number[]>={s1242:[0],s2473:[1,2],s0825:[0,1],s2455:[0],s2456:[0],s7400:[1],s9105:[2],s9106:[1],s9107:[1],s9109:[1]};
 
 /** Translate interface copy only. Non-string React children pass through unchanged. */
 export function tr<T>(value:T,values?:readonly unknown[]):T{

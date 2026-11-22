@@ -3557,5 +3557,8 @@
   "s9110": "Führe denselben Befehl noch einmal aus: Er macht dort weiter, wo er aufgehört hat.",
   "s9111": "{0} hat nicht innerhalb von {1} Sekunden geantwortet, deshalb konnte die Update-Prüfung nicht laufen. Prüfe, ob dieser Computer https://{0} öffnen kann, und versuche es dann erneut. Nostroma arbeitet mit dem weiter, was installiert ist.",
   "s9112": "Dieser Computer konnte keine Verbindung zu {0} herstellen (er wirkt offline), deshalb konnte die Update-Prüfung nicht laufen. Nostroma arbeitet mit dem weiter, was installiert ist.",
-  "s9113": "{0} hat vorhin nicht geantwortet, deshalb wurde die Update-Prüfung nicht erneut versucht. Nostroma arbeitet mit dem weiter, was installiert ist."
+  "s9113": "{0} hat vorhin nicht geantwortet, deshalb wurde die Update-Prüfung nicht erneut versucht. Nostroma arbeitet mit dem weiter, was installiert ist.",
+  "s9114": "die Modelldateien",
+  "s9115": "die Bildleser-Dateien",
+  "s9116": "die Werkzeuge zum Vorbereiten von Modellen"
 }

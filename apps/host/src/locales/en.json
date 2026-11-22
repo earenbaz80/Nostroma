@@ -3557,5 +3557,8 @@
   "s9110": "Run the same command again: it continues where it stopped.",
   "s9111": "{0} did not answer within {1} seconds, so the update check could not run. Check that this computer can open https://{0}, then try again. Nostroma keeps working with what is installed.",
   "s9112": "This computer could not connect to {0} (it looks offline), so the update check could not run. Nostroma keeps working with what is installed.",
-  "s9113": "{0} did not answer a moment ago, so the update check was not tried again. Nostroma keeps working with what is installed."
+  "s9113": "{0} did not answer a moment ago, so the update check was not tried again. Nostroma keeps working with what is installed.",
+  "s9114": "the model files",
+  "s9115": "the picture reader",
+  "s9116": "the tools that prepare models"
 }
