@@ -21,6 +21,7 @@
 // This file is compiled for AVX2 and must not run anything before the engine's cpu_avx2_ok() check: no runtime
 // initializer at namespace scope (#391, 016ea2e), the switches are read on first use.
 #include "strata/kernels/cpu/iq_avx2.hpp"
+#include "strata/env.hpp"
 #include "strata/kernels/cpu/expert_layout.hpp"
 
 #define GGML_COMMON_DECL_CPP
@@ -183,7 +184,7 @@ inline float hsum8(__m256 v) {
 // worse than T0 at the same distance, so this keeps T0.
 int prefetch_distance() {
     static const int d = [] {
-        const char* v = std::getenv("STRATA_IQ_PREFETCH");
+        const char* v = strata::env("NOSTROMA_IQ_PREFETCH");
         return v ? std::atoi(v) : 2048;
     }();
     return d;

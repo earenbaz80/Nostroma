@@ -14,6 +14,7 @@
 //
 // Run: route_resident_parity   (ctest: route_resident_parity; GPU, synthetic, no model)
 #include "strata/kernels/native_router.hpp"
+#include "strata/env.hpp"
 
 #include <cuda_runtime.h>
 
@@ -215,7 +216,7 @@ int main() {
             std::printf("  case %3d  n_tok %d  margin %.2f  ranks [%d,%d]  ties %d  ids %s  weights %s (%d ulp)  stats %s\n",
                         c, n_tok, margin, lo, hi, (int) tie_heavy, ids_same ? "same" : "*** DIFFER ***",
                         w_same ? "same" : "*** DIFFER ***", w_ulp, st_same ? "same" : "*** DIFFER ***");
-            if (std::getenv("STRATA_PARITY_DUMP") && dumped < 2) {
+            if (strata::env("NOSTROMA_PARITY_DUMP") && dumped < 2) {
                 ++dumped;
                 for (int t = 0; t < n_tok; ++t) {
                     std::printf("    token %d  ids in ", t);

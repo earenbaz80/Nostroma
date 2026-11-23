@@ -24,6 +24,7 @@
 // SOFTWARE.
 
 #include "strata/kernels/native_mmvq.hpp"
+#include "strata/env.hpp"
 #include "strata/kernels/dp4a.hpp"
 #include "strata/kernels/q8_1_finite.hpp"
 #include "strata/kernels/iq_kernels.hpp"
@@ -1230,11 +1231,11 @@ bool g_multi_exact = true;   // until the upstream layout is timed on an idle GP
 // B6 STRATA_B6_MMVQ_ROWS (lab, default 0 = off): see native_mmvq_set_b6_rows
 // read at first use (not at load): a per-architecture default set at start (nv_defaults.hpp) must be seen
 int g_b6_rows = -1;
-int b6_rows_mode() { if (g_b6_rows < 0) { const char* v = std::getenv("STRATA_B6_MMVQ_ROWS"); g_b6_rows = v ? std::atoi(v) : 0; } return g_b6_rows; }
+int b6_rows_mode() { if (g_b6_rows < 0) { const char* v = strata::env("NOSTROMA_B6_MMVQ_ROWS"); g_b6_rows = v ? std::atoi(v) : 0; } return g_b6_rows; }
 
 // S26 STRATA_TSUM=1 (TS): warp 0's NCOLS x ROWS sums as one transposed butterfly (s26_tsum.cuh), bitwise the same
 static bool s26_tsum_on() {
-    static const bool on = [] { const char* v = std::getenv("STRATA_TSUM"); return v && v[0] == '1'; }();
+    static const bool on = [] { const char* v = strata::env("NOSTROMA_TSUM"); return v && v[0] == '1'; }();
     return on;
 }
 
@@ -1371,7 +1372,7 @@ bool q8_0_rows1(int n_in, int n_out) {
         return false;
     } else {
         static const int env = [] {
-            const char* v = std::getenv("STRATA_NO_MMVQ_ROWS2");
+            const char* v = strata::env("NOSTROMA_NO_MMVQ_ROWS2");
             return v == nullptr || v[0] == '\0' ? -1 : v[0] != '0';
         }();
         if (env == 0) return false;
@@ -1562,7 +1563,7 @@ void launch_multi_n(const void* weights, const void* x_q8_1, float* y, int n_in,
     // #783 PR-h (stuchapin909): two rows per block for every K, not only small K - each row keeps its own partial sums and
     // reduction, so a row's result does not depend on its neighbour; STRATA_NO_MMVQ_ROWS2=1 keeps one row for large K
     static const bool rows1 = [] {
-        const char* v = std::getenv("STRATA_NO_MMVQ_ROWS2");
+        const char* v = strata::env("NOSTROMA_NO_MMVQ_ROWS2");
         return v != nullptr && v[0] != '\0' && v[0] != '0';
     }();
     if ((rows1 || q8_0_rows1<F>(n_in, n_out)) && n_in / F::DIV >= F::BPI) {
@@ -2211,7 +2212,7 @@ __global__ void native_mmvq_il_kernel(const typename I::F::Block* __restrict__ w
 
 int g_il_pf = -1;   // native_mmvq_il_pf (tests, benchmarks): the variant for every launch; -1: STRATA_MMVQ_IL_PF
 int il_pf_env() {
-    static const int env = [] { const char* v = std::getenv("STRATA_MMVQ_IL_PF"); return v ? std::atoi(v) : 0; }();
+    static const int env = [] { const char* v = strata::env("NOSTROMA_MMVQ_IL_PF"); return v ? std::atoi(v) : 0; }();
     return env;
 }
 int il_pf_table(int type, int ncols, int n_out);   // the sm_80 table below: pf << 4 | rows, 0 = today's kernel and table
@@ -2245,7 +2246,7 @@ void launch_il_one(unsigned blocks, const typename I::F::Block* w, const int* xq
 
 // STRATA_IL_PAD (bit 0: IQ4_XS 5 columns as 6; default on, 0 off): bitwise, see native_mmvq_il_kernel
 int il_pad() {
-    static const int v = [] { const char* e = std::getenv("STRATA_IL_PAD"); return e != nullptr ? std::atoi(e) : 1; }();
+    static const int v = [] { const char* e = strata::env("NOSTROMA_IL_PAD"); return e != nullptr ? std::atoi(e) : 1; }();
     return v;
 }
 
@@ -2364,7 +2365,7 @@ void launch_check() {
 // butterfly instead of the LDS partials and __syncthreads of the one-block-per-row layout: on gfx906 a block per
 // 2 KB row spent most of its time being launched and joined.  The SAME kernel serves every column count 1..8, so a
 // column's sums do not depend on how many columns (verify tokens) ride along.  STRATA_MMVQ_WAVE=0: the CUDA layout.
-bool g_wave_off = std::getenv("STRATA_MMVQ_WAVE") && std::string(std::getenv("STRATA_MMVQ_WAVE")) == "0";
+bool g_wave_off = strata::env("NOSTROMA_MMVQ_WAVE") && std::string(strata::env("NOSTROMA_MMVQ_WAVE")) == "0";
 template<typename F, int NCOLS, int R>
 __launch_bounds__(256)
 __global__ void native_mmvq_wave_kernel(const typename F::Block* __restrict__ w, const Q81Block* __restrict__ x,
@@ -2489,7 +2490,7 @@ bool q8_sm60_on() {
     return false;   // a CUDA kernel for one NVIDIA chip: HIP builds never compile it
 #else
     static const bool on = [] {
-        const char* v = std::getenv("STRATA_Q8_SM60");
+        const char* v = strata::env("NOSTROMA_Q8_SM60");
         const bool yes = v && v[0] == '1' && v[1] == '\0';
         if (yes) std::fprintf(stderr, "strata q8 sm60: Q8_0 decode GEMVs on the Pascal kernel (STRATA_Q8_SM60=1)\n");
         return yes;
@@ -2681,7 +2682,7 @@ int g_q6p_grid_override = 0;   // the self-test's grid sweep (STRATA_Q6P_SELFTES
 int q6p_grid() {
     if (g_q6p_grid_override > 0) return g_q6p_grid_override;
     static const int grid = [] {
-        const char* v = std::getenv("STRATA_Q6P_GRID");
+        const char* v = strata::env("NOSTROMA_Q6P_GRID");
         const int g = v ? std::atoi(v) : 0;
         return g > 0 ? g : 640;
     }();
@@ -2818,7 +2819,7 @@ bool q6_packed_mmvq(const void* weights, const void* x_q8_1, float* y, int n_in,
 
 bool native_q8_0_packed_enabled() {
     static const bool enabled = [] {
-        const char* v = std::getenv("STRATA_Q8_PACKED");
+        const char* v = strata::env("NOSTROMA_Q8_PACKED");
         return v && v[0] == '1' && v[1] == '\0';
     }();
     return enabled || q8_sm60_on();
@@ -2948,7 +2949,7 @@ bool native_q8_0_sm60_pack_in_place(void* weights, int n_in, int n_out, const ch
 
 bool native_q6_k_packed_enabled() {
     static const bool enabled = [] {
-        const char* v = std::getenv("STRATA_Q6_PACKED");
+        const char* v = strata::env("NOSTROMA_Q6_PACKED");
         return v && v[0] == '1' && v[1] == '\0';
     }();
     return enabled;
@@ -2986,7 +2987,7 @@ bool native_q6_k_pack(const void* weights, int n_in, int n_out, const char* what
     std::fprintf(stderr, "strata: STRATA_Q6_PACKED=1 packed the %s (%d x %d, +%.1f MiB)\n", what, n_out, n_in,
                  total / 1048576.0);
     // STRATA_Q6P_SELFTEST=1: bitwise check against the GGUF-layout kernels (1..4 columns) and paired timings
-    if (const char* v = std::getenv("STRATA_Q6P_SELFTEST"); v && (v[0] == '1' || v[0] == '2')) {
+    if (const char* v = strata::env("NOSTROMA_Q6P_SELFTEST"); v && (v[0] == '1' || v[0] == '2')) {
         cudaStream_t s = nullptr;
         cudaStreamCreateWithFlags(&s, cudaStreamNonBlocking);
         const int nq = n_in / Q8K;
@@ -3205,7 +3206,7 @@ __global__ void __launch_bounds__(WARPS * WARP) q2_0_warp_rows_kernel(const Q20B
 }
 bool q2_0_warp_rows_on() {
     static int on[16] = {};   // by device ordinal: 0 unknown, 1 yes, -1 no
-    static const int env = [] { const char* v = std::getenv("STRATA_Q2_WARP"); return v ? (v[0] == '0' ? 0 : 1) : -1; }();
+    static const int env = [] { const char* v = strata::env("NOSTROMA_Q2_WARP"); return v ? (v[0] == '0' ? 0 : 1) : -1; }();
     if (env >= 0) return env == 1;
     int dev = 0;
     if (cudaGetDevice(&dev) != cudaSuccess || dev < 0 || dev >= 16) return false;
@@ -3795,14 +3796,14 @@ bool il_env_on(const char* name) {
     const char* v = std::getenv(name);
     return v == nullptr || v[0] != '0';
 }
-bool il_t1_on() { static const bool on = il_env_on("STRATA_MMVQ_IL_T1"); return on; }
-bool il_q3k_on() { static const bool on = il_env_on("STRATA_MMVQ_IL_Q3K"); return on; }
+bool il_t1_on() { static const bool on = il_env_on("NOSTROMA_MMVQ_IL_T1"); return on; }
+bool il_q3k_on() { static const bool on = il_env_on("NOSTROMA_MMVQ_IL_Q3K"); return on; }
 // #3453: sm_89's own tables (kIlRows_89 / kIl1Rows_89) are ON by default on compute capability 8.9 only (owner decision, 0.2.7; no sm_89 card
 // has run mmvq_il_parity or an end-to-end A/B for us, the reporter tests and reports back).  STRATA_MMVQ_IL_89=0 gives an Ada card what it
 // answered before (the shared table, no one-column row) and so does STRATA_DEFAULTS=026; STRATA_MMVQ_IL_89=1 wins over that master switch
 // (sm120_series.hpp mmvq_il_89_resolve).  Cached once; the lookup runs on the host once a launch.
 bool il_89_opt_in() {
-    static const bool on = strata::mmvq_il_89_resolve(std::getenv("STRATA_MMVQ_IL_89"), false, 89, strata::qwen_defaults_026());
+    static const bool on = strata::mmvq_il_89_resolve(strata::env("NOSTROMA_MMVQ_IL_89"), false, 89, strata::qwen_defaults_026());
     return on;
 }
 struct IlArch { int cc; const IlRows* t; size_t n; };
@@ -3824,7 +3825,7 @@ struct IlEnvRow { int type, ncols; uint8_t r[5]; };
 const std::vector<IlEnvRow>& il_env_rows() {
     static const std::vector<IlEnvRow> v = [] {
         std::vector<IlEnvRow> out;
-        const char* e = std::getenv("STRATA_MMVQ_IL_ROWS");
+        const char* e = strata::env("NOSTROMA_MMVQ_IL_ROWS");
         if (!e) return out;
         std::string str(e);
         size_t pos = 0;
@@ -3856,7 +3857,7 @@ int native_mmvq_il_rows_for(int cc, int type, int ncols, int n_out) {
     if (ncols < 1 || ncols > 8) return 0;
     const int cls = n_out < 2048 ? 0 : n_out < 4096 ? 1 : n_out < 8192 ? 2 : n_out < 12288 ? 3 : 4;
     if (ncols > 4) {   // 147-verify: 5..8 columns, only where a card measured its table
-        static const bool wide = il_env_on("STRATA_MMVQ_IL_WIDE");
+        static const bool wide = il_env_on("NOSTROMA_MMVQ_IL_WIDE");
         if (!wide) return 0;
         if (type == 11 && !il_q3k_on()) return 0;
         for (const Il58Arch& a : kIl58Arch)
@@ -3878,7 +3879,7 @@ int native_mmvq_il_rows_for(int cc, int type, int ncols, int n_out) {
     if (type == 11 && !il_q3k_on()) return 0;   // STRATA_MMVQ_IL_Q3K=0: Q3_K keeps native_mmvq's kernels
     const IlRows* t = kIlRowsShared;
     size_t n = sizeof(kIlRowsShared) / sizeof(IlRows);
-    static const bool own120 = il_env_on("STRATA_MMVQ_IL_120");   // 147-verify: =0 gives a big 12.0 card the shared table again
+    static const bool own120 = il_env_on("NOSTROMA_MMVQ_IL_120");   // 147-verify: =0 gives a big 12.0 card the shared table again
     for (const IlArch& a : kIlArch)
         if (a.cc == cc && a.t != nullptr && (cc != 1201 || own120) && (cc != 89 || il_89_opt_in())) { t = a.t; n = a.n; }
     for (size_t i = 0; i < n; ++i)
@@ -3901,7 +3902,7 @@ int il_cc() {
         if (cc[dev] == 120 && cudaDeviceGetAttribute(&sms, cudaDevAttrMultiProcessorCount, dev) == cudaSuccess && sms >= 80)
             cc[dev] = 1201;
         // STRATA_MMVQ_IL_SM80=0: an sm_80 card takes the shared table as before kIlRows_80 (A/B)
-        if (cc[dev] == 80 && !strata::sm80_default_on(std::getenv("STRATA_MMVQ_IL_SM80"), strata::qwen_defaults_026())) cc[dev] = 81;   // =0 or STRATA_DEFAULTS=026
+        if (cc[dev] == 80 && !strata::sm80_default_on(strata::env("NOSTROMA_MMVQ_IL_SM80"), strata::qwen_defaults_026())) cc[dev] = 81;   // =0 or STRATA_DEFAULTS=026
         cudaGetLastError();
     }
     return cc[dev];
@@ -3928,15 +3929,15 @@ namespace {
 // sm_80 and newer (measured on sm_86 and sm_120), Volta (sm_70) and Pascal (sm_60, sm_61), each with its own table
 // above; Turing keeps native_mmvq's kernels unless STRATA_SM75_PERF=1 (kIlRows_75)
 // Volta (PR 1401): opt-in with STRATA_SM70_TABLE=1 until the author confirms on a V100 with the final code
-bool sm70_opt_in() { const char* v = std::getenv("STRATA_SM70_TABLE"); return v != nullptr && std::atoi(v) != 0; }
+bool sm70_opt_in() { const char* v = strata::env("NOSTROMA_SM70_TABLE"); return v != nullptr && std::atoi(v) != 0; }
 // Pascal (sm_60, GP100): the same interleaved kernels (bitwise equal to native_mmvq's, mmvq_il_parity), its own table
 // kIlRows_60.  STRATA_SM60_TABLE=0 keeps native_mmvq's kernels on a P100; any other value (or unset) uses the table.
 // STRATA_SM75_IL=0 / 1 forces the table off / on; unset it follows STRATA_SM75_PERF=1 (Turing only)
 bool sm75_il_on(int major, int minor) { return strata::sm75_switch("STRATA_SM75_IL", major, minor); }
-bool sm60_table_on() { const char* v = std::getenv("STRATA_SM60_TABLE"); return v == nullptr || std::atoi(v) != 0; }
+bool sm60_table_on() { const char* v = strata::env("NOSTROMA_SM60_TABLE"); return v == nullptr || std::atoi(v) != 0; }
 // Pascal (sm_61: Tesla P40 / P4, GTX 10 series; native dp4a): the same interleaved kernels (bitwise equal to
 // native_mmvq's, mmvq_il_parity), its own table kIlRows_61.  STRATA_SM61_TABLE=0 keeps native_mmvq's kernels.
-bool sm61_table_on() { const char* v = std::getenv("STRATA_SM61_TABLE"); return v == nullptr || std::atoi(v) != 0; }
+bool sm61_table_on() { const char* v = strata::env("NOSTROMA_SM61_TABLE"); return v == nullptr || std::atoi(v) != 0; }
 bool il_arch_ok() {
     static int ok[16] = {};   // 0 unknown, 1 yes, -1 no, by device ordinal
     int dev = 0;

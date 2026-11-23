@@ -3,6 +3,7 @@
 #import <Metal/Metal.h>
 
 #include "mtl_rt.h"
+#include "strata/env.hpp"
 #include "resource_path.h"
 
 #include <chrono>
@@ -97,7 +98,7 @@ int Context::compile_try(const std::vector<std::string>& files, const std::strin
         std::string p = (f.size() && f[0] == '/') ? f : kernel_dir + "/" + f;
         src += "#line 1 \"" + f + "\"\n" + read_file(p) + "\n";
     }
-    if (const char* dump = std::getenv("STRATA_METAL_MSL_DUMP")) {   // research: the full text of every library, as the compiler gets it
+    if (const char* dump = strata::env("NOSTROMA_METAL_MSL_DUMP")) {   // research: the full text of every library, as the compiler gets it
         static int ndump = 0;
         char name[32];
         std::snprintf(name, sizeof name, "/%03d.msl", ndump++);
@@ -116,7 +117,7 @@ int Context::compile_try(const std::vector<std::string>& files, const std::strin
     // Safe math by default: no reassociation, so every token of a window is bitwise what a one-token call gives
     // (the kernels write their contractions as explicit fma).  Measured free on the M5 Max.
     fast_math = false;
-    if (const char* m = std::getenv("STRATA_METAL_MATH")) fast_math = std::string(m) == "fast";
+    if (const char* m = strata::env("NOSTROMA_METAL_MATH")) fast_math = std::string(m) == "fast";
     if (@available(macOS 15.0, *)) {
         o.mathMode = fast_math ? MTLMathModeFast : MTLMathModeSafe;
     } else {
@@ -173,7 +174,7 @@ Pipeline Context::pipeline(int lib, const std::string& fn, const Constants& c) {
     Pipeline p;
     p.handle = (__bridge_retained void*)ps;
     p.max_threads = (int)ps.maxTotalThreadsPerThreadgroup;
-    if (const char* cap = std::getenv("STRATA_METAL_MAX_THREADS_CAP")) {   // test hook, see require_fit
+    if (const char* cap = strata::env("NOSTROMA_METAL_MAX_THREADS_CAP")) {   // test hook, see require_fit
         const int lim = std::atoi(cap);
         if (lim > 0 && lim < p.max_threads) p.max_threads = lim;
     }
@@ -219,7 +220,7 @@ Buffer Context::alloc(size_t bytes) {
 
 Buffer Context::wrap(void* p, size_t bytes, size_t max_span) {
     const size_t pg = 16384, maxlen = [impl_->dev maxBufferLength] / pg * pg;
-    if (bytes <= maxlen || std::getenv("STRATA_METAL_WRAP_SPLIT") && std::string(std::getenv("STRATA_METAL_WRAP_SPLIT")) == "0")
+    if (bytes <= maxlen || strata::env("NOSTROMA_METAL_WRAP_SPLIT") && std::string(strata::env("NOSTROMA_METAL_WRAP_SPLIT")) == "0")
         return wrap(p, bytes);
     const size_t span = (max_span + pg - 1) / pg * pg;
     if (span >= maxlen / 2) {
@@ -323,7 +324,7 @@ double Context::run(const std::vector<Dispatch>& ds, int reps, bool concurrent, 
 double Context::run_graph(const std::vector<Dispatch>& ds, size_t count) {
     // The wait spins on the buffer's status for up to 20 ms before it blocks: waitUntilCompleted's thread wake costs ~0.5 ms
     // a window (M5 Max, Q2_0 decode: +5% tok/s, same tokens).  STRATA_METAL_SPIN=0: the blocking wait.
-    static const bool spin = !(std::getenv("STRATA_METAL_SPIN") && std::string(std::getenv("STRATA_METAL_SPIN")) == "0");
+    static const bool spin = !(strata::env("NOSTROMA_METAL_SPIN") && std::string(strata::env("NOSTROMA_METAL_SPIN")) == "0");
     @autoreleasepool {
         id<MTLCommandBuffer> cb = [impl_->q commandBufferWithUnretainedReferences];
         id<MTLComputeCommandEncoder> enc = [cb computeCommandEncoderWithDispatchType:MTLDispatchTypeConcurrent];

@@ -1,6 +1,7 @@
 // CPU-only tests for the on-disk session format (include/strata/core/conversation_file.hpp).
 // Built with -DSTRATA_BUILD_CONVERSATION_TESTS=ON; no CUDA, no model.
 #include "strata/core/conversation_file.hpp"
+#include "strata/env.hpp"
 #include "strata/core/session_save_reclaim.hpp"
 
 #include <array>
@@ -177,7 +178,7 @@ int main() {
         check(u64(40) == 0 && u64(48) == 0, "golden: reserved fields are zero");
         check(std::memcmp(g.data() + g.size() - 8, "STRSEND\x01", 8) == 0, "golden: end marker");
         const uint64_t h = session_hash64(g.data(), g.size(), 0);
-        const char* golden = std::getenv("STRATA_SESSION_GOLDEN_PRINT");
+        const char* golden = strata::env("NOSTROMA_SESSION_GOLDEN_PRINT");
         if (golden) std::printf("golden size %zu hash %016llx\n", g.size(), (unsigned long long)h);
         check(g.size() == kGoldenSize && h == kGoldenHash, "golden: the fixed sample's file bytes are unchanged");
     }
@@ -206,7 +207,7 @@ int main() {
     }
     // buffered I/O (the path taken where direct I/O is refused or unavailable) writes and reads the same bytes
     {
-        const char* inherited = std::getenv("STRATA_SESSION_BUFFERED");
+        const char* inherited = strata::env("NOSTROMA_SESSION_BUFFERED");
         const std::string kept = inherited ? inherited : "";
         set_env("STRATA_SESSION_BUFFERED", "1");
         const fs::path p = dir / "buffered.bin";

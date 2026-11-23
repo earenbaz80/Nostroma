@@ -1,4 +1,5 @@
 #include "strata/core/conversation_snapshot.hpp"
+#include "strata/env.hpp"
 #include "conversation_checked.hpp"
 #include "conversation_copy.hpp"
 #include "conversation_trace.hpp"
@@ -187,7 +188,7 @@ struct VramSlot { void* p = nullptr; size_t n = 0; uint64_t tag = 0, used = 0; i
 struct VramSlots { std::vector<VramSlot> s; uint64_t clock = 0, next_tag = 0; };
 VramSlots& vram_slots() { static VramSlots v; return v; }
 int vram_slots_n() {
-    static const int n = [] { const char* v = std::getenv("STRATA_CKPT_VRAM_SLOTS"); return v ? std::max(0, std::min(16, std::atoi(v))) : 0; }();
+    static const int n = [] { const char* v = strata::env("NOSTROMA_CKPT_VRAM_SLOTS"); return v ? std::max(0, std::min(16, std::atoi(v))) : 0; }();
     return n;
 }
 // a slot for `n` bytes on `dev`: a free one, a new one if VRAM allows, else the least recently used (nullptr: none)
@@ -210,7 +211,7 @@ bool ckpt_async_on() {
 #if defined(STRATA_USE_HIP) || defined(STRATA_HIP_GFX906) || defined(STRATA_GPU_METAL)
     return false;
 #else
-    static const bool on = [] { const char* v = std::getenv("STRATA_CKPT_ASYNC"); return v != nullptr && v[0] == '1'; }();
+    static const bool on = [] { const char* v = strata::env("NOSTROMA_CKPT_ASYNC"); return v != nullptr && v[0] == '1'; }();
     return on;
 #endif
 }
@@ -226,7 +227,7 @@ bool ckpt_gather_on() {
 #if defined(STRATA_USE_HIP) || defined(STRATA_HIP_GFX906) || defined(STRATA_GPU_METAL)
     return false;
 #else
-    static const bool on = [] { const char* v = std::getenv("STRATA_CKPT_GATHER"); return v != nullptr && v[0] == '1'; }();
+    static const bool on = [] { const char* v = strata::env("NOSTROMA_CKPT_GATHER"); return v != nullptr && v[0] == '1'; }();
     return on;
 #endif
 }
@@ -287,7 +288,7 @@ bool checkpoint_save(ConversationCheckpoint& c, const SessionState& ss, const Mo
     staged = false;
     const auto j0 = std::chrono::steady_clock::now();
     conversation_checkpoint_join(nullptr);   // (the staging buffer is reused)
-    if (std::getenv("STRATA_PARK_TRACE")) std::fprintf(stderr, "strata parktrace: save join %.2f ms\n",
+    if (strata::env("NOSTROMA_PARK_TRACE")) std::fprintf(stderr, "strata parktrace: save join %.2f ms\n",
         std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - j0).count());
 #if defined(STRATA_GPU_METAL)
     (void) g;
@@ -296,7 +297,7 @@ bool checkpoint_save(ConversationCheckpoint& c, const SessionState& ss, const Mo
     ConversationStateSizes z;
     if (!checkpoint_targets(ss, g, c.ids.size(), z, error)) return false;
     const size_t layers = owned_qsa(ss);
-    static const bool atr = std::getenv("STRATA_PARK_TRACE") != nullptr;
+    static const bool atr = strata::env("NOSTROMA_PARK_TRACE") != nullptr;
     const bool ready = c.gdn.size() == z.gdn;   // (a pooled checkpoint's pages are in; a fresh vector faults them all)
     const auto r0 = std::chrono::steady_clock::now();
     const long rf0 = atr ? conversation_trace::thread_minflt() : 0;
@@ -524,7 +525,7 @@ bool conversation_snapshot_save(SavedConversation& image, const ConversationView
                                 ConversationKvReuse reuse, size_t* reused_bytes,
                                 std::vector<ConversationCheckpoint>* storage,
                                 std::vector<ConversationCheckpoint>* moved) {
-    static const bool ptr = std::getenv("STRATA_PARK_TRACE") != nullptr;
+    static const bool ptr = strata::env("NOSTROMA_PARK_TRACE") != nullptr;
     auto now = [] { return std::chrono::steady_clock::now(); };
     auto ms = [](std::chrono::steady_clock::time_point a, std::chrono::steady_clock::time_point b) {
         return std::chrono::duration<double, std::milli>(b - a).count(); };

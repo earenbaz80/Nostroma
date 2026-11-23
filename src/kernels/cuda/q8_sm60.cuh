@@ -1,3 +1,4 @@
+#include "strata/env.hpp"
 // src/kernels/cuda/q8_sm60.cuh - a Q8_0 decode GEMV for Pascal GP100 (compute capability 6.0), opt-in with
 // STRATA_Q8_SM60=1.  Included by native_mmvq.cu, and by a standalone parity/speed check, so both run this code.
 //
@@ -87,7 +88,7 @@ __global__ void kernel(const int8_t* __restrict__ qs, const half* __restrict__ d
 // Qwen3.8-Flash-Next measured best (STRATA_Q8_SM60_BPS overrides it).
 inline int blocks_per_sm() {
     static const int v = [] {
-        const char* e = std::getenv("STRATA_Q8_SM60_BPS");
+        const char* e = strata::env("NOSTROMA_Q8_SM60_BPS");
         const int n = e ? std::atoi(e) : 0;
         return n > 0 ? n : 4;
     }();

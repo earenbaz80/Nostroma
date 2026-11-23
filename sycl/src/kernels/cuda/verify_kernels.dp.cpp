@@ -1,4 +1,5 @@
 #include <sycl/ext/intel/experimental/grf_size_properties.hpp>
+#include "strata/env.hpp"
 // src/kernels/cuda/verify_kernels.cu - see include/strata/kernels/verify_kernels.hpp.
 //
 // The per-token arithmetic of every kernel here is transcribed from its single-token original (fused_gdn.cu,
@@ -1887,7 +1888,7 @@ bool multi_block_head_ops() {
     return false;
 #else
     static const bool on = [] {
-        const char* v = std::getenv("STRATA_MULTI_BLOCK_ARGMAX");
+        const char* v = strata::env("NOSTROMA_MULTI_BLOCK_ARGMAX");
         return v == nullptr || std::atoi(v) != 0;
     }();
     return on;
@@ -2204,7 +2205,7 @@ void gdn_step_norm_multi(float* state, const float* h, int conv_channels, const 
         std::exit(1);
     }
     static const bool b60_decode_pool = [] {
-        const char* v=std::getenv("STRATA_PRIVATE_B60_NEXT_POOL");return v && v[0]=='1';
+        const char* v=strata::env("NOSTROMA_PRIVATE_B60_NEXT_POOL");return v && v[0]=='1';
     }();
     if (b60_decode_pool && n_keep==nullptr && t_out_begin==0 && !xq &&
         conv_channels==10240 && h_k==16 && h_v==48 && eps==1e-6f && (n_tok == 2 || n_tok == 4)) {
@@ -2241,13 +2242,13 @@ void gdn_step_norm_multi(float* state, const float* h, int conv_channels, const 
         check("gdn QK register");
         return;
     }
-    static const bool qk_grf = [] { const char* e = std::getenv("STRATA_SYCL_GDN_QK_GRF256"); return e && e[0] == '1'; }();
+    static const bool qk_grf = [] { const char* e = strata::env("NOSTROMA_SYCL_GDN_QK_GRF256"); return e && e[0] == '1'; }();
     if (qk_grf && xq_out == nullptr && n_keep == nullptr && h_k == 16 && h_v == 48 && conv_channels == 10240) {
         gdn_step_norm_qkreg(state, h, conv_channels, gate, beta, z, gamma, eps, y,
                            h_k, h_v, n_tok, n_keep, stream, t_out_begin, xq_out);
         return;
     }
-    static const bool split = [] { const char* v = std::getenv("STRATA_GDN_SPLIT"); return v && v[0] == '1'; }();
+    static const bool split = [] { const char* v = strata::env("NOSTROMA_GDN_SPLIT"); return v && v[0] == '1'; }();
     // S26: the split runs where it is faster (gfx1151 harness, h_v 48: the commit 8-19% per call; a window of 2+ rows
     // 3-13%; one row: no gain, the old kernel stays) - bitwise equal in every case
     if (split && (t_out_begin >= n_tok || n_tok - t_out_begin >= 2)) {
@@ -2348,7 +2349,7 @@ void gdn_step_norm_multi(float* state, const float* h, int conv_channels, const 
         return;
     }
     static const bool commit_split = [] {
-        const char* e = std::getenv("STRATA_GDN_COMMIT_SPLIT");
+        const char* e = strata::env("NOSTROMA_GDN_COMMIT_SPLIT");
         return !e || e[0] != '0';
     }();
     if (commit_split && n_keep != nullptr && t_out_begin >= n_tok) {

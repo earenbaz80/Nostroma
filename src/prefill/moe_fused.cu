@@ -18,6 +18,7 @@
 // for the k of a half-block: mma k index 16h + 4t + j stands for weight (and activation) 16h + t + 4j.  The
 // activations are stored in it (perm32), and a lane's two B registers (h = 0 and 1) are adjacent: one 8-byte load.
 #include "strata/prefill/moe_fused.hpp"
+#include "strata/env.hpp"
 #include "strata/prefill/pf_fused_override.hpp"
 #include "strata/kernels/gfx_arch.hpp"
 #include "strata/core/emulate.hpp"
@@ -640,7 +641,7 @@ DevInfo g_dev[32];
 // work items and arithmetic: the results do not change).  STRATA_PF_OCC=N sets the blocks per WGP (an experiment knob).
 static int wgp_blocks(int occ) {
     static const int env = [] {
-        const char* v = std::getenv("STRATA_PF_OCC");
+        const char* v = strata::env("NOSTROMA_PF_OCC");
         return v != nullptr ? std::atoi(v) : 0;
     }();
     return env > 0 ? env : 2 * std::max(occ, 1);
@@ -681,7 +682,7 @@ const DevInfo& dev_info() {
     cudaDeviceGetAttribute(&d.sms, cudaDevAttrMultiProcessorCount, dev);
     d.cc = 10 * strata::cc_major_of(major) + strata::cc_minor_of(minor);   // STRATA_EMULATE_CC counts (tests)
     // Turing (sm_75): the same kernels with plain copies and m8n8k16 MMAs, opt-in (STRATA_PF_FUSED_SM75=1)
-    static const bool sm75 = [] { const char* v = std::getenv("STRATA_PF_FUSED_SM75"); return v != nullptr && v[0] == '1'; }();
+    static const bool sm75 = [] { const char* v = strata::env("NOSTROMA_PF_FUSED_SM75"); return v != nullptr && v[0] == '1'; }();
     if (d.cc < 75 || (d.cc < 80 && !sm75)) { d.cc = d.cc < 80 ? 0 : d.cc; return d; }
     // the device code of this card's arch must have the kernels (a build without an sm_75+ target has an empty body)
     cudaFuncAttributes fa{};
@@ -711,7 +712,7 @@ bool available() { return dev_info().cc >= 75; }
 // (moe_fused_iq) stay opt-in: STRATA_PF_FUSED=1 (requested()).
 bool enabled() {
     static const bool env = [] {
-        const char* v = std::getenv("STRATA_PF_FUSED");
+        const char* v = strata::env("NOSTROMA_PF_FUSED");
 #if defined(__HIPCC__)
         return v != nullptr && v[0] == '1';   // Aurora: the gfx11 WMMA kernels are opt-in (STRATA_PF_FUSED=1)
 #else
@@ -722,7 +723,7 @@ bool enabled() {
 }
 bool requested() {
     static const bool env = [] {
-        const char* v = std::getenv("STRATA_PF_FUSED");
+        const char* v = strata::env("NOSTROMA_PF_FUSED");
         return v != nullptr && v[0] == '1';
     }();
     const int ov = strata::prefill::pf_fused_override().load(std::memory_order_relaxed);

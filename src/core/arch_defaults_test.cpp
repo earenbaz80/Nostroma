@@ -1,5 +1,6 @@
 // src/core/arch_defaults_test.cpp - the per-architecture default table (no GPU needed).
 #include "strata/core/arch_defaults.hpp"
+#include "strata/env.hpp"
 #include "strata/core/gfx12_platform_defaults.hpp"
 #include "strata/core/sm120_series.hpp"
 #include "strata/core/defaults_026.hpp"
@@ -61,11 +62,11 @@ int main() {
         put("STRATA_CKPT_POOL", "0");                               // the user's =0 stays
         const auto set = apply_parallel_defaults_cuda(true, 4);
         CHECK(set.size() == 8);
-        CHECK(std::getenv("STRATA_CKPT_POOL") != nullptr && std::string(std::getenv("STRATA_CKPT_POOL")) == "0");
-        CHECK(std::getenv("STRATA_QSA_SLOTS") != nullptr && std::string(std::getenv("STRATA_QSA_SLOTS")) == "1");
+        CHECK(strata::env("NOSTROMA_CKPT_POOL") != nullptr && std::string(strata::env("NOSTROMA_CKPT_POOL")) == "0");
+        CHECK(strata::env("NOSTROMA_QSA_SLOTS") != nullptr && std::string(strata::env("NOSTROMA_QSA_SLOTS")) == "1");
         for (const auto& kv : cuda) unset(kv.first.c_str());
         CHECK(apply_parallel_defaults_cuda(true, 1).empty());
-        CHECK(std::getenv("STRATA_QSA_SLOTS") == nullptr);
+        CHECK(strata::env("NOSTROMA_QSA_SLOTS") == nullptr);
     }
     // QUAL-GDN on Linux CUDA
     CHECK(gdn_default_env_cuda(true).size() == 2);
@@ -73,9 +74,9 @@ int main() {
     {
         unset("STRATA_GDN_TC"); put("STRATA_GDN_CONVL2", "0");
         CHECK(apply_gdn_defaults_cuda(true).size() == 1);
-        CHECK(std::string(std::getenv("STRATA_GDN_TC")) == "1" && std::string(std::getenv("STRATA_GDN_CONVL2")) == "0");
+        CHECK(std::string(strata::env("NOSTROMA_GDN_TC")) == "1" && std::string(strata::env("NOSTROMA_GDN_CONVL2")) == "0");
         unset("STRATA_GDN_TC"); unset("STRATA_GDN_CONVL2");
-        CHECK(apply_gdn_defaults_cuda(false).empty() && std::getenv("STRATA_GDN_TC") == nullptr);
+        CHECK(apply_gdn_defaults_cuda(false).empty() && strata::env("NOSTROMA_GDN_TC") == nullptr);
     }
     // the chunked GDN scan: Linux, every card gfx12
     CHECK(gdn_chunked_default_env(true, true).size() == 1);
@@ -83,9 +84,9 @@ int main() {
     CHECK(gdn_chunked_default_env(false, true).empty());
     {
         unset("STRATA_GDN_CHUNKED");
-        CHECK(apply_gdn_chunked_default(true, true).size() == 1 && std::string(std::getenv("STRATA_GDN_CHUNKED")) == "1");
+        CHECK(apply_gdn_chunked_default(true, true).size() == 1 && std::string(strata::env("NOSTROMA_GDN_CHUNKED")) == "1");
         put("STRATA_GDN_CHUNKED", "0");
-        CHECK(apply_gdn_chunked_default(true, true).empty() && std::string(std::getenv("STRATA_GDN_CHUNKED")) == "0");
+        CHECK(apply_gdn_chunked_default(true, true).empty() && std::string(strata::env("NOSTROMA_GDN_CHUNKED")) == "0");
         unset("STRATA_GDN_CHUNKED");
     }
     // 0.2.10 (STRIX-TDR): the helper-thread launch, Windows gfx1151 only
@@ -162,10 +163,10 @@ int main() {
         unset("STRATA_QFUSE");
         put("STRATA_SH_STREAM", "1");
         apply_arch_defaults("gfx1151");
-        CHECK(std::getenv("STRATA_SH_STREAM") != nullptr && std::string(std::getenv("STRATA_SH_STREAM")) == "1");
+        CHECK(strata::env("NOSTROMA_SH_STREAM") != nullptr && std::string(strata::env("NOSTROMA_SH_STREAM")) == "1");
         put("STRATA_SH_STREAM", "0");
         apply_arch_defaults("gfx1151");
-        CHECK(std::string(std::getenv("STRATA_SH_STREAM")) == "0");
+        CHECK(std::string(strata::env("NOSTROMA_SH_STREAM")) == "0");
         unset("STRATA_SH_STREAM");
         unset("STRATA_QFUSE");
         const auto applied = apply_arch_defaults("gfx1151");
@@ -173,10 +174,10 @@ int main() {
         for (const auto& n : applied) sh_set = sh_set || n == "STRATA_SH_STREAM";
 #if defined(_WIN32)
         CHECK(!sh_set);
-        CHECK(std::getenv("STRATA_SH_STREAM") == nullptr || std::string(std::getenv("STRATA_SH_STREAM")).empty());
+        CHECK(strata::env("NOSTROMA_SH_STREAM") == nullptr || std::string(strata::env("NOSTROMA_SH_STREAM")).empty());
 #else
         CHECK(sh_set);
-        CHECK(std::getenv("STRATA_SH_STREAM") != nullptr && std::string(std::getenv("STRATA_SH_STREAM")) == "1");
+        CHECK(strata::env("NOSTROMA_SH_STREAM") != nullptr && std::string(strata::env("NOSTROMA_SH_STREAM")) == "1");
 #endif
         unset("STRATA_SH_STREAM");
         unset("STRATA_QFUSE");
@@ -218,8 +219,8 @@ int main() {
     put("STRATA_TSUM", "0");
     unset("STRATA_QFUSE");
     const auto set = apply_arch_defaults("gfx1151");
-    CHECK(std::getenv("STRATA_TSUM") != nullptr && std::string(std::getenv("STRATA_TSUM")) == "0");
-    CHECK(std::getenv("STRATA_QFUSE") != nullptr && std::string(std::getenv("STRATA_QFUSE")) == "1");
+    CHECK(strata::env("NOSTROMA_TSUM") != nullptr && std::string(strata::env("NOSTROMA_TSUM")) == "0");
+    CHECK(strata::env("NOSTROMA_QFUSE") != nullptr && std::string(strata::env("NOSTROMA_QFUSE")) == "1");
     for (const auto& n : set) CHECK(n != "STRATA_TSUM");
     // the opt-out
     put("STRATA_GFX1151_DEFAULTS", "0");
@@ -279,7 +280,7 @@ int main() {
     for (const char* k : {"STRATA_HIP_WMMA", "STRATA_PF_GEMM", "STRATA_PA_FAST", "STRATA_SELECT_WMMA", "STRATA_HC_UPMIX"}) unset(k);
     CHECK(apply_arch_defaults("gfx1150", true).empty());           // 880M / 890M: no hardware, stays as it was
     for (const char* k : {"STRATA_HIP_WMMA", "STRATA_PF_GEMM", "STRATA_PA_FAST", "STRATA_SELECT_WMMA", "STRATA_HC_UPMIX"}) unset(k);
-    CHECK(std::getenv("STRATA_PF_FUSED") != nullptr);              // the Linux integrated gfx11 class also took the fused prompt experts (silent; igpu_fused_prompt_default)
+    CHECK(strata::env("NOSTROMA_PF_FUSED") != nullptr);              // the Linux integrated gfx11 class also took the fused prompt experts (silent; igpu_fused_prompt_default)
     unset("STRATA_PF_FUSED");
 #endif
     // the off switches
@@ -345,8 +346,8 @@ int main() {
         CHECK(std::getenv(k) != nullptr);
         CHECK(std::string(std::getenv(k)) == (std::strcmp(k, "STRATA_GDN_PP") == 0 ? "2" : "1"));
     }
-    CHECK(std::string(std::getenv("STRATA_SMALL_UNR")) == "3" && std::string(std::getenv("STRATA_GR_Q32_G")) == "2" &&
-          std::string(std::getenv("STRATA_GR_Q8_PFS")) == "1");
+    CHECK(std::string(strata::env("NOSTROMA_SMALL_UNR")) == "3" && std::string(strata::env("NOSTROMA_GR_Q32_G")) == "2" &&
+          std::string(strata::env("NOSTROMA_GR_Q8_PFS")) == "1");
     CHECK(apply_arch_defaults("gfx1201", false).empty());
     unset("STRATA_SELECT_WMMA"); unset("STRATA_SELECT_ALT_MIN_TOKENS"); unset("STRATA_HEAD_MIX_MULTI");   // gfx12_extra.hpp's defaults (own test: gfx12_extra_test)
     CHECK(apply_arch_defaults("gfx1103", false).empty());   // integrated == false: a mixed box (iGPU + dGPU) keeps the old defaults
@@ -356,7 +357,7 @@ int main() {
     CHECK(on.size() == 4);
     for (const char* k : {"STRATA_HIP_WMMA", "STRATA_PF_GEMM", "STRATA_PA_FAST", "STRATA_SELECT_WMMA"})
         CHECK(std::getenv(k) != nullptr && std::string(std::getenv(k)) == "1");
-    CHECK(std::getenv("STRATA_HC_UPMIX") != nullptr && std::string(std::getenv("STRATA_HC_UPMIX")) == "0");
+    CHECK(strata::env("NOSTROMA_HC_UPMIX") != nullptr && std::string(strata::env("NOSTROMA_HC_UPMIX")) == "0");
     for (const char* k : five) unset(k);
     unset("STRATA_IGPU_PROMPT_SET");
 #if defined(_WIN32)
@@ -399,9 +400,9 @@ int main() {
         for (const char* k : halo) unset(k);
         put("STRATA_HC_UPMIX", "0");
         const auto set2 = apply_arch_defaults("gfx1151", true);
-        CHECK(std::getenv("STRATA_HC_UPMIX") != nullptr && std::string(std::getenv("STRATA_HC_UPMIX")) == "0");
+        CHECK(strata::env("NOSTROMA_HC_UPMIX") != nullptr && std::string(strata::env("NOSTROMA_HC_UPMIX")) == "0");
         for (const auto& n : set2) CHECK(n != "STRATA_HC_UPMIX");
-        CHECK(std::getenv("STRATA_PF_FUSED") != nullptr);
+        CHECK(strata::env("NOSTROMA_PF_FUSED") != nullptr);
         unset("STRATA_HC_UPMIX");
         for (const char* k : halo) unset(k);
         put("STRATA_IGPU_PROMPT_SET", "0");
@@ -448,21 +449,21 @@ int main() {
     {   // apply: nothing set -> STRATA_PF_FUSED=1 on the class, =0 (the way back) and =1 as the user set them are kept, other devices get nothing
         unset("STRATA_PF_FUSED");
         apply_arch_defaults("gfx1100", false);
-        CHECK(std::getenv("STRATA_PF_FUSED") == nullptr);       // discrete
+        CHECK(strata::env("NOSTROMA_PF_FUSED") == nullptr);       // discrete
         apply_arch_defaults("gfx1103", false);
-        CHECK(std::getenv("STRATA_PF_FUSED") == nullptr);       // a mixed box (iGPU + dGPU)
+        CHECK(strata::env("NOSTROMA_PF_FUSED") == nullptr);       // a mixed box (iGPU + dGPU)
         apply_arch_defaults("gfx1201", false);
-        CHECK(std::getenv("STRATA_PF_FUSED") == nullptr);
+        CHECK(strata::env("NOSTROMA_PF_FUSED") == nullptr);
         apply_arch_defaults("gfx1152", true);
-        CHECK(std::getenv("STRATA_PF_FUSED") == nullptr);
+        CHECK(strata::env("NOSTROMA_PF_FUSED") == nullptr);
         apply_arch_defaults("gfx1103", true);
-        CHECK(std::getenv("STRATA_PF_FUSED") != nullptr && std::string(std::getenv("STRATA_PF_FUSED")) == "1");
+        CHECK(strata::env("NOSTROMA_PF_FUSED") != nullptr && std::string(strata::env("NOSTROMA_PF_FUSED")) == "1");
         put("STRATA_PF_FUSED", "0");
         apply_arch_defaults("gfx1150", true);
-        CHECK(std::string(std::getenv("STRATA_PF_FUSED")) == "0");   // the way back is kept
+        CHECK(std::string(strata::env("NOSTROMA_PF_FUSED")) == "0");   // the way back is kept
         unset("STRATA_PF_FUSED");
         apply_arch_defaults("gfx1150", true);
-        CHECK(std::getenv("STRATA_PF_FUSED") != nullptr && std::string(std::getenv("STRATA_PF_FUSED")) == "1");
+        CHECK(strata::env("NOSTROMA_PF_FUSED") != nullptr && std::string(strata::env("NOSTROMA_PF_FUSED")) == "1");
         unset("STRATA_PF_FUSED");
         for (const char* k : {"STRATA_HIP_WMMA", "STRATA_PF_GEMM", "STRATA_PA_FAST", "STRATA_SELECT_WMMA", "STRATA_HC_UPMIX"}) unset(k);
     }

@@ -1,5 +1,6 @@
 #pragma once
 #include "b60_layout_state.hpp"
+#include "strata/env.hpp"
 #include "b60_weight_cache.hpp"
 #include "strata/core/weights.hpp"
 #include "strata/core/native_head.hpp"
@@ -36,7 +37,7 @@ class Layouts {
   d.cached.push_back(Cached{raw,rows,cols,kind,bytes,false});
  }
  void add_experts(Device& d,int64_t first,int64_t last,strata::core::ExpertCache& cache,const std::vector<int32_t>& residency,const strata::kernels::cpu::ExpertLayout& layout,bool partial){
-  const char* p16=std::getenv("STRATA_PRIVATE_GU_XXS_PACKED");const bool pack16=p16&&p16[0]=='1';
+  const char* p16=strata::env("NOSTROMA_PRIVATE_GU_XXS_PACKED");const bool pack16=p16&&p16[0]=='1';
   std::map<int32_t,bool> used;
   for(int64_t l=first;l<last;++l){const auto& f=layout.fmt.at(l);
    if(f.n_embd!=2560||f.n_ff!=640||f.d_type!=42||f.d_row!=180)throw std::invalid_argument("B60 unsupported expert geometry");
@@ -46,7 +47,7 @@ class Layouts {
     if(slot<0&&partial)continue;
     if(slot<0||slot>=cache.slots()||!used.emplace(slot,true).second)throw std::invalid_argument("B60 requires complete unique resident slots");
     auto* p=cache.device_slot(slot);
-    const char* pi1=std::getenv("STRATA_PRIVATE_GU_IQ1_PACKED");
+    const char* pi1=strata::env("NOSTROMA_PRIVATE_GU_IQ1_PACKED");
     if(pi1&&pi1[0]=='1'&&f.gu_type==29){if(f.gu_row!=560||f.up_off!=358400||f.down_off!=716800)throw std::invalid_argument("B60 IQ1_M offsets");add(d,p,29,640,10);add(d,p+f.up_off,29,640,10);}
     if(pack16&&f.gu_type==16){if(f.gu_row!=660||f.up_off!=422400||f.down_off!=844800)throw std::invalid_argument("B60 IQ2_XXS offsets");add(d,p,16,640,10);add(d,p+f.up_off,16,640,10);}
     if(f.gu_type==22){add(d,p,22,640,10);add(d,p+f.up_off,22,640,10);}

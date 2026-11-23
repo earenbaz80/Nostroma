@@ -21,6 +21,7 @@
 // DRAM rate: THREADS threads each run whole experts (gate/up through silu, then down) out of 4.2 GB of blobs -
 // 40x the L3 - for TOKENS tokens; GB/s of weights read. STRATA_NVFP4_PREFETCH sets the kernel's prefetch distance.
 #include "strata/kernels/cpu/expert_layout.hpp"
+#include "strata/env.hpp"
 #include "strata/kernels/cpu/nvfp4_avx2.hpp"
 #include "strata/kernels/cpu/nvfp4_avx512.hpp"
 
@@ -250,7 +251,7 @@ int bandwidth(int threads, int nt, bool use_ggml, const Kern& k) {
         for (auto& p : pool) p.join();
         best = std::fmin(best, now_ms() - t0);
     }
-    const char* pf = std::getenv("STRATA_NVFP4_PREFETCH");
+    const char* pf = strata::env("NOSTROMA_NVFP4_PREFETCH");
     std::printf("%s  threads %d  tokens %d  prefetch %s: %.1f ms for %d experts -> %.1f GB/s, %.1f us/expert/thread\n",
                 use_ggml ? "ggml  " : k.name, threads, nt, use_ggml ? "-" : (pf ? pf : "2048"), best, E,
                 (double) E * BLOB / best / 1e6, best * 1000.0 * threads / E);

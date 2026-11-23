@@ -8,6 +8,7 @@
 // goes through these two.
 #pragma once
 #include <sycl/sycl.hpp>
+#include "strata/env.hpp"
 #include <sycl/ext/intel/experimental/cache_control_properties.hpp>
 #include <cstdint>
 #include <cstdlib>
@@ -20,7 +21,7 @@
 namespace strata {
 // STRATA_SYCL_A770_FAST=1 (opt-in, experimental, PR #1710): the A770 router and 64-bit paired payload transfers.
 inline bool a770_fast() {
-    static const bool on = [] { const char* v = std::getenv("STRATA_SYCL_A770_FAST"); return v != nullptr && v[0] == '1'; }();
+    static const bool on = [] { const char* v = strata::env("NOSTROMA_SYCL_A770_FAST"); return v != nullptr && v[0] == '1'; }();
     return on;
 }
 using sys_atomic_u32 = sycl::atomic_ref<uint32_t, sycl::memory_order::relaxed, sycl::memory_scope::system>;
@@ -105,7 +106,7 @@ template<class T> inline void sys_store_mapped(bool plain, T* p, T v) {
 }
 inline bool doorbell_plain_payload() {
     static const bool v = [] {
-        if (const char* e = std::getenv("STRATA_DOORBELL_PLAIN")) return e[0] == '1';
+        if (const char* e = strata::env("NOSTROMA_DOORBELL_PLAIN")) return e[0] == '1';
         return intel_gpu_driver() == "i915";
     }();
     return v;
@@ -139,7 +140,7 @@ inline uint32_t spin_max(const sycl::queue& q) {
     auto it = cache.find(d);
     if (it != cache.end()) return it->second;
     uint32_t v;
-    if (const char* e = std::getenv("STRATA_SPIN_MAX"); e && std::atol(e) > 0) v = (uint32_t) std::atol(e);
+    if (const char* e = strata::env("NOSTROMA_SPIN_MAX"); e && std::atol(e) > 0) v = (uint32_t) std::atol(e);
 #ifdef STRATA_SYCL_SPIN_MAX
     else v = STRATA_SYCL_SPIN_MAX;
 #else

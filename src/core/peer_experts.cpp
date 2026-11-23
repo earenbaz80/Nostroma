@@ -1,5 +1,6 @@
 // src/core/peer_experts.cpp - see include/strata/core/peer_experts.hpp.
 #include "strata/core/peer_experts.hpp"
+#include "strata/env.hpp"
 
 #include "strata/core/device.hpp"   // primary_device() (STRATA_PRIMARY_DEVICE)
 #include "strata/kernels/cpu/expert_layout.hpp"
@@ -146,7 +147,7 @@ bool PeerExperts::open(int device, const std::vector<std::pair<int32_t, int32_t>
         int a = 0, b = 0;
         cudaDeviceCanAccessPeer(&a, primary_device(), device);
         cudaDeviceCanAccessPeer(&b, device, primary_device());
-        if (const char* np = std::getenv("STRATA_PEER_NO_P2P"); np != nullptr && std::atoi(np) != 0) a = 0;   // test knob: pretend the pair has no P2P
+        if (const char* np = strata::env("NOSTROMA_PEER_NO_P2P"); np != nullptr && std::atoi(np) != 0) a = 0;   // test knob: pretend the pair has no P2P
         p2p_ = a && b;
         if (p2p_) {
             On on0(primary_device());
@@ -247,7 +248,7 @@ bool PeerExperts::open(int device, const std::vector<std::pair<int32_t, int32_t>
 }
 
 bool PeerExperts::direct_mode() {
-    static const bool v = [] { const char* e = std::getenv("STRATA_PEER_DIRECT"); return e == nullptr || std::atoi(e) != 0; }();
+    static const bool v = [] { const char* e = strata::env("NOSTROMA_PEER_DIRECT"); return e == nullptr || std::atoi(e) != 0; }();
     return v;
 }
 

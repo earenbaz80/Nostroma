@@ -21,6 +21,7 @@
 // (SwiGLU, H to int8 per 32 features; down into the per-slot rows) are moe_fused.cu's.
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
+#include "strata/env.hpp"
 #include "strata/kprof.hpp"
 #include <dpct/dpct.hpp>
 #include "strata/sycl_queue.hpp"
@@ -1160,7 +1161,7 @@ template <int T, bool GU> bool setup_one(int& occ) { return setup_ww<T, GU, 4>(o
 // work items and arithmetic: the results do not change).  STRATA_PF_OCC=N sets the blocks per WGP (an experiment knob).
 static int wgp_blocks(int occ) {
     static const int env = [] {
-        const char* v = std::getenv("STRATA_PF_OCC");
+        const char* v = strata::env("NOSTROMA_PF_OCC");
         return v != nullptr ? std::atoi(v) : 0;
     }();
     return env > 0 ? env : 2 * std::max(occ, 1);
@@ -1217,7 +1218,7 @@ const DevInfo& dev_info() {
 // expert path's at rounding level; KL-gated, see aurora_s23.md)
 bool kq_on() {
     static const bool on = [] {
-        const char* v = std::getenv("STRATA_PF_FUSED_KQ");
+        const char* v = strata::env("NOSTROMA_PF_FUSED_KQ");
         return v != nullptr && v[0] == '1';
     }();
     return on;
@@ -1349,7 +1350,7 @@ void launch(int ww, unsigned grid, const Batch &b, const NativeGeom &g,
 // 17.5 (256 rows was slower still).  STRATA_PF_FUSED_TILE=64|128 forces one.
 int pick_ww(int64_t n, int n_expert) {
     static const int forced = [] {
-        const char* v = std::getenv("STRATA_PF_FUSED_TILE");
+        const char* v = strata::env("NOSTROMA_PF_FUSED_TILE");
         const int t = v ? std::atoi(v) : 0;
         return t == 64 ? 4 : t == 128 ? 2 : 0;
     }();
@@ -1362,7 +1363,7 @@ int pick_ww(int64_t n, int n_expert) {
 
 bool native_supported(int gu_type, int d_type) {
     static const bool off = [] {   // STRATA_PF_FUSED_NATIVE=0: the native packs keep MMQ under STRATA_PF_FUSED=1 (A/B)
-        const char* v = std::getenv("STRATA_PF_FUSED_NATIVE");
+        const char* v = strata::env("NOSTROMA_PF_FUSED_NATIVE");
         return v != nullptr && v[0] == '0';
     }();
     // GU_ROWS_K / D_ROWS_K, the 1280 / 2560 weight-row counts and the 2560-wide output rows are Flash-Next's: another compiled shape keeps MMQ

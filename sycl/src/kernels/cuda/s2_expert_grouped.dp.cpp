@@ -15,6 +15,7 @@
 // the same reason.  `bench/micro/moe_hit_parity.cu` is the check.
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
+#include "strata/env.hpp"
 #include "strata/kprof.hpp"
 #include "strata/core/geometry.hpp"
 #include <dpct/dpct.hpp>
@@ -737,7 +738,7 @@ bool old_kernels() {
     const int s = g_select_old.load(std::memory_order_relaxed);
     if (s >= 0) return s != 0;
     static const bool env = [] {
-        const char* e = std::getenv("STRATA_OLD_GROUPED");
+        const char* e = strata::env("NOSTROMA_OLD_GROUPED");
         return e != nullptr && e[0] == '1';
     }();
     return env;
@@ -750,7 +751,7 @@ bool old_kernels() {
 long long pair_min_hits() {
     if (g_select_old.load(std::memory_order_relaxed) >= 0) return 0;
     static const long long n = [] {
-        const char* e = std::getenv("STRATA_GROUPED_PAIR_MIN_HITS");
+        const char* e = strata::env("NOSTROMA_GROUPED_PAIR_MIN_HITS");
         return e != nullptr ? std::atoll(e) : 0LL;
     }();
     return n;
@@ -1629,7 +1630,7 @@ void moe_grouped_s2(const unsigned long long* grp_ptr, const int32_t* grp_start,
     // #783 PR-k (stuchapin909): SwiGLU and the scaled Q8_0 quantize of its result in one kernel (gate_up still gets the
     // activation written back, so the parity checks read the same buffer); STRATA_S2_SWIGLU_Q8=0 keeps the two launches
     static const bool swiglu_q8 = [] {
-        const char* e = std::getenv("STRATA_S2_SWIGLU_Q8");
+        const char* e = strata::env("NOSTROMA_S2_SWIGLU_Q8");
         return e == nullptr || e[0] != '0';
     }();
     static_assert(FF % 32 == 0, "the fused SwiGLU + Q8_0 kernel works in whole 32-value blocks");

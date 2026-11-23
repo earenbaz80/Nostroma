@@ -5,6 +5,7 @@
 // q_of() is that cast with CUDA's null-stream meaning restored: the default in-order queue.
 #pragma once
 #include <sycl/sycl.hpp>
+#include "strata/env.hpp"
 #include <dpct/dpct.hpp>
 #include <cstdlib>
 
@@ -19,7 +20,7 @@ namespace strata {
 // queue.memset of many GiB runs on the blitter engine and times out ("Engine memory CAT error", GT reset); kernels do not.
 // Small fills (<= chunk) and non-multiple-of-8 tails fall back to memset.
 inline void big_fill_zero(sycl::queue& q, void* p, size_t bytes, size_t chunk = (size_t)256 << 20) {
-    static const bool plain = [] { const char* v = std::getenv("STRATA_CHUNKED_FILL"); return v && v[0] == '0'; }();
+    static const bool plain = [] { const char* v = strata::env("NOSTROMA_CHUNKED_FILL"); return v && v[0] == '0'; }();
     if (plain) { q.memset(p, 0, bytes); q.wait(); return; }
     uint8_t* b = (uint8_t*)p;
     size_t off = 0;
@@ -62,7 +63,7 @@ inline std::mutex& uncached_mu() { static std::mutex m; return m; }
 }  // namespace detail
 inline void* host_malloc_polled(size_t bytes, sycl::queue& q) {
 #ifdef STRATA_HAVE_ZE
-    static const bool on = [] { const char* v = std::getenv("STRATA_HOST_UNCACHED"); return !(v && v[0] == '0'); }();
+    static const bool on = [] { const char* v = strata::env("NOSTROMA_HOST_UNCACHED"); return !(v && v[0] == '0'); }();
     if (on && q.get_backend() == sycl::backend::ext_oneapi_level_zero) {
         auto ctx = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(q.get_context());
         ze_host_mem_alloc_desc_t d{ZE_STRUCTURE_TYPE_HOST_MEM_ALLOC_DESC, nullptr, ZE_HOST_MEM_ALLOC_FLAG_BIAS_UNCACHED};
@@ -214,7 +215,7 @@ inline uint64_t arena_alias_check(sycl::queue& q, void* base, size_t bytes, size
 
 namespace strata {
 inline bool arena_alias_guard_enabled() {
-    static const bool on = [] { const char* v = std::getenv("STRATA_ARENA_ALIAS_CHECK"); return v == nullptr || v[0] != '0'; }();
+    static const bool on = [] { const char* v = strata::env("NOSTROMA_ARENA_ALIAS_CHECK"); return v == nullptr || v[0] != '0'; }();
     return on;
 }
 }  // namespace strata

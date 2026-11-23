@@ -1,6 +1,7 @@
 // SYCL port: upstream's src/platform/direct_file.cpp with a deeper default read queue on Linux (see io_threads below).
 // src/platform/direct_file.cpp - see include/strata/platform/direct_file.hpp.
 #include "strata/platform/direct_file.hpp"
+#include "strata/env.hpp"
 
 #include <algorithm>
 #include <chrono>
@@ -61,7 +62,7 @@ struct Pending {
 /// The number of issuing threads: STRATA_IO_THREADS, else 4 (Windows: overlapped submits) / 16 (Linux: each
 /// thread does one blocking pread, so the thread count is the queue depth).
 int io_threads(int dflt) {
-    const char* v = std::getenv("STRATA_IO_THREADS");
+    const char* v = strata::env("NOSTROMA_IO_THREADS");
     const int n = v ? std::atoi(v) : dflt;
     return std::clamp(n, 1, 64);
 }

@@ -4,6 +4,7 @@
 // STRATA_METAL_STUBS=log: say it once per entry point and return (outputs untouched) - for listing which entry points a
 // code path reaches, never for answers.
 #include <cstdio>
+#include "strata/env.hpp"
 #include <cstdlib>
 #include <mutex>
 #include <set>
@@ -13,7 +14,7 @@ namespace strata::metal_engine {
 
 void missing(const char* name) {
     static const bool log_only = [] {
-        const char* v = std::getenv("STRATA_METAL_STUBS");
+        const char* v = strata::env("NOSTROMA_METAL_STUBS");
         return v != nullptr && std::string(v) == "log";
     }();
     if (!log_only) {

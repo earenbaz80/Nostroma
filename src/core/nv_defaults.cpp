@@ -1,5 +1,6 @@
 // src/core/nv_defaults.cpp - see include/strata/core/nv_defaults.hpp.
 #include "strata/core/nv_defaults.hpp"
+#include "strata/env.hpp"
 
 #include "strata/core/defaults_026.hpp"
 #include "strata/core/emulate.hpp"
@@ -131,7 +132,7 @@ std::vector<std::pair<std::string, std::string>> nv_kq_default_env(int min_major
     std::vector<std::pair<std::string, std::string>> t;
     if (defaults026) return t;
     if (strata::cc_major_of(min_major) < 8) return t;   // Volta / Turing / Pascal: not measured, keep the FP16 prompt path
-    const char* sw = std::getenv("STRATA_NV_KQ_DEFAULT");
+    const char* sw = strata::env("NOSTROMA_NV_KQ_DEFAULT");
     if (sw != nullptr && sw[0] == '0') return t;
     if (!kNvKqDefaultOn && !(sw != nullptr && sw[0] == '1')) return t;
     t.push_back({"STRATA_MMQ_KQ", "1"});
@@ -141,9 +142,9 @@ std::vector<std::pair<std::string, std::string>> nv_kq_default_env(int min_major
 
 bool nv_kq_fused_here(int major, int minor, int sms) {
     namespace ft = strata::prefill::fused_tile;
-    if (ft::pf_env(std::getenv("STRATA_PF_FUSED")) == 0) return false;
+    if (ft::pf_env(strata::env("NOSTROMA_PF_FUSED")) == 0) return false;
     const ft::Card c{strata::sm120_default(major, minor), major == 12 && minor == 1, sms, ft::s86_class(major, minor, off("STRATA_PF_FUSED_SM86"))};
-    return ft::kq_takes(ft::pf_env(std::getenv("STRATA_PF_FUSED_KQ")), c, ft::sm40_env_of(std::getenv("STRATA_PF_FUSED_SM40")));
+    return ft::kq_takes(ft::pf_env(strata::env("NOSTROMA_PF_FUSED_KQ")), c, ft::sm40_env_of(strata::env("NOSTROMA_PF_FUSED_SM40")));
 }
 
 std::string nv_kq_default_line(bool fused_here) {
@@ -199,7 +200,7 @@ void apply_spec_adapt_default(int major, int minor) {
     // until a clean A/B shows it.
     const bool sm86 = mj == 8 && mn == 6;
     if (!sm86) return;
-    if (const char* v = std::getenv("STRATA_SPEC_ADAPT_SM86"); v == nullptr || v[0] != '1') return;
+    if (const char* v = strata::env("NOSTROMA_SPEC_ADAPT_SM86"); v == nullptr || v[0] != '1') return;
     if (off("STRATA_SM86_PERF")) return;
     const std::pair<const char*, const char*> kv[2] = {{"STRATA_SPEC_ADAPT_EVERY", "2"}, {"STRATA_SPEC_ADAPT_WARM", "200"}};
     for (const auto& p : kv) {

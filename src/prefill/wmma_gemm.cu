@@ -17,6 +17,7 @@
 //       2. gemm_wmma_16x16_1w: 1 wave (32 threads), 16T x 16N x 16K tile, zero LDS/barriers, for small T/N.
 
 #include "wmma_gemm.h"
+#include "strata/env.hpp"
 
 #include <hip/hip_runtime.h>
 #include <hip/hip_fp16.h>
@@ -693,7 +694,7 @@ bool strata_pf_gemm_f16_ld(const uint16_t* X, int64_t ldx, const uint16_t* W, in
     const int acc = beta == 1.0f ? 1 : 0;
     const int64_t mt = (T + pfg::BM - 1) / pfg::BM;
     // STRATA_PF_BK64=0: the BK 32 kernel for the wide shapes too (the A/B; the same bits)
-    static const bool bk64 = [] { const char* v = std::getenv("STRATA_PF_BK64"); return !v || v[0] != '0'; }();
+    static const bool bk64 = [] { const char* v = strata::env("NOSTROMA_PF_BK64"); return !v || v[0] != '0'; }();
     if (N >= 1024 && bk64 && K % 64 == 0) {
         const unsigned grid = (unsigned) (mt * ((N + 255) / 256));
         pfg::kernel_bk64<<<grid, 256, 0, s>>>((const _Float16*) X, (const _Float16*) W, Y, (int) T, (int) N, (int) K,

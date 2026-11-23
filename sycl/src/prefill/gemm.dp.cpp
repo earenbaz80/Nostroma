@@ -1,6 +1,7 @@
 // src/prefill/gemm.cu - see include/strata/prefill/gemm.hpp.
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
+#include "strata/env.hpp"
 #include "strata/kprof.hpp"
 #include <dpct/dpct.hpp>
 #include "strata/sycl_queue.hpp"
@@ -148,7 +149,7 @@ struct HipLtState {
     std::set<std::tuple<strata::prefill::hipblaslt::InputType, int, int, int, int>> fallback_shapes;
 
     ~HipLtState() {
-        if (std::getenv("STRATA_HIPBLASLT_VERBOSE")) {
+        if (strata::env("NOSTROMA_HIPBLASLT_VERBOSE")) {
             std::fprintf(stderr, "prefill gemm: hipBLASLt summary launches=%llu fallbacks=%llu unique_fallback_shapes=%zu\n",
                          (unsigned long long) lt_launches, (unsigned long long) fallbacks, fallback_shapes.size());
             for (const auto& shape : fallback_shapes) {
@@ -193,7 +194,7 @@ struct HipLtDescriptors {
 };
 
 std::unique_ptr<HipLtState> create_hipblaslt_state(void* workspace, size_t workspace_bytes) {
-    const char* path = std::getenv("STRATA_HIPBLASLT_TUNING");
+    const char* path = strata::env("NOSTROMA_HIPBLASLT_TUNING");
     if (!path || !*path) return nullptr;
 
     auto state = std::make_unique<HipLtState>();
@@ -239,7 +240,7 @@ HipLtCachedAlgo resolve_hipblaslt_algo(HipLtState& state, strata::prefill::hipbl
     if (cached != state.cache.end()) return cached->second;
 
     HipLtCachedAlgo resolved;
-    const bool verbose = std::getenv("STRATA_HIPBLASLT_VERBOSE") != nullptr;
+    const bool verbose = strata::env("NOSTROMA_HIPBLASLT_VERBOSE") != nullptr;
     const auto* row = state.table.closest(type, n, k, ldy, t);
     if (!row) {
         if (verbose) {
@@ -319,7 +320,7 @@ bool try_hipblaslt(void* opaque_state, strata::prefill::hipblaslt::InputType typ
     if (resolved.workspace_bytes > state->workspace_bytes) {
         ++state->fallbacks;
         state->fallback_shapes.emplace(type, (int) t, (int) n, (int) k, (int) ldy);
-        if (std::getenv("STRATA_HIPBLASLT_VERBOSE")) {
+        if (strata::env("NOSTROMA_HIPBLASLT_VERBOSE")) {
             std::fprintf(stderr, "prefill gemm: Lt fallback; solution needs %zu workspace bytes, have %zu\n",
                          resolved.workspace_bytes, state->workspace_bytes);
         }
@@ -365,7 +366,7 @@ bool prompt_f16() {
     if (const int8_t c = cached[dev].load(std::memory_order_relaxed)) return c == 2;
     // Opt-in (#835): only STRATA_HIP_PROMPT_F16=1 turns it on.  It changes the prompt path's numbers (an FP16 rounding of
     // each 16-bit GEMM's output), so no card gets it unasked.  On gfx103x it is ~2x faster, so we say so once.
-    const char* e = std::getenv("STRATA_HIP_PROMPT_F16");
+    const char* e = strata::env("NOSTROMA_HIP_PROMPT_F16");
     const bool on = e != nullptr && e[0] == '1';
     hipDeviceProp_t p{};
     if (hipGetDeviceProperties(&p, dev) != hipSuccess) { (void) hipGetLastError(); p.gcnArchName[0] = 0; }
@@ -625,7 +626,7 @@ catch (sycl::exception const &exc) {
 // 0: cuBLAS's BF16 GEMM, 1: through FP16 (tensor cores), 2: through FP32 (Pascal)
 int bf16_path() {
     static const int forced = [] {
-        const char* v = std::getenv("STRATA_BF16_TC");
+        const char* v = strata::env("NOSTROMA_BF16_TC");
         return v != nullptr && v[0] != '\0' ? std::atoi(v) : -1;
     }();
     const int cc = current_cc();
@@ -768,8 +769,8 @@ inline bool staged_gemm(sycl::queue& q, void* handle, const uint16_t* W, int lda
     // STRATA_SYCL_GEMM_NO_STAGE: the tests' negative control.  0.1.43: not on Battlemage either (the A770 oneMKL bug above did not
     // show on a B70: 4K and 49K prompts, operands at 18 GiB into the cache arena, first-token logits byte-identical with and
     // without staging; the 10 MB copy per expert was ~10% of a prompt).  STRATA_SYCL_GEMM_STAGE=1 stages there as before.
-    static const bool no_stage = std::getenv("STRATA_SYCL_GEMM_NO_STAGE") != nullptr ||
-        (strata::intel_gpu_gen(q.get_device()) == strata::IntelGpuGen::Battlemage && !(std::getenv("STRATA_SYCL_GEMM_STAGE") && std::getenv("STRATA_SYCL_GEMM_STAGE")[0] == '1'));
+    static const bool no_stage = strata::env("NOSTROMA_SYCL_GEMM_NO_STAGE") != nullptr ||
+        (strata::intel_gpu_gen(q.get_device()) == strata::IntelGpuGen::Battlemage && !(strata::env("NOSTROMA_SYCL_GEMM_STAGE") && strata::env("NOSTROMA_SYCL_GEMM_STAGE")[0] == '1'));
     constexpr size_t k4G = 4ull << 30;
     const size_t es = 2;
     const size_t w_bytes = (size_t) lda * (size_t) N * es;   // W stored K x N, col-major (lda = K)
@@ -811,8 +812,8 @@ void Gemm::bf16(const uint16_t* X, const uint16_t* W, float* Y, int64_t T, int64
 #ifdef STRATA_USE_HIP
     // #313 (opt-in STRATA_WMMA_GEMM=1; STRATA_WMMA_BF16=0 excludes bf16): RDNA3 / RDNA3.5 WMMA dense GEMM, before
     // hipBLASLt; it returns false for shapes it does not take (and off gfx11) and this falls through
-    static const bool wmma_on = [] { const char* v = std::getenv("STRATA_WMMA_GEMM"); return v && v[0] != 0 && v[0] != '0'; }();
-    static const bool bf16_on = [] { const char* v = std::getenv("STRATA_WMMA_BF16"); return !v || (v[0] != 0 && v[0] != '0'); }();
+    static const bool wmma_on = [] { const char* v = strata::env("NOSTROMA_WMMA_GEMM"); return v && v[0] != 0 && v[0] != '0'; }();
+    static const bool bf16_on = [] { const char* v = strata::env("NOSTROMA_WMMA_BF16"); return !v || (v[0] != 0 && v[0] != '0'); }();
     if (wmma_on && bf16_on && ldx == 0 && T >= 16 && (beta == 0.0f || beta == 1.0f) &&
         strata_wmma_gemm_bf16(X, W, Y, T, N, K, ldy, beta, stream_)) {
         return;
@@ -835,7 +836,7 @@ void Gemm::bf16(const uint16_t* X, const uint16_t* W, float* Y, int64_t T, int64
     workload_trace::Scope trace("gemm.bf16_to_f32", stream_, T, N, K, ldx ? ldx : K, ldy);
     const float alpha = 1.0f;
     {   // CLEAN-6.0: the repeatable path for skinny outputs (see strata_bf16_det)
-        static const int det_mode = [] { const char* v = std::getenv("STRATA_SYCL_BF16_DET"); return v == nullptr || v[0] == 0 ? 1 : std::atoi(v); }();
+        static const int det_mode = [] { const char* v = strata::env("NOSTROMA_SYCL_BF16_DET"); return v == nullptr || v[0] == 0 ? 1 : std::atoi(v); }();
         const int64_t xs = ldx ? ldx : K;
         if (det_mode != 0 && (K & 1) == 0 && (xs & 1) == 0 && N <= (det_mode == 2 ? (int64_t) 1 << 30 : (int64_t) 64) &&
             (reinterpret_cast<uintptr_t>(X) & 3u) == 0 && (reinterpret_cast<uintptr_t>(W) & 3u) == 0) {
@@ -907,9 +908,9 @@ void Gemm::f16(const uint16_t* X, const uint16_t* W, float* Y, int64_t T, int64_
     if (ldy <= 0) ldy = N;
 #ifdef STRATA_USE_HIP
     // #313 (opt-in STRATA_WMMA_GEMM=1): RDNA3 / RDNA3.5 WMMA dense GEMM, before hipBLASLt (falls through when false)
-    static const bool wmma_on = [] { const char* v = std::getenv("STRATA_WMMA_GEMM"); return v && v[0] != 0 && v[0] != '0'; }();
-    static const bool pf_on = [] { const char* v = std::getenv("STRATA_PF_GEMM"); return v && v[0] == '1'; }();
-    static const int64_t pf_min_t = [] { const char* v = std::getenv("STRATA_PF_SWITCH_MIN_T"); return v ? (int64_t) std::atoll(v) : (int64_t) 0; }();
+    static const bool wmma_on = [] { const char* v = strata::env("NOSTROMA_WMMA_GEMM"); return v && v[0] != 0 && v[0] != '0'; }();
+    static const bool pf_on = [] { const char* v = strata::env("NOSTROMA_PF_GEMM"); return v && v[0] == '1'; }();
+    static const int64_t pf_min_t = [] { const char* v = strata::env("NOSTROMA_PF_SWITCH_MIN_T"); return v ? (int64_t) std::atoll(v) : (int64_t) 0; }();
     if (pf_on && T >= pf_min_t && strata_pf_gemm_f16(X, W, Y, T, N, K, ldy, beta, stream_)) return;   // S23: opt-in
     if (wmma_on && T >= 16 && (beta == 0.0f || beta == 1.0f) &&
         strata_wmma_gemm_f16(X, W, Y, T, N, K, ldy, beta, stream_)) {
@@ -947,7 +948,7 @@ bool Gemm::native_mmq(const uint16_t* X, int type, const void* W, float* Y, int6
     namespace mmq = strata::prefill::mmq;
     constexpr int64_t kRows = 1024, kMaxK = 8192;
     static const bool enabled = [] {
-        const char* e = std::getenv("STRATA_DENSE_MMQ");
+        const char* e = strata::env("NOSTROMA_DENSE_MMQ");
         return e && e[0] == '1';
     }();
     if (!enabled || mmq_failed_ || !mmq::built() || !mmq::fits(type, N)) return false;
@@ -1014,7 +1015,7 @@ void Gemm::f16_inplace(const uint16_t* X, const uint16_t* W, float* Y, int64_t T
                     (int) K, X, CUDA_R_16F, (int) K, &zero, Y, CUDA_R_16F, (int) (2 * ldy), CUBLAS_COMPUTE_32F,
                     CUBLAS_GEMM_DEFAULT),
        "cublasGemmEx f16 out");
-    static const bool dbg_nan = std::getenv("STRATA_DBG_NAN") != nullptr;
+    static const bool dbg_nan = strata::env("NOSTROMA_DBG_NAN") != nullptr;
     widen_rows_f16<<<(unsigned) T, 256, 0, (cudaStream_t) stream_>>>(Y, N, ldy, dbg_nan ? 1 : 0);
     if (dbg_nan) {   // debug only: a sync per GEMM
         unsigned long long bad = 0, zero_count = 0;

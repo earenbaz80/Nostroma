@@ -1,4 +1,5 @@
 #include "b60_layout_state.hpp"
+#include "strata/env.hpp"
 #include <cstdlib>
 // src/kernels/cuda/qsa_decode_attn.cu - see include/strata/kernels/qsa_decode_attn.hpp.
 #define DPCT_PROFILING_ENABLED
@@ -769,7 +770,7 @@ void launch_qsa_merge_two_stage_partial(const float* part_acc,
 // kernel off (A/B)
 bool pre75_attn() {
     static const bool off = [] {
-        const char* e = std::getenv("STRATA_ATTN_PRE75");
+        const char* e = strata::env("NOSTROMA_ATTN_PRE75");
         return e != nullptr && e[0] == '0';
     }();
     static int cc[64] = {};
@@ -960,7 +961,7 @@ static void launch_qsa_chunk_down(int,const float*,const QsaAttnPools&,const int
                            const QsaShapes&,float*,float*,int64_t,void*);
 bool qsa_chunk_down_supported(int64_t cap, int64_t n_q, const QsaShapes& s, void* stream) {
     static const bool enabled = [] {
-        const char* v = std::getenv("STRATA_SYCL_QSA_CHUNK_DOWN");
+        const char* v = strata::env("NOSTROMA_SYCL_QSA_CHUNK_DOWN");
         return !v || v[0] == '1';
     }();
     const bool batch = n_q >= 1 && n_q <= 6;
@@ -1033,7 +1034,7 @@ void qsa_decode_attn_batch(const float* q, const QsaAttnPools& pools, const int3
     // runtime's architecture enum first, the name only as a fallback), never from the name alone.
     // STRATA_ATTN_LANECELL=1/0 forces either way on any device.
     static const int lane_cell_env = [] {
-        const char* v = std::getenv("STRATA_ATTN_LANECELL");
+        const char* v = strata::env("NOSTROMA_ATTN_LANECELL");
         return v != nullptr && v[0] != '\0' ? std::atoi(v) : -1;
     }();
     const bool lane_cell = lane_cell_env >= 0
@@ -1117,7 +1118,7 @@ void qsa_decode_attn_batch(const float* q, const QsaAttnPools& pools, const int3
     // 151-b70: STRATA_ATTN_RS=2 (default): the probabilities in [cell][head] order and the value phase reading a cell's 12 as three vectors - the same
     // bits (first-token logits md5 equal at 4K and 16K), +0.8..0.9% prompt tok/s on the B70; =1 adds a 16-shuffle reduce-scatter for the scores
     // (bit-exact too, but -1.5% here: the score phase is not shuffle bound); =0 the layout before
-    static const int rs_on = [] { const char* v = std::getenv("STRATA_ATTN_RS"); return v ? std::atoi(v) : 2; }();
+    static const int rs_on = [] { const char* v = strata::env("NOSTROMA_ATTN_RS"); return v ? std::atoi(v) : 2; }();
     if (lane_cell) {
         if (kv_mode == 3) { STRATA_ATTN_LC(3); }
         else if (kv_mode == 2) { STRATA_ATTN_LC(2); }
@@ -1262,9 +1263,9 @@ void qsa_decode_attn_batch_rows(const float* q, const QsaAttnPoolsRows& rows, co
         std::fprintf(stderr, "qsa_decode_attn_batch_rows: unsupported geometry or missing buffers\n");
         std::exit(1);
     }
-    static const int rs_on = [] { const char* v = std::getenv("STRATA_ATTN_RS"); return v ? std::atoi(v) : 2; }();
+    static const int rs_on = [] { const char* v = strata::env("NOSTROMA_ATTN_RS"); return v ? std::atoi(v) : 2; }();
     static const int lane_cell_env = [] {
-        const char* v = std::getenv("STRATA_ATTN_LANECELL");
+        const char* v = strata::env("NOSTROMA_ATTN_LANECELL");
         return v != nullptr && v[0] != '\0' ? std::atoi(v) : -1;
     }();
     const long long stride = (long long) qsa_decode_attn_scratch_floats(cap, s);
@@ -2506,7 +2507,7 @@ b60_qsa_local_fence_kernel(const float *__restrict__ q, QsaAttnPools p,
 }
 
 class B60QsaLocalFence;
-inline bool b60_next_qsa_pool(){static const bool on=[] {const char*p=std::getenv("STRATA_PRIVATE_B60_NEXT_POOL");return p&&p[0]=='1';}();return on;}
+inline bool b60_next_qsa_pool(){static const bool on=[] {const char*p=strata::env("NOSTROMA_PRIVATE_B60_NEXT_POOL");return p&&p[0]=='1';}();return on;}
 class B60QsaFloat4;
 thread_local bool b60_qsa_float4_probe_mode=false;
 
@@ -2566,7 +2567,7 @@ static void launch_qsa_chunk_down(int mode,const float* q,const QsaAttnPools& po
     }
     if(nq<=0)return;
     static const bool vector_enabled = [] {
-        const char* v = std::getenv("STRATA_SYCL_QSA_VALUE8_K8_VEC");
+        const char* v = strata::env("NOSTROMA_SYCL_QSA_VALUE8_K8_VEC");
         return !v || v[0] == '1';
     }();
     const bool vector_shape=(cap==2051&&(nq==1||nq==2||nq==3||nq==4||nq==32))||(cap==32768&&nq==1);
@@ -2602,7 +2603,7 @@ bool qsa_decode_attn_batch_try_two_stage(const float* q, const QsaAttnPools& poo
         pools.k_q4 || pools.v_q4 || !qsa_chunk_down_supported(cap, n_q, s, stream))
         return false;
     static const bool vector_enabled = [] {
-        const char* v = std::getenv("STRATA_SYCL_QSA_VALUE8_K8_VEC");
+        const char* v = strata::env("NOSTROMA_SYCL_QSA_VALUE8_K8_VEC");
         return !v || v[0] == '1';
     }();
     auto* queue = strata::q_of(stream);

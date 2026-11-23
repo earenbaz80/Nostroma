@@ -28,6 +28,7 @@
 #pragma once
 
 #include <cstdint>
+#include "strata/env.hpp"
 #include <cstdlib>
 
 #include <cuda_fp16.h>
@@ -55,7 +56,7 @@ constexpr int GU_ACT_LD = kMoeEmbd / 64 * AB, H_LD = kMoeFF / 64 * AB;   // byte
 /// STRATA_PF_F16=1 (on top of STRATA_PF_FUSED=1): the covered formats take the F16 kernels on gfx11.
 inline bool requested() {
     static const bool on = [] {
-        const char* v = std::getenv("STRATA_PF_F16");
+        const char* v = strata::env("NOSTROMA_PF_F16");
         return v != nullptr && v[0] == '1';
     }();
     return on;
@@ -67,7 +68,7 @@ inline bool requested() {
 /// STRATA_PF_F16_BN=64|128 forces one.
 inline int pick_bn(int64_t n, int n_expert) {
     static const int forced = [] {
-        const char* v = std::getenv("STRATA_PF_F16_BN");
+        const char* v = strata::env("NOSTROMA_PF_F16_BN");
         const int t = v ? std::atoi(v) : 0;
         return t == kTileRows || t == 2 * kTileRows ? t : 0;
     }();

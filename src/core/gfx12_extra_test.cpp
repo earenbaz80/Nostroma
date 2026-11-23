@@ -1,5 +1,6 @@
 // src/core/gfx12_extra_test.cpp - the gfx12 extra defaults (gfx12_extra.hpp) and their off switches (no GPU needed).
 #include "strata/core/arch_defaults.hpp"
+#include "strata/env.hpp"
 #include "strata/core/gfx12_chunk.hpp"
 #include "strata/core/gfx12_extra.hpp"
 
@@ -46,17 +47,17 @@ int main() {
     CHECK(!gfx12_exact_extra_env("gfx1201", false).empty());
     // apply: sets it, keeps a value the user set, does nothing off gfx12 or with the switch off
     apply_arch_defaults("gfx1201", false);
-    CHECK(std::getenv("STRATA_HEAD_MIX_MULTI") != nullptr && std::string(std::getenv("STRATA_HEAD_MIX_MULTI")) == "1");
+    CHECK(strata::env("NOSTROMA_HEAD_MIX_MULTI") != nullptr && std::string(strata::env("NOSTROMA_HEAD_MIX_MULTI")) == "1");
     unset("STRATA_HEAD_MIX_MULTI");
     put("STRATA_HEAD_MIX_MULTI", "0");
     apply_arch_defaults("gfx1201", false);
-    CHECK(std::string(std::getenv("STRATA_HEAD_MIX_MULTI")) == "0");
+    CHECK(std::string(strata::env("NOSTROMA_HEAD_MIX_MULTI")) == "0");
     unset("STRATA_HEAD_MIX_MULTI");
     apply_arch_defaults("gfx1100", false);
-    CHECK(std::getenv("STRATA_HEAD_MIX_MULTI") == nullptr);
+    CHECK(strata::env("NOSTROMA_HEAD_MIX_MULTI") == nullptr);
     put("STRATA_GFX12_DEFAULTS", "0");
     apply_arch_defaults("gfx1201", false);
-    CHECK(std::getenv("STRATA_HEAD_MIX_MULTI") == nullptr);
+    CHECK(strata::env("NOSTROMA_HEAD_MIX_MULTI") == nullptr);
     // the value-changing default (separate commit): gfx12 only, the same off switches, and the user's own setting wins
     unset("STRATA_GFX12_DEFAULTS"); unset("STRATA_SELECT_WMMA"); unset("STRATA_SELECT_ALT_MIN_TOKENS");
     CHECK(has(gfx12_value_changing_env("gfx1201", false), "STRATA_SELECT_WMMA", "1"));
@@ -64,15 +65,15 @@ int main() {
     CHECK(gfx12_value_changing_env("gfx1201", true).empty());
     for (const char* other : {"gfx1100", "gfx1151", "gfx1030", "gfx906", "", "gfx12010"}) CHECK(gfx12_value_changing_env(other, false).empty());
     apply_arch_defaults("gfx1201", false);
-    CHECK(std::getenv("STRATA_SELECT_WMMA") != nullptr && std::string(std::getenv("STRATA_SELECT_WMMA")) == "1");
-    CHECK(std::getenv("STRATA_SELECT_ALT_MIN_TOKENS") != nullptr && std::string(std::getenv("STRATA_SELECT_ALT_MIN_TOKENS")) == "28672");
+    CHECK(strata::env("NOSTROMA_SELECT_WMMA") != nullptr && std::string(strata::env("NOSTROMA_SELECT_WMMA")) == "1");
+    CHECK(strata::env("NOSTROMA_SELECT_ALT_MIN_TOKENS") != nullptr && std::string(strata::env("NOSTROMA_SELECT_ALT_MIN_TOKENS")) == "28672");
     unset("STRATA_SELECT_WMMA"); unset("STRATA_SELECT_ALT_MIN_TOKENS");
     put("STRATA_SELECT_WMMA", "0");   // the off switch
     apply_arch_defaults("gfx1201", false);
-    CHECK(std::string(std::getenv("STRATA_SELECT_WMMA")) == "0");
+    CHECK(std::string(strata::env("NOSTROMA_SELECT_WMMA")) == "0");
     unset("STRATA_SELECT_WMMA"); unset("STRATA_SELECT_ALT_MIN_TOKENS");
     apply_arch_defaults("gfx1100", false);
-    CHECK(std::getenv("STRATA_SELECT_WMMA") == nullptr);
+    CHECK(strata::env("NOSTROMA_SELECT_WMMA") == nullptr);
     // STRATA_MMQ_KQ (the K-quant experts' prompt products on MMQ): Linux gfx12 only, the same off switches, the user's own value wins
     unset("STRATA_GFX12_DEFAULTS"); unset("STRATA_DEFAULTS"); unset("STRATA_MMQ_KQ");
 #if defined(_WIN32)
@@ -83,23 +84,23 @@ int main() {
     for (const char* other : {"gfx1100", "gfx1151", "gfx1030", "gfx906", "", "gfx12010"}) CHECK(!has(gfx12_value_changing_env(other, false), "STRATA_MMQ_KQ", "1"));
     CHECK(!has(gfx12_value_changing_env("gfx1201", true), "STRATA_MMQ_KQ", "1"));     // STRATA_DEFAULTS=026
     apply_arch_defaults("gfx1201", false);
-    CHECK(std::getenv("STRATA_MMQ_KQ") != nullptr && std::string(std::getenv("STRATA_MMQ_KQ")) == "1");
+    CHECK(strata::env("NOSTROMA_MMQ_KQ") != nullptr && std::string(strata::env("NOSTROMA_MMQ_KQ")) == "1");
     unset("STRATA_MMQ_KQ"); unset("STRATA_SELECT_WMMA"); unset("STRATA_SELECT_ALT_MIN_TOKENS");
     put("STRATA_MMQ_KQ", "0");                                                           // the off switch
     apply_arch_defaults("gfx1201", false);
-    CHECK(std::string(std::getenv("STRATA_MMQ_KQ")) == "0");
+    CHECK(std::string(strata::env("NOSTROMA_MMQ_KQ")) == "0");
     unset("STRATA_MMQ_KQ"); unset("STRATA_SELECT_WMMA"); unset("STRATA_SELECT_ALT_MIN_TOKENS");
     apply_arch_defaults("gfx1100", false);
-    CHECK(std::getenv("STRATA_MMQ_KQ") == nullptr);
+    CHECK(strata::env("NOSTROMA_MMQ_KQ") == nullptr);
     put("STRATA_GFX12_DEFAULTS", "0");
     apply_arch_defaults("gfx1201", false);
-    CHECK(std::getenv("STRATA_MMQ_KQ") == nullptr);
+    CHECK(strata::env("NOSTROMA_MMQ_KQ") == nullptr);
     unset("STRATA_GFX12_DEFAULTS");
 #endif
     unset("STRATA_SELECT_WMMA"); unset("STRATA_SELECT_ALT_MIN_TOKENS");
     put("STRATA_GFX12_DEFAULTS", "0");
     apply_arch_defaults("gfx1201", false);
-    CHECK(std::getenv("STRATA_SELECT_WMMA") == nullptr && std::getenv("STRATA_SELECT_ALT_MIN_TOKENS") == nullptr);
+    CHECK(strata::env("NOSTROMA_SELECT_WMMA") == nullptr && strata::env("NOSTROMA_SELECT_ALT_MIN_TOKENS") == nullptr);
     // the gfx12 prompt-chunk ceiling of a bare --prefill auto (gfx12_chunk.hpp): 32768 by default, 16384 with STRATA_GFX12_CHUNK=16, none with =0,
     // and the RAM guard steps 32768 -> 16384 -> 8192
     CHECK(gfx12_chunk_ceiling(nullptr) == 32768);

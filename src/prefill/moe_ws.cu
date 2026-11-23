@@ -1,6 +1,7 @@
 // src/prefill/moe_ws.cu - see include/strata/prefill/moe_ws.hpp: which layers and products take the weight-stationary
 // kernels (moe_ws_gu_iq2.cu, moe_ws_gu_iq3.cu, moe_ws_down.cu), their work tables and launches.
 #include "common.cuh"
+#include "strata/env.hpp"
 #include "mmq.cuh"
 
 #include "moe_ws.cuh"
@@ -55,7 +56,7 @@ int mode() {
     const int o = g_mode_override.load(std::memory_order_relaxed);
     if (o >= 0) return o;
     static const int m = [] {
-        const char* e = std::getenv("STRATA_MMQ_WS");   // opt-in
+        const char* e = strata::env("NOSTROMA_MMQ_WS");   // opt-in
         if (e == nullptr || std::atoi(e) != 1) return 0;
         // GP100 (cc 6.0) only: tuned and checked there (any visible GPU that is not: off for all)
         int n = 0;
@@ -80,7 +81,7 @@ int fast() {
     const int o = g_fast_override.load(std::memory_order_relaxed);
     if (o >= 0) return o;
     static const int f = [] {
-        const char* e = std::getenv("STRATA_WS_FAST");   // opt-in
+        const char* e = strata::env("NOSTROMA_WS_FAST");   // opt-in
         return e != nullptr && std::atoi(e) == 1 ? 1 : 0;
     }();
     return f;

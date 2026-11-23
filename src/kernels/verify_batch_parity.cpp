@@ -11,6 +11,7 @@
 //    capability 12.0 card: sm120_series.hpp ple_batch_resolve, the rule the prompt path uses; STRATA_PLE_BATCH=1 runs it anyway).
 // GPU, synthetic, no model.
 #include "strata/kernels/f16_bits.hpp"
+#include "strata/env.hpp"
 #include "strata/kernels/kv_q4.hpp"
 #include "strata/kernels/kv_stream.hpp"
 #include "strata/kernels/native_gr_postops.hpp"
@@ -178,7 +179,7 @@ int main() {
     constexpr int kRt = 0;      // a HIP build has no CUDA toolkit version: the engine passes 0 and hip = true
     constexpr bool kHip = true;
 #endif
-    if (strata::ple_batch_resolve(std::getenv("STRATA_PLE_BATCH"), kRt, kHip, prop.major, prop.minor))
+    if (strata::ple_batch_resolve(strata::env("NOSTROMA_PLE_BATCH"), kRt, kHip, prop.major, prop.minor))
         ple(s);
     else
         std::printf("SKIP native_ple_postops_batch_snap: built with CUDA 12.8 for RTX 50: the batched PLE post-ops are switched off in this build "

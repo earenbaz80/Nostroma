@@ -11,6 +11,7 @@
 #pragma once
 
 #include <chrono>
+#include "strata/env.hpp"
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -26,7 +27,7 @@ class ParCounters {
 public:
     using Ex = ParEx;
     using Clock = std::chrono::steady_clock;
-    ParCounters() { const char* e = std::getenv("STRATA_PAR_COUNTERS"); on_ = e != nullptr && e[0] == '1' && e[1] == '\0'; }
+    ParCounters() { const char* e = strata::env("NOSTROMA_PAR_COUNTERS"); on_ = e != nullptr && e[0] == '1' && e[1] == '\0'; }
     bool on() const { return on_; }
 
     void window(int rows, int live) {

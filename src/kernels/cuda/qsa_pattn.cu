@@ -12,6 +12,7 @@
 // qsa_pattn_parity compares the outputs with qsa_decode_attn_batch's byte for byte on synthetic selections.
 // Only the default variant of the contributor's PR (#3943) is kept: ps_score_x_kernel + ps_value_d4_kernel.
 #include "strata/kernels/qsa_pattn.hpp"
+#include "strata/env.hpp"
 #include "strata/kernels/kv_q8.hpp"
 #include "strata/core/geometry.hpp"
 
@@ -34,7 +35,7 @@ namespace strata::kernels {
 // STRATA_PATTN_SM60=1 turns it on (a tester switch, read once).  In a build without the sm_6x kernels it says so and stays off.
 int pattn_mode() {
     static const int m = [] {
-        const char* v = std::getenv("STRATA_PATTN_SM60");
+        const char* v = strata::env("NOSTROMA_PATTN_SM60");
         const int x = v != nullptr && *v != '\0' ? std::atoi(v) : 0;
         if (x == 0) return 0;
 #if STRATA_PATTN_BUILT

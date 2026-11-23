@@ -14,6 +14,7 @@
 // The two agree to float rounding and not to the bit, which is the same contract `s_gemv_parity` carries for
 // the same reason.  `bench/micro/moe_hit_parity.cu` is the check.
 #include "strata/kernels/s2_expert_grouped.hpp"
+#include "strata/env.hpp"
 #include "strata/core/geometry.hpp"
 #include "strata/kernels/dp4a.hpp"
 #include "strata/kernels/f16_bits.hpp"
@@ -538,7 +539,7 @@ bool old_kernels() {
     const int s = g_select_old.load(std::memory_order_relaxed);
     if (s >= 0) return s != 0;
     static const bool env = [] {
-        const char* e = std::getenv("STRATA_OLD_GROUPED");
+        const char* e = strata::env("NOSTROMA_OLD_GROUPED");
         return e != nullptr && e[0] == '1';
     }();
     return env;
@@ -551,7 +552,7 @@ bool old_kernels() {
 long long pair_min_hits() {
     if (g_select_old.load(std::memory_order_relaxed) >= 0) return 0;
     static const long long n = [] {
-        const char* e = std::getenv("STRATA_GROUPED_PAIR_MIN_HITS");
+        const char* e = strata::env("NOSTROMA_GROUPED_PAIR_MIN_HITS");
         return e != nullptr ? std::atoll(e) : 0LL;
     }();
     return n;
@@ -592,7 +593,7 @@ void launch_hit_gu(bool fast, const uint8_t* blob_base, const int32_t* slot_inde
 
 bool swiglu_q8_on() {
     static const bool on = [] {
-        const char* e = std::getenv("STRATA_S2_SWIGLU_Q8");
+        const char* e = strata::env("NOSTROMA_S2_SWIGLU_Q8");
         return e == nullptr || e[0] != '0';
     }();
     return on;

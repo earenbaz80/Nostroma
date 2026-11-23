@@ -1,5 +1,6 @@
 // src/core/mtp.cpp - see include/strata/core/mtp.hpp.
 #include "strata/core/mtp.hpp"
+#include "strata/env.hpp"
 #include "strata/core/pin_budget.hpp"
 #include "strata/kernels/qsa_prompt_attn.hpp"
 #include "strata/core/coupled_draft.hpp"
@@ -96,7 +97,7 @@ constexpr float EPS = 1e-6f;
 // #783 PR-i: STRATA_MTP_CATCHUP_ALL=1 catches the drafter's K/V up for the whole verified window, rejected rows included
 bool mtp_catchup_all() {
     static const bool on = [] {
-        const char* v = std::getenv("STRATA_MTP_CATCHUP_ALL");
+        const char* v = strata::env("NOSTROMA_MTP_CATCHUP_ALL");
         return v != nullptr && v[0] != '\0' && v[0] != '0';
     }();
     return on;
@@ -106,7 +107,7 @@ bool mtp_catchup_all() {
 // order; the replies do not depend on the drafts)
 bool mtp_q8_sm60() {
     static const bool on = [] {
-        const char* v = std::getenv("STRATA_MTP_Q8_SM60");
+        const char* v = strata::env("NOSTROMA_MTP_Q8_SM60");
         return v != nullptr && v[0] == '1';
     }();
     return on;
@@ -500,7 +501,7 @@ bool MtpDrafter::load(const std::string& rt_dir, const ModelGeometry& g, Session
     // on stage 0 waits for it, so its stream gets the highest priority there (STRATA_MTP_PRIORITY=0: the default)
     bool prio = false;
 #if !defined(STRATA_USE_HIP) && !defined(STRATA_HIP_GFX906) && !defined(STRATA_GPU_METAL)   // (HIP, Metal: the default priority)
-    static const bool hi_prio = [] { const char* v = std::getenv("STRATA_MTP_PRIORITY"); return v == nullptr || std::atoi(v) != 0; }();
+    static const bool hi_prio = [] { const char* v = strata::env("NOSTROMA_MTP_PRIORITY"); return v == nullptr || std::atoi(v) != 0; }();
     int prio_lo = 0, prio_hi = 0;
     if (force_on_ && hi_prio && cudaDeviceGetStreamPriorityRange(&prio_lo, &prio_hi) == cudaSuccess)
         prio = cudaStreamCreateWithPriority(&cs_, cudaStreamNonBlocking, prio_hi) == cudaSuccess;
@@ -514,7 +515,7 @@ bool MtpDrafter::load(const std::string& rt_dir, const ModelGeometry& g, Session
     // 5.8 -> 3.5 ms a window (notes-latency.md).
     {
         static const bool hip_prio = [] {
-            if (const char* v = std::getenv("STRATA_MTP_HIP_PRIO"); v != nullptr && *v != 0) return std::atoi(v) != 0;
+            if (const char* v = strata::env("NOSTROMA_MTP_HIP_PRIO"); v != nullptr && *v != 0) return std::atoi(v) != 0;
             int dev = 0;
             cudaDeviceProp prop{};
             return cudaGetDevice(&dev) == cudaSuccess && cudaGetDeviceProperties(&prop, dev) == cudaSuccess &&
@@ -546,7 +547,7 @@ bool MtpDrafter::load(const std::string& rt_dir, const ModelGeometry& g, Session
         cudaDeviceProp prop{};
         bool on = cudaGetDevice(&dev) == cudaSuccess && cudaGetDeviceProperties(&prop, dev) == cudaSuccess &&
                   std::strncmp(prop.gcnArchName, "gfx103", 6) == 0;
-        if (const char* v = std::getenv("STRATA_MTP_SIDE_STREAM"); v != nullptr && *v != 0) on = std::atoi(v) != 0;
+        if (const char* v = strata::env("NOSTROMA_MTP_SIDE_STREAM"); v != nullptr && *v != 0) on = std::atoi(v) != 0;
         if (on && cudaStreamCreateWithFlags(&side_, cudaStreamNonBlocking) != cudaSuccess) {
             err = "mtp: streams";
             return false;
@@ -571,13 +572,13 @@ namespace {
 // STRATA_MTP_FULL_HEAD=1 (a diagnostic): draft over the whole vocabulary (the main head itself) instead of
 // rt/draft_vocab.bin's subset - the reference head, to measure what the subset costs in acceptance
 bool full_head_env() {
-    static const bool on = [] { const char* v = std::getenv("STRATA_MTP_FULL_HEAD"); return v && v[0] == '1'; }();
+    static const bool on = [] { const char* v = strata::env("NOSTROMA_MTP_FULL_HEAD"); return v && v[0] == '1'; }();
     return on;
 }
 }  // namespace
 
 bool MtpDrafter::top2_env() {
-    static const bool on = [] { const char* v = std::getenv("STRATA_MTP_TOP2"); return v && v[0] == '1'; }();
+    static const bool on = [] { const char* v = strata::env("NOSTROMA_MTP_TOP2"); return v && v[0] == '1'; }();
     return on;
 }
 
@@ -903,7 +904,7 @@ struct MtpProf {
     double sum[2][kMpSlots] = {};
     int64_t n[2] = {0, 0};
     MtpProf() {
-        const char* e = std::getenv("STRATA_MTP_PROFILE");
+        const char* e = strata::env("NOSTROMA_MTP_PROFILE");
         on = e != nullptr && e[0] == '1';
     }
     void init() {
@@ -954,7 +955,7 @@ MtpProf g_mp;
 
 // STRATA_VERIFY_NODES=1 also lists the draft graphs' nodes (kernel names on HIP; counts on CUDA)
 void mtp_list_nodes(cudaGraph_t graph, const char* what) {
-    if (std::getenv("STRATA_VERIFY_NODES") == nullptr || graph == nullptr) return;
+    if (strata::env("NOSTROMA_VERIFY_NODES") == nullptr || graph == nullptr) return;
 #if defined(STRATA_GPU_METAL)
     (void) what;    // Metal has no graph nodes to list
 #else
@@ -1006,7 +1007,7 @@ bool mtp_qfuse_hc_on() {
     static const int env = [] {
         // only STRATA_QFUSE_HC (not STRATA_QFUSE, which the gfx1151 table sets): the draft layer's q8_1 images from the hyper-connection
         // read were run on gfx1201 only (#3264), so every other target keeps the separate quantize unless asked
-        if (const char* v = std::getenv("STRATA_QFUSE_HC")) return std::atoi(v) != 0 ? 1 : 0;
+        if (const char* v = strata::env("NOSTROMA_QFUSE_HC")) return std::atoi(v) != 0 ? 1 : 0;
         return -1;
     }();
     if (env >= 0) return env != 0;
@@ -1028,13 +1029,13 @@ bool mtp_qfuse_hc_on() {
 bool mtp_head_mix_multi_on() {
 #if defined(STRATA_USE_HIP)
     static const bool on = [] {
-        const char* v = std::getenv("STRATA_HEAD_MIX_MULTI");   // HIP: opt-in (=1); the gfx12 table sets it
+        const char* v = strata::env("NOSTROMA_HEAD_MIX_MULTI");   // HIP: opt-in (=1); the gfx12 table sets it
         return v != nullptr && std::atoi(v) != 0;
     }();
     return on;
 #else
     static const bool on = [] {
-        const char* v = std::getenv("STRATA_HEAD_MIX_MULTI");
+        const char* v = strata::env("NOSTROMA_HEAD_MIX_MULTI");
         return v == nullptr || std::atoi(v) != 0;
     }();
     return on;
@@ -1118,7 +1119,7 @@ bool MtpDrafter::record_front(int T, int row0, cudaStream_t cs, std::string& err
         // #783 PR-d (stuchapin909): the T tokens' K norm, K/V rotation and K/V append each run once over all T rows
         // (every row is independent; the rope keeps its per-token positions). STRATA_NO_BATCH_KV_STEP=1 appends per token.
         static const bool no_batch_kv = [] {
-            const char* v = std::getenv("STRATA_NO_BATCH_KV_STEP");
+            const char* v = strata::env("NOSTROMA_NO_BATCH_KV_STEP");
             return v != nullptr && v[0] != '\0' && v[0] != '0';
         }();
         // #783 PR-f (stuchapin909): the per-head RMSNorm and the rope fused (bit-identical to the pair, rope_parity
@@ -1212,7 +1213,7 @@ bool MtpDrafter::record_rest(int step_row, cudaStream_t cs, std::string& err) {
             window_ids_floor(const_cast<int32_t*>(step), T, window_ > 0 ? (int) window_ : 0x7fffffff, ident_, cap_, m_floor_, cs);
         else if (window_ > 0) window_ids(const_cast<int32_t*>(step), T, (int) window_, ident_, cap_, cs);
         // STRATA_QSA_SPLIT_ATTN=1: the draft layer's attention over its window, split the same way
-        static const bool split_attn = [] { const char* v = std::getenv("STRATA_QSA_SPLIT_ATTN"); return v != nullptr && std::atoi(v) != 0; }();
+        static const bool split_attn = [] { const char* v = strata::env("NOSTROMA_QSA_SPLIT_ATTN"); return v != nullptr && std::atoi(v) != 0; }();
         if (!(split_attn && qsa_decode_attn_split(qcur_, pools, ident_, step, cap_, s, attn_scratch_, (uint64_t) attn_scratch_floats_, attn_, T, cs)))
         qsa_decode_attn_batch(qcur_, pools, ident_, step, cap_, s, attn_scratch_, attn_, T, cs);
         if (st_.kv_rot) fwht256_inplace_cuda(attn_, (int64_t) T * NH, cs);
@@ -1251,7 +1252,7 @@ bool MtpDrafter::record_rest(int step_row, cudaStream_t cs, std::string& err) {
         const SForm none{};
         const bool need_bf16_x = !shared_expert_native_bf16_enabled();
         static const bool fuse_head_gr = [] {
-            const char* v = std::getenv("STRATA_FUSE_HEAD_GR");
+            const char* v = strata::env("NOSTROMA_FUSE_HEAD_GR");
             return v != nullptr && std::atoi(v) != 0;
         }();
         const bool head_mix_multi_on = mtp_head_mix_multi_on();
@@ -1261,7 +1262,7 @@ bool MtpDrafter::record_rest(int step_row, cudaStream_t cs, std::string& err) {
 #if defined(STRATA_USE_HIP)
             return false;
 #else
-            const char* v = std::getenv("STRATA_MTP_SHARED_BRANCH");
+            const char* v = strata::env("NOSTROMA_MTP_SHARED_BRANCH");
             return v == nullptr || std::atoi(v) != 0;
 #endif
         }();
@@ -1316,7 +1317,7 @@ bool MtpDrafter::record_rest(int step_row, cudaStream_t cs, std::string& err) {
         }
         g_mp.stamp(11, cs);
         static const bool no_multi_gr = [] {   // #783 PR-g: STRATA_NO_MULTI_GR=1 keeps the per-token GR calls
-            const char* v = std::getenv("STRATA_NO_MULTI_GR");
+            const char* v = strata::env("NOSTROMA_NO_MULTI_GR");
             return v != nullptr && v[0] != '\0' && v[0] != '0';
         }();
         for (int t = 0; t < T; ++t) {
@@ -1547,7 +1548,7 @@ bool MtpDrafter::prepare_prefill(std::string& err) {
 // STRATA_MTP_PREFILL_SYNC: the prompt pass's per-group loop (see MtpDrafter::prefill); HIP's default
 static bool prefill_per_group_sync() {
     static const bool v = [] {
-        if (const char* e = std::getenv("STRATA_MTP_PREFILL_SYNC")) return std::atoi(e) != 0;
+        if (const char* e = strata::env("NOSTROMA_MTP_PREFILL_SYNC")) return std::atoi(e) != 0;
 #if defined(STRATA_USE_HIP)
         return true;
 #else
@@ -1699,7 +1700,7 @@ struct DraftTiming {
     double pre_ms = 0, launch_ms = 0, ple_ms = 0, wait0_ms = 0, waitj_ms = 0;   // host: staging, graph launch calls, PLE prefetch, spins
     int64_t rounds = 0, steps = 0;
     DraftTiming() {
-        const char* e = std::getenv("STRATA_DRAFT_TIMING");
+        const char* e = strata::env("NOSTROMA_DRAFT_TIMING");
         on = e != nullptr && e[0] == '1';
     }
     void init() {

@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include "strata/env.hpp"
 
 // Profile-only CPU annotations. Normal builds erase these calls; neither path
 // submits GPU events, barriers or waits.
@@ -37,11 +38,11 @@ struct Sink {
     int64_t min_position = -1;
     bool decode_only = false;
     Sink() {
-        const char* decode = std::getenv("STRATA_WORKLOAD_TRACE_DECODE_ONLY");
+        const char* decode = strata::env("NOSTROMA_WORKLOAD_TRACE_DECODE_ONLY");
         decode_only = decode && *decode && *decode != '0';
-        const char* minimum = std::getenv("STRATA_WORKLOAD_TRACE_MIN_POSITION");
+        const char* minimum = strata::env("NOSTROMA_WORKLOAD_TRACE_MIN_POSITION");
         if (minimum && *minimum) min_position = std::strtoll(minimum, nullptr, 10);
-        const char* path = std::getenv("STRATA_WORKLOAD_TRACE_FILE");
+        const char* path = strata::env("NOSTROMA_WORKLOAD_TRACE_FILE");
         if (path && *path) file = std::fopen(path, "a");
         if (file) std::setvbuf(file, nullptr, _IOFBF, 1 << 20);
     }

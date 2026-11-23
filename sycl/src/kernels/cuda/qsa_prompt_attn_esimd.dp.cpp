@@ -20,6 +20,7 @@
 //    the softmax are FP32.  qsa_prompt_attn_parity bounds the difference against FP64.
 // int8 KV only (the default); anything else keeps the caller's fallback.
 #include "strata/kernels/qsa_prompt_attn_esimd.hpp"
+#include "strata/env.hpp"
 #include "strata/kprof.hpp"
 #include "strata/core/geometry.hpp"
 #include "strata/sycl_queue.hpp"
@@ -405,7 +406,7 @@ void launch(sycl::queue& q, const Args a, int64_t n_q) {
 
 bool qsa_prompt_attn_esimd(const float* q, const QsaAttnPools& pools, const int32_t* ids, const int32_t* steps, int64_t cap,
                            const QsaShapes& s, float* attn, int64_t n_q, void* stream) {
-    static const int mode = [] { const char* v = std::getenv("STRATA_PROMPT_ATTN_ESIMD"); return v ? std::atoi(v) : 1; }();   // default on (Battlemage); =0 off
+    static const int mode = [] { const char* v = strata::env("NOSTROMA_PROMPT_ATTN_ESIMD"); return v ? std::atoi(v) : 1; }();   // default on (Battlemage); =0 off
     if (mode == 0 || n_q <= 0) return false;
     if (pools.k_q == nullptr || pools.v_q == nullptr || pools.k_scale == nullptr || pools.v_scale == nullptr || pools.k_q4 != nullptr ||
         pools.v_q4 != nullptr || s.head_dim != HD || s.n_head != (int64_t) G * s.n_head_kv || cap <= 0 || !ids || !steps ||
@@ -417,12 +418,12 @@ bool qsa_prompt_attn_esimd(const float* q, const QsaAttnPools& pools, const int3
     if (strata::intel_gpu_gen(st->get_device()) != strata::IntelGpuGen::Battlemage) return false;
     static bool told = false;
     if (!told) { told = true; std::fprintf(stderr, "strata: prompt attention on the int8 DPAS (ESIMD)\n"); }
-    static const int lv = [] { const char* v = std::getenv("STRATA_ESIMD_LV"); return v ? std::atoi(v) : 2; }();
+    static const int lv = [] { const char* v = strata::env("NOSTROMA_ESIMD_LV"); return v ? std::atoi(v) : 2; }();
     int sh = 0;
     while ((1 << sh) < ps) ++sh;
     Args a{q, pools.k_q, pools.k_scale, pools.v_q, pools.v_scale, pools.page_table, ids, steps, attn,
            (int) s.n_head_kv, (int) cap, sh, (int) (ps - 1), 1.4426950408889634f / std::sqrt((float) HD),
-           std::getenv("STRATA_ESIMD_DBG") != nullptr ? std::atoi(std::getenv("STRATA_ESIMD_DBG")) : 0};
+           strata::env("NOSTROMA_ESIMD_DBG") != nullptr ? std::atoi(strata::env("NOSTROMA_ESIMD_DBG")) : 0};
     for (int64_t q0 = 0; q0 < n_q; q0 += 65535) {
         const int64_t nb = n_q - q0 < 65535 ? n_q - q0 : 65535;
         Args b = a;

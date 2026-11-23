@@ -1,4 +1,5 @@
 #include "b60_weight_cache.hpp"
+#include "strata/env.hpp"
 #include "b60_layout_state.hpp"
 #include <sycl/ext/intel/esimd.hpp>
 #include <sycl/ext/intel/esimd/xmx/dpas.hpp>
@@ -3691,19 +3692,19 @@ bool env_on(const char* name) {
     return v != nullptr && v[0] != '\0' && v[0] != '0';
 }
 // STRATA_OLD_IQ_MMVQ=1 keeps the per-column kernels (bitwise equal to the new ones; kept for A/B timing)
-bool g_old_kernels = env_on("STRATA_OLD_IQ_MMVQ");
+bool g_old_kernels = env_on("NOSTROMA_OLD_IQ_MMVQ");
 // SYCL port (0.1.31 merge): upstream sends the split formats (the i-quants) to native_gu/down_multi_kernel, one warp
 // per row, 8 rows a group. On the B70 the port's grouped kernels (8 lanes a row, 32 rows a group, the multi-entry
 // dots with aligned loads and the IQ4 codebook in registers) are the measured ones, so they stay the default for
 // every format; STRATA_EXPERT_SPLIT=1 takes upstream's multi kernels, launched with their own grid (GU_ROWS rows).
-bool g_split_multi = env_on("STRATA_EXPERT_SPLIT");
-bool g_no_sub16_gu = env_on("STRATA_NO_SUB16_GU");
+bool g_split_multi = env_on("NOSTROMA_EXPERT_SPLIT");
+bool g_no_sub16_gu = env_on("NOSTROMA_NO_SUB16_GU");
 
 // Keep the original decoder for diagnosis and for devices outside Battlemage.
 // Cache by the actual SYCL device, not a process-wide first-device decision.
 bool q2_word_expand_enabled(const sycl::device& device) {
     static const bool enabled = [] {
-        const char* v = std::getenv("STRATA_SYCL_Q2_WORD_EXPAND");
+        const char* v = strata::env("NOSTROMA_SYCL_Q2_WORD_EXPAND");
         return !(v && v[0] == '0');
     }();
     if (!enabled) return false;
@@ -3716,14 +3717,14 @@ bool q2_word_expand_enabled(const sycl::device& device) {
 // PR #4185 controls: six are on by default for a Battlemage device (strata::bm_default_on), the rest are opt-in (measured neutral); =0 / =1 decides
 // STRATA_IQ_STAGE_GRID=0 disables staging 64-bit i-quant codebook tables into shared memory
 bool g_stage_grid = [] {
-    const char* v = std::getenv("STRATA_IQ_STAGE_GRID");
+    const char* v = strata::env("NOSTROMA_IQ_STAGE_GRID");
     return v == nullptr || v[0] == '\0' || v[0] != '0';
 }();
 // The single-matrix mmvq (128-thread blocks, one per 4 rows) pays the 2-8 KB staging per block: on the RTX 5070 its
 // IQ2_XS / IQ2_S / IQ1_M calls were 10-20% slower staged at 3-8 columns (iq_multi_parity --bench), while the grouped
 // expert kernels gain.  So mmvq stages only with STRATA_IQ_STAGE_GRID_MMVQ=1 (bitwise the same either way).
 bool g_stage_grid_mmvq = g_stage_grid && [] {
-    const char* v = std::getenv("STRATA_IQ_STAGE_GRID_MMVQ");
+    const char* v = strata::env("NOSTROMA_IQ_STAGE_GRID_MMVQ");
     return v != nullptr && v[0] == '1';
 }();
 
@@ -3930,7 +3931,7 @@ void launch_mmvq_multi_nc(dpct::dim3 grid, dpct::dim3 block, dpct::queue_ptr s,
             break;
     }
 }
-bool g_q2_word_expand = env_on("STRATA_SYCL_Q2_WORD_EXPAND");
+bool g_q2_word_expand = env_on("NOSTROMA_SYCL_Q2_WORD_EXPAND");
 
 
 template <int TY>
@@ -4224,7 +4225,7 @@ void launch_gu_row_reuse(unsigned groups, dpct::queue_ptr s,
 // Private, default OFF: GU22-only extraction from the frozen 51560d17 source.
 bool gu22_row_reuse_enabled(const sycl::device& device) {
     static const bool enabled = [] {
-        const char* v = std::getenv("STRATA_PRIVATE_GU_PREPARED");
+        const char* v = strata::env("NOSTROMA_PRIVATE_GU_PREPARED");
         return v && v[0] == '1';
     }();
     if (!enabled) return false;
@@ -4248,7 +4249,7 @@ inline int lanes_env(const char* name) {
 inline int gu_lanes() { static const int v = lanes_env("STRATA_GU_LANES"); return v; }
 inline int down_lanes() { static const int v = lanes_env("STRATA_DOWN_LANES"); return v; }
 bool g_iq2xxs_reuse = [] {
-    const char* value = std::getenv("STRATA_SYCL_EXPERT_MULTI16");
+    const char* value = strata::env("NOSTROMA_SYCL_EXPERT_MULTI16");
     return value && std::atoi(value) != 0;
 }();
 
@@ -4277,7 +4278,7 @@ void launch_gu_packed_fixed(unsigned groups, dpct::queue_ptr s, const unsigned l
 // STRATA_KQ_GU_LANES (opt-in): the lane split of the K-quant / Q8_0 gate/up rows alone (Unsloth's files), default STRATA_GU_LANES.
 // B70, 4-token windows, split on: 16 lanes reads Q4_K/Q5_1 experts at 439 GB/s against 426 at 8; the reduction order differs
 // (other bits), so it stays opt-in.
-inline int kq_gu_lanes() { static const int v = std::getenv("STRATA_KQ_GU_LANES") ? lanes_env("STRATA_KQ_GU_LANES") : gu_lanes(); return v; }
+inline int kq_gu_lanes() { static const int v = strata::env("NOSTROMA_KQ_GU_LANES") ? lanes_env("STRATA_KQ_GU_LANES") : gu_lanes(); return v; }
 // Single output row, weight preparation shared across entries; original LN8.
 // GU16 preparation is the already byte-tested IQ2_XXS preparation from R2,
 // with no paired output row and no whole-packet Q8 staging array.
@@ -4448,7 +4449,7 @@ __dpct_inline__ void gu_prepared_kernel(
 
 
 inline bool gu_prepared_enabled(const sycl::device& dev) {
-    static const bool enabled=[] {const char* p=std::getenv("STRATA_PRIVATE_GU_PREPARED");return p&&std::atoi(p)!=0;}();
+    static const bool enabled=[] {const char* p=strata::env("NOSTROMA_PRIVATE_GU_PREPARED");return p&&std::atoi(p)!=0;}();
     return enabled && strata::intel_gpu_gen(dev)==strata::IntelGpuGen::Battlemage;
 }
 template<int TY> class GuPreparedKernel;
@@ -4464,7 +4465,7 @@ template<int TY> void launch_gu_prepared(unsigned groups,dpct::queue_ptr s,const
 // Each ESIMD item owns16rows; four independent items own64rows without SLM.
 namespace pvr=sycl::ext::intel::esimd;
 inline bool ps_enabled(const sycl::device& device){
- static const bool on=[] {const char* p=std::getenv("STRATA_PRIVATE_PACKED_REGISTER");return p&&p[0]=='1';}();
+ static const bool on=[] {const char* p=strata::env("NOSTROMA_PRIVATE_PACKED_REGISTER");return p&&p[0]=='1';}();
  return on&&b60_main_actor()&&b60_weights_packed()&&strata::intel_gpu_gen(device)==strata::IntelGpuGen::Battlemage;
 }
 SYCL_ESIMD_FUNCTION ESIMD_INLINE pvr::simd<int32_t,16>
@@ -4620,7 +4621,7 @@ void launch_pvr(unsigned groups,dpct::queue_ptr queue,
 }
 // IQ2_XXS: one ESIMD item retains the original four rows x eight K lanes.
 inline bool p16_enabled(const sycl::device& dev){
- static const bool on=[] {const char*p=std::getenv("STRATA_PRIVATE_GU_XXS_PACKED");return p&&p[0]=='1';}();
+ static const bool on=[] {const char*p=strata::env("NOSTROMA_PRIVATE_GU_XXS_PACKED");return p&&p[0]=='1';}();
  return on&&b60_main_actor()&&b60_weights_packed()&&strata::intel_gpu_gen(dev)==strata::IntelGpuGen::Battlemage;
 }
 SYCL_ESIMD_FUNCTION ESIMD_INLINE pvr::simd<int32_t,32>
@@ -4718,7 +4719,7 @@ void launch_gu_xxs(unsigned groups,dpct::queue_ptr queue,
 }
 
 
-inline bool p4_enabled(){static const bool on=[] {const char*p=std::getenv("STRATA_PRIVATE_DOWN_S4");return p&&p[0]=='1';}();return on;}
+inline bool p4_enabled(){static const bool on=[] {const char*p=strata::env("NOSTROMA_PRIVATE_DOWN_S4");return p&&p[0]=='1';}();return on;}
 SYCL_ESIMD_FUNCTION ESIMD_INLINE pvr::simd<uint32_t,16> p4_q2_eight(pvr::simd<uint32_t,16> q){
  q&=65535u;q=(q|(q<<8))&0x00ff00ffu;
  q=(q|(q<<4))&0x0f0f0f0fu;q=(q|(q<<2))&0x33333333u;
@@ -4813,7 +4814,7 @@ void launch_pvr_s4(unsigned groups,dpct::queue_ptr queue,
   });
 }
 
-inline bool grid64_enabled(){static const bool on=[] {const char*p=std::getenv("STRATA_PRIVATE_GU_GRID64");return p&&p[0]=='1';}();return on;}
+inline bool grid64_enabled(){static const bool on=[] {const char*p=strata::env("NOSTROMA_PRIVATE_GU_GRID64");return p&&p[0]=='1';}();return on;}
 template<int E>
 SYCL_ESIMD_FUNCTION ESIMD_INLINE void grid64_gu_packet(
  const uint8_t* weights,int row,int first,const int32_t* tokens,
@@ -4910,7 +4911,7 @@ void launch_grid64(unsigned groups,dpct::queue_ptr queue,
   });
 }
 
-inline bool grid_s4_enabled(){static const bool on=[] {const char*p=std::getenv("STRATA_PRIVATE_GU_GRID_S4");return p&&p[0]=='1';}();return on;}
+inline bool grid_s4_enabled(){static const bool on=[] {const char*p=strata::env("NOSTROMA_PRIVATE_GU_GRID_S4");return p&&p[0]=='1';}();return on;}
 static const uint32_t b60_s4_grid[1024]={
  0x11111111,0x11111115,0x11111133,0x11111151,0x11111155,0x11111313,0x11111331,0x11111335,0x11111353,0x11111511,0x11111515,0x11111533,0x11111551,0x11113113,0x11113131,0x11113135,
  0x11113153,0x11113311,0x11113315,0x11113333,0x11113351,0x11113513,0x11113531,0x11113535,0x11113553,0x11115111,0x11115115,0x11115133,0x11115151,0x11115313,0x11115331,0x11115511,
@@ -5087,7 +5088,7 @@ void launch_grid_s4(unsigned groups,dpct::queue_ptr queue,
 
 // IQ1_M: one ESIMD item retains the original four rows x eight K lanes.
 inline bool i1_enabled(const sycl::device& dev){
- static const bool on=[] {const char*p=std::getenv("STRATA_PRIVATE_GU_IQ1_PACKED");return p&&p[0]=='1';}();
+ static const bool on=[] {const char*p=strata::env("NOSTROMA_PRIVATE_GU_IQ1_PACKED");return p&&p[0]=='1';}();
  return on&&b60_main_actor()&&b60_weights_packed()&&strata::intel_gpu_gen(dev)==strata::IntelGpuGen::Battlemage;
 }
 template<int E>
@@ -5188,8 +5189,8 @@ void launch_gu_iq1(unsigned groups,dpct::queue_ptr queue,
   });
 }
 
-inline bool b60_next_iq_pool(){static const bool on=[] {const char*p=std::getenv("STRATA_PRIVATE_B60_NEXT_POOL");return p&&p[0]=='1';}();return on;}
-inline bool grid_s4_slm_enabled(){static const bool on=[] {const char*p=std::getenv("STRATA_PRIVATE_GU_S4_SLM");return p&&p[0]=='1';}();return on;}
+inline bool b60_next_iq_pool(){static const bool on=[] {const char*p=strata::env("NOSTROMA_PRIVATE_B60_NEXT_POOL");return p&&p[0]=='1';}();return on;}
+inline bool grid_s4_slm_enabled(){static const bool on=[] {const char*p=strata::env("NOSTROMA_PRIVATE_GU_S4_SLM");return p&&p[0]=='1';}();return on;}
 template<int E>
 SYCL_ESIMD_FUNCTION ESIMD_INLINE void grid_s4_slm_packet(
  const uint8_t* weights,int row,int first,const int32_t* tokens,
@@ -5307,7 +5308,7 @@ void launch_grid_s4_slm(unsigned groups,dpct::queue_ptr queue,
   });
 }
 
-inline bool grid_s4_basis9_enabled(){static const bool on=[] {const char*p=std::getenv("STRATA_PRIVATE_GU_S4_BASIS9");return p&&p[0]=='1';}();return on;}
+inline bool grid_s4_basis9_enabled(){static const bool on=[] {const char*p=strata::env("NOSTROMA_PRIVATE_GU_S4_BASIS9");return p&&p[0]=='1';}();return on;}
 template<int E>
 SYCL_ESIMD_FUNCTION ESIMD_INLINE void grid_s4_basis9_packet(
  const uint8_t* weights,int row,int first,const int32_t* tokens,
@@ -5424,7 +5425,7 @@ void launch_grid_s4_basis9(unsigned groups,dpct::queue_ptr queue,
   });
 }
 
-inline bool grid_s4_wg16_enabled(){static const bool on=[] {const char*p=std::getenv("STRATA_PRIVATE_GU_S4_WG16");return p&&p[0]=='1';}();return on;}
+inline bool grid_s4_wg16_enabled(){static const bool on=[] {const char*p=strata::env("NOSTROMA_PRIVATE_GU_S4_WG16");return p&&p[0]=='1';}();return on;}
 class GuGridS4WG16Kernel;
 template<bool Down,class Kernel>
 void launch_grid_s4_wg16(unsigned groups,dpct::queue_ptr queue,
@@ -5477,7 +5478,7 @@ static const uint32_t b60_xxs_s4_grid[256]={
 };
 // Sixteen original rows; each retains its eight K leaves and original FP tree.
 inline bool xxs_s4_enabled(){
- static const bool on=[] {const char*p=std::getenv("STRATA_PRIVATE_GU_XXS_S4");return p&&p[0]=='1';}();
+ static const bool on=[] {const char*p=strata::env("NOSTROMA_PRIVATE_GU_XXS_S4");return p&&p[0]=='1';}();
  return on;
 }
 template<int E>
@@ -5638,14 +5639,14 @@ void launch_gu_port(unsigned groups, dpct::queue_ptr s, const unsigned long long
     }
     // END PRIVATE GU22 ROW REUSE HOOK
     if constexpr (TG == 16 && LN == 8) {
-        if (env_on("STRATA_SYCL_PACKED_SIGNS") && !g_old_kernels && !g_split_multi && !g_iq2xxs_reuse && bounded &&
+        if (env_on("NOSTROMA_SYCL_PACKED_SIGNS") && !g_old_kernels && !g_split_multi && !g_iq2xxs_reuse && bounded &&
             L.n_embd == 2560 && L.n_ff == 640 && L.gu_row == 660 && L.up_off == 640 * 660) {
             launch_gu_packed_fixed<10016>(groups, s, grp_ptr, grp_start, n_groups, ent_tok, X, L, gate, up);
             return;
         }
     }
     if constexpr (TG == 22 && LN == 8) {
-        if (env_on("STRATA_SYCL_PACKED_SIGNS") && !g_old_kernels && !g_split_multi && bounded &&
+        if (env_on("NOSTROMA_SYCL_PACKED_SIGNS") && !g_old_kernels && !g_split_multi && bounded &&
             L.n_embd == 2560 && L.n_ff == 640 && L.gu_row == 820 && L.up_off == 640 * 820) {
             launch_gu_packed_fixed<10022>(groups, s, grp_ptr, grp_start, n_groups, ent_tok, X, L, gate, up);
             return;
@@ -5681,7 +5682,7 @@ void launch_gu_port(unsigned groups, dpct::queue_ptr s, const unsigned long long
 }
 // STRATA_KQ_SPLIT=0 (or native_expert_set_kq_split(false)): the K-quant / Q5_1 / Q8_0 lane kernels without the
 // multi-entry split (one weight read per entry, as before); the outputs are the same bits either way
-bool g_kq_split = [] { const char* v = std::getenv("STRATA_KQ_SPLIT"); return !(v && v[0] == '0'); }();
+bool g_kq_split = [] { const char* v = strata::env("NOSTROMA_KQ_SPLIT"); return !(v && v[0] == '0'); }();
 template <int TG, int LN>
 void gu_port_km(unsigned groups, dpct::queue_ptr s, const unsigned long long *grp_ptr, const int32_t *grp_start,
                 const int32_t *n_groups, const int32_t *ent_tok, const block_q8_1 *X, const NativeExpertLayout &L,
@@ -6262,7 +6263,7 @@ __dpct_inline__ void iq3s_wide_kernel(const uint8_t* __restrict__ w, size_t rb, 
 }
 // STRATA_IQ3S_WIDE=1: the wide kernel; unset or 0: the multi kernel (default).
 bool iq3s_wide_on() {
-    static const bool v = [] { const char* e = std::getenv("STRATA_IQ3S_WIDE"); return e && std::atoi(e) != 0; }();
+    static const bool v = [] { const char* e = strata::env("NOSTROMA_IQ3S_WIDE"); return e && std::atoi(e) != 0; }();
     return v;
 }
 template <int NCOLS>
@@ -6544,7 +6545,7 @@ bool iq_dequant_gu_f16_bounded(int type, const void* gate, const void* up,
         if (n_embd == 2560) launch_dequant_gu_bounded<TYPE, 10>(gate, up, n_ff, n_embd, dst, stream); \
         else launch_dequant_gu_bounded<TYPE>(gate, up, n_ff, n_embd, dst, stream); \
         return true;
-    static const bool metadata=[](){const char* e=std::getenv("STRATA_SYCL_GU16_METADATA_QUARTET");return e&&e[0]=='1';}();
+    static const bool metadata=[](){const char* e=strata::env("NOSTROMA_SYCL_GU16_METADATA_QUARTET");return e&&e[0]=='1';}();
     if(metadata&&type==16&&n_ff==640&&n_embd==2560){
         launch_dequant_gu_metadata<16,10>(gate,up,640,2560,dst,stream);
         return true;
@@ -6610,7 +6611,7 @@ void dispatch_dequant_gu_tiled(int type, const void* gate, const void* up,
 }
 int dequant_gu_subgroups() {
     static const int value = [] {
-        const char* text = std::getenv("STRATA_SYCL_DEQUANT_GU_SG");
+        const char* text = strata::env("NOSTROMA_SYCL_DEQUANT_GU_SG");
         const int requested = text ? std::atoi(text) : 1;
         return requested == 2 || requested == 4 || requested == 8 ? requested : 1;
     }();
@@ -6640,11 +6641,11 @@ void iq_dequant_gu_f16(int t, const void* gate, const void* up, int64_t n_ff, in
     // checked like the other entry points: an unknown type used to leave `dst` unwritten, a wrong prompt and no error
     // (tail: NVFP4's per-expert scales, CUDA only - never given on SYCL)
     if (n_embd % 256 != 0 || !is_iq(t) || tail != nullptr) { std::fprintf(stderr, "iq_dequant_gu_f16: type %d / %lld\n", t, (long long) n_embd); std::exit(1); }
-    static const bool bounded = env_on("STRATA_SYCL_DEQUANT_GU_BOUNDED");
+    static const bool bounded = env_on("NOSTROMA_SYCL_DEQUANT_GU_BOUNDED");
     if (bounded && iq_dequant_gu_f16_bounded(t, gate, up, n_ff, n_embd, dst, stream)) return;
     if (dequant_gu_subgroups() != 1) {
-        static const bool static_type = env_on("STRATA_SYCL_DEQUANT_GU_STATIC_TYPE");
-        static const bool static_row = env_on("STRATA_SYCL_DEQUANT_GU_STATIC_ROW");
+        static const bool static_type = env_on("NOSTROMA_SYCL_DEQUANT_GU_STATIC_TYPE");
+        static const bool static_row = env_on("NOSTROMA_SYCL_DEQUANT_GU_STATIC_ROW");
         iq_dequant_gu_f16_tiled(t, gate, up, n_ff, n_embd, dst, stream, dequant_gu_subgroups(), static_type, static_row);
         return;
     }
@@ -7284,7 +7285,7 @@ __global__ void __launch_bounds__(256) native_gu_fused_kernel(const unsigned lon
 
 int g_exp_mode = -1;   // native_expert_set_mode (the bench); -1 = STRATA_EXP_MODE, default 7
 int exp_mode() {
-    static const int m = [] { const char* v = std::getenv("STRATA_EXP_MODE"); return v ? std::atoi(v) : 7; }();
+    static const int m = [] { const char* v = strata::env("NOSTROMA_EXP_MODE"); return v ? std::atoi(v) : 7; }();
     return g_exp_mode >= 0 ? g_exp_mode : m;
 }
 #endif
@@ -7300,7 +7301,7 @@ void native_expert_set_mode(int mode, int phase) {
 }
 
 namespace {
-bool g_grouped_v1 = env_on("STRATA_GROUPED_V1");
+bool g_grouped_v1 = env_on("NOSTROMA_GROUPED_V1");
 }  // namespace
 
 void native_grouped_set_v1(bool v1) { g_grouped_v1 = v1; }
@@ -7322,8 +7323,8 @@ void native_expert_grouped(const NativeExpertLayout& L, const unsigned long long
     const auto* X = (const block_q8_1*) x_q8_1;
     // SYCL port: STRATA_EXPERT_V2 / STRATA_EXPERT_V2K (upstream's AMD-tuned S26 / S27 kernels) are not built here
     static const bool v2_note = [] {
-        const char* a = std::getenv("STRATA_EXPERT_V2");
-        const char* b = std::getenv("STRATA_EXPERT_V2K");
+        const char* a = strata::env("NOSTROMA_EXPERT_V2");
+        const char* b = strata::env("NOSTROMA_EXPERT_V2K");
         if ((a && a[0] == '1') || (b && b[0] == '1'))
             std::fprintf(stderr, "note: STRATA_EXPERT_V2 / STRATA_EXPERT_V2K are AMD-only experiments, ignored on SYCL\n");
         return true;
@@ -7424,7 +7425,7 @@ void native_expert_grouped(const NativeExpertLayout& L, const unsigned long long
 #if defined(STRATA_HIP_GFX906)
     // gfx906: the separate SwiGLU and q8_1 passes stay the default (the A/B baseline); the RDNA one-pass
     // kernel (bitwise the same) with STRATA_HIP_SWIGLU_FUSED=1
-    static const bool sw_fused = env_on("STRATA_HIP_SWIGLU_FUSED");
+    static const bool sw_fused = env_on("NOSTROMA_HIP_SWIGLU_FUSED");
     const bool sw_v1 = v1 || !sw_fused;
 #else
     const bool sw_v1 = v1;

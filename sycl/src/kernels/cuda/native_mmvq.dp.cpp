@@ -1,4 +1,5 @@
 #include "b60_mtp_q8_cache.hpp"
+#include "strata/env.hpp"
 #include "b60_weight_cache.hpp"
 #include "b60_layout_state.hpp"
 // Adapted from llama.cpp 3cf03257f219afbe7334045ff7c6a06ac68c627d:
@@ -1352,7 +1353,7 @@ bool g_multi_exact = true;   // until the upstream layout is timed on an idle GP
 
 // S26 STRATA_TSUM=1 (TS): warp 0's NCOLS x ROWS sums as one transposed butterfly (s26_tsum.cuh), bitwise the same
 static bool s26_tsum_on() {
-    static const bool on = [] { const char* v = std::getenv("STRATA_TSUM"); return v && v[0] == '1'; }();
+    static const bool on = [] { const char* v = strata::env("NOSTROMA_TSUM"); return v && v[0] == '1'; }();
     return on;
 }
 
@@ -1543,7 +1544,7 @@ __dpct_inline__ sycl::int4 load16_a2(const void* p) {
     return sycl::int4((int) o[0], (int) o[1], (int) o[2], (int) o[3]);
 }
 inline bool q6k_a2() {   // STRATA_MMVQ_A2=0 turns the aligned-load path off
-    static const bool v = std::getenv("STRATA_MMVQ_A2") == nullptr || std::atoi(std::getenv("STRATA_MMVQ_A2")) != 0;
+    static const bool v = strata::env("NOSTROMA_MMVQ_A2") == nullptr || std::atoi(strata::env("NOSTROMA_MMVQ_A2")) != 0;
     return v;
 }
 
@@ -1629,7 +1630,7 @@ void native_mmvq_q6k_wide_kernel(const Q6KBlock* __restrict__ w, const Q81Block*
 }
 // (STRATA_MMVQ_PF, a prefetching wide Q6_K kernel, and STRATA_MMVQ_SG, SIMD16 sub-group variants of the decode mmvq, were removed in 0.2.13: no gain in the engine.)
 inline int q6k_wide_rpw() {
-    static const int v = std::getenv("STRATA_MMVQ_WIDE_RPW") ? std::atoi(std::getenv("STRATA_MMVQ_WIDE_RPW")) : 1;
+    static const int v = strata::env("NOSTROMA_MMVQ_WIDE_RPW") ? std::atoi(strata::env("NOSTROMA_MMVQ_WIDE_RPW")) : 1;
     return v;
 }
 // Large-GRF mode (256 registers per thread instead of 128) for the wide kernels (Q6_K a2 and the generic one) at 2-8
@@ -1639,7 +1640,7 @@ inline int q6k_wide_rpw() {
 // STRATA_MMVQ_LARGE_GRF=1 forces it on, =0 off.
 inline bool mmvq_large_grf(dpct::queue_ptr s) {
     static const bool v = [s] {
-        const char* e = std::getenv("STRATA_MMVQ_LARGE_GRF");
+        const char* e = strata::env("NOSTROMA_MMVQ_LARGE_GRF");
         if (e != nullptr) return std::atoi(e) != 0;
         return strata::intel_gpu_gen(s->get_device()) == strata::IntelGpuGen::Alchemist;
     }();
@@ -1659,7 +1660,7 @@ void launch_q6k_wide(const void* weights, const void* x_q8_1, float* y, int n_in
                 (NCOLS >= 3 && n_in == 2560 && n_out == 6144) ||
                 (NCOLS >= 4 && n_in == 2560 && (n_out == 10240 || n_out == 12288));
             const bool bounded_grf = shape_grf && eligible &&
-                std::getenv("STRATA_MMVQ_LARGE_GRF") == nullptr &&
+                strata::env("NOSTROMA_MMVQ_LARGE_GRF") == nullptr &&
                 strata::intel_gpu_gen(s->get_device()) == strata::IntelGpuGen::Battlemage;
             if (bounded_grf) {
                 static const bool note = [] {
@@ -1916,7 +1917,7 @@ void native_mmvq_wide_rpw_kernel(const typename F::Block* __restrict__ w, const 
         }
 }
 inline int wide_k_rpw() {   // STRATA_MMVQ_WIDE_K_RPW: rows per sub-group of the Q4_K / Q5_K / IQ4_XS wide kernel (1, 2, 4)
-    static const int v = std::getenv("STRATA_MMVQ_WIDE_K_RPW") ? std::atoi(std::getenv("STRATA_MMVQ_WIDE_K_RPW")) : 1;
+    static const int v = strata::env("NOSTROMA_MMVQ_WIDE_K_RPW") ? std::atoi(strata::env("NOSTROMA_MMVQ_WIDE_K_RPW")) : 1;
     return v;
 }
 template <typename F, int NCOLS>
@@ -1964,7 +1965,7 @@ void launch_wide(const void* weights, const void* x_q8_1, float* y, int n_in, in
     const auto* x = static_cast<const Q81Block*>(x_q8_1);
     int rpw = wide_k_rpw();
     static const bool shape_reuse = strata::bm_default_on("STRATA_MMVQ_SHAPE_RPW", s->get_device());
-    if (shape_reuse && std::getenv("STRATA_MMVQ_WIDE_K_RPW") == nullptr &&
+    if (shape_reuse && strata::env("NOSTROMA_MMVQ_WIDE_K_RPW") == nullptr &&
         strata::intel_gpu_gen(s->get_device()) == strata::IntelGpuGen::Battlemage) {
         bool eligible = false;
         if constexpr (std::is_same_v<F, WideQ4K>)
@@ -2064,7 +2065,7 @@ template<int KB>void iq4_xmx_virtual_T(int T,const uint8_t* w,const Q81Block* x,
 #undef IQ4_XMX_T
 }
 inline bool wide_k() {   // STRATA_MMVQ_WIDE_K=0: Q4_K/Q5_K/IQ4_XS through the multi kernel (the old path)
-    static const bool v = std::getenv("STRATA_MMVQ_WIDE_K") == nullptr || std::atoi(std::getenv("STRATA_MMVQ_WIDE_K")) != 0;
+    static const bool v = strata::env("NOSTROMA_MMVQ_WIDE_K") == nullptr || std::atoi(strata::env("NOSTROMA_MMVQ_WIDE_K")) != 0;
     return v;
 }
 template <typename F>
@@ -2153,7 +2154,7 @@ void launch_wide32(const void* weights, const void* x_q8_1, float* y, int n_in, 
         [=](sycl::nd_item<3>) [[sycl::reqd_sub_group_size(32)]] { native_mmvq_wide32_kernel<F, NCOLS>(w, x, y, n_in, n_out); });
 }
 inline bool wide_32() {   // STRATA_MMVQ_WIDE_32=0: Q8_0/IQ4_NL through the small/multi kernels (the old path)
-    static const bool v = std::getenv("STRATA_MMVQ_WIDE_32") == nullptr || std::atoi(std::getenv("STRATA_MMVQ_WIDE_32")) != 0;
+    static const bool v = strata::env("NOSTROMA_MMVQ_WIDE_32") == nullptr || std::atoi(strata::env("NOSTROMA_MMVQ_WIDE_32")) != 0;
     return v;
 }
 template <typename F>
@@ -2182,7 +2183,7 @@ void launch_q6k_wide224(const void* weights, const void* x_q8_1, float* y, int n
         sycl::nd_range<3>(sycl::range(1, 1, blocks) * sycl::range(1, WARPS, WARP), sycl::range(1, WARPS, WARP)),
         [=](sycl::nd_item<3>) [[sycl::reqd_sub_group_size(32)]] { native_mmvq_q6k_wide_kernel<NCOLS, 1, WARP, 224>(w, x, y, n_in, n_out); });
 }
-bool g_q6k_wide = std::getenv("STRATA_MMVQ_WIDE") == nullptr || std::atoi(std::getenv("STRATA_MMVQ_WIDE")) != 0;
+bool g_q6k_wide = strata::env("NOSTROMA_MMVQ_WIDE") == nullptr || std::atoi(strata::env("NOSTROMA_MMVQ_WIDE")) != 0;
 
 template <typename F, int NCOLS, int RPW>
 void launch_rowwarp(const void* weights, const void* x_q8_1, float* y, int n_in, int n_out, dpct::queue_ptr s) {
@@ -2194,7 +2195,7 @@ void launch_rowwarp(const void* weights, const void* x_q8_1, float* y, int n_in,
         [=](sycl::nd_item<3>) [[sycl::reqd_sub_group_size(32)]] { native_mmvq_rowwarp_kernel<F, NCOLS, RPW>(w, x, y, n_in, n_out); });
 }
 inline int rowwarp_rpw() {   // STRATA_MMVQ_RPW: 0 = the shared kernel, 1/2/4 = rows per warp (bench knob)
-    static const int v = std::getenv("STRATA_MMVQ_RPW") ? std::atoi(std::getenv("STRATA_MMVQ_RPW")) : 0;   // default: the shared kernel (measured equal at warm clocks)
+    static const int v = strata::env("NOSTROMA_MMVQ_RPW") ? std::atoi(strata::env("NOSTROMA_MMVQ_RPW")) : 0;   // default: the shared kernel (measured equal at warm clocks)
     return v;
 }
 
@@ -2226,7 +2227,7 @@ void launch_multi_n(const void *weights, const void *x_q8_1, float *y, int n_in,
     // #783 PR-h (stuchapin909): two rows per block for every K, not only small K - each row keeps its own partial sums and
     // reduction, so a row's result does not depend on its neighbour; STRATA_NO_MMVQ_ROWS2=1 keeps one row for large K
     static const bool rows1 = [] {
-        const char* v = std::getenv("STRATA_NO_MMVQ_ROWS2");
+        const char* v = strata::env("NOSTROMA_NO_MMVQ_ROWS2");
         return v != nullptr && v[0] != '\0' && v[0] != '0';
     }();
     if (rows1 && n_in / F::DIV >= F::BPI) {
@@ -2340,7 +2341,7 @@ void launch_check() {
 // butterfly instead of the LDS partials and __syncthreads of the one-block-per-row layout: on gfx906 a block per
 // 2 KB row spent most of its time being launched and joined.  The SAME kernel serves every column count 1..8, so a
 // column's sums do not depend on how many columns (verify tokens) ride along.  STRATA_MMVQ_WAVE=0: the CUDA layout.
-bool g_wave_off = std::getenv("STRATA_MMVQ_WAVE") && std::string(std::getenv("STRATA_MMVQ_WAVE")) == "0";
+bool g_wave_off = strata::env("NOSTROMA_MMVQ_WAVE") && std::string(strata::env("NOSTROMA_MMVQ_WAVE")) == "0";
 template<typename F, int NCOLS, int R>
 __launch_bounds__(256)
 __global__ void native_mmvq_wave_kernel(const typename F::Block* __restrict__ w, const Q81Block* __restrict__ x,
@@ -2709,7 +2710,7 @@ int g_q6p_grid_override = 0;   // the self-test's grid sweep (STRATA_Q6P_SELFTES
 int q6p_grid() {
     if (g_q6p_grid_override > 0) return g_q6p_grid_override;
     static const int grid = [] {
-        const char* v = std::getenv("STRATA_Q6P_GRID");
+        const char* v = strata::env("NOSTROMA_Q6P_GRID");
         const int g = v ? std::atoi(v) : 0;
         return g > 0 ? g : 640;
     }();
@@ -3053,7 +3054,7 @@ Q6Planar q6_planar_make(void* dev, std::size_t nb, int n_in, int n_out) {
 
 bool native_q8_0_packed_enabled() {
     static const bool enabled = [] {
-        const char* v = std::getenv("STRATA_Q8_PACKED");
+        const char* v = strata::env("NOSTROMA_Q8_PACKED");
         return v && v[0] == '1' && v[1] == '\0';
     }();
     return enabled;
@@ -3090,7 +3091,7 @@ void native_q8_0_packed_unregister(const void* gguf_weights) { q8_packed_registr
 
 bool native_q6_k_packed_enabled() {
     static const bool enabled = [] {
-        const char* v = std::getenv("STRATA_Q6_PACKED");
+        const char* v = strata::env("NOSTROMA_Q6_PACKED");
         return v && v[0] == '1' && v[1] == '\0';
     }();
     return enabled;
@@ -3098,7 +3099,7 @@ bool native_q6_k_packed_enabled() {
 
 bool native_q6_k_planar_enabled() {
     static const bool enabled = [] {
-        const char* v = std::getenv("STRATA_Q6_PLANAR");
+        const char* v = strata::env("NOSTROMA_Q6_PLANAR");
         return !(v && v[0] == '0' && v[1] == '\0');
     }();
     return enabled;
@@ -3251,7 +3252,7 @@ bool native_q6_k_pack(const void *weights, int n_in, int n_out,
     std::fprintf(stderr, "strata: STRATA_Q6_PACKED=1 packed the %s (%d x %d, +%.1f MiB)\n", what, n_out, n_in,
                  total / 1048576.0);
     // STRATA_Q6P_SELFTEST=1: bitwise check against the GGUF-layout kernels (1..4 columns) and paired timings
-    if (const char* v = std::getenv("STRATA_Q6P_SELFTEST"); v && (v[0] == '1' || v[0] == '2')) {
+    if (const char* v = strata::env("NOSTROMA_Q6P_SELFTEST"); v && (v[0] == '1' || v[0] == '2')) {
         dpct::queue_ptr s = &dpct::get_in_order_queue();
         /*
         DPCT1025: The SYCL queue is created ignoring the flag and priority
@@ -3680,7 +3681,7 @@ void native_q3_k_f32(const void* weights, const float* x, void* scratch_q8_1,
 void b60_iq4_soa_probe(bool,const void*,const void*,float*,int,int,int,void*);
 void b60_iq4_int4_probe(bool,const void*,const void*,float*,int,int,int,void*);
 void b60_iq4_head_soa_probe(bool,const void*,const void*,float*,int,int,int,void*);
-inline bool b60_next_mmvq_pool(){static const bool on=[] {const char*p=std::getenv("STRATA_PRIVATE_B60_NEXT_POOL");return p&&p[0]=='1';}();return on;}
+inline bool b60_next_mmvq_pool(){static const bool on=[] {const char*p=strata::env("NOSTROMA_PRIVATE_B60_NEXT_POOL");return p&&p[0]=='1';}();return on;}
 void b60_iq4_leaf_pairs_probe(bool,const void*,const void*,float*,int,int,int,void*);
 void b60_iq4_head_leaf_pairs_probe(bool,const void*,const void*,float*,int,int,int,void*);
 void b60_iq4_head_leaf_quartets_probe(bool,const void*,const void*,float*,int,int,int,void*);
@@ -3714,7 +3715,7 @@ void native_iq4_xs_mmvq(const void* weights, const void* x_q8_1, float* y,
         else         if(b60_next_mmvq_pool()&&n_out==248320&&ncols==4&&(b60_single_actor_requested()||strata::q_of(stream)->get_device()==static_cast<const sycl::device&>(dpct::get_device(1))))b60_iq4_head_leaf_quartets_probe(true,cached,x_q8_1,y,n_in,n_out,ncols,stream);
         else b60_iq4_head_soa_probe(true,cached,x_q8_1,y,n_in,n_out,ncols,stream);return;
     }
-    static const bool exact_int4=[] {const char*p=std::getenv("STRATA_PRIVATE_IQ4_INT4_DPAS");return p&&p[0]=='1';}();
+    static const bool exact_int4=[] {const char*p=strata::env("NOSTROMA_PRIVATE_IQ4_INT4_DPAS");return p&&p[0]=='1';}();
     if(exact_int4 && b60_weights_packed() &&
        strata::intel_gpu_gen(strata::q_of(stream)->get_device())==strata::IntelGpuGen::Battlemage){
         const bool main=b60_main_actor();
@@ -3734,15 +3735,15 @@ void native_iq4_xs_mmvq(const void* weights, const void* x_q8_1, float* y,
         b60_iq4_soa_probe(true,weights,x_q8_1,y,n_in,n_out,ncols,stream);return;
     }
     static const bool pair_reuse = [] {
-        const char* v = std::getenv("STRATA_SYCL_IQ4_PAIR_REUSE");
+        const char* v = strata::env("NOSTROMA_SYCL_IQ4_PAIR_REUSE");
         return !v || v[0] == '1';
     }();
     static const bool split = [] {
-        const char* v = std::getenv("STRATA_SYCL_IQ4_Q8_SPLIT");
+        const char* v = strata::env("NOSTROMA_SYCL_IQ4_Q8_SPLIT");
         return !v || v[0] == '1';
     }();
     static const bool use_bit_select = [] {
-        const char* v = std::getenv("STRATA_SYCL_IQ4_LOOKUP");
+        const char* v = strata::env("NOSTROMA_SYCL_IQ4_LOOKUP");
         return !v || std::atoi(v) != 0;
     }();
     const bool bmg = ncols >= 1 && ncols <= 6 &&
@@ -3755,13 +3756,13 @@ void native_iq4_xs_mmvq(const void* weights, const void* x_q8_1, float* y,
         else launch_iq4_pair_reuse(1,weights,x_q8_1,y,n_in,n_out,ncols,stream);
         return;
     }
-    static const bool esimd_t4=[](){const char* e=std::getenv("STRATA_SYCL_IQ4_T4_ESIMD");return e&&e[0]=='1';}();
+    static const bool esimd_t4=[](){const char* e=strata::env("NOSTROMA_SYCL_IQ4_T4_ESIMD");return e&&e[0]=='1';}();
     if(esimd_t4&&bmg&&ncols==4&&(n_in==2560||n_in==6144)&&
        !(reinterpret_cast<uintptr_t>(weights)&63)&&!(reinterpret_cast<uintptr_t>(x_q8_1)&63)){
         launch_iq4_esimd_t4(1,weights,x_q8_1,y,n_in,n_out,ncols,stream);
         launch_check();return;
     }
-    static const bool selective = [] { const char* e=std::getenv("STRATA_SYCL_IQ4_T4_XMX");return e && e[0]=='1'; }();
+    static const bool selective = [] { const char* e=strata::env("NOSTROMA_SYCL_IQ4_T4_XMX");return e && e[0]=='1'; }();
     const bool supported=(n_in==2560 && (n_out==6144 || n_out==10240 || n_out==12288 || n_out==248320)) || (n_in==6144 && n_out==2560);
     if(selective && bmg && ncols==4 && supported){
         auto* bytes=static_cast<const uint8_t*>(weights);auto* activation=static_cast<const Q81Block*>(x_q8_1);auto* q=strata::q_of(stream);
@@ -3940,8 +3941,8 @@ void native_q6_k_mmvq(const void* weights, const void* x_q8_1, float* y,
     // With the aligned loads (load16_a2) the wide kernel wins on every Q6_K shape and window width: 2.6-3.4x the
     // misaligned-load kernels in q6k_align_bench, decode 44.9 -> 54 tok/s on the Coder, output tokens identical.
     // Without them (STRATA_MMVQ_A2=0) it won only on n_out >= 4096 at 1-4 columns, the old gate.
-    static const int wide_min = std::getenv("STRATA_MMVQ_WIDE_MIN") ? std::atoi(std::getenv("STRATA_MMVQ_WIDE_MIN")) : q6k_a2() ? 0 : 4096;
-    static const int wide_maxc = std::getenv("STRATA_MMVQ_WIDE_MAXC") ? std::atoi(std::getenv("STRATA_MMVQ_WIDE_MAXC")) : q6k_a2() ? 8 : 4;
+    static const int wide_min = strata::env("NOSTROMA_MMVQ_WIDE_MIN") ? std::atoi(strata::env("NOSTROMA_MMVQ_WIDE_MIN")) : q6k_a2() ? 0 : 4096;
+    static const int wide_maxc = strata::env("NOSTROMA_MMVQ_WIDE_MAXC") ? std::atoi(strata::env("NOSTROMA_MMVQ_WIDE_MAXC")) : q6k_a2() ? 8 : 4;
     if (g_q6k_wide && ncols >= 1 && ncols <= wide_maxc && n_in % 256 == 0 && n_out >= wide_min) {
         const auto s = strata::q_of(stream);
         switch (ncols) {

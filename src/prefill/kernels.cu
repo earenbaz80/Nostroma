@@ -1,5 +1,6 @@
 // src/prefill/kernels.cu - see include/strata/prefill/kernels.hpp.
 #include "strata/prefill/kernels.hpp"
+#include "strata/env.hpp"
 #include "strata/prefill/gdn_chunk.hpp"
 #include "strata/prefill/gdn_probe.hpp"
 #include "strata/kernels/mrope.hpp"
@@ -903,7 +904,7 @@ __global__ void __launch_bounds__(CB * RG) gdn_rec_kh_kernel(float* __restrict__
 // 1.28-1.31x / 1.28-1.30x at 39 to 47, 1.53-1.57x / 1.54-1.55x at 32 to 38.  Per call, from the current device (a
 // layer split can mix cards).
 bool gdn_keyhead_ok() {
-    static const bool off = [] { const char* v = std::getenv("STRATA_GDN_KEYHEAD"); return v != nullptr && std::atoi(v) == 0; }();
+    static const bool off = [] { const char* v = strata::env("NOSTROMA_GDN_KEYHEAD"); return v != nullptr && std::atoi(v) == 0; }();
     if (off) return false;
     static int known[64] = {};   // per device: 0 not asked yet, 1 yes, 2 no
     int dev = 0;
@@ -1248,7 +1249,7 @@ cudaError_t gdn_rec_chunked(float* state, const float* h, const float* gate, con
         // STRATA_GDN_CHUNKED=2 skips the SM-count test (measurement on a card under 128 SMs: the scan then runs in
         // several waves and is expected to be slower than the default kernel; the architecture and shared-memory
         // tests stay)
-        static const bool any_sms_env = [] { const char* v = std::getenv("STRATA_GDN_CHUNKED"); return v != nullptr && std::atoi(v) >= 2; }();
+        static const bool any_sms_env = [] { const char* v = strata::env("NOSTROMA_GDN_CHUNKED"); return v != nullptr && std::atoi(v) >= 2; }();
         const GdnProbe* pr = gdn_probe_get();   // tests only: the same as =2, per call
         const bool any_sms = any_sms_env || (pr != nullptr && pr->any_sms);
         if (strata::cc_major_of(major) < 8 || (!any_sms && sms < HK * (S / GDV)) || (size_t) strata::smem_optin_of(smem) < kChunkScanSmem)
@@ -1287,7 +1288,7 @@ cudaError_t gdn_rec_chunked(float* state, const float* h, const float* gate, con
 int gdn_tc_tiles() {
     const GdnProbe* pr = gdn_probe_get();
     if (pr != nullptr && pr->tc_tiles > 0) return pr->tc_tiles >= 2 ? 2 : 1;
-    static const int e = [] { const char* v = std::getenv("STRATA_GDN_TC_TILES"); return v ? std::atoi(v) : 0; }();
+    static const int e = [] { const char* v = strata::env("NOSTROMA_GDN_TC_TILES"); return v ? std::atoi(v) : 0; }();
     if (e > 0) return e >= 2 ? 2 : 1;
     // automatic: two tiles when all 2 x 48 blocks fit the card in one wave (measured: PRO 5000 / 110 SMs rec 1.47x; A6000 / 84 SMs
     // is 1.25x SLOWER with two tiles, its 96 blocks need a second wave)
@@ -1834,12 +1835,12 @@ constexpr int64_t kGdnW12MinT = kGdnWmmaMin;
 // a long prompt (--prefill auto takes chunks up to 32,768 on gfx12, so a 32K prompt is one chunk of about 31,996-32,087 rows, which is why the line is 30,000 and not 32,000; +6.5% prompt speed at 32K, 3 of 3 rounds).  Shorter chunks keep the kernels they ran.
 // STRATA_GDN_CHUNKED=0 turns it off, =1 takes every chunk of 64 tokens or more (the old opt-in), STRATA_GDN_CHUNKED_MIN=N moves the line.
 inline int gdn_chunked_env() {   // -1 unset, else the number
-    static const int v = [] { const char* e = std::getenv("STRATA_GDN_CHUNKED"); return e == nullptr || e[0] == '\0' ? -1 : std::atoi(e); }();
+    static const int v = [] { const char* e = strata::env("NOSTROMA_GDN_CHUNKED"); return e == nullptr || e[0] == '\0' ? -1 : std::atoi(e); }();
     return v;
 }
 inline bool gdn_chunked_auto(int64_t T) {   // unset: only on gfx12, only for long chunks (the caller has checked the device)
-    static const int64_t lo = [] { const char* e = std::getenv("STRATA_GDN_CHUNKED_MIN"); return e != nullptr && e[0] != '\0' ? (int64_t) std::atoll(e) : (int64_t) 30000; }();
-    static const bool gfx12_defaults = [] { const char* e = std::getenv("STRATA_GFX12_DEFAULTS"); return !(e != nullptr && e[0] == '0'); }();   // (the gfx12 defaults' one off switch)
+    static const int64_t lo = [] { const char* e = strata::env("NOSTROMA_GDN_CHUNKED_MIN"); return e != nullptr && e[0] != '\0' ? (int64_t) std::atoll(e) : (int64_t) 30000; }();
+    static const bool gfx12_defaults = [] { const char* e = strata::env("NOSTROMA_GFX12_DEFAULTS"); return !(e != nullptr && e[0] == '0'); }();   // (the gfx12 defaults' one off switch)
     return gdn_chunked_env() < 0 && gfx12_defaults && T >= lo;
 }
 typedef _Float16 gw_h16 __attribute__((ext_vector_type(16)));
@@ -2157,7 +2158,7 @@ bool gdn_rec_wmma(float* state, const float* h, const float* gate, const float* 
     _Float16* tp = reinterpret_cast<_Float16*>(y);
     if (gfx12) {
         gdn_w12_prep_kernel<false><<<dim3(HK, (unsigned) nch), 32 * GW_VPK, 0, s>>>(h, nullptr, gate, beta, tp, T);
-        static const bool lb = [] { const char* v = std::getenv("STRATA_GDN_W12_LB"); return v == nullptr || std::atoi(v) != 0; }();
+        static const bool lb = [] { const char* v = strata::env("NOSTROMA_GDN_W12_LB"); return v == nullptr || std::atoi(v) != 0; }();
         if (lb)
             gdn_w12_scan_kernel<true, false><<<HV, GW_NW * 32, 0, s>>>(state, h, nullptr, gate, beta, z, gamma,
                                                                        reinterpret_cast<const unsigned*>(tp), eps, y16, T, ld16);
@@ -2178,7 +2179,7 @@ bool gdn_fused_impl(float* history, const float* qkv, const float* conv_w, float
                     const float* beta, const float* z, const float* gamma, float eps, float l2eps, float* y, uint16_t* y16,
                     int64_t T, void* stream, int64_t ld16) {
     static const bool on = [] {
-        const char* f = std::getenv("STRATA_GDN_FUSE");
+        const char* f = strata::env("NOSTROMA_GDN_FUSE");
         return gdn_chunked_env() != 0 && (f == nullptr || std::atoi(f) != 0);   // (unset: the length gate below, gfx12 only)
     }();
     if (!on || T < kGdnWmmaMin) return false;
@@ -2203,7 +2204,7 @@ bool gdn_fused_impl(float* history, const float* qkv, const float* conv_w, float
     gdn_conv_l2_h16_kernel<<<dim3(C / 128, (unsigned) ((T + CONV_TILE - 1) / CONV_TILE)), 128, 0, s>>>(history, qkv, conv_w, h16, T, l2eps);
     gdn_conv_hist_kernel<<<C / 128, 128, 0, s>>>(history, qkv, T);   // the history after the chunk (the conv above read the old one)
     gdn_w12_prep_kernel<true><<<dim3(HK, (unsigned) nch), 32 * GW_VPK, 0, s>>>(nullptr, h16, gate, beta, tp, T);
-    static const bool lb = [] { const char* v = std::getenv("STRATA_GDN_W12_LB"); return v == nullptr || std::atoi(v) != 0; }();
+    static const bool lb = [] { const char* v = strata::env("NOSTROMA_GDN_W12_LB"); return v == nullptr || std::atoi(v) != 0; }();
     if (lb)
         gdn_w12_scan_kernel<true, true><<<HV, GW_NW * 32, 0, s>>>(state, nullptr, h16, gate, beta, z, gamma,
                                                                   reinterpret_cast<const unsigned*>(tp), eps, y16, T, ld16);
@@ -2979,11 +2980,11 @@ void gdn_gates(const float* ab, const float* dt, const float* ssm_a, float* gate
     check("gdn_gates");
 }
 void gdn_conv(float* history, const float* qkv, const float* conv_w, float* h, int64_t T, float eps, void* stream) {
-    static const bool serial = std::getenv("STRATA_GDN_CONV_SERIAL") != nullptr;   // the old walk (A/B)
+    static const bool serial = strata::env("NOSTROMA_GDN_CONV_SERIAL") != nullptr;   // the old walk (A/B)
     if (serial || T <= CONV_TILE) {
         gdn_conv_kernel<<<C / 128, 128, 0, (cudaStream_t) stream>>>(history, qkv, conv_w, h, T);
     } else {
-        static const int fused_mode = [] { const char* v = std::getenv("STRATA_GDN_CONVL2"); return v ? std::atoi(v) : 0; }();
+        static const int fused_mode = [] { const char* v = strata::env("NOSTROMA_GDN_CONVL2"); return v ? std::atoi(v) : 0; }();
         const bool fused = fused_mode != 0;
         if (fused_mode >= 2) {
             gdn_conv_w_kernel<<<dim3(C / 128, (unsigned) ((T + 4 * CONVW_TOK - 1) / (4 * CONVW_TOK))), 128, 0,
@@ -3012,7 +3013,7 @@ static void gdn_recurrence_impl(int variant, float* state, const float* h, const
                                 const float* z, const float* gamma, float eps, float* y, uint16_t* y16, int64_t T,
                                 void* stream, int64_t ld16, bool with_out) {
     if (ld16 <= 0) ld16 = (int64_t) HV * S;
-    static const bool serial = std::getenv("STRATA_GDN_REC_HEADS") != nullptr;   // the one-block-per-head kernel (A/B)
+    static const bool serial = strata::env("NOSTROMA_GDN_REC_HEADS") != nullptr;   // the one-block-per-head kernel (A/B)
 #if defined(__HIPCC__)
     if (variant == 0 || variant == 1) {
         // STRATA_GDN_CHUNKED=1 (opt-in): the chunked recurrence on the gfx11 matrix cores, FP16 operands (other bits;
@@ -3046,14 +3047,14 @@ static void gdn_recurrence_impl(int variant, float* state, const float* h, const
     }
     if (variant == 1) {
         if (T > 0) {
-            static const int pp = [] { const char* v = std::getenv("STRATA_GDN_PP"); return v ? std::atoi(v) : 0; }();
+            static const int pp = [] { const char* v = strata::env("NOSTROMA_GDN_PP"); return v ? std::atoi(v) : 0; }();
             if (pp == 2)
                 gdn_rec_quad2c_kernel<<<HV * (S / C2CB), QTH, 0, (cudaStream_t) stream>>>(state, h, gate, beta, y, T);
             else if (pp)
                 gdn_rec_quad_pp_kernel<<<HV * (S / QCB), QTH, 0, (cudaStream_t) stream>>>(state, h, gate, beta, y, T);
             else
                 gdn_rec_quad_kernel<<<HV * (S / QCB), QTH, 0, (cudaStream_t) stream>>>(state, h, gate, beta, y, T);
-            static const bool noy = [] { const char* v = std::getenv("STRATA_GDN_NOY"); return v && std::atoi(v) != 0; }();
+            static const bool noy = [] { const char* v = strata::env("NOSTROMA_GDN_NOY"); return v && std::atoi(v) != 0; }();
             if (with_out && noy)
                 gdn_out_norm_loop_kernel<false><<<(unsigned) std::min<int64_t>(T * HV, 4096), S, 0, (cudaStream_t) stream>>>(
                     z, gamma, eps, y, y16, T * HV, ld16);
@@ -3072,7 +3073,7 @@ static void gdn_recurrence_impl(int variant, float* state, const float* h, const
     // cost.  STRATA_GDN_CHUNK=0 forces the recurrence, =1 forces the chunked path (the parity test's A/B switch);
     // unset: cc == 7.0 only, every other architecture keeps the recurrence bit-for-bit as before.  Read per call
     // on purpose - cheap next to the work, and the tests flip it between two launches.
-    const char* chunk_v = std::getenv("STRATA_GDN_CHUNK");
+    const char* chunk_v = strata::env("NOSTROMA_GDN_CHUNK");
     const int chunk_env = chunk_v && *chunk_v ? std::atoi(chunk_v) : -1;
     static const bool volta = gdn_chunk_available();   // runtime cc == 7.0 (the kernels are compiled for sm_70 only)
     const bool chunked = !serial && T > 0 && (chunk_env >= 0 ? chunk_env != 0 : false);
@@ -3083,7 +3084,7 @@ static void gdn_recurrence_impl(int variant, float* state, const float* h, const
     // STRATA_GDN_REC_WARP (Volta only, opt-in): unset or 0 -> the pipelined kernel (the default; the chain split changes the
     // summation order, so it is not the default without a V100 check here), 2 -> the chain-split kernel (measured +6..9%, FP32-level), the
     // old pipelined kernel bit-for-bit is 0, 1 -> the sync-free bit-exact control.
-    const char* warp_v = std::getenv("STRATA_GDN_REC_WARP");
+    const char* warp_v = strata::env("NOSTROMA_GDN_REC_WARP");
     const int warp_env = warp_v && *warp_v ? std::atoi(warp_v) : 0;
     const bool warp_rec = !serial && !chunked && T > 0 && volta && warp_env != 0;
     if (chunked && T >= 64) {
@@ -3110,16 +3111,16 @@ static void gdn_recurrence_impl(int variant, float* state, const float* h, const
     if ((serial && with_out) || T <= 0 || variant == 2) {   // the fused kernel needs z/gamma: only with the output
         gdn_rec_kernel<<<HV, dim3(S, RG), 0, (cudaStream_t) stream>>>(state, h, gate, beta, z, gamma, eps, y, y16, T, ld16);
     } else {
-        static const bool pipe = [] { const char* v = std::getenv("STRATA_GDN_PIPELINE"); return v == nullptr || std::atoi(v) != 0; }();
+        static const bool pipe = [] { const char* v = strata::env("NOSTROMA_GDN_PIPELINE"); return v == nullptr || std::atoi(v) != 0; }();
         bool normed_any = false;   // the tensor-core scan wrote y16 (the norm kernel below is skipped)
 #if !defined(__HIPCC__)
         // STRATA_GDN_CHUNKED=1 (opt-in): the recurrence in chunks for prompt chunks of kGdnChunkedMin+ tokens (other
         // bits; a shorter chunk, a card it does not fit or a failed scratch allocation takes the kernels below)
-        static const bool chunked = [] { const char* v = std::getenv("STRATA_GDN_CHUNKED"); return v != nullptr && std::atoi(v) != 0; }();
+        static const bool chunked = [] { const char* v = strata::env("NOSTROMA_GDN_CHUNKED"); return v != nullptr && std::atoi(v) != 0; }();
         // STRATA_GDN_TC=1 (opt-in): the chunked recurrence with the scan on the tensor cores (gdn_tc.cuh) for prompt
         // chunks of kGdnTcMin+ tokens: within 1e-4 of the kernels below (gdn_rec_parity), 3.75x gdn_rec_kh_kernel on a
         // CMP 170HX; a shorter chunk, a card it does not fit or a failed scratch allocation takes the kernels below
-        static const bool tc = [] { const char* v = std::getenv("STRATA_GDN_TC"); return v != nullptr && std::atoi(v) != 0; }();
+        static const bool tc = [] { const char* v = strata::env("NOSTROMA_GDN_TC"); return v != nullptr && std::atoi(v) != 0; }();
         // A test's probe (gdn_probe.hpp) reads back the path that ran and may force one; without a probe this is the
         // dispatch it was.  A forced path that cannot run launches nothing (selected = none, reason says why).
         GdnProbe* pr = gdn_probe_get();
@@ -3129,7 +3130,7 @@ static void gdn_recurrence_impl(int variant, float* state, const float* h, const
         const char* why = "";
         const cudaStream_t cs = (cudaStream_t) stream;
         // the split tensor-core scan can write y16 itself (STRATA_GDN_TC_FUSE=0 off): then the norm kernel below is skipped
-        static const bool tc_fuse = [] { const char* v = std::getenv("STRATA_GDN_TC_FUSE"); return v == nullptr || std::atoi(v) != 0; }();
+        static const bool tc_fuse = [] { const char* v = strata::env("NOSTROMA_GDN_TC_FUSE"); return v == nullptr || std::atoi(v) != 0; }();
         const GdnTcNorm tcn = {z, gamma, eps, y16, ld16};
         const int tcl = gdn_tc_tiles();
         const GdnTcNorm* tcnp = with_out && tc_fuse && tcl == 1 ? &tcn : nullptr;   // 2 tiles a head: the norm kernel (a head's norm spans both)
@@ -3164,7 +3165,7 @@ static void gdn_recurrence_impl(int variant, float* state, const float* h, const
                 else {   // the 99-KB cards (sm_86 / 89 / 120): the single-buffered v / T / P plan
                     if (pr) why = gdn_chunk_why(true, e, false);
                     // STRATA_GDN_TC_NP=1|2 (experiment, not a default): fewer split passes a product on this plan, other bits
-                    static const int tc_np = [] { const char* v = std::getenv("STRATA_GDN_TC_NP"); const int x = v ? std::atoi(v) : 3; return x == 1 || x == 2 ? x : 3; }();
+                    static const int tc_np = [] { const char* v = strata::env("NOSTROMA_GDN_TC_NP"); const int x = v ? std::atoi(v) : 3; return x == 1 || x == 2 ? x : 3; }();
                     e = gdn_rec_tc(state, h, gate, beta, y, T, cs, true, tc_np, tcnp, tcl);
                     if (e == cudaSuccess) { sel = kGdnTcSplit; why = ""; normed = tcnp != nullptr; }
                 }
@@ -3213,8 +3214,8 @@ void gdn_recurrence(float* state, const float* h, const float* gate, const float
     // Aurora (S23): four lanes per column + the grid-stride norm, the same bits (tests/hip/gdn_rec_head.cpp);
     // STRATA_GDN_HEAD=1 (on by default on gfx1151; off with STRATA_GDN_HEAD=0 or STRATA_GDN_REC_HEADS) takes them
     // (AMD builds only; the arch defaults set STRATA_GDN_HEAD=1 on gfx1151 and leave other cards on the earlier kernels)
-    static const bool head = [] { const char* v = std::getenv("STRATA_GDN_HEAD"); return v != nullptr && std::atoi(v) != 0; }();
-    static const bool serial = std::getenv("STRATA_GDN_REC_HEADS") != nullptr;
+    static const bool head = [] { const char* v = strata::env("NOSTROMA_GDN_HEAD"); return v != nullptr && std::atoi(v) != 0; }();
+    static const bool serial = strata::env("NOSTROMA_GDN_REC_HEADS") != nullptr;
     gdn_recurrence_impl(head && !serial ? 1 : 0, state, h, gate, beta, z, gamma, eps, y, y16, T, stream, ld16, true);
 }
 /// KVA: the same recurrence, bit for bit, without the output normalisation (its readers - the output projection
@@ -3233,8 +3234,8 @@ bool gdn_conv_recurrence_fused(float* history, const float* qkv, const float* co
 }
 void gdn_recurrence_state_only(float* state, const float* h, const float* gate, const float* beta, float* y,
                                int64_t T, void* stream) {
-    static const bool head = [] { const char* v = std::getenv("STRATA_GDN_HEAD"); return v != nullptr && std::atoi(v) != 0; }();
-    static const bool serial = std::getenv("STRATA_GDN_REC_HEADS") != nullptr;
+    static const bool head = [] { const char* v = strata::env("NOSTROMA_GDN_HEAD"); return v != nullptr && std::atoi(v) != 0; }();
+    static const bool serial = strata::env("NOSTROMA_GDN_REC_HEADS") != nullptr;
     gdn_recurrence_impl(head && !serial ? 1 : 0, state, h, gate, beta, nullptr, nullptr, 0.0f, y, nullptr, T,
                         stream, 0, /*with_out=*/false);
 }

@@ -10,6 +10,7 @@
 // right after the first probe, so the effect can be reproduced inside the engine process.
 #pragma once
 #include <sycl/sycl.hpp>
+#include "strata/env.hpp"
 #include <dpct/dpct.hpp>
 #include "strata/sycl_queue.hpp"
 #include "strata/kernels/native_mmvq.hpp"
@@ -23,7 +24,7 @@
 
 namespace strata {
 namespace ucprobe {
-inline bool on() { static const bool v = [] { const char* e = std::getenv("STRATA_UC_PROBE"); return e && e[0] && e[0] != '0'; }(); return v; }
+inline bool on() { static const bool v = [] { const char* e = strata::env("NOSTROMA_UC_PROBE"); return e && e[0] && e[0] != '0'; }(); return v; }
 
 struct Bufs {
     sycl::queue* q;
@@ -149,7 +150,7 @@ inline void uc_probe(const char* tag) {
         std::fprintf(stderr, "UCPROBE %-14s head %8.1f us  q6k %8.1f us  fma %8.1f us  tiny %7.1f us\n", tag, head, q6, fma, tiny);
     }
     if (calls++ == 0) {
-        if (const char* p = std::getenv("STRATA_UC_POISON")) {
+        if (const char* p = strata::env("NOSTROMA_UC_POISON")) {
             if (p[0]) { ucprobe::poison(q, p); std::fprintf(stderr, "UCPROBE poisoned with %s\n", p); uc_probe("after-poison"); }
         }
     }

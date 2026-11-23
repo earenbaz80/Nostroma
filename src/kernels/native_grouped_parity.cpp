@@ -13,6 +13,7 @@
 // Random bytes are valid codes for every format here (every grid index is in range); only the fp16 block scales are
 // set, small enough that the SwiGLU outputs keep a finite fp16 q8_1 scale.
 #include "strata/kernels/iq_kernels.hpp"
+#include "strata/env.hpp"
 
 #include <cuda_runtime.h>
 
@@ -384,7 +385,7 @@ int main(int argc, char** argv) {
         // for a strided one; the two sum in a different order, so "bitwise equal to v1" does not hold between them there (summation
         // order only: round 0214 diagnosis, RESULTS-ENGAMD.md).  Pin the CUDA layout for both runs unless the caller chose a mode.
         cudaDeviceProp prop;
-        if (std::getenv("STRATA_EXP_MODE") == nullptr && cudaGetDeviceProperties(&prop, 0) == cudaSuccess &&
+        if (strata::env("NOSTROMA_EXP_MODE") == nullptr && cudaGetDeviceProperties(&prop, 0) == cudaSuccess &&
             std::strstr(prop.gcnArchName, "gfx1151") != nullptr) {
 #ifdef _WIN32
             _putenv_s("STRATA_EXP_MODE", "0");

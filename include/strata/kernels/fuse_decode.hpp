@@ -4,11 +4,12 @@
 // compiled only into the experimental build (STRATA_EXPERIMENTAL_SM60, the CUDA 12 engine for Pascal / Volta) and are
 // bitwise what the unfused sequences produce.  Opt-in: unset or 0 keeps the unfused kernels.
 #include <cstdlib>
+#include "strata/env.hpp"
 
 namespace strata::kernels {
 inline bool fuse_decode() {
     static const bool on = [] {
-        const char* e = std::getenv("STRATA_FUSE_DECODE");
+        const char* e = strata::env("NOSTROMA_FUSE_DECODE");
         return e != nullptr && e[0] == '1';
     }();
     return on;

@@ -1,5 +1,6 @@
 #pragma once
 #include <chrono>
+#include "strata/env.hpp"
 #include <cstdlib>
 // Only the pipeline owner thread calls these chain methods. The state belongs
 // to its current MtpDrafter and is reset before every chain and request. No
@@ -27,7 +28,7 @@ inline State* get(const void* p) {
 inline void begin(const void* p, bool on) {
     auto& s = state(); const int ordinal = s.ordinal + int(on); s = State{};
     s.owner = p; s.enabled = on; s.ordinal = ordinal;
-    s.metrics = std::getenv("STRATA_PRIVATE_MTP_DEMAND_LOG") || std::getenv("STRATA_PRIVATE_MTP_DEMAND_MICRO");
+    s.metrics = strata::env("NOSTROMA_PRIVATE_MTP_DEMAND_LOG") || strata::env("NOSTROMA_PRIVATE_MTP_DEMAND_MICRO");
 }
 inline bool can_enqueue_s1(const void* p) {
     auto* s = get(p); return !s || s->submitted == 0 || s->final;

@@ -14,6 +14,7 @@
 // only behind cpu_avx1_ok() && !cpu_avx2_ok(), so no CPU that lacks those features can reach it - and no CPU that
 // has AVX2 changes what it runs.
 #include "strata/kernels/cpu/expert.hpp"
+#include "strata/env.hpp"
 #include "strata/kernels/cpu/expert_layout.hpp"
 
 #include <immintrin.h>
@@ -176,7 +177,7 @@ void rows_bp(const uint8_t* w, size_t row_bytes, int npairs, const ActQ* const* 
 }
 
 const bool kBitplane = [] {
-    const char* e = std::getenv("STRATA_Q2_BITPLANE");
+    const char* e = strata::env("NOSTROMA_Q2_BITPLANE");
     return e != nullptr && e[0] == '1';
 }();
 

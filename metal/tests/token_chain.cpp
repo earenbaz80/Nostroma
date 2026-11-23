@@ -7,6 +7,7 @@
 //
 // Left out: the PLE path (one table row and two small projections at one layer) and the MTP draft.
 #include "gguf_lite.h"
+#include "strata/env.hpp"
 #include "mtl_rt.h"
 #include "ref_quant.h"
 
@@ -76,7 +77,7 @@ int main(int argc, char** argv) {
     // the HC read: Q8_0 copies through the 3-dispatch read by default (the owner's decision, as STRATA_HC_Q8 on gfx12);
     // STRATA_HC_Q8=0 selects the exact BF16 path.  --hc 3: BF16, 3 dispatches; 2: BF16, 2 dispatches; q8: Q8_0 copies,
     // 2 dispatches; q8_3: Q8_0 copies, 3 dispatches
-    const char* hcq8 = std::getenv("STRATA_HC_Q8");
+    const char* hcq8 = strata::env("NOSTROMA_HC_Q8");
     std::string hc_mode = hcq8 && std::string(hcq8) == "0" ? "3" : "q8_3";
     bool fuse = false;           // the GDN y prep in the step; no QSA score/top-k within the selection budget
     bool fold_comb = false;      // the MoE combine folded into the next 2-dispatch HC read (measured slower)

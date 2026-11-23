@@ -24,6 +24,7 @@
 // the block scales rewritten as normal fp16 values, so every output is finite (a NaN would compare equal whatever
 // produced it). The bench cycles through enough copies of the weights to miss the L2 cache, as a layer's call does.
 #include "strata/kernels/iq_kernels.hpp"
+#include "strata/env.hpp"
 #include "strata/core/defaults_026.hpp"
 #include "strata/core/sm120_series.hpp"
 #include "strata/kernels/native_mmvq.hpp"
@@ -401,7 +402,7 @@ const int kAda4080[5][3][5] = {
     {{0, 0, 1, 1, 1}, {0, 1, 1, 1, 1}, {0, 1, 1, 1, 1}}};
 int check_tables() {
     int bad = 0;
-    const char* e89 = std::getenv("STRATA_MMVQ_IL_89");
+    const char* e89 = strata::env("NOSTROMA_MMVQ_IL_89");
     // sm_89's own tables are ON by default (#3453, 0.2.7) unless STRATA_MMVQ_IL_89=0 or STRATA_DEFAULTS=026
     const bool opt89 = strata::mmvq_il_89_resolve(e89, false, 89, strata::qwen_defaults_026());
     for (int type : {23, 12, 13, 14, 11})

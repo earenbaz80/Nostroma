@@ -9,6 +9,7 @@
 // the median of 25 runs, and the rate in int8-equivalent TOPS (2 x rows x out x in).  Default R: 12 (a 600-token
 // chunk: 600 x 10 / 512), 160 (8K), 626 (32K).
 #include "strata/prefill/mmq_ids_margin.hpp"
+#include "strata/env.hpp"
 #include "strata/prefill/moe_mmq.hpp"
 
 #include "ggml.h"
@@ -111,7 +112,7 @@ int main(int argc, char** argv) {
     std::vector<int> Rs;
     for (int i = 1; i < argc; ++i) Rs.push_back(std::atoi(argv[i]));
     if (Rs.empty()) Rs = {12, 160, 626};
-    const char* mode = std::getenv("STRATA_PREFILL_NVFP4");
+    const char* mode = strata::env("NOSTROMA_PREFILL_NVFP4");
     std::printf("mmq_expert_bench: mode %s (FP4 activations: %s), 16 experts a launch, medians of 25\n",
                 mode ? mode : "w4a8", mmq::fp4_activations(GGML_TYPE_NVFP4) ? "yes" : "no");
     const Case cases[] = {{"nvfp4 gate/up", GGML_TYPE_NVFP4, 1280, 2560},

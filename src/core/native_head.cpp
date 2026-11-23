@@ -1,4 +1,5 @@
 #include "strata/core/native_head.hpp"
+#include "strata/env.hpp"
 #include "strata/core/spill_gate.hpp"
 #include "strata/core/run_manifest.hpp"
 #include "strata/artifact/gguf_reader.hpp"
@@ -63,11 +64,11 @@ bool NativeHead::load(const std::vector<std::string>& shards, int64_t n_in, int6
         // spill whole; every logits row then reads it over PCIe (about 18 ms per row at 28 GB/s), so decode is slower, but the start works.  Taken only when the
         // allocation in VRAM fails (or STRATA_HEAD_HOST=1 asks for it); the GEMV kernels read the same pointer either way.  Q5_K and the plain MMVQ types: the
         // repacked Q6_K / SM60 layouts rewrite the weights in place and stay in VRAM.
-        const bool ask_host = std::getenv("STRATA_HEAD_HOST") != nullptr;
+        const bool ask_host = strata::env("NOSTROMA_HEAD_HOST") != nullptr;
         cudaError_t status = ask_host ? cudaErrorMemoryAllocation : cudaMalloc(&weights, bytes);
         bool discrete = false;
         { int d = 0; cudaDeviceProp pr{}; if (cudaGetDevice(&d) == cudaSuccess && cudaGetDeviceProperties(&pr, d) == cudaSuccess) discrete = strata::spill_allowed(strata::kSpillMetalBuild, pr.integrated != 0); else (void) cudaGetLastError(); }
-        if (status != cudaSuccess && discrete && std::getenv("STRATA_HEAD_HOST_OFF") == nullptr && !strata::kernels::native_q6_k_packed_enabled()) {
+        if (status != cudaSuccess && discrete && strata::env("NOSTROMA_HEAD_HOST_OFF") == nullptr && !strata::kernels::native_q6_k_packed_enabled()) {
             (void) cudaGetLastError();
             void* hp = nullptr;
             void* dp = nullptr;
@@ -115,7 +116,7 @@ bool NativeHead::load(const std::vector<std::string>& shards, int64_t n_in, int6
                                 host_ != nullptr ? "held in mapped pinned host memory (short of VRAM or STRATA_HEAD_HOST)" : "held in VRAM",
                                 std::string("type ") + strata::ggml_type_name((uint32_t) type_) +
                                     (type_ == 14 && strata::kernels::native_q6_k_packed_enabled() ? ", repacked (STRATA_Q6_PACKED)" : "") +
-                                    (type_ == 8 && std::getenv("STRATA_Q8_SM60") != nullptr ? ", repacked (STRATA_Q8_SM60)" : ""));
+                                    (type_ == 8 && strata::env("NOSTROMA_Q8_SM60") != nullptr ? ", repacked (STRATA_Q8_SM60)" : ""));
         }
         return true;
     } catch (const std::exception& error) {
@@ -125,7 +126,7 @@ bool NativeHead::load(const std::vector<std::string>& shards, int64_t n_in, int6
 }
 
 bool NativeHead::to_host(std::string& err) {
-    if (weights_ == nullptr || host_ != nullptr || (type_ == 14 && strata::kernels::native_q6_k_packed_enabled()) || (type_ == 8 && std::getenv("STRATA_Q8_SM60") != nullptr)) return false;   // (repacked in place: those stay in VRAM)
+    if (weights_ == nullptr || host_ != nullptr || (type_ == 14 && strata::kernels::native_q6_k_packed_enabled()) || (type_ == 8 && strata::env("NOSTROMA_Q8_SM60") != nullptr)) return false;   // (repacked in place: those stay in VRAM)
     { int d = 0; cudaDeviceProp pr{}; if (cudaGetDevice(&d) != cudaSuccess || cudaGetDeviceProperties(&pr, d) != cudaSuccess || !strata::spill_allowed(strata::kSpillMetalBuild, pr.integrated != 0)) { (void) cudaGetLastError(); return false; } }   // (Q6_K / Q8_0 may be repacked in place: those stay)
     void* hp = nullptr;
     void* dp = nullptr;
@@ -214,7 +215,7 @@ bool NativeEmbed::load(const std::vector<std::string>& shards, int64_t n_embd, i
         // prompt's scattered row reads go: over a PCIe Gen2 x4 link they cost more than the table's size in VRAM
         // is worth. Taken only with the table plus 512 MiB free; otherwise, or when the upload fails, the mapped
         // placement below is used as before (and the fallback is said).
-        if (const char* ev = std::getenv("STRATA_EMBED_VRAM"); ev != nullptr && ev[0] == '1') {
+        if (const char* ev = strata::env("NOSTROMA_EMBED_VRAM"); ev != nullptr && ev[0] == '1') {
             size_t free_b = 0, total_b = 0;
             const bool have_free = cudaMemGetInfo(&free_b, &total_b) == cudaSuccess;
             void* d = nullptr;

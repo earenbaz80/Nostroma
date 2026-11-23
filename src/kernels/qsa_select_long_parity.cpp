@@ -19,6 +19,7 @@
 //
 //   qsa_select_long_parity [--device N]     exit 0: all cases identical; 77: no GPU or a build without the kernels
 #include "strata/kernels/qsa.hpp"
+#include "strata/env.hpp"
 #include "strata/kernels/qsa_select.hpp"
 
 #include <cuda_runtime.h>
@@ -178,8 +179,8 @@ int main(int argc, char** argv) {
         std::puts("SKIP: this build has no multi-CTA select (CUDA with STRATA_EXPERIMENTAL_SM60)");
         return 77;
     }
-    const char* dx = std::getenv("STRATA_SCORES_DX");
-    const char* mt = std::getenv("STRATA_TOPK_MULTI");
+    const char* dx = strata::env("NOSTROMA_SCORES_DX");
+    const char* mt = strata::env("NOSTROMA_TOPK_MULTI");
     if (dx == nullptr || dx[0] != '1' || mt == nullptr || mt[0] != '1') {
         std::fprintf(stderr, "qsa_select_long_parity: set STRATA_SCORES_DX=1 and STRATA_TOPK_MULTI=1 (the kernels are "
                              "otherwise default only on compute capability 6.x)\n");
@@ -188,7 +189,7 @@ int main(int argc, char** argv) {
     cudaDeviceProp prop{};
     ck(cudaGetDeviceProperties(&prop, device), "cudaGetDeviceProperties");
     std::printf("qsa_select_long_parity on device %d (%s, %d.%d), STRATA_TOPK_MULTI_N=%s\n", device, prop.name, prop.major,
-                prop.minor, std::getenv("STRATA_TOPK_MULTI_N") ? std::getenv("STRATA_TOPK_MULTI_N") : "(per capacity)");
+                prop.minor, strata::env("NOSTROMA_TOPK_MULTI_N") ? strata::env("NOSTROMA_TOPK_MULTI_N") : "(per capacity)");
 
     const k::QsaShapes s = k::qsa_real_shapes();
     std::mt19937 rng(20261026u);

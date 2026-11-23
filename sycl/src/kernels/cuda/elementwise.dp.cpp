@@ -1,6 +1,7 @@
 // src/kernels/cuda/elementwise.cu - P2.S5's glue kernels.  See the header for why each exists.
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
+#include "strata/env.hpp"
 #include "strata/kprof.hpp"
 #include <dpct/dpct.hpp>
 #include "strata/sycl_queue.hpp"
@@ -791,7 +792,7 @@ void doorbell_publish(const float* x, const int32_t* ids, const float* weights, 
 void doorbell_publish_res(const float* x, const int32_t* ids, const int32_t* d_res, int n_expert, int64_t n, int64_t k,
                           float* x_out, int32_t* ids_out, uint32_t* d_seq, void* stream) {
     if (k > 1024) { std::fprintf(stderr, "doorbell_publish_res: k too large\n"); std::exit(1); }
-    static const bool full = [] { const char* v = std::getenv("STRATA_DOORBELL_CHECK"); return v != nullptr && v[0] == '1'; }();
+    static const bool full = [] { const char* v = strata::env("NOSTROMA_DOORBELL_CHECK"); return v != nullptr && v[0] == '1'; }();
     const bool fl = full;
     const bool plain = strata::doorbell_plain_payload() || g_plain_payload.load(std::memory_order_relaxed);
     const bool pair = strata::a770_fast();
@@ -832,7 +833,7 @@ bool doorbell_wait_payload(const uint32_t* h_seq, const float* h_x, int64_t n, c
     // Opt-in (STRATA_DOORBELL_CHECK=1): on an Arc A750 (i915) the host-side checksum of the whole payload, read from
     // uncached host memory twice per CPU-expert layer, cost 15-20% of decode (5 interleaved rounds), and the stale
     // payload it guards against was not seen there. The ring tag is still published by the GPU.
-    static const bool check = [] { const char* v = std::getenv("STRATA_DOORBELL_CHECK"); return v != nullptr && v[0] == '1'; }();
+    static const bool check = [] { const char* v = strata::env("NOSTROMA_DOORBELL_CHECK"); return v != nullptr && v[0] == '1'; }();
     if (!check) return true;
     if (doorbell_payload_ready(h_seq, h_x, n, h_ids, h_weights, k, want)) return true;
     const auto t0 = std::chrono::steady_clock::now();

@@ -3,6 +3,7 @@
 // The per-token arithmetic of every kernel here is transcribed from its single-token original (fused_gdn.cu,
 // elementwise.cu) with the same operation order, so a verify window reproduces plain decode bit for bit.
 #include "strata/kernels/verify_kernels.hpp"
+#include "strata/env.hpp"
 #include "strata/core/bw_dense_defaults.hpp"
 #include "strata/core/geometry.hpp"
 #include "strata/core/emulate.hpp"
@@ -1027,7 +1028,7 @@ bool multi_block_head_ops() {
     return false;
 #else
     static const int env = [] {
-        const char* v = std::getenv("STRATA_MULTI_BLOCK_ARGMAX");
+        const char* v = strata::env("NOSTROMA_MULTI_BLOCK_ARGMAX");
         return v != nullptr ? (std::atoi(v) != 0 ? 1 : 0) : -1;
     }();
     if (env == 0) return false;
@@ -1051,7 +1052,7 @@ bool argmax_rows_wanted() {
     return false;
 #else
     static const int env = [] {
-        const char* v = std::getenv("STRATA_ARGMAX_ROWS");
+        const char* v = strata::env("NOSTROMA_ARGMAX_ROWS");
         return v != nullptr ? (std::atoi(v) != 0 ? 1 : 0) : -1;
     }();
     if (env >= 0) return env != 0 && multi_block_head_ops();
@@ -1071,7 +1072,7 @@ bool argmax_rows_wanted() {
         if (cudaGetDevice(&dev) != cudaSuccess || cudaDeviceGetAttribute(&major, cudaDevAttrComputeCapabilityMajor, dev) != cudaSuccess)
             return false;
         if (major == 7) {   // STRATA_ARGMAX_ROWS_SM70=1: opt-in on Volta (measured on sm_70 only)
-            const char* e = std::getenv("STRATA_ARGMAX_ROWS_SM70");
+            const char* e = strata::env("NOSTROMA_ARGMAX_ROWS_SM70");
             return e != nullptr && std::atoi(e) != 0;
         }
         return major == 8;
@@ -1178,9 +1179,9 @@ bool gdn_commit_layers(float* state, int64_t state_stride, int64_t conv_off, con
                        int conv_channels, int h_k, int h_v, int n_max, int n_layers, const int32_t* n_keep, void* stream) {
     // the per-layer commit's kernel choice (gdn_step_norm_multi below): only its state-only kernel is batched here
     static const bool per_layer = [] {
-        const char* sp = std::getenv("STRATA_GDN_SPLIT");
-        const char* cs = std::getenv("STRATA_GDN_COMMIT_SPLIT");
-        const char* dbg = std::getenv("STRATA_DBG_GDN");
+        const char* sp = strata::env("NOSTROMA_GDN_SPLIT");
+        const char* cs = strata::env("NOSTROMA_GDN_COMMIT_SPLIT");
+        const char* dbg = strata::env("NOSTROMA_DBG_GDN");
         return (sp && sp[0] == '1') || (cs && cs[0] == '0') || (dbg && dbg[0] == '1');
     }();
     // n_max: the window's rows (kVerifyLongT with --lookup-max-t; both kernels loop over the kept rows, no per-row arrays)
@@ -1200,7 +1201,7 @@ bool gdn_commit_layers(float* state, int64_t state_stride, int64_t conv_off, con
 // BW-DENSE STRATA_SMALL_UNR bit 1: see gdn_ab_body (bw_dense_defaults.hpp: on for a 12.0 card, else off; the variable wins)
 static int gdn_ab_fast() {
     static int per_dev[64];   // 0 unknown, else bit + 1
-    const char* e = std::getenv("STRATA_SMALL_UNR");
+    const char* e = strata::env("NOSTROMA_SMALL_UNR");
     if (e != nullptr) return (std::atoi(e) >> 1) & 1;
 #if defined(__HIPCC__)
     return 0;
@@ -1268,7 +1269,7 @@ void gdn_step_norm_multi(float* state, const float* h, int conv_channels, const 
     GdnQ81* const xq = static_cast<GdnQ81*>(xq_out);   // S26: non-null = also the outputs' q8_1 (STRATA_QFUSE)
     // n_tok: up to kVerifyLongT (a long window's second token group replays the state from its first token); the
     // default kernels loop over the tokens, the STRATA_GDN_SPLIT ones hold kVerifyMaxT per thread
-    static const bool split = [] { const char* v = std::getenv("STRATA_GDN_SPLIT"); return v && v[0] == '1'; }();
+    static const bool split = [] { const char* v = strata::env("NOSTROMA_GDN_SPLIT"); return v && v[0] == '1'; }();
     if (!state || !h || !gate || !beta || !z || !gamma || !y || h_k <= 0 || h_v % h_k || n_tok < 1 ||
         n_tok > (split ? kVerifyMaxT : kVerifyLongT)) {
         std::fprintf(stderr, "gdn_step_norm_multi: invalid arguments\n");
@@ -1296,11 +1297,11 @@ void gdn_step_norm_multi(float* state, const float* h, int conv_channels, const 
         return;
     }
     static const bool commit_split = [] {
-        const char* e = std::getenv("STRATA_GDN_COMMIT_SPLIT");
+        const char* e = strata::env("NOSTROMA_GDN_COMMIT_SPLIT");
         return !e || e[0] != '0';
     }();
     if (commit_split && n_keep != nullptr && t_out_begin >= n_tok) {
-        static const bool dbg = [] { const char* e = std::getenv("STRATA_DBG_GDN"); return e && e[0] == '1'; }();
+        static const bool dbg = [] { const char* e = strata::env("NOSTROMA_DBG_GDN"); return e && e[0] == '1'; }();
         if (dbg) gdn_step_commit_kernel<true><<<dim3((unsigned) h_v, 4u), dim3(32, RG), 0, (cudaStream_t) stream>>>(
             state, h, conv_channels, gate, beta, h_k, h_v, n_keep, n_tok);
         else gdn_step_commit_kernel<false><<<dim3((unsigned) h_v, 4u), dim3(32, RG), 0, (cudaStream_t) stream>>>(
@@ -1786,7 +1787,7 @@ bool pdl_supported() {
         // STRATA_DF_PDL: 1 / 2 = on for every window graph, 0 = off; unset = on for a compute capability 12.0 card (STRATA_SM120_PERF=0 turns
         // that off), where the verifier asks for it for the all-resident graph only (BW-MEASURE, E21: +0.3..+0.5% decode there, bit-identical;
         // -1.6% .. -4.5% in the doorbell graph of a partly resident cache)
-        static const int env_mode = [] { const char* v = std::getenv("STRATA_DF_PDL"); return v == nullptr ? -1 : (std::atoi(v) != 0 ? 1 : 0); }();
+        static const int env_mode = [] { const char* v = strata::env("NOSTROMA_DF_PDL"); return v == nullptr ? -1 : (std::atoi(v) != 0 ? 1 : 0); }();
         int major = 0, minor = 0;
         cudaFuncAttributes fa{};
         const bool on_attr = cudaDeviceGetAttribute(&major, cudaDevAttrComputeCapabilityMajor, dev) == cudaSuccess &&
@@ -1831,7 +1832,7 @@ bool pdl_launch_ok(const void* kernel, cudaStream_t stream) {
     // every node the next captured node will depend on is a kernel (CUDA allows a programmatic edge only between two
     // kernel nodes): never after a memcpy, memset, host or event node.  A join of branches gives several kernels, a
     // programmatic edge from each; STRATA_DF_PDL=2 allows a single predecessor only.
-    static const int mode = [] { const char* v = std::getenv("STRATA_DF_PDL"); return v ? std::atoi(v) : 1; }();
+    static const int mode = [] { const char* v = strata::env("NOSTROMA_DF_PDL"); return v ? std::atoi(v) : 1; }();
     cudaStreamCaptureStatus status = cudaStreamCaptureStatusNone;
     const cudaGraphNode_t* deps = nullptr;
     const cudaGraphEdgeData* edges = nullptr;

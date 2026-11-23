@@ -21,6 +21,7 @@
 #pragma once
 
 #include <cstdlib>
+#include "strata/env.hpp"
 #include <cstring>
 #include <string>
 #include <vector>
@@ -31,7 +32,7 @@ namespace strata::amd_community {
 
 /// STRATA_AMD_COMMUNITY_TUNING: on by default; "0", "off", "false" or "no" turns every change below off.
 inline bool tuning_on() {
-    const char* v = std::getenv("STRATA_AMD_COMMUNITY_TUNING");
+    const char* v = strata::env("NOSTROMA_AMD_COMMUNITY_TUNING");
     if (v == nullptr || v[0] == '\0') return true;
     return !(std::strcmp(v, "0") == 0 || std::strcmp(v, "off") == 0 || std::strcmp(v, "false") == 0 || std::strcmp(v, "no") == 0);
 }

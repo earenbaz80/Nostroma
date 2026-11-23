@@ -1,4 +1,5 @@
 #include "strata/core/conversation_file.hpp"
+#include "strata/env.hpp"
 
 #include <algorithm>
 #include <bit>
@@ -337,7 +338,7 @@ bool free_space(const std::string& path, uint64_t& out) {
 #endif
 
 bool buffered_forced() {
-    const char* e = std::getenv("STRATA_SESSION_BUFFERED");
+    const char* e = strata::env("NOSTROMA_SESSION_BUFFERED");
     return e != nullptr && e[0] == '1';
 }
 

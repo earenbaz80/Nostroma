@@ -1,5 +1,6 @@
 // src/kernels/cuda/qsa_select.cu - see include/strata/kernels/qsa_select.hpp.
 #include "strata/core/emulate.hpp"
+#include "strata/env.hpp"
 #include "strata/core/sm75_series.hpp"
 #include "strata/core/geometry.hpp"
 #include <cstdlib>
@@ -1548,12 +1549,12 @@ __global__ void __launch_bounds__(CL_T) block_topk_cluster_kernel(const float* _
 }
 #endif  // !__HIPCC__
 bool scores_multi_on() {
-    static const bool on = [] { const char* v = std::getenv("STRATA_SCORES_MULTI"); return v == nullptr || std::atoi(v) != 0; }();
+    static const bool on = [] { const char* v = strata::env("NOSTROMA_SCORES_MULTI"); return v == nullptr || std::atoi(v) != 0; }();
     return on;
 }
 // STRATA_QSA_EARLY_EXIT=0 keeps the old staging (every CTA loads the queries first); the scores are the same bits
 bool scores_early_exit() {
-    static const bool on = [] { const char* v = std::getenv("STRATA_QSA_EARLY_EXIT"); return v == nullptr || std::atoi(v) != 0; }();
+    static const bool on = [] { const char* v = strata::env("NOSTROMA_QSA_EARLY_EXIT"); return v == nullptr || std::atoi(v) != 0; }();
     return on;
 }
 
@@ -2059,7 +2060,7 @@ __global__ void __launch_bounds__(SCORE_WARPS * 32) block_scores_halve_kernel(co
 // STRATA_SM75_PERF=1 (the P100 gain measured here is +1..3% at 30-60K tokens, under the 3% bar for a new default);
 // STRATA_SCORES_THREAD=1 turns it on, =0 off, on any CUDA card
 bool scores_thread_on() {
-    static const int env = [] { const char* v = std::getenv("STRATA_SCORES_THREAD"); return v ? (std::atoi(v) != 0 ? 1 : 0) : -1; }();
+    static const int env = [] { const char* v = strata::env("NOSTROMA_SCORES_THREAD"); return v ? (std::atoi(v) != 0 ? 1 : 0) : -1; }();
     if (env >= 0) return env != 0;
     static int ok[64] = {};   // 0 unknown, 1 yes, 2 no
     int dev = 0;
@@ -2074,7 +2075,7 @@ bool scores_thread_on() {
 }
 
 bool scores_halve_on() {
-    static const int env = [] { const char* v = std::getenv("STRATA_SCORES_HALVE"); return v ? (std::atoi(v) != 0 ? 1 : 0) : -1; }();
+    static const int env = [] { const char* v = strata::env("NOSTROMA_SCORES_HALVE"); return v ? (std::atoi(v) != 0 ? 1 : 0) : -1; }();
     if (env >= 0) return env != 0;
     static int ok[64] = {};   // 0 unknown, 1 yes, 2 no
     int dev = 0;
@@ -2098,7 +2099,7 @@ void qsa_block_scores(const float* pooled, const float* dead, const float* q_idx
     // a block past a query's n_bid returns at once: the grid need only reach the batch's largest n_bid (C-1)
     if (scores_multi_on() && nq <= MQ && active_blocks <= 0) {   // no active count: decode (captured or not) and prefill's pooled16
         // QSAROWS: STRATA_QSA_ROWS=1 (exactly) takes block_scores_rows_kernel for calls of up to 4 queries - the same bits
-        static const bool rows_env = [] { const char* v = std::getenv("STRATA_QSA_ROWS"); return v != nullptr && v[0] == '1' && v[1] == '\0'; }();
+        static const bool rows_env = [] { const char* v = strata::env("NOSTROMA_QSA_ROWS"); return v != nullptr && v[0] == '1' && v[1] == '\0'; }();
         if (rows_env && qsa_block_scores_rows(pooled, dead, q_idx, steps, nq, max_blocks, s, scores, stream)) return;
         if (scores_halve_on()) {   // Turing: block_scores_halve_kernel, the same bits
             const cudaStream_t st = (cudaStream_t) stream;
@@ -2129,14 +2130,14 @@ void qsa_block_scores(const float* pooled, const float* dead, const float* q_idx
 #if defined(__HIPCC__)
     // STRATA_SCORES_THREAD: 1 = on (gfx1100, gfx12), 0 = off, unset = on for gfx12 only (gfx1100: off, nothing measured here)
     static const int thread_env = [] {
-        const char* value = std::getenv("STRATA_SCORES_THREAD");
+        const char* value = strata::env("NOSTROMA_SCORES_THREAD");
         return value == nullptr ? -1 : (std::atoi(value) == 1 ? 1 : 0);
     }();
     // The bound is the ACTUAL live extent. A reserved 256K context never enables this by itself.
     if (thread_env != 0 && active_blocks >= 16385 && active_blocks <= max_blocks && nq >= 64 &&
         (scores_thread_arch() == 2 || (thread_env == 1 && scores_thread_arch() == 1))) {
         static thread_local bool logged = false;
-        if (!logged && (thread_env == -1 || std::getenv("STRATA_SCORES_THREAD_TRACE"))) {
+        if (!logged && (thread_env == -1 || strata::env("NOSTROMA_SCORES_THREAD_TRACE"))) {
             std::fprintf(stderr, "qsa exact thread: the prompt's block scorer runs as the four-lanes-per-query kernel (nq=%lld active_blocks=%lld "
                                  "capacity=%lld; the same scores bit for bit; STRATA_SCORES_THREAD=0 turns it off)\n",
                          (long long)nq, (long long)active_blocks, (long long)max_blocks);
@@ -2196,7 +2197,7 @@ void qsa_block_scores_rows(const QsaScoreRows& rows, const float* q_idx, const i
         std::fprintf(stderr, "qsa_block_scores_rows: unsupported geometry\n");
         std::exit(1);
     }
-    static const bool early = [] { const char* v = std::getenv("STRATA_QSA_EARLY_EXIT"); return v == nullptr || std::atoi(v) != 0; }();
+    static const bool early = [] { const char* v = strata::env("NOSTROMA_QSA_EARLY_EXIT"); return v == nullptr || std::atoi(v) != 0; }();
     block_scores_multi_kernel<<<256, SCORE_WARPS * 32, 0, (cudaStream_t) stream>>>(nullptr, nullptr, q_idx, steps, (int) nq,
                                                                                  max_blocks, scores, early, rows);
     const cudaError_t e = cudaGetLastError();
@@ -2211,7 +2212,7 @@ bool qsa_block_scores_tc(const float* pooled, const float* dead, const float* q_
     // AMD: the gfx12 (RDNA4) WMMA scorer, opt-in (STRATA_SELECT_WMMA=1): it selects slightly differently from the warp
     // kernel (254/256 queries the same), so the default keeps the warp kernel; every other target keeps it too (false)
     static const bool wmma_on = [] {
-        const char* v = std::getenv("STRATA_SELECT_WMMA");
+        const char* v = strata::env("NOSTROMA_SELECT_WMMA");
         return v != nullptr && v[0] != '\0' && v[0] != '0';
     }();
     // any HIP card: the FP32 tiled scorer, opt-in as on CUDA (STRATA_SELECT_SIMT=1; another summation order than the
@@ -2221,7 +2222,7 @@ bool qsa_block_scores_tc(const float* pooled, const float* dead, const float* q_
     // unset: -1.  The community switch (strata/core/amd_community.hpp, STRATA_AMD_COMMUNITY_TUNING, on by default) makes mode 2
     // the default on gfx103x only (RX 6000, where #3073's contributor measured it: 119K prompt -6.5%); any value of the variable wins.
     static const int simt_env = [] {
-        const char* v = std::getenv("STRATA_SELECT_SIMT");
+        const char* v = strata::env("NOSTROMA_SELECT_SIMT");
         return v == nullptr ? -1 : v[0] == '1' ? 1 : v[0] == '2' ? 2 : 0;
     }();
     static const bool community_on = strata::amd_community::tuning_on();
@@ -2231,7 +2232,7 @@ bool qsa_block_scores_tc(const float* pooled, const float* dead, const float* q_
     // there, so the gfx12 default sets it (arch_defaults.cpp); the community simt2 default of gfx103x starts at 28,672 tokens, just under the
     // 31K its contributor measured.  Unset: no limit for a scorer the user asked for.
     static const int64_t alt_min_env = [] {
-        const char* v = std::getenv("STRATA_SELECT_ALT_MIN_TOKENS");
+        const char* v = strata::env("NOSTROMA_SELECT_ALT_MIN_TOKENS");
         return v != nullptr && v[0] != 0 ? (int64_t) std::atoll(v) : (int64_t) -1;
     }();
     if (simt_v != 0 || wmma_on) {
@@ -2282,7 +2283,7 @@ bool qsa_block_scores_tc(const float* pooled, const float* dead, const float* q_
                 return false;
             }
             // STRATA_QSA_WARP=1|select (an A/B arm): the pre-sm_80 kernels on any card, as RTX 20 runs them
-            const char* w = std::getenv("STRATA_QSA_WARP");
+            const char* w = strata::env("NOSTROMA_QSA_WARP");
             cc_major[dev] = w && (!std::strcmp(w, "1") || !std::strcmp(w, "select")) ? 7 : strata::cc_major_of(major);
         }
         if (cc_major[dev] < 8) {
@@ -2290,14 +2291,14 @@ bool qsa_block_scores_tc(const float* pooled, const float* dead, const float* q_
             // warp kernel's, so the default stays the caller's warp kernel and the output bytes stay the same
             // STRATA_SELECT_SIMT=2: block_scores_simt2_kernel (the same bits as =1, larger tiles)
             static const int simt = [] {
-                const char* v = std::getenv("STRATA_SELECT_SIMT");
+                const char* v = strata::env("NOSTROMA_SELECT_SIMT");
                 return v == nullptr ? 0 : v[0] == '1' ? 1 : v[0] == '2' ? 2 : 0;
             }();
             if (!simt) return false;
             const int64_t reach = active_blocks > 0 && active_blocks < max_blocks ? active_blocks : max_blocks;
             if (simt == 2) {
                 // STRATA_SIMT2_TILE=2: 64 x 64 tiles (measured slower: 400K 3.00 vs 2.82 ms)
-                static const int tile = [] { const char* v = std::getenv("STRATA_SIMT2_TILE"); return v ? std::atoi(v) : 1; }();
+                static const int tile = [] { const char* v = strata::env("NOSTROMA_SIMT2_TILE"); return v ? std::atoi(v) : 1; }();
                 if (tile != 2) {
                     const dim3 grid((unsigned) ((reach + 127) / 128), (unsigned) ((nq + 31) / 32));
                     if (grid.y > 65535) return false;
@@ -2657,7 +2658,7 @@ __global__ void __launch_bounds__(SP_T) topk_split_emit_kernel(const float* __re
 
 bool topk_split_device() {
     static int ok[64] = {};   // 0 unknown, 1 yes, 2 no
-    static const int env = [] { const char* v = std::getenv("STRATA_TOPK_SPLIT"); return v ? (std::atoi(v) != 0 ? 1 : 0) : -1; }();
+    static const int env = [] { const char* v = strata::env("NOSTROMA_TOPK_SPLIT"); return v ? (std::atoi(v) != 0 ? 1 : 0) : -1; }();
     if (env == 0) return false;
     int dev = 0;
     if (cudaGetDevice(&dev) != cudaSuccess || dev < 0 || dev >= 64) { cudaGetLastError(); return false; }
@@ -2889,7 +2890,7 @@ __global__ void __launch_bounds__(TK_T) block_topk_sample_kernel(const float* __
 // of the series (STRATA_SM75_PERF=1).  (As submitted in #2093 it was on for every CUDA card; same ids, but only measured
 // on an RTX 2080 Ti, so the other cards keep the wide kernel.)
 bool topk_sample_on() {
-    static const int env = [] { const char* v = std::getenv("STRATA_TOPK_SAMPLE"); return v ? (std::atoi(v) != 0 ? 1 : 0) : -1; }();
+    static const int env = [] { const char* v = strata::env("NOSTROMA_TOPK_SAMPLE"); return v ? (std::atoi(v) != 0 ? 1 : 0) : -1; }();
     if (env >= 0) return env != 0;
     static int ok[64] = {};   // 0 unknown, 1 yes, 2 no
     int dev = 0;
@@ -2908,13 +2909,13 @@ void qsa_block_topk(const float* scores, const int32_t* steps, int64_t nq, int64
                     const QsaShapes& s, int32_t* ids, void* stream, int64_t active_blocks) {
     // keys in registers when every query's blocks fit (contexts up to ~135K cells), else (CUDA) the same threads
     // reading them from memory; the same ids. STRATA_TOPK_OLD=1: the original kernel
-    static const bool old = std::getenv("STRATA_TOPK_OLD") != nullptr;
+    static const bool old = strata::env("NOSTROMA_TOPK_OLD") != nullptr;
     if (nq <= 0) return;
 #if !defined(__HIPCC__)
     // sm_90+: a cluster of CL_N CTAs per query for the calls of a few queries (decode windows); the same ids.
     // STRATA_QSA_CLUSTER=0: the one-CTA kernels below
     static const bool cluster = [] {
-        const char* v = std::getenv("STRATA_QSA_CLUSTER");
+        const char* v = strata::env("NOSTROMA_QSA_CLUSTER");
         return !v || std::atoi(v) != 0;
     }();
     if (cluster && !old && nq <= CL_MAXQ && qsa_block_topk_cluster(scores, steps, nq, max_blocks, cap, s, ids, stream))
@@ -2939,10 +2940,10 @@ void qsa_block_topk(const float* scores, const int32_t* steps, int64_t nq, int64
     // TK_T * TK_PER registers. Use the prefill bound on sm_75, keeping max_blocks as the score-row stride.
     // Other CUDA devices keep 0.1.32's capacity rule: #337 was measured on RDNA4, and RTX 5070 64K prompts were
     // 1-3% slower. Decode/captured graphs omit the bound and never query the device here.
-    static const bool capacity_guard = std::getenv("STRATA_TOPK_CAPACITY_GUARD") != nullptr;
+    static const bool capacity_guard = strata::env("NOSTROMA_TOPK_CAPACITY_GUARD") != nullptr;
     // STRATA_TOPK_ACTIVE_ANY=1 (tests): the Turing dispatch on any CUDA card, so qsa_topk_active_parity checks it
     // on whatever card runs the tests (the kernels are the same on every architecture)
-    static const bool any_card = [] { const char* v = std::getenv("STRATA_TOPK_ACTIVE_ANY"); return v && v[0] == '1'; }();
+    static const bool any_card = [] { const char* v = strata::env("NOSTROMA_TOPK_ACTIVE_ANY"); return v && v[0] == '1'; }();
     const bool counted = !capacity_guard && active_blocks > 0 && active_blocks <= max_blocks &&
                          (any_card || topk_active_turing_device());
 #endif
@@ -2952,7 +2953,7 @@ void qsa_block_topk(const float* scores, const int32_t* steps, int64_t nq, int64
     // gfx1201: below ~28K cells (7,168 blocks) the 1,024-thread kernel's fixed cost loses to the ref.  STRATA_TOPK_REG_MIN_BLOCKS
     // moves the line (0: the register kernel always); gfx1151's table sets 4096, the crossover with the cooperative scan
     static const int64_t kRegMinBlocks = [] {
-        const char* v = std::getenv("STRATA_TOPK_REG_MIN_BLOCKS");
+        const char* v = strata::env("NOSTROMA_TOPK_REG_MIN_BLOCKS");
         return v != nullptr ? (int64_t) std::atoll(v) : (int64_t) 7168;
     }();
     const bool too_small = counted && reach < kRegMinBlocks;
@@ -2976,7 +2977,7 @@ void qsa_block_topk(const float* scores, const int32_t* steps, int64_t nq, int64
     // campaign3: on HIP too (was CUDA-only; gfx11 has no sm_90 cluster path and fell to the ref radix past the
     // register kernel's reach - the deep-decode top-k cost).  Same ids as the ref kernel.
     static const bool turing_wide = [] {
-        const char* v = std::getenv("STRATA_TOPK_STREAM");
+        const char* v = strata::env("NOSTROMA_TOPK_STREAM");
         return v == nullptr || v[0] != '0';
     }();
     if (reach > fit || (turing_wide && counted && reach > 22528)) {   // past the register kernel's reach, or Turing's band
@@ -3001,7 +3002,7 @@ void qsa_block_topk(const float* scores, const int32_t* steps, int64_t nq, int64
 // `sms`: the device's multiprocessors (the grid: as many CTAs as fit on each).
 static bool scores_dx_device(int& sms) {
     static const int env = [] {
-        const char* v = std::getenv("STRATA_SCORES_DX");
+        const char* v = strata::env("NOSTROMA_SCORES_DX");
         return v == nullptr || *v == '\0' ? -1 : std::atoi(v);
     }();
     if (env == 0) return false;
@@ -3066,7 +3067,7 @@ static bool qsa_block_scores_dx(const float* pooled, const float* dead, const fl
 // kernel's reach (GP100: 0.39 -> 0.04 ms per call at 300K cells; see block_topk_multi_hist_kernel)
 static int topk_multi_mode() {
     static const int env = [] {
-        const char* v = std::getenv("STRATA_TOPK_MULTI");
+        const char* v = strata::env("NOSTROMA_TOPK_MULTI");
         return v == nullptr || *v == '\0' ? -1 : std::atoi(v);
     }();
     if (env >= 0) return env != 0 ? 1 : 0;
@@ -3088,7 +3089,7 @@ static bool qsa_block_topk_multi(const float* scores, const int32_t* steps, int6
                                  int32_t* ids, void* stream, int32_t* scratch) {
     // CTAs per query from the capacity (the grid is fixed in a captured graph; each CTA's share follows n_bid): one per
     // 2,048 blocks, at most MT_NMAX. STRATA_TOPK_MULTI_N: a fixed count (tests)
-    static const int n_env = [] { const char* v = std::getenv("STRATA_TOPK_MULTI_N"); return v ? std::atoi(v) : 0; }();
+    static const int n_env = [] { const char* v = strata::env("NOSTROMA_TOPK_MULTI_N"); return v ? std::atoi(v) : 0; }();
     int64_t n = n_env > 0 ? n_env : (max_blocks + 2047) / 2048;
     n = n < 1 ? 1 : n > MT_NMAX ? MT_NMAX : n;
     const dim3 grid((unsigned) n, (unsigned) nq);
@@ -3120,7 +3121,7 @@ void qsa_block_topk_long(const float* scores, const int32_t* steps, int64_t nq, 
                          const QsaShapes& s, int32_t* ids, void* stream, int64_t active_blocks, int32_t* multi_scratch) {
 #if !defined(__HIPCC__) && defined(STRATA_EXPERIMENTAL_SM60)
     // several CTAs per query through the caller's scratch (decode calls: no active count, a few queries)
-    static const bool old = std::getenv("STRATA_TOPK_OLD") != nullptr;
+    static const bool old = strata::env("NOSTROMA_TOPK_OLD") != nullptr;
     if (nq > 0 && multi_scratch != nullptr && !old && active_blocks <= 0 && nq <= MT_MAXQ && s.idx_block == R &&
         cap >= qsa_selection_width(kTopkMaxCells, s)) {
         const int mode = topk_multi_mode();
@@ -3768,7 +3769,7 @@ bool tp_device_ok() {
     if (ok[dev] == 0) {
         int major = 0;
         bool good = cudaDeviceGetAttribute(&major, cudaDevAttrComputeCapabilityMajor, dev) == cudaSuccess;
-        const char* w = std::getenv("STRATA_QSA_WARP");
+        const char* w = strata::env("NOSTROMA_QSA_WARP");
         const int cc = w && (!std::strcmp(w, "1") || !std::strcmp(w, "select")) ? 7 : strata::cc_major_of(major);
         const int bytes = (TC_QT * TC_QS + TC_NB * TC_KS) * (int) sizeof(float);
         good = good && cc >= 8 &&
@@ -3783,7 +3784,7 @@ bool tp_device_ok() {
 }  // namespace
 
 bool qsa_two_pass_on() {
-    static two_pass::RequestStatus status(std::getenv("STRATA_SELECT_TWO_PASS"));
+    static two_pass::RequestStatus status(strata::env("NOSTROMA_SELECT_TWO_PASS"));
     if (!status.requested()) return false;
     // the card current at this call (a layer split can mix cards): sm_75 or STRATA_QSA_WARP=1|select keep the other
     // scorer there, so the switch says once that it is not used; checked here too, so a short prompt says it as well
@@ -3792,14 +3793,14 @@ bool qsa_two_pass_on() {
 }
 bool qsa_two_pass_check_on() {
     static const bool on = [] {
-        const char* v = std::getenv("STRATA_SELECT_TWO_PASS_CHECK");
+        const char* v = strata::env("NOSTROMA_SELECT_TWO_PASS_CHECK");
         return v && v[0] == '1' && v[1] == '\0';
     }();
     return on;
 }
 int64_t qsa_two_pass_min_blocks() {
     static const int64_t v = [] {
-        const char* e = std::getenv("STRATA_SELECT_TWO_PASS_MIN");
+        const char* e = strata::env("NOSTROMA_SELECT_TWO_PASS_MIN");
         const long long x = e ? std::atoll(e) : (long long) two_pass::kMinBlocksDefault;
         return (int64_t) (x < 0 ? 0 : x);
     }();
@@ -3896,7 +3897,7 @@ bool qsa_two_pass_stats(unsigned long long* out, bool reset, void* stream) {
 }
 #else   // HIP: the two-pass scorer is CUDA-only (the gfx12 WMMA scorer has another arithmetic); nothing runs
 bool qsa_two_pass_on() {   // false; a set switch says once that it is not used here
-    static two_pass::RequestStatus status(std::getenv("STRATA_SELECT_TWO_PASS"));
+    static two_pass::RequestStatus status(strata::env("NOSTROMA_SELECT_TWO_PASS"));
     return status.on("HIP");
 }
 bool qsa_two_pass_check_on() { return false; }

@@ -1,5 +1,6 @@
 // metal/src/engine/stream.cpp - see stream.h.
 #include "geo.h"
+#include "strata/env.hpp"
 #include "stream.h"
 
 #include "ref_quant.h"
@@ -32,7 +33,7 @@ int env_int(const char* n, int d) {
 }  // namespace
 
 bool ExpertStream::wanted(const gguf::File& f, const mtl::Context& cx) {
-    const char* e = std::getenv("STRATA_METAL_STREAM");
+    const char* e = strata::env("NOSTROMA_METAL_STREAM");
     if (e && std::string(e) == "1") return true;
     if (e && std::string(e) == "0") return false;
     // auto: stream when the mapped weights (experts and dense) and ~12 GiB beside them (the prompt buffers, KV, the
@@ -127,7 +128,7 @@ bool ExpertStream::open(const gguf::File& f, std::string& err) {
     // 0.15) of its slot: every class must hold a whole layer's experts for a prompt chunk, so fewer classes = less
     // memory tied up in those minimums.
     {
-        const char* ew = std::getenv("STRATA_METAL_CLASS_WASTE");
+        const char* ew = strata::env("NOSTROMA_METAL_CLASS_WASTE");
         const double waste = ew ? std::atof(ew) : 0.15;
         std::vector<uint64_t> pages_of(NL);
         std::vector<uint64_t> sizes;
@@ -429,7 +430,7 @@ bool ExpertStream::make_arena(mtl::Context& cx, uint64_t budget, const std::stri
         biggest = std::max<uint64_t>(biggest, k.pages * PAGE);
     }
     uint64_t want = std::max<uint64_t>(8ull << 30, total / 4 + 4 * biggest);
-    if (const char* e = std::getenv("STRATA_METAL_ARENA_CHUNK_GB")) want = (uint64_t) (std::atof(e) * (1ull << 30));
+    if (const char* e = strata::env("NOSTROMA_METAL_ARENA_CHUNK_GB")) want = (uint64_t) (std::atof(e) * (1ull << 30));
     const uint64_t cmax = std::min<uint64_t>(cx.max_buffer_length(), want) / PAGE * PAGE;
     code_.assign((size_t) base, 0);
     host_.assign((size_t) base, nullptr);
@@ -485,7 +486,7 @@ bool ExpertStream::make_arena(mtl::Context& cx, uint64_t budget, const std::stri
     // the fill: the ranked pairs in steps (best first; each step in file order) on the I/O threads; before each step
     // grow() asks whether macOS still has the memory for it (arena_grow); the best-ranked ends at the LRU front
     uint64_t step = 1536ull << 20;
-    if (const char* e = std::getenv("STRATA_METAL_ARENA_STEP_GB")) step = std::max<uint64_t>(64ull << 20, (uint64_t) (std::atof(e) * 1e9));
+    if (const char* e = strata::env("NOSTROMA_METAL_ARENA_STEP_GB")) step = std::max<uint64_t>(64ull << 20, (uint64_t) (std::atof(e) * 1e9));
     std::vector<int> next_free(cls_.size());
     for (size_t c = 0; c < cls_.size(); ++c) next_free[c] = cls_[c].base;
     size_t done = 0;
@@ -555,7 +556,7 @@ bool ExpertStream::make_arena(mtl::Context& cx, uint64_t budget, const std::stri
         uint64_t phys = 0;
         size_t plen = sizeof phys;
         sysctlbyname("hw.memsize", &phys, &plen, nullptr, 0);
-        const char* we = std::getenv("STRATA_METAL_WIRE_ARENA");
+        const char* we = strata::env("NOSTROMA_METAL_WIRE_ARENA");
         const bool want = we && *we ? std::atoi(we) != 0 : (double) phys >= kBigMac;
         if (want && !stopped) {
             const double tp = now_ms();

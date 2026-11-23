@@ -22,6 +22,7 @@
 //   3. The DEQUANTIZED value is `q * d16`, the fp16 scale, not `q * d32`.  The block stores fp16 and that is
 //      what a reader multiplies by.
 #include "strata/kernels/quantize_act.hpp"
+#include "strata/env.hpp"
 #include "strata/kernels/quantize_act_dev.cuh"
 #include "strata/kernels/swiglu.cuh"
 #include "strata/kernels/bf16_bits.hpp"
@@ -351,7 +352,7 @@ void quantize_q8_0_scaled(const float* x, uint8_t* blocks, float* scales, int64_
     const long long nb = n / QK8_0;
     const int threads = 128;
     static const bool old_q80 = [] {
-        const char* e = std::getenv("STRATA_OLD_Q80_SCALED");
+        const char* e = strata::env("NOSTROMA_OLD_Q80_SCALED");
         return e != nullptr && e[0] == '1';
     }();
     if (old_q80) {

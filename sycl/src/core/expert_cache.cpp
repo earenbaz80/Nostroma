@@ -3,6 +3,7 @@
 // header first.
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
+#include "strata/env.hpp"
 #include <dpct/dpct.hpp>
 #include "strata/sycl_queue.hpp"
 #include "strata/core/expert_cache.hpp"
@@ -127,7 +128,7 @@ size_t device_free_bytes() try {
             std::fclose(m);
             // STRATA_UMA_HEADROOM_GIB: a whole number of GiB, 0..1024; anything else keeps the default 6 (said once)
             static const long gib = [] {
-                const char* h = std::getenv("STRATA_UMA_HEADROOM_GIB");
+                const char* h = strata::env("NOSTROMA_UMA_HEADROOM_GIB");
                 if (h == nullptr) return 6L;
                 char* end = nullptr;
                 const long v = std::strtol(h, &end, 10);

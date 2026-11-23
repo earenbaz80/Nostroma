@@ -1,6 +1,7 @@
 #pragma once
 
 #include "strata/core/conversation_cache.hpp"
+#include "strata/env.hpp"
 #include "strata/core/progress.hpp"
 #include "strata/platform/aux_cpus.hpp"
 #include "strata/platform/home_cpus.hpp"
@@ -118,7 +119,7 @@ inline bool copy_stream_ready(int dev) {
 /// STRATA_TEST_COPY_FAIL_AT=N (tests only, #3350): the N-th snapshot / checkpoint copy of the process fails with
 /// cudaErrorMemoryAllocation, as when a card has no memory left for the copy.  Unset: nothing.
 inline long test_copy_fail_at() {
-    static const long v = [] { const char* e = std::getenv("STRATA_TEST_COPY_FAIL_AT"); return e ? std::atol(e) : 0L; }();
+    static const long v = [] { const char* e = strata::env("NOSTROMA_TEST_COPY_FAIL_AT"); return e ? std::atol(e) : 0L; }();
     return v;
 }
 
@@ -160,7 +161,7 @@ inline cudaError_t copy_nonblocking(void* dst, const void* src, size_t bytes, bo
 /// STRATA_TEST_SLOW_COPY_US=N (tests only): every 1 MiB slice of a checkpoint copy takes N microseconds more, as when
 /// the OS has paged the checkpoints out and each slice is read back from the drive.  Unset: no delay.
 inline long test_slow_copy_us() {
-    static const long v = [] { const char* e = std::getenv("STRATA_TEST_SLOW_COPY_US"); return e ? std::atol(e) : 0L; }();
+    static const long v = [] { const char* e = strata::env("NOSTROMA_TEST_SLOW_COPY_US"); return e ? std::atol(e) : 0L; }();
     return v;
 }
 

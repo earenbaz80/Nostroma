@@ -13,6 +13,7 @@
 #define NS_PRIVATE_IMPLEMENTATION
 #define MTL_PRIVATE_IMPLEMENTATION
 #include <execinfo.h>
+#include "strata/env.hpp"
 #include <Foundation/Foundation.hpp>
 #include <Metal/Metal.hpp>
 
@@ -269,7 +270,7 @@ Error run_op(StreamImpl* s, const Op& o) {
 
 // STRATA_METAL_ALLOC_LOG=1: every allocation of 16 MB or more, with the running total (memory budgets on small Macs)
 void alloc_log(const char* what, size_t n) {
-    static const bool on = std::getenv("STRATA_METAL_ALLOC_LOG") != nullptr;
+    static const bool on = strata::env("NOSTROMA_METAL_ALLOC_LOG") != nullptr;
     static std::atomic<uint64_t> tot{0};
     const uint64_t t = tot += n;
     if (on && n >= (16u << 20)) std::fprintf(stderr, "strata metal runtime: %s %.1f MB (total %.2f GB)\n", what, n / 1e6, t / 1e9);

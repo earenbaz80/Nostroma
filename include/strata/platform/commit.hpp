@@ -9,6 +9,7 @@
 #pragma once
 
 #include <cstdint>
+#include "strata/env.hpp"
 #include <cstdlib>
 
 #if defined(_WIN32)
@@ -30,7 +31,7 @@ namespace strata::platform {
 /// or when the settings cannot be read.  STRATA_COMMIT_GROWTH=0: 0 (as v1.1.17 counted).
 inline uint64_t commit_growth(uint64_t ram_total) {
 #if defined(_WIN32)
-    if (const char* v = std::getenv("STRATA_COMMIT_GROWTH"); v != nullptr && std::atoi(v) == 0) return 0;
+    if (const char* v = strata::env("NOSTROMA_COMMIT_GROWTH"); v != nullptr && std::atoi(v) == 0) return 0;
     // the setting, through advapi32 as loaded (RegGetValueW), so no program links it for this
     using Get = LONG(WINAPI*)(HKEY, LPCWSTR, LPCWSTR, DWORD, LPDWORD, PVOID, LPDWORD);
     HMODULE m = LoadLibraryA("advapi32.dll");

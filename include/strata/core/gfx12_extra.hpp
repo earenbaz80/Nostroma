@@ -27,6 +27,7 @@
 #pragma once
 
 #include <cstdlib>
+#include "strata/env.hpp"
 #include <string>
 #include <utility>
 #include <vector>
@@ -41,7 +42,7 @@ namespace strata::core {
 inline std::vector<std::pair<std::string, std::string>> gfx12_exact_extra_env(const char* gcn_arch, bool defaults026) {
     std::vector<std::pair<std::string, std::string>> t;
     if (!strata::kernels::gfx_arch_is_gfx12(gcn_arch)) return t;
-    const char* off = std::getenv("STRATA_GFX12_DEFAULTS");
+    const char* off = strata::env("NOSTROMA_GFX12_DEFAULTS");
     if (off != nullptr && off[0] == '0') return t;
     if (defaults026) return t;
     t.push_back({"STRATA_HEAD_MIX_MULTI", "1"});
@@ -55,7 +56,7 @@ inline std::vector<std::pair<std::string, std::string>> gfx12_exact_extra_env(co
 inline std::vector<std::pair<std::string, std::string>> gfx12_value_changing_env(const char* gcn_arch, bool defaults026) {
     std::vector<std::pair<std::string, std::string>> t;
     if (!strata::kernels::gfx_arch_is_gfx12(gcn_arch)) return t;
-    const char* off = std::getenv("STRATA_GFX12_DEFAULTS");
+    const char* off = strata::env("NOSTROMA_GFX12_DEFAULTS");
     if (off != nullptr && off[0] == '0') return t;
     if (defaults026) return t;
     t.push_back({"STRATA_SELECT_WMMA", "1"});

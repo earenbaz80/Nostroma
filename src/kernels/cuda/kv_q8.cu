@@ -1,5 +1,6 @@
 // src/kernels/cuda/kv_q8.cu - see include/strata/kernels/kv_q8.hpp.
 #include "strata/kernels/kv_q8.hpp"
+#include "strata/env.hpp"
 #include "strata/kernels/f16_bits.hpp"
 
 #include <cuda_runtime.h>
@@ -157,7 +158,7 @@ __global__ void kv_gather_q8_wide_kernel(const int8_t* __restrict__ k_q, const i
 // qsa_decode_attn.cu's pre75_attn.
 bool pre75_q8_gather() {
     static const bool off = [] {
-        const char* e = std::getenv("STRATA_Q8_GATHER_WIDE");
+        const char* e = strata::env("NOSTROMA_Q8_GATHER_WIDE");
         return e != nullptr && e[0] == '0';
     }();
     static int cc[64] = {};

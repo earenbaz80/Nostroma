@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cstdlib>
+#include "strata/env.hpp"
 
 namespace strata::prefill::fused_tq {
 
@@ -28,6 +29,6 @@ constexpr bool on(int env, bool s86, int sms) { return env == 1 || (env < 0 && s
 // Gyro-M's TQ2_T / TQ2_T pair has no gate series: it is taken only when STRATA_PF_FUSED_TQ=1 asks for it, never by the default
 constexpr bool gyro_m_on(int env) { return env == 1; }
 
-inline int env_value() { return parse_env(std::getenv("STRATA_PF_FUSED_TQ")); }
+inline int env_value() { return parse_env(strata::env("NOSTROMA_PF_FUSED_TQ")); }
 
 }  // namespace strata::prefill::fused_tq

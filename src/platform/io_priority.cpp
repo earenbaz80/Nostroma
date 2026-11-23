@@ -1,5 +1,6 @@
 // #4733: see include/strata/platform/io_priority.hpp
 #include "strata/platform/io_priority.hpp"
+#include "strata/env.hpp"
 
 #include <cstdlib>
 
@@ -17,7 +18,7 @@ namespace strata::platform {
 
 int restore_normal_io_priority(std::FILE* log) {
 #if defined(_WIN32)
-    const char* keep = std::getenv("STRATA_KEEP_IO_PRIORITY");
+    const char* keep = strata::env("NOSTROMA_KEEP_IO_PRIORITY");
     if (keep != nullptr && keep[0] == '1') return -1;
     using Query = LONG(NTAPI*)(HANDLE, ULONG, PVOID, ULONG, PULONG);
     using Set = LONG(NTAPI*)(HANDLE, ULONG, PVOID, ULONG);

@@ -16,6 +16,7 @@
 #pragma once
 
 #include "strata/core/emulate.hpp"
+#include "strata/env.hpp"
 
 #include <cstdlib>
 
@@ -24,7 +25,7 @@ namespace strata {
 /// STRATA_SM75_PERF=1 (read once)
 inline bool sm75_series() {
     static const bool on = [] {
-        const char* e = std::getenv("STRATA_SM75_PERF");
+        const char* e = strata::env("NOSTROMA_SM75_PERF");
         return e != nullptr && std::atoi(e) != 0;
     }();
     return on;

@@ -18,6 +18,7 @@
 // because -M * d_w is exact: d_w = f16 d * (ls - 32) has at most 11 + 6 significant bits (IQ4_NL: 11), so 3 * 2^22 *
 // d_w fits a float's 24.  Then sum += t * d_y as before.  The int8 lookup is llama.cpp's get_int_from_table_16 (MIT).
 #include "strata/prefill/moe_iq4_w4a8.hpp"
+#include "strata/env.hpp"
 
 #if defined(GGML_USE_HIP)
 // The gfx906 HIP build compiles every CUDA source of the tree as HIP: this kernel is NVIDIA PTX (mma.sync, cp.async),
@@ -382,7 +383,7 @@ using Cfg3 = Cfg<96, 2, 1, 1, 72, 1>;
 
 int cfg_index() {
     static const int c = [] {
-        const char* v = std::getenv("STRATA_W4A8_CFG");
+        const char* v = strata::env("NOSTROMA_W4A8_CFG");
         const int i = v != nullptr ? std::atoi(v) : 0;
         return i >= 0 && i <= 3 ? i : 0;
     }();
@@ -439,7 +440,7 @@ static bool arch_ok(int cc) { return (cc >= 80 && cc < 89) || cc == 120; }
 void report_counts();
 int iq4_w4a8_mode() {
     static const int m = [] {
-        const char* v = std::getenv("STRATA_IQ4_W4A8");
+        const char* v = strata::env("NOSTROMA_IQ4_W4A8");
         const int r = v != nullptr ? std::atoi(v) : 0;
         if (r == 1 || r == 2)
             std::fprintf(stderr, "strata: prompt experts: the IQ4 W4A8 kernel runs %s (STRATA_IQ4_W4A8=%d, config %d; "

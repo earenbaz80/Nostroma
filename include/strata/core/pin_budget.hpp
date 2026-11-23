@@ -23,6 +23,7 @@
 #pragma once
 
 #include <cuda_runtime.h>
+#include "strata/env.hpp"
 
 #include <cstdint>
 #include <cstdio>
@@ -49,7 +50,7 @@ struct State {
     uint64_t arena_pinned = 0;    // what the arena registered (for the hint)
     int hard_retries = 0;
     State() {
-        if (const char* e = std::getenv("STRATA_TEST_PIN_BUDGET_MIB"); e != nullptr && *e != '\0')
+        if (const char* e = strata::env("NOSTROMA_TEST_PIN_BUDGET_MIB"); e != nullptr && *e != '\0')
             sim_budget = (uint64_t) std::strtoull(e, nullptr, 10) << 20;
     }
 };
@@ -87,7 +88,7 @@ inline void free_locked(State& s, void* p) {
 }
 
 inline uint64_t soft_reserve_default_mib() {
-    if (const char* e = std::getenv("STRATA_PIN_RESERVE_MIB"); e != nullptr && *e != '\0')
+    if (const char* e = strata::env("NOSTROMA_PIN_RESERVE_MIB"); e != nullptr && *e != '\0')
         return (uint64_t) std::strtoull(e, nullptr, 10);
 #if defined(_WIN32) && !defined(STRATA_USE_HIP)   // CUDA on Windows (WDDM); the AMD build keeps its pinning as it was
     return 640;
@@ -174,7 +175,7 @@ inline void pin_note_arena(uint64_t pinned_bytes) {
     s.arena_pinned = pinned_bytes;
     // TEST knob: the driver took everything but N KiB (what WDDM did on the 64 GB PC: the arena pinned to the ceiling)
     if (s.sim_budget != 0)
-        if (const char* e = std::getenv("STRATA_TEST_PIN_LEFT_KIB"); e != nullptr && *e != 0)
+        if (const char* e = strata::env("NOSTROMA_TEST_PIN_LEFT_KIB"); e != nullptr && *e != 0)
             s.sim_budget = s.sim_used + ((uint64_t) std::strtoull(e, nullptr, 10) << 10);
 }
 inline uint64_t pin_sim_peak() { return pin_detail::st().sim_peak; }

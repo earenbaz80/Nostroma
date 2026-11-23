@@ -1,4 +1,5 @@
 #include "strata/core/logit_bias.hpp"
+#include "strata/env.hpp"
 // src/program/generate.cpp - P2.S6: `strata generate`.
 //
 // THE DRIVER, and the first program in this project that answers a question.  Everything below it is a
@@ -222,7 +223,7 @@ bool draft_vocab_whole_head();       // STRATA_METAL_DRAFT_VOCAB=full
 // int64 pos0, int64 rows, then rows x floats_per_row float32 (the tap rows [rows][taps][n_embd]), for the layer-major / chunk-major
 // equivalence test (DF-08).  Nothing runs without the variable.
 static void df2_tap_dump(const float* dev, int64_t rows, int64_t pos0, int64_t floats_per_row) {
-    static const char* path = std::getenv("STRATA_DF2_TAP_DUMP");
+    static const char* path = strata::env("NOSTROMA_DF2_TAP_DUMP");
     if (path == nullptr || path[0] == '\0' || rows <= 0) return;
     std::vector<float> h((size_t) (rows * floats_per_row));
     if (cudaMemcpy(h.data(), dev, h.size() * sizeof(float), cudaMemcpyDeviceToHost) != cudaSuccess) return;
@@ -360,7 +361,7 @@ void crash_bt_handler(int sig) {
     raise(sig);
 }
 const bool crash_bt_installed = [] {
-    const char* v = std::getenv("STRATA_CRASH_BT");
+    const char* v = strata::env("NOSTROMA_CRASH_BT");
     if (v == nullptr || v[0] == '\0' || v[0] == '0') return false;
     if (v[0] != '1' || v[1] != '\0') std::snprintf(g_crash_path, sizeof g_crash_path, "%s", v);
     for (int sg : {SIGFPE, SIGSEGV, SIGBUS, SIGABRT}) signal(sg, crash_bt_handler);
@@ -418,7 +419,7 @@ void handler(int sig) {
     auto unreg = [&] { ranges = strata::core::unregister_arena_ranges(); };
     const strata::core::kfd_quiet::TeardownResult r =
         strata::core::kfd_quiet::teardown(stop, release, drain, unreg, now, strata::core::kfd_quiet::kExitBoundS);
-    if (std::getenv("STRATA_TRACE") != nullptr)
+    if (strata::env("NOSTROMA_TRACE") != nullptr)
         std::fprintf(stderr, "strata trace: kfd quiet: signal %d: waits released %s, device drained %s, %d arena ranges unregistered, %.0f ms\n",
                      sig, r.released ? "yes" : "no", r.drained ? "yes" : "no", ranges, now() * 1000.0);
     std::fflush(stdout);
@@ -460,7 +461,7 @@ void install(int dev) {
 // BYIELD is for a read that has ended, and the drain (and the refill after it) did nothing for it
 bool pipe_byield_nodrain_env() {
     static const bool on = [] {
-        const char* v = std::getenv("STRATA_PIPE_BYIELD_NODRAIN");
+        const char* v = strata::env("NOSTROMA_PIPE_BYIELD_NODRAIN");
         return v && v[0] != '0';
     }();
     return on;
@@ -472,7 +473,7 @@ bool pipe_byield_nodrain_env() {
 // token and the state are the same; the rows before it commit as the prompt windows commit them
 bool admit_merge_first_env() {
     static const bool on = [] {
-        const char* v = std::getenv("STRATA_ADMIT_MERGE_FIRST");
+        const char* v = strata::env("NOSTROMA_ADMIT_MERGE_FIRST");
         return v && v[0] != '0';
     }();
     return on;
@@ -482,14 +483,14 @@ bool admit_merge_first_env() {
 // resizes nothing (no zero-fill of ~118 MB of fresh vectors) and a slot's copy reuses their pages.  Every byte is
 // overwritten by the copy, so the checkpoints are the same
 bool park_async_env() {   // STRATA_PARK_ASYNC (strata/core/conversation_snapshot.hpp)
-    static const bool on = [] { const char* v = std::getenv("STRATA_PARK_ASYNC"); return v != nullptr && v[0] == '1'; }();
+    static const bool on = [] { const char* v = strata::env("NOSTROMA_PARK_ASYNC"); return v != nullptr && v[0] == '1'; }();
     return on;
 }
 // STRATA_CKPT_POOL: unset = the engine's default (on in a single-stage serve with a conversation cache: park_pool_plan), 0 = off, any
 // other value = on.  -1 unset, 0 off, 1 on (read once)
 int ckpt_pool_env_state() {
     static const int state = [] {
-        const char* v = std::getenv("STRATA_CKPT_POOL");
+        const char* v = strata::env("NOSTROMA_CKPT_POOL");
         return v ? (v[0] != '0' ? 1 : 0) : -1;
     }();
     return state;
@@ -503,7 +504,7 @@ bool ckpt_pool_env() { return ckpt_pool_env_state() == 1; }
 std::atomic<size_t>& ckpt_pool_ready_default() { static std::atomic<size_t> n{0}; return n; }
 size_t ckpt_pool_ready_env() {
     static const long env = [] {
-        const char* v = std::getenv("STRATA_CKPT_POOL_READY");
+        const char* v = strata::env("NOSTROMA_CKPT_POOL_READY");
         return v ? std::atol(v) : -1L;
     }();
     if (env < 0) return ckpt_pool_ready_default().load();
@@ -520,7 +521,7 @@ size_t ckpt_pool_cap_env() { return std::max<size_t>(2, ckpt_pool_ready_env()); 
 // the buffers live differs.  -1: unset.
 long long park_segpool_env_mib() {
     static const long long mib = [] {
-        const char* v = std::getenv("STRATA_PARK_SEGPOOL_MIB");
+        const char* v = strata::env("NOSTROMA_PARK_SEGPOOL_MIB");
         if (v == nullptr) return -1LL;
         const long long n = std::atoll(v);
         return n > 0 ? n : 0LL;
@@ -532,7 +533,7 @@ long long park_segpool_env_mib() {
 // private streams are per thread), instead of one stage after the other.  Each part is the same copy of the same state
 bool ckpt_threads_env() {
     static const bool on = [] {
-        const char* v = std::getenv("STRATA_CKPT_THREADS");
+        const char* v = strata::env("NOSTROMA_CKPT_THREADS");
         return v && v[0] != '0';
     }();
     return on;
@@ -545,7 +546,7 @@ bool ckpt_threads_env() {
 // dropped checkpoints' storage as STRATA_CKPT_POOL does (the slot's old checkpoint is the next save's)
 bool slot_ckpt_move_env() {
     static const bool on = [] {
-        const char* v = std::getenv("STRATA_SLOT_CKPT_MOVE");
+        const char* v = strata::env("NOSTROMA_SLOT_CKPT_MOVE");
         return v && v[0] != '0';
     }();
     return on;
@@ -556,7 +557,7 @@ bool slot_ckpt_move_env() {
 // same copies in the same order on one stream, so the slot holds the same bytes
 bool slot_copy_batchsync_env() {
     static const bool on = [] {
-        const char* v = std::getenv("STRATA_SLOT_COPY_BATCHSYNC");
+        const char* v = strata::env("NOSTROMA_SLOT_COPY_BATCHSYNC");
         return v && v[0] != '0';
     }();
     return on;
@@ -574,7 +575,7 @@ bool slot_copy_batchsync_env() {
 // then - `blob()` is not free (it counts reads, and the file tier may assemble the blob), so the default runs skip it.
 bool pin_blobs_on() {
 #if (defined(STRATA_USE_HIP) || defined(STRATA_HIP_GFX906)) && !defined(_WIN32)
-    static const bool on = std::getenv("STRATA_ARENA_MMAP") && std::getenv("STRATA_ARENA_MMAP")[0] == '1';
+    static const bool on = strata::env("NOSTROMA_ARENA_MMAP") && strata::env("NOSTROMA_ARENA_MMAP")[0] == '1';
     return on;
 #else
     return false;
@@ -588,7 +589,7 @@ bool pin_blobs_on() {
 cudaError_t adapt_copy_h2d(void* dst, const void* src, size_t bytes, cudaStream_t st) {
 #if defined(STRATA_USE_HIP)
     static const bool kernel = [] {
-        const char* e = std::getenv("STRATA_HIP_ADAPT_KERNEL_COPY");
+        const char* e = strata::env("NOSTROMA_HIP_ADAPT_KERNEL_COPY");
         const bool on = e != nullptr && e[0] == '1';
         if (on) std::fprintf(stderr, "strata: STRATA_HIP_ADAPT_KERNEL_COPY=1: adaptive swaps copy with a kernel, not SDMA (#884)\n");
         return on;
@@ -638,7 +639,7 @@ void unpin_blobs(std::vector<void*>& v) {
 
 // STRATA_RSS_TRACE=1: the process's mapped file pages (the arena) at a startup step - who reads the arena back
 void rss_probe(const char* where) {
-    static const bool on = std::getenv("STRATA_RSS_TRACE") != nullptr;
+    static const bool on = strata::env("NOSTROMA_RSS_TRACE") != nullptr;
     if (!on) return;
     FILE* f = std::fopen("/proc/self/status", "r");
     if (!f) return;
@@ -652,7 +653,7 @@ void rss_probe(const char* where) {
 }
 
 bool refill_blocking() {
-    static const bool v = std::getenv("STRATA_REFILL_BLOCKING") != nullptr;
+    static const bool v = strata::env("NOSTROMA_REFILL_BLOCKING") != nullptr;
     return v;
 }
 
@@ -662,8 +663,8 @@ using Clock = std::chrono::steady_clock;
 // LOOKUP_PON, PRESTAGE, AGREE, SNAP_OVERLAP, SPEC_DEPTH) is read only with STRATA_PIPELINE_DEBUG=1; without it the
 // defaults apply.
 static const char* pipe_dbg_env(const char* name) {
-    static const bool on = [] { const char* v = std::getenv("STRATA_PIPELINE_DEBUG"); return v != nullptr && v[0] != 0 && v[0] != '0'; }();
-    return on ? std::getenv(name) : nullptr;
+    static const bool on = [] { const char* v = strata::env("NOSTROMA_PIPELINE_DEBUG"); return v != nullptr && v[0] != 0 && v[0] != '0'; }();
+    return on ? strata::env(name) : nullptr;     // NOSTROMA_* wins, the old STRATA_* name still works (strata/env.hpp)
 }
 
 // The resident RAM mode and the adaptive tier.  A swap copies `in` (held in RAM) into the slot of `out` (held only
@@ -1808,7 +1809,7 @@ void disk_wait_threads(std::FILE* f) {
 // #2824: what the drive under `path` reads at, GB/s, for the prompt planner (it prices the file set a chunk re-reads).  Linux:
 // rotational disk 0.15, NVMe 2.5, other 0.45 (SATA); elsewhere 1.5.  STRATA_SSD_GBPS overrides.  `why` says where it came from.
 double drive_read_gbps(const std::string& path, std::string& why) {
-    if (const char* e = std::getenv("STRATA_SSD_GBPS"); e != nullptr && std::atof(e) > 0.0) {
+    if (const char* e = strata::env("NOSTROMA_SSD_GBPS"); e != nullptr && std::atof(e) > 0.0) {
         why = "STRATA_SSD_GBPS";
         return std::atof(e);
     }
@@ -2005,7 +2006,7 @@ static void print(std::FILE* f) {
 
 void stall_report(std::FILE* f, uint64_t layers_during) {
 #if defined(_WIN32)
-    const bool want_stacks = [] { const char* e = std::getenv("STRATA_STALL_STACKS"); return e != nullptr && e[0] == '1'; }();
+    const bool want_stacks = [] { const char* e = strata::env("NOSTROMA_STALL_STACKS"); return e != nullptr && e[0] == '1'; }();
     if (want_stacks) stall_stacks::collect();   // first: the stacks as they were when the stall was noticed
 #endif
     strata::core::Progress& p = strata::core::progress();
@@ -2114,10 +2115,10 @@ static void uma_refuse_chunk_if_full(int64_t chunk, bool borrows, double cache_g
     (void) chunk; (void) borrows; (void) cache_gib;   // observed on the Strix Halo (HIP) only: CUDA and Metal builds are untouched
     return;
 #else
-    if (borrows || chunk <= 16384 || spill_discrete_gpu() || std::getenv("STRATA_PF_OWN_PROBE_OFF") != nullptr) return;
+    if (borrows || chunk <= 16384 || spill_discrete_gpu() || strata::env("NOSTROMA_PF_OWN_PROBE_OFF") != nullptr) return;
     std::string why;
     if (uma_launch_probe(why)) {
-        if (std::getenv("STRATA_TRACE") != nullptr) std::fprintf(stderr, "strata trace: the launch probe passed with a %lld-token chunk\n", (long long) chunk);
+        if (strata::env("NOSTROMA_TRACE") != nullptr) std::fprintf(stderr, "strata trace: the launch probe passed with a %lld-token chunk\n", (long long) chunk);
         return;
     }
     const int64_t next = strata::core::gfx12_chunk_step_down(chunk);
@@ -2130,7 +2131,7 @@ static void uma_refuse_chunk_if_full(int64_t chunk, bool borrows, double cache_g
 
 /// STRATA_TRACE=1: the VRAM left at a step of the startup (finds what fills the card after the cache is sized)
 void mem_mark(const char* where) {
-    static const char* const env = std::getenv("STRATA_TRACE");
+    static const char* const env = strata::env("NOSTROMA_TRACE");
     if (env == nullptr) return;
     size_t free_b = 0, total_b = 0;
     cudaMemGetInfo(&free_b, &total_b);
@@ -2149,7 +2150,7 @@ void mem_mark(const char* where) {
 
 /// #463's A/B: STRATA_ADAPT_NOWAIT=1 lets a verify window start before the adaptive tier's copies have landed (0.1.37)
 bool adapt_nowait() {
-    static const bool v = [] { const char* e = std::getenv("STRATA_ADAPT_NOWAIT"); return e && e[0] == '1'; }();
+    static const bool v = [] { const char* e = strata::env("NOSTROMA_ADAPT_NOWAIT"); return e && e[0] == '1'; }();
     return v;
 }
 
@@ -2159,7 +2160,7 @@ bool adapt_nowait() {
 /// 0.1.39 (the very next window waits for the copies: ~4.6 ms per window on an RTX 2060 SUPER over PCIe 3.0 x8); lag 2 is
 /// opt-in (STRATA_ADAPT_LAG=2).  The batch paths, --pipeline-windows and the peer tier are not lagged.  (#764)
 int adapt_lag() {
-    static const int v = [] { const char* e = std::getenv("STRATA_ADAPT_LAG"); return e ? std::max(1, std::atoi(e)) : 1; }();
+    static const int v = [] { const char* e = strata::env("NOSTROMA_ADAPT_LAG"); return e ? std::max(1, std::atoi(e)) : 1; }();
     return v;
 }
 
@@ -2171,7 +2172,7 @@ int adapt_lag() {
 /// (=1 turns it on); the startup log names the state, and why when it cannot run.
 bool adapt_overlap() {
     static const bool v = [] {
-        const char* e = std::getenv("STRATA_ADAPT_OVERLAP");
+        const char* e = strata::env("NOSTROMA_ADAPT_OVERLAP");
         // Opt-in on every backend (#2010).  Windows CUDA since 0.1.43: an RTX 5070 decoded Q2_0 2.6% slower with it
         // (story decode, -2.1% code), IQ3_XXS no faster.  Linux CUDA was on by default from 0.1.43 (same tokens, +5.5..8.3%
         // decode on an A4000, +4.4% on a P100) until an RTX 5090 Laptop (WSL2, Core Ultra 9 275HX, native IQ3_XXS pack,
@@ -2237,13 +2238,13 @@ std::string draft_costs_key(int argc, char** argv, const std::string& extra, boo
 /// the tier's own copies from RAM; 2 = instead of them (the tier's counts still decay).  STRATA_ADAPT_FETCH_MIN and
 /// STRATA_ADAPT_FETCH_MARGIN: the admission's thresholds (default 1 and 0.5).
 int adapt_fetch() {
-    static const int v = [] { const char* e = std::getenv("STRATA_ADAPT_FETCH"); return e ? std::max(0, std::min(2, std::atoi(e))) : 0; }();
+    static const int v = [] { const char* e = strata::env("NOSTROMA_ADAPT_FETCH"); return e ? std::max(0, std::min(2, std::atoi(e))) : 0; }();
     return v;
 }
 
 /// ExpertDispatch::evict_sync where the tier does not wait for its copies; STRATA_ADAPT_EVICT_SYNC=0 turns it off.
 bool adapt_evict_sync() {
-    static const bool v = [] { const char* e = std::getenv("STRATA_ADAPT_EVICT_SYNC"); return e == nullptr || std::atoi(e) != 0; }();
+    static const bool v = [] { const char* e = strata::env("NOSTROMA_ADAPT_EVICT_SYNC"); return e == nullptr || std::atoi(e) != 0; }();
     return v;
 }
 
@@ -2399,7 +2400,7 @@ private:
         // two-thread core (Windows); STRATA_ADAPT_JOB_CPU=<logical cpu>, or -1 for no pinning.  Without either, --aux-cpus
         // (off by default) puts the thread on the spare CPUs; an explicit STRATA_ADAPT_JOB_CPU is the user's word over it.
         strata::platform::name_this_thread("strata-adapt-job");
-        const char* c = std::getenv("STRATA_ADAPT_JOB_CPU");
+        const char* c = strata::env("NOSTROMA_ADAPT_JOB_CPU");
         const int cpu = c != nullptr ? std::atoi(c) : smt_spare_cpu();
         if (cpu >= 0) (void) strata::kernels::cpu::pin_current_thread(cpu);
         if (c != nullptr) strata::aux_cpus::note_owned_thread();
@@ -2726,7 +2727,7 @@ static bool pcie_auto_split_ok() {
 #else
         const bool hip = false;
 #endif
-        return strata::pcie_auto_split_default(hip, spill_discrete_gpu(), strata::qwen_defaults_026(), std::getenv("STRATA_PCIE_AUTO_SPLIT"));
+        return strata::pcie_auto_split_default(hip, spill_discrete_gpu(), strata::qwen_defaults_026(), strata::env("NOSTROMA_PCIE_AUTO_SPLIT"));
     }();
     return on;
 }
@@ -2777,7 +2778,7 @@ static bool pcie_auto_split_ok() {
 // gfx1201 (where it is the default, decode_defaults_arch_ok), so the other parts keep the fixed share unless asked.
 [[maybe_unused]] static bool pcie_auto_fork_arch_ok() {
 #if defined(STRATA_USE_HIP)
-    const char* pfd = std::getenv("STRATA_PCIE_FRAC_DEFAULT");
+    const char* pfd = strata::env("NOSTROMA_PCIE_FRAC_DEFAULT");
     return pfd != nullptr && std::strcmp(pfd, "auto") == 0;
 #else
     return false;
@@ -2971,11 +2972,11 @@ struct WarmJoin { ~WarmJoin() { if (g_warm_thr.joinable()) g_warm_thr.join(); } 
 /// GPU (Strix Halo and the other APUs, whose "link" is the shared memory) and STRATA_DEFAULTS=026 keep 0.60 and 1.85.  STRATA_PCIE_SHARE_MAX /
 /// STRATA_PCIE_K_RULE=0 or 1 set either by hand.
 static double pcie_share_max() {
-    static const double v = strata::pcie_share_ceiling(spill_discrete_gpu(), strata::qwen_defaults_026(), std::getenv("STRATA_PCIE_SHARE_MAX"));
+    static const double v = strata::pcie_share_ceiling(spill_discrete_gpu(), strata::qwen_defaults_026(), strata::env("NOSTROMA_PCIE_SHARE_MAX"));
     return v;
 }
 static double pcie_pool_k(double r) {
-    static const bool on = strata::pcie_k_rule_default(spill_discrete_gpu(), strata::qwen_defaults_026(), std::getenv("STRATA_PCIE_K_RULE"));
+    static const bool on = strata::pcie_k_rule_default(spill_discrete_gpu(), strata::qwen_defaults_026(), strata::env("NOSTROMA_PCIE_K_RULE"));
     return strata::pcie_pool_k(r, on);
 }
 
@@ -3357,9 +3358,9 @@ static double ple_direct_rows_per_s(strata::kernels::PleTable& t) {
 //   STRATA_HIP_QUEUE_PRIME unset: gfx1200 / gfx1201 on Linux only, "nn" (not when GPU_MAX_HW_QUEUES is 1 or 2, #3480); "0": off; any other string is a spec
 //   ('n' = a stream at the default priority, 'h' = at the highest) for experiments on other cards.
 static void prime_hw_queues() {
-    const char* env = std::getenv("STRATA_HIP_QUEUE_PRIME");
+    const char* env = strata::env("NOSTROMA_HIP_QUEUE_PRIME");
     if (env != nullptr && std::strcmp(env, "0") == 0) return;
-    const char* pv = std::getenv("STRATA_PRIMARY_DEVICE");
+    const char* pv = strata::env("NOSTROMA_PRIMARY_DEVICE");
     const int dev = pv != nullptr && std::atoi(pv) > 0 ? std::atoi(pv) : 0;
     int n_dev = 0;
     if (cudaGetDeviceCount(&n_dev) != cudaSuccess || dev >= n_dev) { (void) cudaGetLastError(); return; }
@@ -3504,11 +3505,11 @@ static bool prepare_gated_window(strata::core::gated::Packet& packet,
     std::_Exit(3);
 }
 static void exit_if_gpu_fatal(const std::string& err) {
-    static const long inject = [] { const char* v = std::getenv("STRATA_INJECT_FATAL"); return v != nullptr ? std::atol(v) : 0L; }();
+    static const long inject = [] { const char* v = strata::env("NOSTROMA_INJECT_FATAL"); return v != nullptr ? std::atol(v) : 0L; }();
     static long windows = 0;
     if (inject > 0 && ++windows == inject) {
         // STRATA_INJECT_FATAL_ONCE=<file>: fires once across restarts (the file is made when it fires; while it exists nothing is injected)
-        const char* once = std::getenv("STRATA_INJECT_FATAL_ONCE");
+        const char* once = strata::env("NOSTROMA_INJECT_FATAL_ONCE");
         bool fire = true;
         if (once != nullptr && *once) {
             if (std::FILE* t = std::fopen(once, "rb")) { std::fclose(t); fire = false; }
@@ -3585,7 +3586,7 @@ int main(int argc, char** argv) {
     // experts.bin stayed resident, the release of the VRAM-held ones was undone by the driver at once, and a
     // 32 GB PC ran with ~0.3 GB free: the kernel swapped, and a turn's checkpoint took 25-80 s.  Above this size
     // ROCclr stages through its own pinned buffers instead; decode is unchanged (49.06 vs 49.16 ms/window).
-    if (std::getenv("STRATA_ARENA_MMAP") && std::getenv("STRATA_ARENA_MMAP")[0] == '1')
+    if (strata::env("NOSTROMA_ARENA_MMAP") && strata::env("NOSTROMA_ARENA_MMAP")[0] == '1')
         setenv("GPU_PINNED_MIN_XFER_SIZE", "1000000", 0);   // MiB; an explicit setting wins
 #endif
 #if defined(STRATA_USE_HIP) && defined(__linux__)
@@ -3595,10 +3596,10 @@ int main(int argc, char** argv) {
     // kernel can move under a running dispatch.  A value the caller set wins; STRATA_KFD_QUIET(_XFER)=0 sets nothing.
     {
         const bool cls = strata::core::kfd_quiet::nodes_in_class(strata::core::kfd_quiet::read_topology("/sys/class/kfd/kfd/topology/nodes"));
-        if (const char* v = strata::core::kfd_quiet::xfer_value(cls, std::getenv("STRATA_KFD_QUIET"), std::getenv("STRATA_KFD_QUIET_XFER"),
+        if (const char* v = strata::core::kfd_quiet::xfer_value(cls, strata::env("NOSTROMA_KFD_QUIET"), strata::env("NOSTROMA_KFD_QUIET_XFER"),
                                                                std::getenv("GPU_PINNED_MIN_XFER_SIZE"))) {
             setenv("GPU_PINNED_MIN_XFER_SIZE", v, 0);
-            if (std::getenv("STRATA_TRACE") != nullptr)
+            if (strata::env("NOSTROMA_TRACE") != nullptr)
                 std::fprintf(stderr, "strata trace: kfd quiet: GPU_PINNED_MIN_XFER_SIZE=%s (pageable copies staged by the runtime)\n", v);
         }
     }
@@ -3826,7 +3827,7 @@ int main(int argc, char** argv) {
             const std::string v = next("--prefill");
             o.prefill_auto = v == "auto" || v.rfind("auto:", 0) == 0;
             // #282: auto:N (N = 16384 or 32768) or STRATA_PREFILL_AUTO_MAX lets auto take chunks above 8192
-            const char* env_max = std::getenv("STRATA_PREFILL_AUTO_MAX");
+            const char* env_max = strata::env("NOSTROMA_PREFILL_AUTO_MAX");
             const long long want_max = v.rfind("auto:", 0) == 0 ? std::atoll(v.c_str() + 5)
                                      : (o.prefill_auto && env_max != nullptr ? std::atoll(env_max) : 8192);
             o.prefill_auto_max = want_max >= 32768 ? 32768 : want_max >= 16384 ? 16384 : 8192;
@@ -4023,8 +4024,8 @@ int main(int argc, char** argv) {
             o.resident_headroom = 4ull << 30;
             // A/B arms: STRATA_RESIDENT_PIN=0 keeps the copy pageable (the --resident-cpu-experts form);
             // STRATA_RESIDENT_HEADROOM_GIB=N leaves N GiB of the available RAM free instead of 4
-            o.resident_pin = strata::core::resident_pin_from_env(std::getenv("STRATA_RESIDENT_PIN"));
-            if (const char* v = std::getenv("STRATA_RESIDENT_HEADROOM_GIB"); v != nullptr && std::atof(v) >= 0.0)
+            o.resident_pin = strata::core::resident_pin_from_env(strata::env("NOSTROMA_RESIDENT_PIN"));
+            if (const char* v = strata::env("NOSTROMA_RESIDENT_HEADROOM_GIB"); v != nullptr && std::atof(v) >= 0.0)
                 o.resident_headroom = (uint64_t) (std::atof(v) * 1073741824.0);
         }
         else if (a == "--ram-keep-gib") {
@@ -4038,9 +4039,9 @@ int main(int argc, char** argv) {
             if (!(gib > 0.0)) { std::fprintf(stderr, "strata generate: --resident-budget-gib needs N > 0\n"); return 2; }
             o.resident_budget = (uint64_t) (gib * 1073741824.0);
             o.mmap_experts = o.resident_cpu_experts = true;
-            o.resident_pin = strata::core::resident_pin_from_env(std::getenv("STRATA_RESIDENT_PIN"));
+            o.resident_pin = strata::core::resident_pin_from_env(strata::env("NOSTROMA_RESIDENT_PIN"));
             o.resident_headroom = 4ull << 30;
-            if (const char* v = std::getenv("STRATA_RESIDENT_HEADROOM_GIB"); v != nullptr && std::atof(v) >= 0.0)
+            if (const char* v = strata::env("NOSTROMA_RESIDENT_HEADROOM_GIB"); v != nullptr && std::atof(v) >= 0.0)
                 o.resident_headroom = (uint64_t) (std::atof(v) * 1073741824.0);
         }
         else if (a == "--stats") o.stats = true;
@@ -4065,9 +4066,9 @@ int main(int argc, char** argv) {
         // raises the headroom of the explicit RAM modes (--resident-budget-gib, --resident-experts) to at least W, unless
         // STRATA_RESIDENT_HEADROOM_GIB is set (that value wins).
         if (!ram_keep_by_flag)
-            if (const char* v = std::getenv("STRATA_RAM_KEEP_GIB"); v != nullptr && v[0] != '\0' && std::atof(v) > 0.0)
+            if (const char* v = strata::env("NOSTROMA_RAM_KEEP_GIB"); v != nullptr && v[0] != '\0' && std::atof(v) > 0.0)
                 o.ram_keep = strata::core::ram_keep_from_gib(std::atof(v));
-        const char* hv = std::getenv("STRATA_RESIDENT_HEADROOM_GIB");
+        const char* hv = strata::env("NOSTROMA_RESIDENT_HEADROOM_GIB");
         if (o.ram_keep > 0 && !(hv != nullptr && std::atof(hv) >= 0.0) && o.resident_headroom < o.ram_keep)
             o.resident_headroom = o.ram_keep;
     }
@@ -4132,21 +4133,21 @@ int main(int argc, char** argv) {
                 // registers.
                 const bool noreg_cls =
                     strata::core::kfd_quiet::nodes_in_noreg_class(strata::core::kfd_quiet::read_topology("/sys/class/kfd/kfd/topology/nodes"));
-                if (strata::core::kfd_quiet::noreg_default(noreg_cls, std::getenv("STRATA_KFD_QUIET"), std::getenv("STRATA_KFD_QUIET_NOREG"),
-                                                           std::getenv("STRATA_UMA_REGISTER"))) {
+                if (strata::core::kfd_quiet::noreg_default(noreg_cls, strata::env("NOSTROMA_KFD_QUIET"), strata::env("NOSTROMA_KFD_QUIET_NOREG"),
+                                                           strata::env("NOSTROMA_UMA_REGISTER"))) {
                     strata::core::arena_uma_no_register_flag().store(true);
                     strata::core::kfd_quiet::noreg_flag().store(true);
-                    if (std::getenv("STRATA_TRACE") != nullptr)
+                    if (strata::env("NOSTROMA_TRACE") != nullptr)
                         std::fprintf(stderr, "strata trace: kfd quiet: expert arena not registered with the driver, no mlock (%s)\n",
                                      strata::core::arena_no_register() ? "in effect" : "STRATA_ARENA_PIN_GIB set: registered as it says");
                 }
-                if (std::getenv("STRATA_TRACE") != nullptr && strata::core::kfd_quiet::on(strata::core::kfd_quiet::Fix::Load))
+                if (strata::env("NOSTROMA_TRACE") != nullptr && strata::core::kfd_quiet::on(strata::core::kfd_quiet::Fix::Load))
                     std::fprintf(stderr, "strata trace: kfd quiet: load order active (check first, settle after the expert cache, first prompt's buffers at init)\n");
                 if (strata::core::kfd_quiet::on(strata::core::kfd_quiet::Fix::Exit)) {
                     int cur = 0;
                     if (cudaGetDevice(&cur) != cudaSuccess) { cur = 0; (void) cudaGetLastError(); }
                     kfdq_exit::install(cur);
-                    if (std::getenv("STRATA_TRACE") != nullptr)
+                    if (strata::env("NOSTROMA_TRACE") != nullptr)
                         std::fprintf(stderr, "strata trace: kfd quiet: stop on SIGTERM / SIGINT / SIGHUP drains the GPU first (at most 3 s)\n");
                 }
             }
@@ -4159,13 +4160,13 @@ int main(int argc, char** argv) {
             // 8192 chunk back.  IQ3_S, 8K prompt: 691 -> 787 tok/s (one chunk streams 1,785 experts instead of 2,782), 64K 713 -> 748;
             // 4K is one chunk already.  STRATA_GFX1151_CHUNK=0 (or STRATA_GFX1151_DEFAULTS=0) keeps 6144.
             if (win_host && all_igpu && std::strncmp(ad.gcnArchName, "gfx1151", 7) == 0) {   // #1630 was a discrete RX 7900 XTX: no warning about a named chunk here
-                const char* c1w = std::getenv("STRATA_GFX1151_CHUNK");
-                const char* d1w = std::getenv("STRATA_GFX1151_DEFAULTS");
+                const char* c1w = strata::env("NOSTROMA_GFX1151_CHUNK");
+                const char* d1w = strata::env("NOSTROMA_GFX1151_DEFAULTS");
                 if (!(c1w != nullptr && c1w[0] == '0') && !(d1w != nullptr && d1w[0] == '0')) o.prefill_cap_warn_skip = true;
             }
             if (win_host && all_igpu && o.prefill_auto_bare && o.prefill_auto_cap > 0 && std::strncmp(ad.gcnArchName, "gfx1151", 7) == 0) {
-                const char* c1 = std::getenv("STRATA_GFX1151_CHUNK");
-                const char* d1 = std::getenv("STRATA_GFX1151_DEFAULTS");
+                const char* c1 = strata::env("NOSTROMA_GFX1151_CHUNK");
+                const char* d1 = strata::env("NOSTROMA_GFX1151_DEFAULTS");
                 if (!(c1 != nullptr && c1[0] == '0') && !(d1 != nullptr && d1[0] == '0')) {
                     o.prefill_auto_cap = 0;
                     // 0.2.8: 16,384 rather than 8,192.  The prompt reads every expert once per chunk, so a bigger chunk
@@ -4184,8 +4185,8 @@ int main(int argc, char** argv) {
             // still fits: 46.84 GiB of experts against a 63.6 GB carve-out).  STRATA_PREFILL_BORROW=1 keeps 0.2.7's
             // lending, STRATA_GFX1151_DEFAULTS=0 turns the whole gfx1151 block off.
             if (win_host && all_igpu && std::strncmp(ad.gcnArchName, "gfx1151", 7) == 0) {
-                const char* pb = std::getenv("STRATA_PREFILL_BORROW");
-                const char* pd = std::getenv("STRATA_GFX1151_DEFAULTS");
+                const char* pb = strata::env("NOSTROMA_PREFILL_BORROW");
+                const char* pd = strata::env("NOSTROMA_GFX1151_DEFAULTS");
                 if (!(pb != nullptr && pb[0] == '1') && !(pd != nullptr && pd[0] == '0')) {
                     o.no_prefill_borrow = true;
                     o.prefill_own_keep_chunk = true;
@@ -4253,7 +4254,7 @@ int main(int argc, char** argv) {
         // auto:N or STRATA_PREFILL_AUTO_MAX is never touched (prefill_auto_bare is false then).  STRATA_NV_CHUNK=0 or STRATA_DEFAULTS=026 keeps 8192,
         // STRATA_NV_CHUNK=16 keeps 16384.  A layer split takes 8192 back (like gfx12; STRATA_SPLIT_CHUNK16K=1 keeps the raised ceiling).
         // A6000 UD-Q4_K_XL (13.1K of 24.6K experts in VRAM): 20K +43.4%, 32K +22.5%, 64K +21.3%, 8K 0.0%; cards that hold every expert: flat.
-        const int64_t top = strata::core::nv_chunk_ceiling(std::getenv("STRATA_NV_CHUNK"), strata::qwen_defaults_026());
+        const int64_t top = strata::core::nv_chunk_ceiling(strata::env("NOSTROMA_NV_CHUNK"), strata::qwen_defaults_026());
         int nd = 0, lo_major = 99, lo_minor = 99;   // the lowest compute capability of the visible cards
         if (top > 0 && cudaGetDeviceCount(&nd) == cudaSuccess && nd > 0) {
             for (int d = 0; d < nd; ++d) {
@@ -4284,8 +4285,8 @@ int main(int argc, char** argv) {
         // chunk of 1,024 tokens or more streams all the experts the card does not hold.  R9700 (p620, IQ3_S, 3 rounds interleaved): 20K +12.1%, 32K +1.3%,
         // 64K +2.6%, 8K +0.9%; UD-Q4_K_XL 20K +26%; first-token KL against 16384 at most 5e-5 (3 of 6 prompts bitwise).  The loan is only taken for
         // what a prompt needs, and the RAM guard below steps 32768 -> 16384 -> 8192.  STRATA_GFX12_CHUNK=16 keeps 16384.
-        const char* c0 = std::getenv("STRATA_GFX12_CHUNK");
-        const char* d0 = std::getenv("STRATA_GFX12_DEFAULTS");
+        const char* c0 = strata::env("NOSTROMA_GFX12_CHUNK");
+        const char* d0 = strata::env("NOSTROMA_GFX12_DEFAULTS");
         cudaDeviceProp cp{};
         if (strata::core::gfx12_chunk_ceiling(c0) > 0 && !(d0 != nullptr && d0[0] == '0') &&
             cudaGetDeviceProperties(&cp, 0) == cudaSuccess && strata::kernels::gfx_arch_is_gfx12(cp.gcnArchName)) {
@@ -4323,7 +4324,7 @@ int main(int argc, char** argv) {
         // STRATA_NUMA_CARD=0, or any case decide_card_node leaves as it is: nothing changes.
         namespace kc = strata::kernels::cpu;
         kc::CardNodeInput ci;
-        ci.switch_off = kc::card_node_switch_off(std::getenv("STRATA_NUMA_CARD"));
+        ci.switch_off = kc::card_node_switch_off(strata::env("NOSTROMA_NUMA_CARD"));
         const std::map<int, std::vector<int>> node_cpus =
             ci.switch_off ? std::map<int, std::vector<int>>{} : kc::card_node_node_cpus("/sys");
         ci.nodes_with_cpus = ci.switch_off ? 1 : (std::max)(1, (int) node_cpus.size());
@@ -4333,7 +4334,7 @@ int main(int argc, char** argv) {
             std::string status;
             if (kc::card_node_read_file("/proc/self/status", status)) ci.mems_known = kc::card_node_mems_allowed(status, ci.mems_allowed);
             // the cards the run uses: the primary one; with a layer split, helper caches or a peer card, every visible one
-            const char* pv = std::getenv("STRATA_PRIMARY_DEVICE");
+            const char* pv = strata::env("NOSTROMA_PRIMARY_DEVICE");
             const int primary = pv != nullptr && std::atoi(pv) > 0 ? std::atoi(pv) : 0;
             bool several = !o.layer_split.empty() || o.peer_device >= 1;
             for (int r = 0; r < 3; ++r) several = several || o.expert_cache_remote[(size_t) r] > 0 || o.expert_cache_remote_auto[(size_t) r];
@@ -4359,10 +4360,10 @@ int main(int argc, char** argv) {
             // the person placed the threads: their placement stays
             std::string pc = o.pool_cores, ac = o.aux_cpus;
             if (pc.empty())
-                if (const char* e = std::getenv("STRATA_POOL_CORES")) pc = e;
+                if (const char* e = strata::env("NOSTROMA_POOL_CORES")) pc = e;
             if (ac.empty())
-                if (const char* e = std::getenv("STRATA_AUX_CPUS")) ac = e;
-            const char* split_env = std::getenv("STRATA_NUMA_SPLIT");
+                if (const char* e = strata::env("NOSTROMA_AUX_CPUS")) ac = e;
+            const char* split_env = strata::env("NOSTROMA_NUMA_SPLIT");
             if (!pc.empty()) ci.user_placed = "--pool-cores is set";
             else if (split_env != nullptr && *split_env != '\0') ci.user_placed = "STRATA_NUMA_SPLIT is set";
             else if (!ac.empty() && ac != "auto" && ac != "off") ci.user_placed = "an --aux-cpus list is set";
@@ -4372,7 +4373,7 @@ int main(int argc, char** argv) {
             ci.cpu_quota = topo.cpu_quota;
             ci.user_workers = o.pool_workers > 0 ? o.pool_workers : 0;
             kc::PoolPlanInput pin = kc::pool_plan_input(topo);
-            pin.span_packages = kc::pick_numa_pool(std::getenv("STRATA_NUMA_POOL"), split_env, ci.nodes_with_cpus).choice ==
+            pin.span_packages = kc::pick_numa_pool(strata::env("NOSTROMA_NUMA_POOL"), split_env, ci.nodes_with_cpus).choice ==
                                 kc::NumaPoolChoice::Auto;
             ci.today_workers = ci.user_workers > 0 ? ci.user_workers
                                                    : (std::min)(kc::plan_pool_workers(pin).workers,
@@ -4385,7 +4386,7 @@ int main(int argc, char** argv) {
         // as it is now: the card's node, or the set the process was started with (a taskset is kept); the switch off:
         // every CPU, as before
         if (!ci.switch_off) strata::platform::set_home_cpus(kc::card_node_thread_cpus());
-        if (std::getenv("STRATA_TRACE") != nullptr) {
+        if (strata::env("NOSTROMA_TRACE") != nullptr) {
             std::string cpus;
             for (size_t i = 0; i < cd.cpus.size(); ++i) cpus += (i ? "," : "") + std::to_string(cd.cpus[i]);
             std::fprintf(stderr, "strata trace: card node: %d nodes with CPUs; cards: %s; card node free %lld MiB, pinned need %llu MiB; "
@@ -4400,7 +4401,7 @@ int main(int argc, char** argv) {
     {   // --host-core / STRATA_HOST_CORE, before the pool and the session pin any thread
         std::string hc = o.host_core;
         if (hc.empty())
-            if (const char* e = std::getenv("STRATA_HOST_CORE")) hc = e;
+            if (const char* e = strata::env("NOSTROMA_HOST_CORE")) hc = e;
         if (hc == "last") strata::kernels::cpu::set_host_core(strata::kernels::cpu::HostCore::Last);
         if (hc == "sibling") strata::kernels::cpu::set_host_core(strata::kernels::cpu::HostCore::Sibling);
     }
@@ -4408,7 +4409,7 @@ int main(int argc, char** argv) {
         // said and left out: the pool keeps its default placement (recommend, never force).
         std::string pc = o.pool_cores;
         if (pc.empty())
-            if (const char* e = std::getenv("STRATA_POOL_CORES")) pc = e;
+            if (const char* e = strata::env("NOSTROMA_POOL_CORES")) pc = e;
         if (!pc.empty()) {
             std::vector<int> cpus;
             std::string perr;
@@ -4420,7 +4421,7 @@ int main(int argc, char** argv) {
         // follows once the pool exists (it needs the workers' CPUs)
         std::string ac = o.aux_cpus;
         if (ac.empty())
-            if (const char* e = std::getenv("STRATA_AUX_CPUS")) ac = e;
+            if (const char* e = strata::env("NOSTROMA_AUX_CPUS")) ac = e;
         std::string aerr;
         if (!strata::aux_cpus::configure(ac, aerr)) {
             std::fprintf(stderr, "strata generate: STRATA_AUX_CPUS: %s\n", aerr.c_str());
@@ -4433,7 +4434,7 @@ int main(int argc, char** argv) {
     {   // the RAM guard (parking, session save/restore): --memory-limit-mib, else STRATA_MEMORY_LIMIT_MIB, else none
         int64_t mib = o.memory_limit_mib;
         if (mib < 0) {
-            const char* env = std::getenv("STRATA_MEMORY_LIMIT_MIB");
+            const char* env = strata::env("NOSTROMA_MEMORY_LIMIT_MIB");
             if (env != nullptr && env[0] != '\0') {
                 const size_t len = std::strlen(env);
                 const auto parsed = std::from_chars(env, env + len, mib);
@@ -4470,7 +4471,7 @@ int main(int argc, char** argv) {
     // slower card first a run could only put the model on it (RX 6600 before RX 6800).  0 (unset) is upstream's
     // behavior; the helper caches and the peer tier follow it, a layer split still assumes device 0 (see below).
     const int primary_device = [] {
-        const char* v = std::getenv("STRATA_PRIMARY_DEVICE");
+        const char* v = strata::env("NOSTROMA_PRIMARY_DEVICE");
         const int n = v != nullptr ? std::atoi(v) : 0;
         return n > 0 ? n : 0;
     }();
@@ -4518,7 +4519,7 @@ int main(int argc, char** argv) {
         }
         // THE LAYER SPLIT'S SPILL WALK, STEP 6: FEWER CARDS.  Under `auto`, a later card with too little free memory to hold even a trimmed share (a card another program fills) is left out
         // of the split, said plainly; with none left the start is the single card's, with its own walk and the rest of the experts in RAM.  Only the cards the engine would have picked.
-        if (ok && split_auto && !split_devs.empty() && std::getenv("STRATA_SPILL_OFF") == nullptr && spill_discrete_gpu()) {
+        if (ok && split_auto && !split_devs.empty() && strata::env("NOSTROMA_SPILL_OFF") == nullptr && spill_discrete_gpu()) {
             std::vector<int> kept;
             for (const int d : split_devs) {
                 size_t fb_c = 0, tb_c = 0;
@@ -4622,7 +4623,7 @@ int main(int argc, char** argv) {
         // 96-blob split ring that alone gave 2K +27%, 16K +5% over 0.1.31, decode unchanged, output identical.
         // STRATA_SPLIT_OWN=auto: the 12% rule above; 1: own buffers on any cards; unset/0: borrow.
         // --split-skip-if-fits keeps the loans (it can fall back to one GPU, which must stay as it is).
-        const char* own_env = std::getenv("STRATA_SPLIT_OWN");
+        const char* own_env = strata::env("NOSTROMA_SPLIT_OWN");
         if (!o.no_prefill_borrow && !o.split_skip_if_fits && own_env != nullptr && own_env[0] != '0') {
             const char* v = std::string(own_env) == "auto" ? nullptr : own_env;
             bool own = v ? v[0] == '1' : true;
@@ -4724,7 +4725,7 @@ int main(int argc, char** argv) {
     strata::core::qsa_set_kv_q4(o.kv == "q4_0");   // PR #21: 4-bit codes after a Hadamard rotation (kv_q4.hpp)
     // STRATA_KV_ROT=1: INT8 K/V through the Hadamard rotation --kv q4_0 already uses. Opt-in: first-token KL to
     // fp16 K/V improved on an NVFP4 pack (0.0066 -> 0.0051) but not on IQ2_XS (0.0022 -> 0.0054)
-    const char* kv_rot = std::getenv("STRATA_KV_ROT");
+    const char* kv_rot = strata::env("NOSTROMA_KV_ROT");
     strata::core::qsa_set_kv_int8_rotate(kv_rot != nullptr && kv_rot[0] == '1');
     if (kv_rot != nullptr && kv_rot[0] == '1' && o.kv == "int8")
         std::fprintf(stderr, "strata generate: STRATA_KV_ROT=1: INT8 K/V through the Hadamard rotation (opt-in)\n");
@@ -4745,7 +4746,7 @@ int main(int argc, char** argv) {
     // build: rewrites and agent edit turns +11..14%, prose and code within noise); --lookup-max-t 0 or STRATA_LOOKUP_MAX_T=0 turns it off.  The wide
     // builds (HIP, 16 rows), a layer split, --batch, DFlash2 and --lookup-chain keep the old windows.
     if (o.lookup_max_t < 0) {
-        const char* lme = std::getenv("STRATA_LOOKUP_MAX_T");
+        const char* lme = strata::env("NOSTROMA_LOOKUP_MAX_T");
         const bool env_off = lme != nullptr && lme[0] == '0';
         const bool narrow = strata::kernels::kVerifyMaxT == strata::kernels::kVerifyNarrowT;
         strata::core::LookupDefaultIn ld;
@@ -4783,8 +4784,8 @@ int main(int argc, char** argv) {
     // token.  For the first STRATA_SPEC_ADAPT_WARM rounds it swaps every STRATA_SPEC_ADAPT_EVERY rounds (set per card by
     // nv_defaults, where measured); later the normal interval.  An explicit --adapt-every is kept as it is.
     if (!o.adapt_every_given && o.spec >= 2 && o.adapt_every > 0) {
-        const char* e = std::getenv("STRATA_SPEC_ADAPT_EVERY");
-        const char* w = std::getenv("STRATA_SPEC_ADAPT_WARM");
+        const char* e = strata::env("NOSTROMA_SPEC_ADAPT_EVERY");
+        const char* w = strata::env("NOSTROMA_SPEC_ADAPT_WARM");
         const int n = e ? std::atoi(e) : 0;
         const long long wr = w ? std::atoll(w) : 0;
         if (n > 0 && n < o.adapt_every && wr > 0) { o.adapt_warm_every = n; o.adapt_warm_rounds = wr; }
@@ -5163,7 +5164,7 @@ int main(int argc, char** argv) {
     // STRATA_EARLY_REMOTE_CONTEXTS=1: create EVERY secondary context here, like CUDA1's.  Under WSL2 the driver's
     // pinned/mapped host budget (dxg gpadl, ~1 GiB) is spent by CUDA0's weights and MTP before the later loop runs,
     // and a new context then fails with cudaErrorMemoryAllocation (CUDA2: "cudaSetDevice(2) failed: out of memory").
-    const char* early_env = std::getenv("STRATA_EARLY_REMOTE_CONTEXTS");
+    const char* early_env = strata::env("NOSTROMA_EARLY_REMOTE_CONTEXTS");
     const bool early_remote = early_env && early_env[0] == '1';
     for (int r = 0; r < 3; ++r) if (o.expert_cache_remote[(size_t) r] > 0 && (r == 0 || early_remote)) {
         // Keep CUDA1's proven startup order: initialise its context before
@@ -5187,7 +5188,7 @@ int main(int argc, char** argv) {
     if (o.pcie_frac < 0.0) {
         const auto& lay0 = strata::kernels::cpu::expert_layout();
         const bool nvfp4_pack = native_pack && !lay0.fmt.empty() && lay0.fmt[0].gu_type == 40;
-        const char* pfd = std::getenv("STRATA_PCIE_FRAC_DEFAULT");
+        const char* pfd = strata::env("NOSTROMA_PCIE_FRAC_DEFAULT");
         const bool pf_old = pfd != nullptr && std::strcmp(pfd, "old") == 0;
         // 0.2.7: gfx12 native packs start at 0.15 (see pcie_share_gfx12_default above); other cards and
         // STRATA_PCIE_FRAC_DEFAULT=old keep the x16 share measured for them.
@@ -5195,7 +5196,7 @@ int main(int argc, char** argv) {
         std::string bursts;
 #if !defined(STRATA_USE_HIP) && defined(_WIN32)
         // Windows: opt-in (STRATA_PCIE_AUTO_CANON=1); an RTX 5070 decoded a short Q2_0 answer 3% slower with it, code 2.5% faster
-        const char* pac = std::getenv("STRATA_PCIE_AUTO_CANON");
+        const char* pac = strata::env("NOSTROMA_PCIE_AUTO_CANON");
         const bool pf_old_canon = pf_old || !(pac != nullptr && pac[0] == '1');
 #elif !defined(STRATA_USE_HIP)
         const bool pf_old_canon = pf_old;
@@ -5235,7 +5236,7 @@ int main(int argc, char** argv) {
     // one AVX2 pool worker (emulated on an RTX 5090 + 9950X3D): 16.8-17.2 -> 12.8-13.0 ms a round; the 9950X3D's own
     // 16 workers: 12.2 either way.  One GPU, no batch slots, no --pcie-frac.
     auto pcie_balance = [&]() {
-        const char* e = std::getenv("STRATA_PCIE_BALANCE");
+        const char* e = strata::env("NOSTROMA_PCIE_BALANCE");
         return !pcie_given && native_pack && !multi_gpu && o.batch <= 0 && e != nullptr && std::strcmp(e, "1") == 0;
     };
     // the canonical Q2_0 pack's CPU kernels are AVX-512 only; a native pack runs on AVX2 CPUs as well
@@ -5271,10 +5272,10 @@ int main(int argc, char** argv) {
 #else
         std::fprintf(stderr, "strata generate: CPU expert kernels: %s\n",
                      !strata::kernels::cpu::cpu_avx2_ok()
-                         ? (strata::kernels::cpu::cpu_avx1_ok() && std::getenv("STRATA_NO_IQ128") == nullptr
+                         ? (strata::kernels::cpu::cpu_avx1_ok() && strata::env("NOSTROMA_NO_IQ128") == nullptr
                             ? "AVX1 (older-CPU build)"
                             : "ggml-cpu (older-CPU build)")
-                     : std::getenv("STRATA_NO_IQ256") == nullptr ? "AVX-2" : "ggml-cpu (STRATA_NO_IQ256 set)");
+                     : strata::env("NOSTROMA_NO_IQ256") == nullptr ? "AVX-2" : "ggml-cpu (STRATA_NO_IQ256 set)");
 #endif
     // the compiled shape; a native model's file replaces it below with its own metadata (read_geometry), which a
     // pruned variant (GSQ-RCO Coder, fewer than 512 experts) differs from
@@ -5467,7 +5468,7 @@ int main(int argc, char** argv) {
     // The trim is on by default with a split (PR #4522).  STRATA_STAGE_TRIM=0 and --no-trim-stage-weights turn it off (a given
     // --trim-stage-weights beats STRATA_STAGE_TRIM=0, as before); the spill walk below keeps its own rule, which is
     // that the user ASKED for the trim (flag or STRATA_STAGE_TRIM=1), not that the trim is on.
-    const char* const stage_trim_env = std::getenv("STRATA_STAGE_TRIM");
+    const char* const stage_trim_env = strata::env("NOSTROMA_STAGE_TRIM");
     const bool trim_env_on = stage_trim_env != nullptr && stage_trim_env[0] != 0 && std::string(stage_trim_env) != "0";
     const bool trim_env_off = stage_trim_env != nullptr && std::string(stage_trim_env) == "0";
     const bool trim_off = o.trim_stage_flag == 0 || (trim_env_off && o.trim_stage_flag != 1);
@@ -5480,9 +5481,9 @@ int main(int argc, char** argv) {
     // free once its fixed costs are paid, so every layer gets the same cache bytes on every card; it then runs as an explicit split with every card trimmed.  The dense set's size is
     // estimated from the pack (the native projections at the ratio the IQ3_S pack has); the check after CUDA0's load decides again from the exact figure.  Never reached by cards with
     // room; STRATA_STAGE_TRIM=0, STRATA_SPLIT_EARLY_OFF=1 or STRATA_SPILL_OFF=1 keeps the old path.
-    if (multi_gpu && split_auto && !trim_user_asked && !split_devs.empty() && std::getenv("STRATA_SPILL_OFF") == nullptr &&
-        !(std::getenv("STRATA_STAGE_TRIM") != nullptr && std::string(std::getenv("STRATA_STAGE_TRIM")) == "0") &&
-        std::getenv("STRATA_SPLIT_EARLY_OFF") == nullptr && spill_discrete_gpu()) {
+    if (multi_gpu && split_auto && !trim_user_asked && !split_devs.empty() && strata::env("NOSTROMA_SPILL_OFF") == nullptr &&
+        !(strata::env("NOSTROMA_STAGE_TRIM") != nullptr && std::string(strata::env("NOSTROMA_STAGE_TRIM")) == "0") &&
+        strata::env("NOSTROMA_SPLIT_EARLY_OFF") == nullptr && spill_discrete_gpu()) {
         namespace sw = strata::program::split_walk;
         sw::Model wm;
         uint64_t pool_est = 0;
@@ -5613,7 +5614,7 @@ int main(int argc, char** argv) {
     // STRATA_HC_REQ8=1 (opt-in, changes the output): the hyper-connection projections are not loaded as BF16;
     // load_hc_q8 below requantizes them to int8 + an fp32 scale per 32 values (~0.56x the bytes), and the freed VRAM
     // goes to the expert cache like any other.  (Upstream's STRATA_HC_Q8 is a different thing: the GGUF's Q8_0 bytes.)
-    const bool hc_req8_env = std::getenv("STRATA_HC_REQ8") != nullptr && std::atoi(std::getenv("STRATA_HC_REQ8")) != 0;
+    const bool hc_req8_env = strata::env("NOSTROMA_HC_REQ8") != nullptr && std::atoi(strata::env("NOSTROMA_HC_REQ8")) != 0;
     if (hc_req8_env && multi_gpu)
         std::fprintf(stderr, "strata generate: WARNING: STRATA_HC_REQ8 does not support a layer split yet - the BF16 "
                              "projections are used\n");
@@ -5700,8 +5701,8 @@ int main(int argc, char** argv) {
     // beside its session, its head, its drafter and a working cache loads only the dense weights of its own layers instead (--trim-stage-weights, bit-exact in itself:
     // the cache just gets the room).  A card with room never reaches this; STRATA_STAGE_TRIM=0 or STRATA_SPILL_OFF=1 keeps the old copy.  CUDA0 stays whole under
     // `--layer-split auto` (its weights load before the split is known); it runs the card's share of layers the search gives it.
-    if (multi_gpu && !trim_user_asked && !split_devs.empty() && std::getenv("STRATA_SPILL_OFF") == nullptr &&
-        !(std::getenv("STRATA_STAGE_TRIM") != nullptr && std::string(std::getenv("STRATA_STAGE_TRIM")) == "0") && spill_discrete_gpu()) {
+    if (multi_gpu && !trim_user_asked && !split_devs.empty() && strata::env("NOSTROMA_SPILL_OFF") == nullptr &&
+        !(strata::env("NOSTROMA_STAGE_TRIM") != nullptr && std::string(strata::env("NOSTROMA_STAGE_TRIM")) == "0") && spill_discrete_gpu()) {
         strata::program::split_walk::Model wm;
         wm.dense_mib = (int64_t) ((pool_bytes + (o.native_dense_gguf.empty() ? 0 : native_dense.weight_bytes())) >> 20);
         const int ns_w = (int) split_devs.size() + 1;
@@ -5908,8 +5909,8 @@ int main(int argc, char** argv) {
         // page is read anyway (default 100, 0 = off), STRATA_SSD_KEEPALIVE_WINDOW = seconds after the last row
         // request that this goes on (default 60; then the SSD may sleep until the next request).
         {
-            const char* ka = std::getenv("STRATA_SSD_KEEPALIVE");
-            const char* kw = std::getenv("STRATA_SSD_KEEPALIVE_WINDOW");
+            const char* ka = strata::env("NOSTROMA_SSD_KEEPALIVE");
+            const char* kw = strata::env("NOSTROMA_SSD_KEEPALIVE_WINDOW");
             pio.keepalive_ms = ka != nullptr && *ka ? std::clamp(std::atof(ka), 0.0, 10000.0) : 100.0;
             pio.keepalive_window_s = kw != nullptr && *kw ? std::clamp(std::atof(kw), 1.0, 86400.0) : 60.0;
             if (pio.mode != strata::kernels::PleIo::Direct || !pio.io_thread) pio.keepalive_ms = 0;
@@ -5932,7 +5933,7 @@ int main(int argc, char** argv) {
         bool ple_auto_ram = false;
         if (pio.mode == strata::kernels::PleIo::Direct && !o.ple_io_explicit) {
             const strata::kernels::PleIoOptions direct_pio = pio;
-            const char* auto_ram = std::getenv("STRATA_PLE_AUTO_RAM");
+            const char* auto_ram = strata::env("NOSTROMA_PLE_AUTO_RAM");
             bool allowed = strata::core::ple_auto_ram_allowed(auto_ram, strata::qwen_defaults_026());
 #if defined(__APPLE__)
             // Not on the Mac unless asked (STRATA_PLE_AUTO_RAM=1): unified memory with the experts mapped from the file cache.  M5 Max,
@@ -5978,7 +5979,7 @@ int main(int argc, char** argv) {
         }
         // Recommend, never force: when the default direct reads measure slow, switch to the mapped reads (40-100x
         // faster on the reporters' drives); an explicit --ple-io direct is kept and only warned about.
-        if (pio.mode == strata::kernels::PleIo::Direct && std::getenv("STRATA_PLE_PROBE") == nullptr) {
+        if (pio.mode == strata::kernels::PleIo::Direct && strata::env("NOSTROMA_PLE_PROBE") == nullptr) {
             constexpr double kSlowRowsPerS = 15000.0;   // ~60 MB/s of 4 KiB pages; a healthy NVMe is >100k
             const double rps = ple_direct_rows_per_s(ple_table);
             if (rps >= kSlowRowsPerS)
@@ -5989,7 +5990,7 @@ int main(int argc, char** argv) {
                 // tops out at 10-14K with direct's 16 reads in flight and mapped reads were 7x slower.  The switch is only made when asked for
                 // (STRATA_PLE_AUTO_MMAP=1, the 0.1.42 behaviour); otherwise the slow probe warns and direct is kept.
                 bool auto_mmap = !o.ple_io_explicit;
-                if (const char* am = std::getenv("STRATA_PLE_AUTO_MMAP"); am == nullptr || std::atoi(am) == 0) auto_mmap = false;
+                if (const char* am = strata::env("NOSTROMA_PLE_AUTO_MMAP"); am == nullptr || std::atoi(am) == 0) auto_mmap = false;
                 if (auto_mmap) {
                     std::fprintf(stderr, "strata generate: --ple-io direct measures slow here (%.0f rows/s, about %.0f MB/s of "
                                          "random 4 KiB reads): using --ple-io mmap instead (the OS file cache holds the pages; "
@@ -6168,7 +6169,7 @@ int main(int argc, char** argv) {
     // stays on the last card and only the subset's rows are copied over once
     const bool mtp_first_ok = [&] {
         if (o.mtp.empty() || o.spec < 2) return false;
-        if (const char* fh = std::getenv("STRATA_MTP_FULL_HEAD"); fh != nullptr && fh[0] == '1') return false;
+        if (const char* fh = strata::env("NOSTROMA_MTP_FULL_HEAD"); fh != nullptr && fh[0] == '1') return false;
         std::error_code ec;
         return o.mtp_draft_vocab.empty() ? std::filesystem::exists(std::filesystem::path(o.mtp) / "draft_vocab.bin", ec)
                                          : std::filesystem::exists(o.mtp_draft_vocab, ec);
@@ -6182,14 +6183,14 @@ int main(int argc, char** argv) {
     // Without this, --batch turns --pipeline-windows off and a request alone loses its overlap (2x RX 6900 XT, IQ3_S, 0.1.45:
     // 75 -> 66.5 tok/s at 32K with "parallel": 2).
     const bool pw_with_batch = [] {
-        const char* e = std::getenv("STRATA_PW_WITH_BATCH");
+        const char* e = strata::env("NOSTROMA_PW_WITH_BATCH");
         return e != nullptr && e[0] == '1';
     }();
     const bool batch_blocks_pw = o.batch != 0 && !pw_with_batch;
     const bool pw_auto = o.pipeline_windows < 0;
     if (pw_auto) {
-        static const char* ae = std::getenv("STRATA_PIPELINE_AUTO");
-        static const char* am = std::getenv("STRATA_PIPELINE_AUTO_MIN_STAGES");
+        static const char* ae = strata::env("NOSTROMA_PIPELINE_AUTO");
+        static const char* am = strata::env("NOSTROMA_PIPELINE_AUTO_MIN_STAGES");
         // two stages pay off only with the drafter on the first card (0.1.44, mtp_first): its chain no longer shares the last card with the window
         const size_t min_st = am != nullptr ? (size_t) std::max(2, std::atoi(am))
                                             : (mtp_first_ok && mtp_first_default_on() ? 2 : 3);
@@ -6234,7 +6235,7 @@ int main(int argc, char** argv) {
         } else if (!pw_auto && o.pipeline_windows >= 2 && split_devs.size() == 1) {
             // #2637: the default (above) takes two stages only with the draft layer on the first card (mtp_first); asked for by
             // hand it was taken without a word.  Recommend, never force: it stays on as asked, and the line says what it costs.
-            const char* e0 = std::getenv("STRATA_MTP_STAGE0");
+            const char* e0 = strata::env("NOSTROMA_MTP_STAGE0");
             const bool first_card = mtp_first_ok && (e0 != nullptr ? std::atoi(e0) != 0 : mtp_first_default_on());
             if (!first_card)
                 std::fprintf(stderr, "strata generate: note: --pipeline-windows %d on a layer split of two stages without the draft layer "
@@ -6360,7 +6361,7 @@ int main(int argc, char** argv) {
     // source rows are copied over once per chain (stage_source_R), the draft head's rows once at load.
     const bool mtp_first = [&] {
         if (!mtp_first_ok || o.pipeline_windows < 2 || stages.empty() || batch_blocks_pw) return false;
-        const char* e = std::getenv("STRATA_MTP_STAGE0");
+        const char* e = strata::env("NOSTROMA_MTP_STAGE0");
         if (e != nullptr) return std::atoi(e) != 0;   // 0 keeps the drafter on the last card, 1 asks for the first
         return mtp_first_default_on();
     }();
@@ -6368,7 +6369,7 @@ int main(int argc, char** argv) {
     // earlier stages' taps cross, a few KB a window), or the FIRST stage's with STRATA_DF2_STAGE=first (a measurement seam, not a default).
     const bool df2_first = [&] {
         if (!multi_gpu || stages.empty() || o.draft != "dflash2" || o.draft_auto) return false;
-        const char* e = std::getenv("STRATA_DF2_STAGE");
+        const char* e = strata::env("NOSTROMA_DF2_STAGE");
         return e != nullptr && std::string(e) == "first";
     }();
 
@@ -6389,9 +6390,9 @@ int main(int argc, char** argv) {
         // moves to just after that point: the primary fills past them, the peer (which takes what the primary does
         // not hold, in order) gets them first.
         if (o.peer_device >= 1) {   // default 0.45 (measured: 0.3-0.6 all better than 0; 0 = off, e.g. for the gate)
-            const char* ph = std::getenv("STRATA_PEER_HOT");
+            const char* ph = strata::env("NOSTROMA_PEER_HOT");
             const double f = ph ? std::atof(ph) : 0.45;
-            const char* pa = std::getenv("STRATA_PEER_HOT_AT");
+            const char* pa = strata::env("NOSTROMA_PEER_HOT_AT");
             const size_t at = std::min(profile.size(), (size_t) (pa ? std::atoll(pa) : 8700));
             if (f > 0.0 && f < 1.0 && at > 0) {
                 std::vector<std::pair<int32_t, int32_t>> keep, moved;
@@ -6516,7 +6517,7 @@ int main(int argc, char** argv) {
         return total;
     };
     static const bool place_with_reserve = [] {
-        const char* v = std::getenv("STRATA_SPLIT_OWN_PLACE");
+        const char* v = strata::env("NOSTROMA_SPLIT_OWN_PLACE");
         return v != nullptr && std::string(v) == "reserve";
     }();
     auto stage_room = [&](int dev, bool later, bool drafter, bool search = false) -> int64_t {
@@ -6595,7 +6596,7 @@ int main(int argc, char** argv) {
             double speed = std::max(1.0, (double) sms * (double) khz / 1e6);   // SMs x GHz
             // STRATA_SPLIT_SPEED_SCALE="1,0.55": each stage's speed times this factor (a test seam: an unequal pair, e.g. the
             // 4060 Ti + 3060 of #2644, on two equal cards); unset = nothing changes.
-            if (const char* sc = std::getenv("STRATA_SPLIT_SPEED_SCALE"); sc != nullptr && *sc) {
+            if (const char* sc = strata::env("NOSTROMA_SPLIT_SPEED_SCALE"); sc != nullptr && *sc) {
                 const char* p = sc;
                 for (int k = 0; k < i && p != nullptr; ++k) { p = std::strchr(p, ','); if (p) ++p; }
                 const double f = p != nullptr ? std::atof(p) : 0.0;
@@ -6619,8 +6620,8 @@ int main(int argc, char** argv) {
         // symmetric rig, or a moderate gap, keeps the fitted formula.  STRATA_SPLIT_LINK_ABS=1: 0.1.41's 20 GB/s rule.
         // STRATA_SPLIT_UNIFORM=1: no per-link scaling at all (the pre-0.1.41 uniform miss cost), for A/B on links
         // where any scaling moves auto off the balanced placement.
-        static const bool link_abs = [] { const char* v = std::getenv("STRATA_SPLIT_LINK_ABS"); return v && v[0] == '1'; }();
-        static const bool split_uniform = [] { const char* v = std::getenv("STRATA_SPLIT_UNIFORM"); return v && v[0] == '1'; }();
+        static const bool link_abs = [] { const char* v = strata::env("NOSTROMA_SPLIT_LINK_ABS"); return v && v[0] == '1'; }();
+        static const bool split_uniform = [] { const char* v = strata::env("NOSTROMA_SPLIT_UNIFORM"); return v && v[0] == '1'; }();
         std::vector<double> link_scale = strata::program::split_rules::link_miss_scale(link_gbps);
         for (int i = 0; i < ns; ++i) {
             const double bw = link_gbps[(size_t) i];
@@ -6629,7 +6630,7 @@ int main(int argc, char** argv) {
             std::fprintf(stderr, "strata generate: layer split auto: CUDA%d link %.1f GB/s -> miss cost x%.2f\n",
                          i == 0 ? 0 : stages[(size_t) i - 1]->dev, bw, link_scale[(size_t) i]);
         }
-        const double miss_ms = std::getenv("STRATA_SPLIT_MISS_MS") ? std::atof(std::getenv("STRATA_SPLIT_MISS_MS")) : 190.0;
+        const double miss_ms = strata::env("NOSTROMA_SPLIT_MISS_MS") ? std::atof(strata::env("NOSTROMA_SPLIT_MISS_MS")) : 190.0;
         // ---- THE COVERAGE CURVE: HOW MUCH ROUTED MASS A CACHE HOLDS, AND WHY IT IS NO LONGER A POWER LAW.
         //
         // `mass[r]` used to be (r+1)^-1.2, fitted to the 5080+3090 sweep.  That fit is still right ON THE RIG IT
@@ -6655,13 +6656,13 @@ int main(int argc, char** argv) {
         // THE CURVE IS A FIT TO ONE MODEL'S TRAFFIC.  STRATA_SPLIT_COVER_B overrides b for a model whose routing
         // is sharper or flatter, and STRATA_SPLIT_MISS_MS still scales the miss cost it feeds.
         const size_t n_ranked = profile.size();
-        const double cover_b = std::getenv("STRATA_SPLIT_COVER_B") ? std::atof(std::getenv("STRATA_SPLIT_COVER_B")) : 3.0;
+        const double cover_b = strata::env("NOSTROMA_SPLIT_COVER_B") ? std::atof(strata::env("NOSTROMA_SPLIT_COVER_B")) : 3.0;
         std::vector<double> mass(n_ranked);
         double total_mass = 0;
         // Up to 3 GPUs the 0.1.39 curve (r+1)^-1.2 is kept, so 2- and 3-GPU placements do not move (the new curve is a
         // fit to a 4-way rig and was not measured on them); STRATA_SPLIT_COVER_B asks for the coverage curve at any
         // GPU count.
-        const bool coverage_curve = ns >= 4 || std::getenv("STRATA_SPLIT_COVER_B") != nullptr;
+        const bool coverage_curve = ns >= 4 || strata::env("NOSTROMA_SPLIT_COVER_B") != nullptr;
         for (size_t r = 0; r < n_ranked; ++r) {
             if (!coverage_curve) {
                 total_mass += (mass[r] = std::pow((double) r + 1.0, -1.2));
@@ -6678,7 +6679,7 @@ int main(int argc, char** argv) {
         // the predicted window time (ms) of a placement, and the routed mass its caches hold
         std::vector<int64_t> held_cnt((size_t) ns, 0);   // per-stage fill count, for the startability gate
         const int64_t kAutoLendPct = [] {
-            const char* v = std::getenv("STRATA_PREFILL_LEND_PCT");
+            const char* v = strata::env("NOSTROMA_PREFILL_LEND_PCT");
             return v ? (int64_t) std::atoi(v)
                      : g_lend_keep != 128 ? (int64_t) 100   // a card too short for the usual loan (see the cache sizing) lends what it must: the cap is for cards with room
                      : (int64_t) (strata::prefill::Prefill::pinned_share() >= 0.9 ? 90 : 85);
@@ -6820,7 +6821,7 @@ int main(int argc, char** argv) {
                 for (int64_t c = o.prefill_chunk; c >= 256; c /= 2) if (all_fit(c, false)) { chunk = c; break; }
             }
             auto room_mib = [&](int i) -> int64_t { return (int64_t) ((parts[i].cap - parts[i].used) >> 20); };
-            static const bool gate_dbg = std::getenv("STRATA_LAYER_SPLIT_GATE") != nullptr;
+            static const bool gate_dbg = strata::env("NOSTROMA_LAYER_SPLIT_GATE") != nullptr;
             if (gate_dbg) {
                 std::fprintf(stderr, "gate: K=%lld chunk=%lld", (long long) (ns == 2 ? parts[1].lb : 0), (long long) chunk);
                 for (int i = 0; i < ns; ++i) {
@@ -7080,7 +7081,7 @@ int main(int argc, char** argv) {
         // THE LAYER SPLIT'S SPILL WALK, STEP 2: THE KV WINDOW DOWN.  No placement can start the prompt path with the window asked for: the sessions of the cards are smaller with a
         // smaller one (the rest of the K/V streams from pinned RAM), so the search runs again at 20480, 8192, 4096 cells a layer (the engine's smallest) and keeps the first window
         // that has a startable placement.  The context and the number of requests are not touched.  Never reached by a start that has a placement.
-        if (best.empty() && std::getenv("STRATA_SPILL_OFF") == nullptr && spill_discrete_gpu()) {
+        if (best.empty() && strata::env("NOSTROMA_SPILL_OFF") == nullptr && spill_discrete_gpu()) {
             const int64_t kv_asked = o.kv_resident;
             for (int64_t w; (w = strata::program::split_walk::next_kv_window(o.kv_resident, o.max_context, strata::core::qsa_kv_resident_min())) > 0;) {
                 o.kv_resident = w;
@@ -7131,7 +7132,7 @@ int main(int argc, char** argv) {
             const double llo = *std::min_element(link_scale.begin(), link_scale.end());
             const double lhi = *std::max_element(link_scale.begin(), link_scale.end());
             const bool mixed = hi > lo * 1.10 || lhi > llo * 1.10;
-            const double near_pct = std::getenv("STRATA_SPLIT_NEAR_TIE_PCT") ? std::atof(std::getenv("STRATA_SPLIT_NEAR_TIE_PCT")) : 4.0;
+            const double near_pct = strata::env("NOSTROMA_SPLIT_NEAR_TIE_PCT") ? std::atof(strata::env("NOSTROMA_SPLIT_NEAR_TIE_PCT")) : 4.0;
             if (mixed && near_pct > 0 && ns <= 3 && best_ms > 0 && !priced.empty()) {
                 const std::vector<int64_t>* alt = nullptr;
                 double alt_ms = 1e30;
@@ -7281,7 +7282,7 @@ int main(int argc, char** argv) {
         // the elastic K/V (--kv-grow, see kvg_ensure): one GPU, the whole K/V in VRAM (no streaming), a profiled cache
         // that can give slots up, and every expert in RAM for the CPU to compute the ones it gives up
         {
-            const char* ev = std::getenv("STRATA_KV_GROW");
+            const char* ev = strata::env("NOSTROMA_KV_GROW");
             bool remote = false;
             for (const int r : o.expert_cache_remote) remote = remote || r > 0;
             const bool asked = ev != nullptr && ev[0] != '\0' ? ev[0] != '0' : o.kv_grow;
@@ -7293,7 +7294,7 @@ int main(int argc, char** argv) {
             if (asked && !on)
                 std::fprintf(stderr, "strata generate: --kv-grow is off (one GPU, a profile, the whole K/V in VRAM, "
                                      "every expert in RAM, no --batch, --vram-elastic or --peer-device)\n");
-            const char* iv = std::getenv("STRATA_KV_GROW_INIT");
+            const char* iv = strata::env("NOSTROMA_KV_GROW_INIT");
             strata::core::qsa_set_kv_elastic(on, iv != nullptr && std::atoll(iv) > 0 ? std::atoll(iv) : 16384);
             strata::core::ExpertCache::set_vmm(on);
         }
@@ -7375,14 +7376,14 @@ int main(int argc, char** argv) {
         bin.later_stages = (int) stages.size();
         bin.batch_mtp = mtp_on;
         bin.adapt_async = o.adapt_async != 0;
-        { const char* ms = std::getenv("STRATA_BATCH_MTP_SERIAL"); bin.mtp_serial = ms != nullptr && ms[0] != '\0' && ms[0] != '0'; }
+        { const char* ms = strata::env("NOSTROMA_BATCH_MTP_SERIAL"); bin.mtp_serial = ms != nullptr && ms[0] != '\0' && ms[0] != '0'; }
 #if !defined(STRATA_USE_HIP)
         // NVIDIA, 2 cards: the pipelined groups by default (0.2.7); one serial group, the 0.2.1-0.2.6 default, with
         // STRATA_BATCH_GROUPS_NV_SERIAL=1 or STRATA_DEFAULTS=026 (batch_groups.hpp nv_serial_wanted)
-        bin.nv_serial_faster = strata::program::batch_groups::nv_serial_wanted(std::getenv("STRATA_BATCH_GROUPS_NV_SERIAL"),
+        bin.nv_serial_faster = strata::program::batch_groups::nv_serial_wanted(strata::env("NOSTROMA_BATCH_GROUPS_NV_SERIAL"),
                                                                               strata::qwen_defaults_026());
 #endif
-        { const char* mp = std::getenv("STRATA_PIPED_MTP"); bin.mtp_piped = mp != nullptr && mp[0] != '\0' && mp[0] != '0'; }
+        { const char* mp = strata::env("NOSTROMA_PIPED_MTP"); bin.mtp_piped = mp != nullptr && mp[0] != '\0' && mp[0] != '0'; }
         return strata::program::batch_groups::resolve(bin);
     };
     // DFlash2 slot drafts (the default for --draft dflash2 with --batch; STRATA_BATCH_DF2=0 turns them off): every batch slot gets its own drafter (the pack,
@@ -7392,7 +7393,7 @@ int main(int argc, char** argv) {
     // They run through the serial windows (one group); a layer split whose slots would be pipelined in groups by default keeps its groups and its undrafted
     // slots (the pipelined groups carry no drafts), and so does an explicit --batch-groups above 1.  One card: on with the explicit pair (STRATA_BATCH_DF2=1 forces them on).
     const bool batch_df2_wanted = [&] {
-        const char* e = std::getenv("STRATA_BATCH_DF2");
+        const char* e = strata::env("NOSTROMA_BATCH_DF2");
         const bool off = e != nullptr && e[0] == '0';
         const bool forced = e != nullptr && e[0] != '0' && e[0] != '\0';
 #if defined(STRATA_GPU_METAL)
@@ -7404,7 +7405,7 @@ int main(int argc, char** argv) {
         // draft layer are unchanged).  On one card that is all; on a layer split only where the slots would run as one group (the pipelined groups carry no drafts)
         return stages.empty() || batch_groups_for(false).groups <= 1;
     }();
-    const char* batch_mtp_env = std::getenv("STRATA_BATCH_MTP");
+    const char* batch_mtp_env = strata::env("NOSTROMA_BATCH_MTP");
     bool batch_mtp = o.batch_mtp || (batch_mtp_env != nullptr && batch_mtp_env[0] != '\0' && batch_mtp_env[0] != '0') || batch_df2_wanted;
     if (batch_mtp) {
         // (--pipeline-windows is already off with --batch slots)
@@ -7438,7 +7439,7 @@ int main(int argc, char** argv) {
     // one while the draft layer is at least --spec-min-p sure of it, as the solo path extends its windows
     int pm_drafts = 0;
     if (piped_mtp) {
-        pm_drafts = std::clamp(std::atoi(std::getenv("STRATA_PIPED_MTP")), 1,
+        pm_drafts = std::clamp(std::atoi(strata::env("NOSTROMA_PIPED_MTP")), 1,
                                std::max(1, std::min(o.spec - 1, (int) strata::kernels::kVerifyNarrowT - 1)));
     }
     // The verifiers' window: the solo path's drafts (--spec rows), the plain batch windows (the slots) and, with
@@ -7580,7 +7581,7 @@ int main(int argc, char** argv) {
     if (piped_mtp) {
         const char* why = nullptr;
         char buf[160];
-        const char* sc = std::getenv("STRATA_BATCH_SELF_COMMIT");
+        const char* sc = strata::env("NOSTROMA_BATCH_SELF_COMMIT");
         if (o.batch < 2 || o.batch_groups <= 1) {
             std::snprintf(buf, sizeof buf, "it needs 2 or more pipelined groups and %d slot%s in %d group%s are left", o.batch,
                           o.batch == 1 ? "" : "s", o.batch_groups, o.batch_groups == 1 ? "" : "s");
@@ -7651,8 +7652,8 @@ int main(int argc, char** argv) {
     // A LAYER SPLIT WALKS THE SAME STEP ON THE CARD THAT HOLDS THE DRAFTER (the last stage's, or CUDA0 with the drafter first): its free memory is read there, after its weights, session
     // and head are in.  DFlash2 (its pack, its ring and buffers, its draft head) is dropped by the same rule on that card; the single card keeps it as before (its own block decides).
     {
-        const bool split_walk_drafter = multi_gpu && !stages.empty() && std::getenv("STRATA_SPILL_OFF") == nullptr;
-        if (!o.mtp.empty() && !use_df2 && (split_walk_drafter || (!multi_gpu && stages.empty())) && std::getenv("STRATA_MTP_KEEP") == nullptr && spill_discrete_gpu()) {
+        const bool split_walk_drafter = multi_gpu && !stages.empty() && strata::env("NOSTROMA_SPILL_OFF") == nullptr;
+        if (!o.mtp.empty() && !use_df2 && (split_walk_drafter || (!multi_gpu && stages.empty())) && strata::env("NOSTROMA_MTP_KEEP") == nullptr && spill_discrete_gpu()) {
             std::error_code fec1, fec2;
             const uint64_t layer_b = (uint64_t) std::filesystem::file_size(std::filesystem::path(o.mtp) / "dense.bin", fec1) +
                                      (uint64_t) std::filesystem::file_size(std::filesystem::path(o.mtp) / "experts.bin", fec2);
@@ -7675,7 +7676,7 @@ int main(int argc, char** argv) {
             }
         }
         // DFlash2 alone (--draft-fallback none, what Auto passes) on a stage that cannot hold it: no drafter, said in one line, instead of a start that ends
-        if (split_walk_drafter && df2_solo && !use_df2 && std::getenv("STRATA_MTP_KEEP") == nullptr && spill_discrete_gpu()) {
+        if (split_walk_drafter && df2_solo && !use_df2 && strata::env("NOSTROMA_MTP_KEEP") == nullptr && spill_discrete_gpu()) {
             std::error_code fec3;
             const uint64_t pack_b = (uint64_t) std::filesystem::file_size(o.draft_model, fec3);
             const strata::core::WeightRef* wo_df = wt.find("output.weight");
@@ -7863,8 +7864,8 @@ int main(int argc, char** argv) {
     // (--draft-fallback none) the same formula from the vocabulary file, which that drafter never read)
     // DF-05: with the MTP loaded and the same draft-head subset (the plain gather: no --mtp-q4 head, no repack) the DFlash2 shares the MTP's copy at bind
     // (STRATA_DF2_SHARE_HEAD_OFF=1: its own copy, the A/B), and the cache is sized without that second copy
-    const bool df2_expect_share = !df2_solo && !strata::core::Dflash2Drafter::head_native() && !o.mtp.empty() && std::getenv("STRATA_DF2_SHARE_HEAD_OFF") == nullptr && o.mtp_q4 != "all" && o.mtp_q4 != "head" &&
-                                  std::getenv("STRATA_MTP_FULL_HEAD") == nullptr && std::getenv("STRATA_Q6_PACKED") == nullptr && std::getenv("STRATA_MTP_Q8_SM60") == nullptr &&
+    const bool df2_expect_share = !df2_solo && !strata::core::Dflash2Drafter::head_native() && !o.mtp.empty() && strata::env("NOSTROMA_DF2_SHARE_HEAD_OFF") == nullptr && o.mtp_q4 != "all" && o.mtp_q4 != "head" &&
+                                  strata::env("NOSTROMA_MTP_FULL_HEAD") == nullptr && strata::env("NOSTROMA_Q6_PACKED") == nullptr && strata::env("NOSTROMA_MTP_Q8_SM60") == nullptr &&
                                   std::filesystem::exists(df2_vocab_path());
     auto df2_offer_head = [&]() {   // after mtp.bind, before df2.bind
 #if defined(STRATA_HAVE_DFLASH2)
@@ -8043,9 +8044,9 @@ int main(int argc, char** argv) {
     // as asked (warn only), STRATA_ARENA_RAM_FALLBACK=0 is the old behaviour.  Two passes at most; the second only after the first chose
     // the file, and if the file cannot be opened the arena is tried again the old way (a start never ends in a refusal for this).
     const bool ram_fallback_ok = strata::core::arena_ram_fallback_allowed(
-        std::getenv("STRATA_ARENA_RAM_FALLBACK"), o.ple_io_explicit && o.ple_io == "ram", !o.shared_expert_arena.empty());
+        strata::env("NOSTROMA_ARENA_RAM_FALLBACK"), o.ple_io_explicit && o.ple_io == "ram", !o.shared_expert_arena.empty());
     bool ram_fallback_taken = false, ram_fallback_failed = false, ram_fallback_resident = false;
-    const bool ram_fallback_resident_off = [] { const char* v = std::getenv("STRATA_ARENA_FALLBACK_RESIDENT"); return v != nullptr && v[0] == '0'; }();
+    const bool ram_fallback_resident_off = [] { const char* v = strata::env("NOSTROMA_ARENA_FALLBACK_RESIDENT"); return v != nullptr && v[0] == '0'; }();
     // The RAM-copy fallback leaves max(--ram-keep-gib, the safety headroom: 8 GiB on Windows, where the page trim of the copy needs the
     // room, 4 GiB elsewhere) free; STRATA_RESIDENT_HEADROOM_GIB, when set, decides instead.  ple_residency.hpp.
 #if defined(_WIN32)
@@ -8055,7 +8056,7 @@ int main(int argc, char** argv) {
 #endif
     const uint64_t ram_fallback_headroom = [&] {
         std::optional<uint64_t> env_headroom;
-        if (const char* v = std::getenv("STRATA_RESIDENT_HEADROOM_GIB"); v != nullptr && std::atof(v) >= 0.0)
+        if (const char* v = strata::env("NOSTROMA_RESIDENT_HEADROOM_GIB"); v != nullptr && std::atof(v) >= 0.0)
             env_headroom = (uint64_t) (std::atof(v) * 1073741824.0);
         return strata::core::fallback_headroom(env_headroom, o.ram_keep, strata::core::fallback_safety_headroom(kWindowsHost));
     }();
@@ -8069,7 +8070,7 @@ int main(int argc, char** argv) {
         // CS-T: a native pack without experts.bin maps the model's GGUF shards instead (native_experts.txt's spans,
         // checked against the files first) - no 30-77 GB copy of the experts on the disk
         src.set_gguf(o.native_preset);
-        if (const char* v = std::getenv("STRATA_FETCH_THREADS"); v != nullptr && std::atoi(v) > 0)
+        if (const char* v = strata::env("NOSTROMA_FETCH_THREADS"); v != nullptr && std::atoi(v) > 0)
             src.set_fetch_threads(std::atoi(v));
         if (!src.open(o.pack, g.n_layers, g.n_expert, err)) {
             if (ram_fallback_taken) {   // #4846: the file cannot be opened either; the arena, loaded the old way, is what is left
@@ -8099,7 +8100,7 @@ int main(int argc, char** argv) {
             const bool ub = src.set_unbuffered(o.resident_budget, why);
             std::fprintf(stderr, "strata generate: the file tier reads %s (%s)\n",
                          ub ? "unbuffered" : "through the file cache", why.c_str());
-        } else if (const char* env = std::getenv("STRATA_UNBUFFERED_LOAD"); env != nullptr && env[0] != '\0' &&
+        } else if (const char* env = strata::env("NOSTROMA_UNBUFFERED_LOAD"); env != nullptr && env[0] != '\0' &&
                    env[0] != '0') {
             std::fprintf(stderr, "strata generate: the file tier reads through the file cache (STRATA_UNBUFFERED_LOAD=%s "
                                  "ignored: without --resident-budget-gib the file cache holds the experts)\n", env);
@@ -8122,7 +8123,7 @@ int main(int argc, char** argv) {
         // default on Linux, with the decode gate (STRATA_IO_PF_GATE) and zero-copy page-cached experts
         // (STRATA_COLD_OVERLAP=4); STRATA_IO_PREFETCH=0 / STRATA_IO_PF_GATE=0 / STRATA_COLD_OVERLAP=0 turn them off.
         // io prefetch + the gate: the GGUF read in place and (0.2.1) an experts.bin pack; zero-copy only for the GGUF in place
-        const char* io_pf_env = std::getenv("STRATA_IO_PREFETCH");
+        const char* io_pf_env = strata::env("NOSTROMA_IO_PREFETCH");
         const bool io_pf_default = (io_pf_env == nullptr || io_pf_env[0] == '\0') && src.linux_io_defaults();
 #if defined(__linux__)
         if ((io_pf_env == nullptr || io_pf_env[0] == '\0') && !io_pf_default && !src.linux_file_defaults() && !src.unbuffered())
@@ -8131,11 +8132,11 @@ int main(int argc, char** argv) {
                                  "STRATA_IO_PREFETCH=1 turns it on anyway\n", src.cache_room_ratio() * 100.0);
 #endif
         if (io_pf_default || (io_pf_env != nullptr && std::atoi(io_pf_env) != 0)) {
-            const char* th = std::getenv("STRATA_IO_PF_THREADS");
+            const char* th = strata::env("NOSTROMA_IO_PF_THREADS");
             src.set_io_prefetch(true, th != nullptr ? std::atoi(th) : 0);
             io_pf_by_default = io_pf_default && src.io_prefetch();
             if (src.io_prefetch() && io_pf_default) {
-                const char* cv = std::getenv("STRATA_COLD_OVERLAP");
+                const char* cv = strata::env("NOSTROMA_COLD_OVERLAP");
                 std::fprintf(stderr, "strata generate: file tier (Linux defaults, %s): page-cached experts "
                                      "computed from the mapping (STRATA_COLD_OVERLAP=%s), io prefetch with whole-blob preads on %s I/O threads, "
                                      "the decode's read-ahead %s; off: STRATA_COLD_OVERLAP=0, STRATA_IO_PREFETCH=0, "
@@ -8155,7 +8156,7 @@ int main(int argc, char** argv) {
                 std::fprintf(stderr, "strata generate: STRATA_IO_PREFETCH=1 is not available here (Linux mapped file tier "
                                      "only, not with unbuffered reads); the file tier reads as before\n");
             if (src.io_prefetch()) {   // recommend, never force: the engine runs as asked
-                const char* st = std::getenv("STRATA_IO_PF_STAGE");
+                const char* st = strata::env("NOSTROMA_IO_PF_STAGE");
                 if (st != nullptr && std::atoi(st) != 0)
                     std::fprintf(stderr, "strata generate: note: STRATA_IO_PF_STAGE=1 (staging) measured faster only on a 32 GB-class "
                                          "box (+25%% on an RTX 3060, 32 GB); it was slower at 16 GB and on an iGPU (docs/DETAILS.md, file tier I/O)\n");
@@ -8171,7 +8172,7 @@ int main(int argc, char** argv) {
                     (void) cudaGetLastError();
 #endif
             }
-        } else if (const char* sv = std::getenv("STRATA_IO_STATS"); sv != nullptr && std::atoi(sv) != 0) {
+        } else if (const char* sv = strata::env("NOSTROMA_IO_STATS"); sv != nullptr && std::atoi(sv) != 0) {
             src.set_io_stats(true);
         }
         srcp = &src;
@@ -8203,7 +8204,7 @@ int main(int argc, char** argv) {
         // STRATA_PIN_BY_NEED_SKIP=<n> forces R.  Single GPU, profile given, no helper caches only.
         std::vector<std::pair<int32_t, int32_t>> pin_cand;   // the non-resident estimate, by decreasing rank, then the resident one
         size_t pin_nonres = 0;                               // (how many of them are the non-resident estimate)
-        if (const char* pn = std::getenv("STRATA_PIN_BY_NEED"); pn != nullptr && pn[0] != '\0' && pn[0] != '0') {
+        if (const char* pn = strata::env("NOSTROMA_PIN_BY_NEED"); pn != nullptr && pn[0] != '\0' && pn[0] != '0') {
             const char* off_why = profile.empty() ? "it needs --expert-profile (the ranking)"
                                 : multi_gpu || o.peer_device >= 1 ? "not with a layer split or a peer GPU"
                                 : std::any_of(o.expert_cache_remote.begin(), o.expert_cache_remote.end(),
@@ -8214,7 +8215,7 @@ int main(int argc, char** argv) {
             } else {
                 const auto& pl = strata::kernels::cpu::expert_layout();
                 size_t skip = profile.size();
-                if (const char* sk = std::getenv("STRATA_PIN_BY_NEED_SKIP"); sk != nullptr && sk[0] != '\0') {
+                if (const char* sk = strata::env("NOSTROMA_PIN_BY_NEED_SKIP"); sk != nullptr && sk[0] != '\0') {
                     skip = std::min<size_t>(profile.size(), (size_t) std::max<long long>(std::atoll(sk), 0));
                 } else {
                     // the bytes the GPU cache will hold: --expert-cache N slots of the largest blob, or what auto sizing
@@ -8317,7 +8318,7 @@ int main(int argc, char** argv) {
             // keeps the plain file source.  STRATA_RESIDENT_PIN=0 keeps the copy pageable, read as for the flags (it was not
             // read here before: the copy was page-locked whatever the variable said).
             if (!o.expert_profile.empty() && !o.resident_cpu_experts && !ram_fallback_resident_off) {
-                const auto mode = strata::core::auto_ram_copy_mode(std::getenv("STRATA_RESIDENT_PIN"));
+                const auto mode = strata::core::auto_ram_copy_mode(strata::env("NOSTROMA_RESIDENT_PIN"));
                 o.resident_cpu_experts = mode.resident_cpu_experts;
                 o.resident_pin = mode.pin;
                 o.resident_soft = mode.soft;
@@ -8408,7 +8409,7 @@ int main(int argc, char** argv) {
     // the host pins itself to one CPU later; a callback thread the driver creates lazily after that would run on the
     // host's CPU and fight the host's spin-wait (985 us instead of 4 us per callback, #1964 #1975).  Windows CPU Sets are
     // per thread and not inherited.
-    if (const char* e = std::getenv("STRATA_ADAPT_CALLBACK_WARMUP"); !(e && e[0] == '0')) {
+    if (const char* e = strata::env("NOSTROMA_ADAPT_CALLBACK_WARMUP"); !(e && e[0] == '0')) {
         // The driver creates its host-callback thread lazily. Create it before ExpertPool pins this thread.
         if (cudaLaunchHostFunc(nullptr, [](void*) {}, nullptr) != cudaSuccess ||
             cudaStreamSynchronize(nullptr) != cudaSuccess) {
@@ -8482,7 +8483,7 @@ int main(int argc, char** argv) {
     // and gives that cache the difference.  A recommendation to try, so it is not the default.
     auto owned_prefill_mib = [&]() -> int64_t {
         if (!(o.prefill_chunk > 0 && !pf_borrow)) return 0;
-        static const bool exact = [] { const char* v = std::getenv("STRATA_OWNED_PRICE"); return v != nullptr && std::string(v) == "exact"; }();
+        static const bool exact = [] { const char* v = strata::env("NOSTROMA_OWNED_PRICE"); return v != nullptr && std::string(v) == "exact"; }();
         if (!exact) return 160 + (o.prefill_chunk * 680) / 1024;
         const int64_t mib = ((int64_t) strata::prefill::Prefill::bytes_needed_owned(g, ss, o.prefill_chunk, srcp != nullptr) + (1 << 20) - 1) >> 20;
         std::fprintf(stderr, "strata generate: STRATA_OWNED_PRICE=exact: the prompt path's own buffers for a %lld-token chunk: %lld MiB (the 0.1.39 rule: %lld MiB)\n",
@@ -8624,7 +8625,7 @@ int main(int argc, char** argv) {
         // free and stopped the first long prompt ("mmq: out of memory"), or gave the prompt path its own 600 MiB of buffers on top and stopped with "do not
         // fit".  The loan may leave 16 slots instead: the cache is smaller, prompts are read in smaller chunks and slower, the reserve stays, and the start works.
         if (o.prefill_chunk > 0 && pf_borrow && o.prefill_auto && o.expert_cache < min_slots && !o.vram_reserve_given &&
-            std::getenv("STRATA_SPILL_OFF") == nullptr && spill_discrete_gpu()) {
+            strata::env("NOSTROMA_SPILL_OFF") == nullptr && spill_discrete_gpu()) {
             constexpr int64_t kTightKeep = 16;
             const int64_t tight_min = ((int64_t) strata::prefill::Prefill::bytes_needed(g, ss, 256) + blob - 1) / blob + kTightKeep;
             if (tight_min < min_slots) {
@@ -8671,7 +8672,7 @@ int main(int argc, char** argv) {
         // here instead, at the largest chunk that still leaves a cache (1024, 512, 256 tokens), and give the cache the rest: slower (a smaller
         // cache, smaller prompt chunks), never a refused start.  Not with a split, a cache or chunk given on the command line, or STRATA_SPILL_OFF=1.
         if (auto_cache && pf_borrow && o.prefill_auto && !o.vram_reserve_given && o.expert_cache < min_slots && !profile.empty() &&
-            std::getenv("STRATA_SPILL_OFF") == nullptr && spill_discrete_gpu()) {
+            strata::env("NOSTROMA_SPILL_OFF") == nullptr && spill_discrete_gpu()) {
             constexpr int64_t kSpillFloorMib = 100;   // the verify arena, the head check and the cuBLAS workspace beside the late allocations
             int64_t pick_chunk = 0, pick_slots = 0, pick_own = 0, pick_late = 0;
             for (const int64_t c : {(int64_t) 1024, (int64_t) 512, (int64_t) 256}) {
@@ -8700,7 +8701,7 @@ int main(int argc, char** argv) {
         // over PCIe: decode is about 3x slower (12.7 against 36.1 tok/s per user, 2 requests on a 12 GB mimic), but the start works.  Only a card that would otherwise
         // refuse; STRATA_HEAD_HOST_OFF=1 keeps the refusal.
         if (o.expert_cache == 0 && native_head.loaded() && !native_head.on_host() && !o.vram_reserve_given && !multi_gpu && stages.empty() &&
-            std::getenv("STRATA_HEAD_HOST_OFF") == nullptr && std::getenv("STRATA_SPILL_OFF") == nullptr && spill_discrete_gpu()) {
+            strata::env("NOSTROMA_HEAD_HOST_OFF") == nullptr && strata::env("NOSTROMA_SPILL_OFF") == nullptr && spill_discrete_gpu()) {
             std::string herr;
             if (native_head.to_host(herr)) {
                 free_b = strata::core::device_free_bytes();
@@ -8833,8 +8834,8 @@ int main(int argc, char** argv) {
         // Not with an explicit --prefill N, a split, helper caches, STRATA_PREFILL_BORROW=1 or STRATA_AUTO_NOBORROW=0.
         if (auto_cache && pf_borrow && o.prefill_auto && o.batch >= 2 && !multi_gpu && stages.empty() && !profile.empty() &&
             sized_slots.size() == profile.size() && std::none_of(o.expert_cache_remote.begin(), o.expert_cache_remote.end(), [](int n) { return n > 0; })) {
-            const char* e1 = std::getenv("STRATA_AUTO_NOBORROW");
-            const char* e2 = std::getenv("STRATA_PREFILL_BORROW");
+            const char* e1 = strata::env("NOSTROMA_AUTO_NOBORROW");
+            const char* e2 = strata::env("NOSTROMA_PREFILL_BORROW");
             if (!(e1 != nullptr && e1[0] == '0') && !(e2 != nullptr && e2[0] == '1')) {
                 constexpr int64_t kNoBorrowChunk = 8192, kNoBorrowKeepMib = 3072;
                 uint64_t used_b = 0;
@@ -8867,8 +8868,8 @@ int main(int argc, char** argv) {
     // chunk is the one the loan would have used (no drop to 2,048).  Off by default (kNoLendDefaultOn); STRATA_KFD_QUIET_LEND=1 turns
     // it on, =0 or STRATA_PREFILL_BORROW=1 keeps the loan.
     if (pf_borrow && o.prefill_chunk > 0 &&
-        strata::core::kfd_quiet::lend_rule_on(strata::core::kfd_quiet::class_flag().load(std::memory_order_relaxed), std::getenv("STRATA_KFD_QUIET"),
-                                              std::getenv("STRATA_KFD_QUIET_LEND"), std::getenv("STRATA_PREFILL_BORROW"))) {
+        strata::core::kfd_quiet::lend_rule_on(strata::core::kfd_quiet::class_flag().load(std::memory_order_relaxed), strata::env("NOSTROMA_KFD_QUIET"),
+                                              strata::env("NOSTROMA_KFD_QUIET_LEND"), strata::env("NOSTROMA_PREFILL_BORROW"))) {
         const bool one_gpu = !multi_gpu && stages.empty() && o.peer_device < 1 &&
                              std::none_of(o.expert_cache_remote.begin(), o.expert_cache_remote.end(), [](int n) { return n > 0; });
         uint64_t cache_b = 0;
@@ -8880,7 +8881,7 @@ int main(int argc, char** argv) {
         const size_t fb = strata::core::device_free_bytes();
         const int64_t room_mib = fb > cache_b ? (int64_t) ((fb - cache_b) >> 20) - o.vram_reserve_mib - (int64_t) (pipe_first >> 20) : 0;
         const strata::core::kfd_quiet::NoLend nl = strata::core::kfd_quiet::no_lend_pick(true, pf_borrow, one_gpu, o.prefill_chunk, room_mib, own_mib);
-        if (std::getenv("STRATA_TRACE") != nullptr)
+        if (strata::env("NOSTROMA_TRACE") != nullptr)
             std::fprintf(stderr, "strata trace: kfd quiet: prompt path without a loan: %s (own buffers %lld MiB for a %lld-token chunk, %lld MiB free "
                                  "beside the %d-slot cache and the %d MiB reserve, %lld kept)\n",
                          nl.no_lend ? "yes" : !one_gpu ? "no, not one GPU" : !nl.fits ? "no, they do not fit" : "no",
@@ -8971,7 +8972,7 @@ int main(int argc, char** argv) {
         // page back while the verify graph spun on a host flag never finished.  So the slots are zeroed and the
         // free figure read again; while it is short of the reserve the cache is reopened smaller.
         // STRATA_TEST_CACHE_FAIL=N: the first N opens fail as an out-of-commit cudaMalloc does (tests the retry)
-        int fake_fails = std::getenv("STRATA_TEST_CACHE_FAIL") ? std::atoi(std::getenv("STRATA_TEST_CACHE_FAIL")) : 0;
+        int fake_fails = strata::env("NOSTROMA_TEST_CACHE_FAIL") ? std::atoi(strata::env("NOSTROMA_TEST_CACHE_FAIL")) : 0;
         int failed = 0;
         int zero_reads = 0;
         for (int attempt = 0;; ++attempt) {
@@ -9086,7 +9087,7 @@ int main(int argc, char** argv) {
         // mapped reads: advise the next `fill_ahead` pairs so their reads overlap; STRATA_FILL_AHEAD=0 turns it off
         int64_t fill_ahead = 0;
         if (!per_layer && srcp == &src && !src.unbuffered()) {
-            const char* v = std::getenv("STRATA_FILL_AHEAD");
+            const char* v = strata::env("NOSTROMA_FILL_AHEAD");
             fill_ahead = v == nullptr ? 256 : std::max(0, std::atoi(v));
             if (fill_ahead > 0 && !src.advise_pairs(profile.data(), std::min<int64_t>(fill_ahead, want))) fill_ahead = 0;
             std::fprintf(stderr, "strata generate: the profile fill asks for %lld pairs ahead (STRATA_FILL_AHEAD)\n",
@@ -9164,7 +9165,7 @@ int main(int argc, char** argv) {
                              "slot 0 verified\n",
                      (long long) prefilled, (long long) (per_layer ? xcache.slots() : want), fill_s,
                      fill_s > 0 ? (double) fill_bytes / 1e6 / fill_s : 0.0);
-        if (std::getenv("STRATA_VERIFY_COMPLEMENT") != nullptr) {
+        if (strata::env("NOSTROMA_VERIFY_COMPLEMENT") != nullptr) {
             // tests: the filled slots' checksum (each slot's blob read back and hashed, then the hashes in slot order)
             std::vector<std::pair<int32_t, int64_t>> sl;   // (slot, blob bytes)
             for (int64_t l = 0; l < g.n_layers; ++l)
@@ -9221,8 +9222,8 @@ int main(int argc, char** argv) {
 #endif
         // THE LAYER SPLIT'S SPILL WALK, STEP 5: THE OUTPUT HEAD ON THE HOST, LAST.  The card that holds the head (the last stage) has no room for a working cache beside it: the head
         // (0.41 GiB) moves to mapped pinned host memory and every logits row reads it over PCIe (decode is slower, the start works).  Only a card that would otherwise refuse.
-        if (&st == last_st && st.head.loaded() && !st.head.on_host() && !o.vram_reserve_given && std::getenv("STRATA_HEAD_HOST_OFF") == nullptr &&
-            std::getenv("STRATA_SPILL_OFF") == nullptr && spill_discrete_gpu() &&
+        if (&st == last_st && st.head.loaded() && !st.head.on_host() && !o.vram_reserve_given && strata::env("NOSTROMA_HEAD_HOST_OFF") == nullptr &&
+            strata::env("NOSTROMA_SPILL_OFF") == nullptr && spill_discrete_gpu() &&
             room < strata::program::split_walk::kWorkingCacheSlots * (int64_t) lay.max_blob) {
             std::string herr;
             const uint64_t head_mib = st.head.weight_bytes() >> 20;
@@ -9336,7 +9337,7 @@ int main(int argc, char** argv) {
     // allocate its own buffers on top (more than the reserve): the same short card as the single card's, which keeps 16 slots instead (the cache is smaller, prompts are read in
     // smaller chunks, the start works).  Never on a card with room: it only fires when a cache is below the usual loan.
     if (multi_gpu && !stages.empty() && g_lend_keep == 128 && o.prefill_chunk > 0 && pf_borrow && o.prefill_auto && !o.vram_reserve_given &&
-        std::getenv("STRATA_SPILL_OFF") == nullptr && spill_discrete_gpu()) {
+        strata::env("NOSTROMA_SPILL_OFF") == nullptr && spill_discrete_gpu()) {
         for (const auto& stp : stages) {
             const int64_t blob_s = (int64_t) nibble_max_slot_bytes();
             const int64_t need_s = ((int64_t) strata::prefill::Prefill::bytes_needed(g, stp->ss, 256) + blob_s - 1) / blob_s + g_lend_keep;
@@ -9390,13 +9391,13 @@ int main(int argc, char** argv) {
     // with the 512 MiB headroom.  Serve's live checks stay as the guard; this is the pre-flight confirmation.
     // STRATA_LAYER_SPLIT_PROBE=0 skips it.
     static const bool split_probe = [] {
-        const char* v = std::getenv("STRATA_LAYER_SPLIT_PROBE");
+        const char* v = strata::env("NOSTROMA_LAYER_SPLIT_PROBE");
         return v == nullptr || v[0] != '0';
     }();
     if (multi_gpu && split_auto && split_probe && !split_at.empty()) {
         const int ns = (int) stages.size() + 1;
         const int64_t kPct = [] {
-            const char* v = std::getenv("STRATA_PREFILL_LEND_PCT");
+            const char* v = strata::env("NOSTROMA_PREFILL_LEND_PCT");
             return v ? (int64_t) std::atoi(v)
                      : g_lend_keep != 128 ? (int64_t) 100   // a card too short for the usual loan (see the cache sizing) lends what it must: the cap is for cards with room
                      : (int64_t) (strata::prefill::Prefill::pinned_share() >= 0.9 ? 90 : 85);
@@ -9549,7 +9550,7 @@ int main(int argc, char** argv) {
     // #731 (opt-in, STRATA_DISJOINT_ADAPT=1): the adaptive tiers leave an expert a helper GPU holds out of the primary's
     // promotion candidates (it would sit in both caches).  Asked live, from the helper's own cache (RemoteExperts::holds,
     // #854), so an expert the helper's tier swaps in or out later is followed - never a copy taken at load.
-    const bool disjoint_adapt = [] { const char* v = std::getenv("STRATA_DISJOINT_ADAPT"); return v != nullptr && std::atoi(v) != 0; }();
+    const bool disjoint_adapt = [] { const char* v = strata::env("NOSTROMA_DISJOINT_ADAPT"); return v != nullptr && std::atoi(v) != 0; }();
     auto helper_holds = [&](int64_t l, int32_t e) -> bool {
         if (!disjoint_adapt) return false;
         for (int r = 0; r < drive.d.remote_count; ++r)
@@ -9572,7 +9573,7 @@ int main(int argc, char** argv) {
     // look-ahead as before, STRATA_LOOKAHEAD=1 keeps the look-ahead.  The check runs here, again at every request's start and
     // after a VRAM resize (a smaller cache, a loan that was not refilled, an adaptive swap), so a later eviction turns them
     // back on.  STRATA_FILE_TIER_IDLE=0 turns the whole policy off.
-    const bool file_tier_idle_ok = [] { const char* v = std::getenv("STRATA_FILE_TIER_IDLE"); return v == nullptr || std::atoi(v) != 0; }();
+    const bool file_tier_idle_ok = [] { const char* v = strata::env("NOSTROMA_FILE_TIER_IDLE"); return v == nullptr || std::atoi(v) != 0; }();
     int64_t gpu_held_now = 0;
     bool gpu_holds_all = false, io_pf_suspended = false;
     // a (layer, expert) is held when a live slot of its stage's cache has it (a slot past the live ones was given back)
@@ -9595,16 +9596,16 @@ int main(int argc, char** argv) {
         if (gpu_holds_all && io_pf_by_default) {
             src.set_io_prefetch(false, 0);
             io_pf_suspended = true;
-            const char* sv = std::getenv("STRATA_IO_STATS");
+            const char* sv = strata::env("NOSTROMA_IO_STATS");
             src.set_io_stats(sv != nullptr && std::atoi(sv) != 0);
             std::fprintf(stderr, "strata generate: every expert is in the GPU caches (%lld of %lld): the file tier's Linux defaults "
                                  "(io prefetch, the decode gate) are off, the decode reads nothing from it (STRATA_IO_PREFETCH=1 keeps them)\n",
                          (long long) gpu_held_now, (long long) (g.n_layers * g.n_expert));
         }
     }
-    const char* la_env = std::getenv("STRATA_LOOKAHEAD");
+    const char* la_env = strata::env("NOSTROMA_LOOKAHEAD");
     const bool la_asked = (la_env != nullptr && la_env[0] != '\0' && std::atoi(la_env) != 0) ||
-                          [] { const char* v = std::getenv("STRATA_IO_PREFETCH"); return v != nullptr && v[0] != '\0' && std::atoi(v) != 0; }();
+                          [] { const char* v = strata::env("NOSTROMA_IO_PREFETCH"); return v != nullptr && v[0] != '\0' && std::atoi(v) != 0; }();
     bool la_started = false;
     // CS-T: routing-aware prefetch of the file tier (the GGUF in place): the next layer's router on this layer's MoE
     // input predicts its experts and their pages are warmed meanwhile.  It only warms pages; STRATA_LOOKAHEAD=0 is
@@ -9612,10 +9613,10 @@ int main(int argc, char** argv) {
     strata::core::RouterLookahead lookahead;
     // #1348, one prefetch design: with the Foresight swap space on (STRATA_FS_SLOTS) the look-ahead also runs on the pinned-RAM
     // tiers, where there are no pages to warm, and feeds its predictions to the swap space (STRATA_FS_AHEAD=0: not)
-    const bool fs_ahead = srcp != nullptr && [] { const char* v = std::getenv("STRATA_FS_SLOTS"); return v != nullptr && std::atoi(v) > 0; }() &&
-                          [] { const char* v = std::getenv("STRATA_FS_AHEAD"); return v == nullptr || std::atoi(v) != 0; }();
+    const bool fs_ahead = srcp != nullptr && [] { const char* v = strata::env("NOSTROMA_FS_SLOTS"); return v != nullptr && std::atoi(v) > 0; }() &&
+                          [] { const char* v = strata::env("NOSTROMA_FS_AHEAD"); return v == nullptr || std::atoi(v) != 0; }();
     // STRATA_LOOKAHEAD_STATS=1 (measurement only): run the predictor on any tier and score it against the real routing
-    const bool la_stats = srcp != nullptr && [] { const char* v = std::getenv("STRATA_LOOKAHEAD_STATS"); return v != nullptr && std::atoi(v) != 0; }();
+    const bool la_stats = srcp != nullptr && [] { const char* v = strata::env("NOSTROMA_LOOKAHEAD_STATS"); return v != nullptr && std::atoi(v) != 0; }();
     if (srcp != nullptr && ((srcp == &src && src.warms()) || fs_ahead || la_stats) &&
         (la_env == nullptr || std::atoi(la_env) != 0)) {
         std::vector<std::vector<uint16_t>> routers((size_t) g.n_layers);
@@ -9633,11 +9634,11 @@ int main(int argc, char** argv) {
             routers[(size_t) l].resize((size_t) (g.n_expert * g.n_embd));
             ok = cudaMemcpy(routers[(size_t) l].data(), w->data, (size_t) w->bytes, cudaMemcpyDeviceToHost) == cudaSuccess;
         }
-        const char* kv = std::getenv("STRATA_LOOKAHEAD_K");
+        const char* kv = strata::env("NOSTROMA_LOOKAHEAD_K");
         if (ok && lookahead.start(std::move(routers), g.n_embd, g.n_expert, kv ? std::atoi(kv) : 10, srcp, err, fs_ahead || la_stats)) {
             drive.d.lookahead = &lookahead;
             if (la_stats) lookahead.enable_stats(g.n_layers);
-            if (const char* dv = std::getenv("STRATA_IO_PREFETCH_DEPTH"); dv != nullptr && std::atoi(dv) > 0)
+            if (const char* dv = strata::env("NOSTROMA_IO_PREFETCH_DEPTH"); dv != nullptr && std::atoi(dv) > 0)
                 lookahead.set_depth(std::atoi(dv));
             else if (srcp == &src && src.io_prefetch())
                 lookahead.set_depth(2);
@@ -9670,7 +9671,7 @@ int main(int argc, char** argv) {
                 src.set_io_prefetch(false, 0);
                 io_pf_suspended = true;
                 acted = true;
-                const char* sv = std::getenv("STRATA_IO_STATS");
+                const char* sv = strata::env("NOSTROMA_IO_STATS");
                 src.set_io_stats(sv != nullptr && std::atoi(sv) != 0);
             }
             if (la_started && !la_asked && !fs_ahead && !la_stats && drive.d.lookahead != nullptr) { drive.d.lookahead = nullptr; acted = true; }
@@ -9679,14 +9680,14 @@ int main(int argc, char** argv) {
                              (long long) held, (long long) total);
         } else {
             if (io_pf_suspended) {
-                const char* th = std::getenv("STRATA_IO_PF_THREADS");
+                const char* th = strata::env("NOSTROMA_IO_PF_THREADS");
                 src.set_io_prefetch(true, th != nullptr ? std::atoi(th) : 0);
                 io_pf_suspended = !src.io_prefetch();
                 acted = true;
             }
             if (la_started && drive.d.lookahead == nullptr) {
                 drive.d.lookahead = &lookahead;
-                if (!std::getenv("STRATA_IO_PREFETCH_DEPTH") && src.io_prefetch()) lookahead.set_depth(2);
+                if (!strata::env("NOSTROMA_IO_PREFETCH_DEPTH") && src.io_prefetch()) lookahead.set_depth(2);
                 acted = true;
             }
             if (acted)
@@ -10294,7 +10295,7 @@ int main(int argc, char** argv) {
         // ... and the ones a GPU holds are handed back first (STRATA_ARENA_RELEASE=0 keeps them): the fill read the
         // whole arena, and left mapped and referenced it crowds every other allocation into swap
         {
-            static const bool keep = std::getenv("STRATA_ARENA_RELEASE") && std::getenv("STRATA_ARENA_RELEASE")[0] == '0';
+            static const bool keep = strata::env("NOSTROMA_ARENA_RELEASE") && strata::env("NOSTROMA_ARENA_RELEASE")[0] == '0';
             rss_probe("before the release");
             uint64_t released = 0;
             if (!keep)
@@ -10397,7 +10398,7 @@ int main(int argc, char** argv) {
                 if (srcp->pinned(l, e)) pinned += b;
             }
         double share = total ? (double) pinned / (double) total : 1.0;
-        if (const char* t = std::getenv("STRATA_TEST_PINNED_SHARE")) share = std::atof(t);   // tests: the Windows-like ring rule
+        if (const char* t = strata::env("NOSTROMA_TEST_PINNED_SHARE")) share = std::atof(t);   // tests: the Windows-like ring rule
         strata::prefill::Prefill::set_pinned_share(share);
     }
     // bytes -> slots for CUDA0's cache: exact when it knows its per-slot offsets (a native pack's blobs differ
@@ -10438,14 +10439,14 @@ int main(int argc, char** argv) {
     // streamed layout's 512-slot ring and fused buffers while it walked staged: 478 more experts streamed per prompt, 275 ms at 1,000
     // tokens (RTX A6000).  Applies to every piece within 255 tokens under the floor (769-1,023 at 1,024; 2,817-3,071 under the CPU
     // share's 3,072).  STRATA_PREFILL_LOAN_WALK=0 keeps the rounded chunk.
-    static const bool loan_by_walk = [] { const char* e = std::getenv("STRATA_PREFILL_LOAN_WALK"); return !(e != nullptr && e[0] == '0'); }();
+    static const bool loan_by_walk = [] { const char* e = strata::env("NOSTROMA_PREFILL_LOAN_WALK"); return !(e != nullptr && e[0] == '0'); }();
     // The lent fused layout's MMQ tail is sized from the segment's own last chunk, not from the stream floor (a floor of 3,584
     // against 1,024 costs ~92 expert slots on an RTX A6000, streamed again by every chunk above the floor).  One GPU, no peer, no
     // --batch above one slot, no head alias; a layer split keeps the floor's tail.  STRATA_PREFILL_TAIL_LOAN=0 keeps today's size.
-    static const bool tail_loan_on = [] { const char* e = std::getenv("STRATA_PREFILL_TAIL_LOAN"); return !(e != nullptr && e[0] == '0'); }();
+    static const bool tail_loan_on = [] { const char* e = strata::env("NOSTROMA_PREFILL_TAIL_LOAN"); return !(e != nullptr && e[0] == '0'); }();
     // STRATA_DBG_TAIL_NOREUSE=1 (a test of the backstop): a loan is reused by chunk alone, as before the tail rule - a later short segment then
     // overruns the tail and the chunk check in Prefill::run_impl must end the request with its error
-    static const bool dbg_tail_noreuse = [] { const char* e = std::getenv("STRATA_DBG_TAIL_NOREUSE"); return e != nullptr && e[0] == '1'; }();
+    static const bool dbg_tail_noreuse = [] { const char* e = strata::env("NOSTROMA_DBG_TAIL_NOREUSE"); return e != nullptr && e[0] == '1'; }();
     auto loan_chunk = [&](int64_t tokens, int64_t chunk) -> int64_t {
         return loan_by_walk ? strata::prefill::loan_rules::walk_chunk(tokens, chunk, strata::prefill::Prefill::stream_all_min_tokens())
                             : chunk;
@@ -10457,8 +10458,8 @@ int main(int argc, char** argv) {
     // today's time; equal_cut_rule.hpp).  `one_gpu`: no layer split, no peer card, one slot, no head alias.  A layer split keeps
     // today's cut, or with STRATA_PREFILL_EQUAL=1 the older opt-in rule below (#693); STRATA_PREFILL_EQUAL=0 keeps today's cut
     // everywhere.  `request_chunk` is unchanged (STRATA_SPLIT_SMALL_OWN uses it too).
-    static const strata::prefill::equal_cut::Cut equal_cut_one = strata::prefill::equal_cut::pick(std::getenv("STRATA_PREFILL_EQUAL"), true);
-    static const strata::prefill::equal_cut::Cut equal_cut_split = strata::prefill::equal_cut::pick(std::getenv("STRATA_PREFILL_EQUAL"), false);
+    static const strata::prefill::equal_cut::Cut equal_cut_one = strata::prefill::equal_cut::pick(strata::env("NOSTROMA_PREFILL_EQUAL"), true);
+    static const strata::prefill::equal_cut::Cut equal_cut_split = strata::prefill::equal_cut::pick(strata::env("NOSTROMA_PREFILL_EQUAL"), false);
     auto equal_chunk = [&](int64_t tokens, int64_t max_chunk, bool one_gpu) -> int64_t {
         return strata::prefill::equal_cut::chunk(one_gpu ? equal_cut_one : equal_cut_split, tokens, max_chunk,
                                                  strata::prefill::Prefill::stream_all_min_tokens());
@@ -10476,7 +10477,7 @@ int main(int argc, char** argv) {
     // stream_all_min_tokens() stays as it is (it moves only the experts its own tokens route to).  Used ONLY where a
     // segment's chunk is chosen (the serve lend, generate's prompt); `request_chunk` is unchanged because
     // STRATA_SPLIT_SMALL_OWN uses it too.  The chunk geometry changes the rounding, so it is off by default.
-    static const bool equal_chunks = [] { const char* e = std::getenv("STRATA_PREFILL_EQUAL"); return e != nullptr && e[0] == '1'; }();
+    static const bool equal_chunks = [] { const char* e = strata::env("NOSTROMA_PREFILL_EQUAL"); return e != nullptr && e[0] == '1'; }();
     auto equal_chunk = [&](int64_t tokens, int64_t max_chunk) -> int64_t {
         const int64_t plain = request_chunk(tokens, max_chunk);
         if (!equal_chunks || tokens <= 0 || max_chunk <= 0) return plain;
@@ -10506,7 +10507,7 @@ int main(int argc, char** argv) {
     // limit (lending more only streams more through them).  STRATA_PREFILL_LEND_PCT overrides (tuning).
     // Hoisted out of plan_lend: the serve path's per-stage loans obey the same cap, one participant at a time.
     const int64_t kAutoLendPct = [] {
-        const char* v = std::getenv("STRATA_PREFILL_LEND_PCT");
+        const char* v = strata::env("NOSTROMA_PREFILL_LEND_PCT");
         return v ? (int64_t) std::atoi(v)
                  : g_lend_keep != 128 ? (int64_t) 100   // a card too short for the usual loan (see the cache sizing) lends what it must: the cap is for cards with room
                  : (int64_t) (strata::prefill::Prefill::pinned_share() >= 0.9 ? 90 : 85);
@@ -10520,7 +10521,7 @@ int main(int argc, char** argv) {
     // 32K prompt in two 16384 chunks fills and drains the pipe for most of its time.  8192 chunks, same tokens: 2x R9700
     // pp32k +14%, 4x +19%, pp64k +4% / +16%.  STRATA_SPLIT_CHUNK16K=1 keeps the gfx12 16384 ceiling on a split.
     if (multi_gpu && o.prefill_gfx12_16k) {
-        static const char* keep16 = std::getenv("STRATA_SPLIT_CHUNK16K");   // (the NVIDIA rule shares this: a layer split reads 8192-token chunks)
+        static const char* keep16 = strata::env("NOSTROMA_SPLIT_CHUNK16K");   // (the NVIDIA rule shares this: a layer split reads 8192-token chunks)
         if (!(keep16 != nullptr && std::atoi(keep16) != 0)) {
             auto_ceiling = std::min<int64_t>(auto_ceiling, 8192);
             o.prefill_auto_max = std::min<int64_t>(o.prefill_auto_max, 8192);   // the 0.1.39 chunk list reads this one
@@ -10700,7 +10701,7 @@ int main(int argc, char** argv) {
                                const std::function<int64_t(int64_t)>& ring_full,
                                const std::function<void()>& restore, int64_t tokens_hint = 0) -> int64_t {
         namespace pp = strata::program::prefill_plan;
-        const char* off = std::getenv("STRATA_PREFILL_HOST_PLAN");
+        const char* off = strata::env("NOSTROMA_PREFILL_HOST_PLAN");
         if (!o.prefill_auto || chunk <= 0 || srcp != &src || (off != nullptr && off[0] == '0') ||
             !strata::prefill::Prefill::ring_bytes_enabled())
             return chunk;
@@ -10716,7 +10717,7 @@ int main(int argc, char** argv) {
         host.h2d_gbps = g_last_h2d_gbps > 0.0 ? g_last_h2d_gbps : 12.0;
         std::string why;
         host.ssd_gbps = drive_read_gbps(o.native_preset.empty() ? o.pack : o.native_preset, why);   // where the experts live
-        if (const char* e = std::getenv("STRATA_PREFILL_PLAN_TOKS"); e != nullptr && std::atof(e) > 0.0)
+        if (const char* e = strata::env("NOSTROMA_PREFILL_PLAN_TOKS"); e != nullptr && std::atof(e) > 0.0)
             host.compute_tok_s = std::atof(e);
         const uint64_t ram_copy = src.complement_ready() ? src.resident_bytes() : 0;
         const int64_t kept_slots = src.complement_ready() ? src.resident_lent_slots() : 0;
@@ -10812,10 +10813,10 @@ int main(int argc, char** argv) {
         if (!kvg.on) return;
         kvg.top = kvg.lo = top;
         kvg.cells = strata::core::qsa_kv_elastic_cells();
-        if (const char* v = std::getenv("STRATA_KV_GROW_STEP"); v != nullptr && std::atoll(v) > 0) kvg.step = std::atoll(v);
+        if (const char* v = strata::env("NOSTROMA_KV_GROW_STEP"); v != nullptr && std::atoll(v) > 0) kvg.step = std::atoll(v);
         if (!kvg.from_cache) return;
         // tests: the cache keeps this many slots (its size: the K/V grows into new VRAM only)
-        if (const char* v = std::getenv("STRATA_KV_GROW_FLOOR"); v != nullptr && std::atoll(v) > 0) kvg.floor = std::atoll(v);
+        if (const char* v = strata::env("NOSTROMA_KV_GROW_FLOOR"); v != nullptr && std::atoll(v) > 0) kvg.floor = std::atoll(v);
         std::fprintf(stderr, "strata generate: elastic K/V: %lld of %lld cells in VRAM (%.2f of %.2f GiB); the expert "
                              "cache (%lld slots) gives the K/V room below slot %lld as the context grows\n",
                      (long long) kvg.cells, (long long) o.max_context,
@@ -11050,7 +11051,7 @@ int main(int argc, char** argv) {
     }
     if (o.adapt_async) {
         static const bool pl_async = [] {
-            const char* v = std::getenv("STRATA_PIPELINE_ADAPT_ASYNC");
+            const char* v = strata::env("NOSTROMA_PIPELINE_ADAPT_ASYNC");
             return v == nullptr || std::atoi(v) != 0;
         }();
         const char* why = !o.serve ? "it needs --serve"
@@ -11068,7 +11069,7 @@ int main(int argc, char** argv) {
     // STRATA_PIPE_ADAPT_EVERY (batch_groups.hpp; the rounds run in the pipelined loop below): said once here, with the
     // other start-up lines, before READY
     if (o.serve && o.batch > 0 && o.batch_groups > 1 && multi_gpu) {
-        const int every = strata::program::batch_groups::pipe_adapt_every(std::getenv("STRATA_PIPE_ADAPT_EVERY"));
+        const int every = strata::program::batch_groups::pipe_adapt_every(strata::env("NOSTROMA_PIPE_ADAPT_EVERY"));
         if (every > 0)
             std::fprintf(stderr, "strata batch: STRATA_PIPE_ADAPT_EVERY=%d: the pipelined groups run an adaptive-tier round "
                                  "every %d group windows (the pipeline empties for it)%s\n", every, every,
@@ -11085,7 +11086,7 @@ int main(int argc, char** argv) {
         int64_t res_n = 0;
         for (const int32_t r : host_res) res_n += r >= 0;
         const double res_share = (double) res_n / (double) host_res.size();
-        const int ring = strata::program::split_ring_slots(std::getenv("STRATA_SPLIT_RING"), res_share);
+        const int ring = strata::program::split_ring_slots(strata::env("NOSTROMA_SPLIT_RING"), res_share);
         if (ring > 0) {
             strata::prefill::Prefill::set_ring_override(ring);
             std::fprintf(stderr, "strata serve: layer split: %.0f%% of the experts resident, the prompt path's "
@@ -11169,7 +11170,7 @@ int main(int argc, char** argv) {
         if (pf_borrow && d_res != nullptr && o.prefill_chunk > 0 && multi_gpu && !stages.empty()) {
             const int64_t bound = o.prefill_auto ? auto_ceiling : o.prefill_chunk;
             static const bool own_ok = [] {
-                const char* v = std::getenv("STRATA_SPLIT_OWN_BUFFERS");
+                const char* v = strata::env("NOSTROMA_SPLIT_OWN_BUFFERS");
                 return v == nullptr || v[0] != '0';
             }();
             for (size_t i = 0; i <= stages.size(); ++i) {   // the scan's part order: CUDA0, then every stage
@@ -11229,7 +11230,7 @@ int main(int argc, char** argv) {
         // the level the cap is 0 and the RAM copy is empty (budget 1 byte: 0 would mean "no limit"); every expert the GPU cache does not hold is read from the SSD, and the start goes on.
         bool uma_cap_applied = false;
         uint64_t uma_cap = 0;
-        const char* const uma_pin_cap = std::getenv("STRATA_UMA_PIN_CAP");
+        const char* const uma_pin_cap = strata::env("NOSTROMA_UMA_PIN_CAP");
         if (o.batch >= 2 && o.prefill_own_keep_chunk && o.resident_budget > 0 && !(uma_pin_cap != nullptr && uma_pin_cap[0] == '0')) {
             const uint64_t kv = strata::core::qsa_kv_host_bytes();
             uma_cap = strata::core::uma_pinned_complement_cap_bytes(kv);
@@ -11371,7 +11372,7 @@ int main(int argc, char** argv) {
                     if (!ub)
                         std::fprintf(stderr, "strata: expert reads now go through the file cache (%.1f GiB of RAM free for them, %.1f GiB limit)\n",
                                      (double) mem->available / GiB, (double) mem->limit / GiB);
-                    if (std::getenv("STRATA_TRACE") != nullptr)
+                    if (strata::env("NOSTROMA_TRACE") != nullptr)
                         std::fprintf(stderr, "strata trace: the file tier changed: RAM at the re-check: limit %.1f GiB (source: %s), current %.1f GiB, "
                                              "reclaimable cache credited %.1f GiB; available %.1f GiB (MemAvailable %.1f GiB)\n",
                                      (double) mem->limit / GiB, strata::core::memory_source_name(mem->source), (double) mem->current / GiB,
@@ -11381,7 +11382,7 @@ int main(int argc, char** argv) {
             // MODEL-UPDATE round 2 (opt-in STRATA_PROMPT_DIRECT=1): the prompt path's batched reads unbuffered while
             // decode keeps the file cache (z440, UD-Q4_K_XL, 39 GiB budget: all-unbuffered doubled the 6K prompt but
             // cost decode 9-13%).  The same bytes either way.
-            if (!ub && [] { const char* v = std::getenv("STRATA_PROMPT_DIRECT"); return v != nullptr && v[0] == '1'; }()) {
+            if (!ub && [] { const char* v = strata::env("NOSTROMA_PROMPT_DIRECT"); return v != nullptr && v[0] == '1'; }()) {
                 std::string pw;
                 const bool pd = src.open_prompt_direct(pw);
                 std::fprintf(stderr, "strata generate: the prompt path's expert reads %s\n",
@@ -11394,7 +11395,7 @@ int main(int argc, char** argv) {
     if (o.adapt_async && !src.complement_ready() && srcp != &arena_src) adapt_async_off("the resident RAM mode is not running");
     // pp-opt: with the file tier unbuffered, the mapped view of experts.bin is only a fallback from here on - and while
     // it exists NTFS serves the unbuffered reads one at a time (drop_mapping).  STRATA_KEEP_MAPPING=1 keeps it (A/B).
-    if (srcp == &src && src.unbuffered() && std::getenv("STRATA_KEEP_MAPPING") == nullptr) {
+    if (srcp == &src && src.unbuffered() && strata::env("NOSTROMA_KEEP_MAPPING") == nullptr) {
         std::string why;
         const bool dropped = src.drop_mapping(why);
         std::fprintf(stderr, "strata generate: the mapped view of the experts %s (%s)\n",
@@ -11425,7 +11426,7 @@ int main(int argc, char** argv) {
         }
         const auto v = strata::prefill::share_rules::default_share_memory_verdict(sm);
         if (v.arm) return true;
-        const char* ev = std::getenv("STRATA_PREFILL_CPU_SHARE");
+        const char* ev = strata::env("NOSTROMA_PREFILL_CPU_SHARE");
         if (ev == nullptr)
             std::fprintf(stderr, "strata: the CPU prefill share is not armed by default: %s. STRATA_PREFILL_CPU_SHARE=auto "
                                  "turns it on anyway\n", v.why.c_str());
@@ -11458,7 +11459,7 @@ int main(int argc, char** argv) {
         std::unique_ptr<strata::core::RemotePrefillSource> prefill_helper_src;
         strata::core::ExpertSource* prefill_src = srcp;
         uint64_t helper_blobs_before = 0, helper_bytes_before = 0;
-        if (const char* hv = std::getenv("STRATA_PREFILL_HELPER_SOURCE"); hv != nullptr && std::atoi(hv) != 0 &&
+        if (const char* hv = strata::env("NOSTROMA_PREFILL_HELPER_SOURCE"); hv != nullptr && std::atoi(hv) != 0 &&
             srcp != nullptr && !multi_gpu && stages.empty() && o.batch <= 0 && !prefill_helpers.empty()) {
             prefill_helper_src = std::make_unique<strata::core::RemotePrefillSource>(*srcp, prefill_helpers);
             prefill_src = prefill_helper_src.get();
@@ -11476,12 +11477,12 @@ int main(int argc, char** argv) {
             std::vector<float> seed;
         } ram_adapt2;
         {
-            const char* v = std::getenv("STRATA_RAM_ADAPT2");
+            const char* v = strata::env("NOSTROMA_RAM_ADAPT2");
             ram_adapt2.on = v != nullptr && std::atoi(v) != 0;
-            if (const char* w = std::getenv("STRATA_RAM_ADAPT_PROMPT_W")) ram_adapt2.prompt_w = (float) std::max(0.0, std::atof(w));
-            if (const char* w = std::getenv("STRATA_RAM_ADAPT_CACHED_W")) ram_adapt2.cached_w = (float) std::clamp(std::atof(w), 0.0, 1.0);
-            if (const char* w = std::getenv("STRATA_RAM_ADAPT_PER_LAYER")) ram_adapt2.per_layer = std::max(1, std::atoi(w));
-            if (const char* w = std::getenv("STRATA_RAM_ADAPT_SKIP_TOP")) ram_adapt2.skip_top = std::max(0, std::atoi(w));
+            if (const char* w = strata::env("NOSTROMA_RAM_ADAPT_PROMPT_W")) ram_adapt2.prompt_w = (float) std::max(0.0, std::atof(w));
+            if (const char* w = strata::env("NOSTROMA_RAM_ADAPT_CACHED_W")) ram_adapt2.cached_w = (float) std::clamp(std::atof(w), 0.0, 1.0);
+            if (const char* w = strata::env("NOSTROMA_RAM_ADAPT_PER_LAYER")) ram_adapt2.per_layer = std::max(1, std::atoi(w));
+            if (const char* w = strata::env("NOSTROMA_RAM_ADAPT_SKIP_TOP")) ram_adapt2.skip_top = std::max(0, std::atoi(w));
         }
         // the pool is idle while a prompt is read unless batch slots decode between its parts; with
         // STRATA_PREFILL_CPU_SHARE the staged-chunk limit before the chunk below sizes the loans (bytes_needed reads it)
@@ -11504,7 +11505,7 @@ int main(int argc, char** argv) {
 #endif
         // STRATA_PREFILL_CPU_SHARE_BATCH=1 (opt-in): the prompt path gets the pool beside batch slots too; a read takes the
         // share only while no slot decodes (set_share_blocked before each read), since the slots' windows use the pool
-        static const bool share_batch = [] { const char* v = std::getenv("STRATA_PREFILL_CPU_SHARE_BATCH"); return v != nullptr && v[0] == '1'; }();
+        static const bool share_batch = [] { const char* v = strata::env("NOSTROMA_PREFILL_CPU_SHARE_BATCH"); return v != nullptr && v[0] == '1'; }();
         const bool share_pool = (o.batch <= 0 || share_batch) && !o.no_pool;
         if (share_batch && o.batch > 0 && !o.no_pool)
             std::fprintf(stderr, "strata serve: STRATA_PREFILL_CPU_SHARE_BATCH=1: the prompt path may use the CPU pool beside the "
@@ -11692,14 +11693,14 @@ int main(int argc, char** argv) {
             // Below 8,192 tokens the default streams every expert again for every chunk, and the unfused experts plus (from two chunks) the layer-major walk
             // read the same prompt 9-50% sooner (RESULTS-DF2MEM.md); the chunk is then sized again for that layout.  One CUDA card, a native pack, an auto
             // chunk; STRATA_PF_FUSED / STRATA_PREFILL_LAYER_MAJOR set by the user win; STRATA_PF_SMALL=0 turns the rule off.
-            if (chunk > 0 && o.prefill_auto && !multi_gpu && stages.empty() && !(std::getenv("STRATA_PF_SMALL") != nullptr && std::getenv("STRATA_PF_SMALL")[0] == '0')) {
+            if (chunk > 0 && o.prefill_auto && !multi_gpu && stages.empty() && !(strata::env("NOSTROMA_PF_SMALL") != nullptr && strata::env("NOSTROMA_PF_SMALL")[0] == '0')) {
 #if defined(STRATA_USE_HIP)
                 constexpr bool pf_small_hip = true;
 #else
                 constexpr bool pf_small_hip = false;
 #endif
-                const char* fe = std::getenv("STRATA_PF_FUSED");
-                const char* le = std::getenv("STRATA_PREFILL_LAYER_MAJOR");
+                const char* fe = strata::env("NOSTROMA_PF_FUSED");
+                const char* le = strata::env("NOSTROMA_PREFILL_LAYER_MAJOR");
                 // STRATA_PF_FUSED "set by the user": a build without MMQ puts STRATA_PF_FUSED=1 into the environment itself before main (prefill.cpp, own_only_switches.hpp),
                 // which is not a choice of the user's and must not switch the rule off; a value that was in the environment before that stays theirs
                 const strata::SmallCardPromptPath pp = strata::small_card_prompt_path(
@@ -11709,7 +11710,7 @@ int main(int argc, char** argv) {
                     const int64_t chunk_default = chunk;
                     // MMQ's buffer layout (so the layer-major walk runs); the native fused kernels still run in the walk's groups and the streamed chunks
                     // (pf_fused_override.hpp), unless STRATA_PF_SMALL_FUSED=0 keeps MMQ's kernels there as before (a build without MMQ has none: always the fused kernels)
-                    if (pp.fused_off) strata::prefill::pf_fused_override().store(strata::prefill::own_only_build() || strata::prefill::small_card_kernels_on(std::getenv("STRATA_PF_SMALL_FUSED")) ? strata::prefill::kPfFusedKernelsOnly : 0);
+                    if (pp.fused_off) strata::prefill::pf_fused_override().store(strata::prefill::own_only_build() || strata::prefill::small_card_kernels_on(strata::env("NOSTROMA_PF_SMALL_FUSED")) ? strata::prefill::kPfFusedKernelsOnly : 0);
                     if (pp.layer_major) {
 #if defined(_WIN32)
                         _putenv_s("STRATA_PREFILL_LAYER_MAJOR", "1");
@@ -11902,7 +11903,7 @@ int main(int argc, char** argv) {
                 // after this).  Layer splits only - one GPU keeps its loan exactly as before.
                 // STRATA_SPLIT_OWN_BUFFERS=0: every stage borrows (0.1.30/0.1.31).
                 static const bool own_ok = [] {
-                    const char* v = std::getenv("STRATA_SPLIT_OWN_BUFFERS");
+                    const char* v = strata::env("NOSTROMA_SPLIT_OWN_BUFFERS");
                     return v == nullptr || v[0] != '0';
                 }();
                 if (pf_parts.size() > 1 && own_ok) {
@@ -11982,7 +11983,7 @@ int main(int argc, char** argv) {
         // from the room and does not take it.  Unset (the default): not one line below runs, and the prompt path is
         // laid out exactly as before.
         const int64_t mtp_room_min = [] {
-            const char* v = std::getenv("STRATA_MTP_ROOM_MIN");
+            const char* v = strata::env("NOSTROMA_MTP_ROOM_MIN");
             if (v == nullptr || v[0] == '\0') return (int64_t) -1;
             char* end = nullptr;
             const long long n = std::strtoll(v, &end, 10);
@@ -11991,7 +11992,7 @@ int main(int argc, char** argv) {
         }();
         if (mtp_room_min == -2) {
             std::fprintf(stderr, "strata generate: STRATA_MTP_ROOM_MIN=%s is not a token count (0: every request)\n",
-                         std::getenv("STRATA_MTP_ROOM_MIN"));
+                         strata::env("NOSTROMA_MTP_ROOM_MIN"));
             return 2;
         }
         int mtp_room_slots = 0;
@@ -12089,7 +12090,7 @@ int main(int argc, char** argv) {
         // (tools/test_uma_drop_guard.py checks this guard).
 #if defined(__linux__) && !defined(STRATA_USE_HIP) && !defined(STRATA_HIP_GFX906) && !defined(STRATA_GPU_METAL)   // SPARK-UMA-DROP
         if (srcp == &src && gpu_holds_all && !multi_gpu && stages.empty() && [] {
-                const char* v = std::getenv("STRATA_UMA_DROP_PAGES");
+                const char* v = strata::env("NOSTROMA_UMA_DROP_PAGES");
                 return v == nullptr || v[0] != '0';
             }()) {
             int dev = 0, integ = 0;
@@ -12107,7 +12108,7 @@ int main(int argc, char** argv) {
                 if (freed > 0)
                     std::fprintf(stderr, "strata serve: this GPU shares the system memory and holds every expert, so the "
                                          "model file's cached copy of them is given back.\n");
-                const char* tr = std::getenv("STRATA_UMA_DROP_PAGES");   // 2: the numbers too (research)
+                const char* tr = strata::env("NOSTROMA_UMA_DROP_PAGES");   // 2: the numbers too (research)
                 if (tr != nullptr && tr[0] == '2')
                     std::fprintf(stderr, "strata serve: STRATA_UMA_DROP_PAGES: %.2f GiB of expert pages given back in %.1f ms; "
                                          "free on the GPU %.2f -> %.2f GiB\n",
@@ -12200,7 +12201,7 @@ int main(int argc, char** argv) {
             // 955 tok/s, but this step-down found 1.7 GiB "free" in the DFlash2-alone engine (no MTP layer, a slightly larger cache), cut the chunk to
             // 1,536 and read them at 303 tok/s (RESULTS-DF2STRIX.md).  The step-down stays for a real allocation failure (the loop below).
             // STRATA_PF_OWN_CHECK=1 (tester) restores the arithmetic check on this card.
-            static const bool own_check_restored = [] { const char* v = std::getenv("STRATA_PF_OWN_CHECK"); return v != nullptr && v[0] == '1'; }();
+            static const bool own_check_restored = [] { const char* v = strata::env("NOSTROMA_PF_OWN_CHECK"); return v != nullptr && v[0] == '1'; }();
             const bool keep_chunk_uma = o.prefill_own_keep_chunk && !own_check_restored;
             if (!own_fits(o.prefill_chunk, dev, need, fb)) {
               if (keep_chunk_uma) {
@@ -12302,9 +12303,9 @@ int main(int argc, char** argv) {
         // (several chunks, still nothing lent) instead of borrowing for a bigger one.
         int64_t split_small = 0, split_small_max = 0;
         if (multi_gpu && !pf_parts.empty() && !host_res.empty()) {
-            const char* v = std::getenv("STRATA_SPLIT_SMALL_OWN");
+            const char* v = strata::env("NOSTROMA_SPLIT_SMALL_OWN");
             const int64_t S = v ? request_chunk(std::atoll(v), o.prefill_chunk) : 0;
-            const char* vm = std::getenv("STRATA_SPLIT_SMALL_MAX");
+            const char* vm = strata::env("NOSTROMA_SPLIT_SMALL_MAX");
             split_small = S;
             split_small_max = S > 0 ? std::max<int64_t>(S, vm ? std::atoll(vm) : S) : 0;
             int64_t evicted = 0;
@@ -12354,11 +12355,11 @@ int main(int argc, char** argv) {
         vh.d_res = thits.d_res;
         // STRATA_ROUTE_RESIDENT_MTP=1 (EXPERIMENTAL, with STRATA_ROUTE_RESIDENT=<margin>; changes the output): the MTP
         // draft's router gets the same residency bias, with the last layer's residency row as its table (single GPU)
-        if (use_mtp && stages.empty() && thits.d_res != nullptr && std::getenv("STRATA_ROUTE_RESIDENT") != nullptr &&
-            std::getenv("STRATA_ROUTE_RESIDENT_MTP") != nullptr && std::atoi(std::getenv("STRATA_ROUTE_RESIDENT_MTP")) != 0) {
-            const float margin = (float) std::atof(std::getenv("STRATA_ROUTE_RESIDENT"));
+        if (use_mtp && stages.empty() && thits.d_res != nullptr && strata::env("NOSTROMA_ROUTE_RESIDENT") != nullptr &&
+            strata::env("NOSTROMA_ROUTE_RESIDENT_MTP") != nullptr && std::atoi(strata::env("NOSTROMA_ROUTE_RESIDENT_MTP")) != 0) {
+            const float margin = (float) std::atof(strata::env("NOSTROMA_ROUTE_RESIDENT"));
             int lo = 6, hi = 9;
-            if (const char* v = std::getenv("STRATA_ROUTE_RESIDENT_RANKS")) std::sscanf(v, "%d-%d", &lo, &hi);
+            if (const char* v = strata::env("NOSTROMA_ROUTE_RESIDENT_RANKS")) std::sscanf(v, "%d-%d", &lo, &hi);
             if (margin > 0.0f) {
                 mtp.set_route_resident(thits.d_res + (size_t) (g.n_layers - 1) * (size_t) g.n_expert, margin, lo, hi);
                 std::fprintf(stderr, "strata generate: STRATA_ROUTE_RESIDENT_MTP: the MTP draft's router is biased toward layer %lld's resident experts (margin %g, ranks %d-%d; experimental)\n",
@@ -12439,7 +12440,7 @@ int main(int argc, char** argv) {
             // writing stage's GPU, so the next stage's window is launched early and the host never syncs between
             // stages (Verifier::set_handoff_flags).  Not for --split-device 0 (both stages on one GPU).
             const bool overlap_asked = [] {
-                const char* v = std::getenv("STRATA_SPLIT_OVERLAP");
+                const char* v = strata::env("NOSTROMA_SPLIT_OVERLAP");
                 return v != nullptr && std::atoi(v) != 0;
             }();
             // --pipeline-windows (#859) runs its own overlapped loop with its own hand-offs: the two do not mix
@@ -12811,7 +12812,7 @@ int main(int argc, char** argv) {
         bool pl_snap_ok = false, pl_snap_overlap = false;
         if (pipe && o.pipeline_windows >= 2) {
             pl_snap_ok = true;
-            pl_snap_overlap = [] { const char* v = pipe_dbg_env("STRATA_PIPELINE_SNAP_OVERLAP"); return v == nullptr || std::atoi(v) != 0; }();
+            pl_snap_overlap = [] { const char* v = pipe_dbg_env("NOSTROMA_PIPELINE_SNAP_OVERLAP"); return v == nullptr || std::atoi(v) != 0; }();
             for (int st = 0; st < pl_nf && pl_snap_ok; ++st) {
                 PlSnap& sn = pl_snaps[(size_t) st];
                 strata::core::SessionState& sst = st == 0 ? ss : stages[(size_t) st - 1]->ss;
@@ -13029,17 +13030,17 @@ int main(int argc, char** argv) {
                             return a;
                         },
                         [] { StageThreads::spread_current_thread(); });
-                    if (std::getenv("STRATA_PARK_TRACE"))
+                    if (strata::env("NOSTROMA_PARK_TRACE"))
                         std::fprintf(stderr, "strata parktrace: segpool %zu MiB reserved (%s %zu MiB, cache %lld MiB)\n",
                                      segpool->capacity() >> 20, env_mib >= 0 ? "asked" : "default", want_mib, (long long) o.conversation_cache_mib);
                 } else {
-                    if (std::getenv("STRATA_PARK_TRACE")) std::fprintf(stderr, "strata parktrace: segpool not reserved (%zu MiB wanted)\n", want_mib);
+                    if (strata::env("NOSTROMA_PARK_TRACE")) std::fprintf(stderr, "strata parktrace: segpool not reserved (%zu MiB wanted)\n", want_mib);
                     segpool = nullptr;   // (the object stays allocated, inert)
                 }
             }
         }
         if (conversations.enabled() && (segpool != nullptr || ckpt_pool.on())) conversations.set_pool(&pools_budget);
-        if (std::getenv("STRATA_PARK_TRACE"))
+        if (strata::env("NOSTROMA_PARK_TRACE"))
             std::fprintf(stderr, "strata parktrace: park pools: segment pool %zu MiB, checkpoint pool %s (ready %zu, cap %zu, %zu MiB each), cache %zu MiB, stages %zu\n",
                          segpool != nullptr ? segpool->capacity() >> 20 : (size_t) 0, ckpt_pool.on() ? "on" : "off", ckpt_pool_ready_env(),
                          ckpt_pool.cap(), park_ckpt_bytes >> 20, cache_mib_now, stages.size());
@@ -13094,7 +13095,7 @@ int main(int argc, char** argv) {
                 c.max_context = o.max_context;
                 c.kv_resident = o.kv_resident;
                 c.mtp_window = o.mtp.empty() ? -1 : o.mtp_window;
-                const char* rot = std::getenv("STRATA_KV_ROT");
+                const char* rot = strata::env("NOSTROMA_KV_ROT");
                 c.kv_rot = rot != nullptr && rot[0] == '1';
                 c.rope = {(int64_t) rope_cfg.type, rope_cfg.freq_base, rope_cfg.factor, rope_cfg.freq_scale(),
                           rope_cfg.orig_ctx, rope_cfg.ext_factor, rope_cfg.attn_factor, rope_cfg.beta_fast,
@@ -13392,7 +13393,7 @@ int main(int argc, char** argv) {
                              conversations.size(), conversations.bytes(), conversations.evictions(), snapshot_bytes, reused_bytes);
                 if (segpool != nullptr) {
                     segpool_kick();   // what this park freed or the pool gave back is topped up again in the background
-                    if (std::getenv("STRATA_PARK_TRACE"))
+                    if (strata::env("NOSTROMA_PARK_TRACE"))
                         std::fprintf(stderr, "strata parktrace: segpool resident %zu MiB, live %zu MiB, idle %zu MiB, hits %llu, misses %llu; cache images %zu MiB\n",
                                      segpool->resident_bytes() >> 20, segpool->live_requested() >> 20, segpool->idle_bytes() >> 20,
                                      (unsigned long long) segpool->hits(), (unsigned long long) segpool->misses(), conversations.bytes() >> 20);
@@ -13466,7 +13467,7 @@ int main(int argc, char** argv) {
         // STRATA_TRACE: what each checkpoint cost - the device syncs, the copies into RAM (the vectors' first fill
         // included), the eviction that frees one - one line per checkpoint; with the prompt's read parts summed per
         // request for a batch admission's line (below, at BADM)
-        const bool ckpt_trace = std::getenv("STRATA_TRACE") != nullptr;
+        const bool ckpt_trace = strata::env("NOSTROMA_TRACE") != nullptr;
         struct ReqTimes {
             int ckpts = 0;
             double sync_ms = 0.0, save_ms = 0.0, evict_ms = 0.0, read_ms = 0.0, windows_ms = 0.0;
@@ -13650,7 +13651,7 @@ int main(int argc, char** argv) {
         // STRATA_SPLIT_MTP_BATCH=1 (default off): the layer split's drafter is on the last stage, so E-9 (Prefill::draft_kv)
         // runs there, on the Prefill that ran the chunk, instead of the drafter's own per-8-row pass.  The drafts' K/V
         // come from Q8_1 x Q8_0 MMQ rather than mmvq: drafts may differ, the target's tokens never.
-        static const bool split_mtp_batch = strata::program::draft_kv::split_env_on(std::getenv("STRATA_SPLIT_MTP_BATCH"));
+        static const bool split_mtp_batch = strata::program::draft_kv::split_env_on(strata::env("NOSTROMA_SPLIT_MTP_BATCH"));
         sp.on_chunk = [&](const float* R_rows, int64_t T, int64_t p0, std::string& e) -> bool {
             // KVA: a chunk the late layers did not compute has no real final rows: its draft cells are neither built
             // nor read (the floor rises before the cells are built, so they are skipped)
@@ -13686,7 +13687,7 @@ int main(int argc, char** argv) {
                 df2.note_rows(tk.data(), T, p0);
             }
 #endif
-            if (use_mtp && std::getenv("STRATA_SNAPSHOT_VERIFY") != nullptr)
+            if (use_mtp && strata::env("NOSTROMA_SNAPSHOT_VERIFY") != nullptr)
                 std::fprintf(stderr, "strata serve: DRAFT_PREFILL path=%s mode=%d cells=%lld\n",
                              batched ? "batched" : "token", mtp.kv_state().kv_mode, (long long) T);
             // progress for the server window: PP <position reached> <prompt tokens> <ms> <fresh tokens/s>
@@ -13794,7 +13795,7 @@ int main(int argc, char** argv) {
         // 1.85 R) rounded to 0.05 and clamped 0.10..0.60, so a weak CPU starts HIGH (4 workers 0.50, 2 workers 0.60).  The converged share is unchanged.
         // STRATA_PCIE_START=old keeps the link-only start.  First answer on an RTX PRO 5000 mimic (32 workers): +4..+12%; 8 workers and the R9700: +-1%.
         if (o.pcie_frac_auto && o.pcie_probe_gbps > 0.0) {
-            const char* ps = std::getenv("STRATA_PCIE_START");
+            const char* ps = strata::env("NOSTROMA_PCIE_START");
 #if defined(STRATA_USE_HIP)
             // HIP: the new start is opt-in (STRATA_PCIE_START=new).  On the R9700 it measured +-1% by the note above, and it flips near-tie tokens in the first
             // ~50 windows after a start (INT3/G2, p620, commit 06ebf2e4d: v0.2.9 vs the merged build with the other new defaults off 21/45 identical answers,
@@ -13820,7 +13821,7 @@ int main(int argc, char** argv) {
         // expert is in VRAM; off with --batch slots (a window then mixes requests, and one request's skip would depend on
         // another's tokens) and, as in the dispatch, with a peer or helper GPU.  A layer split is fine: each stage skips by itself.
         {
-            const char* tse = std::getenv("STRATA_ROUTE_TAIL_SKIP");
+            const char* tse = strata::env("NOSTROMA_ROUTE_TAIL_SKIP");
             // #1884: with nearly every expert in the GPU cache (V100 32 GB, Coder IQ1_M: 94.8% of the experts, 99.9% decode hits) the few
             // misses are cheap and the skip costs more draft acceptance (70.1% -> 68.2%) than it saves: -1..2% decode.  No default then.
             size_t cached_experts = 0;
@@ -13832,7 +13833,7 @@ int main(int argc, char** argv) {
 #else
             const double max_cached_default = 0.90;
 #endif
-            const char* mcs = std::getenv("STRATA_TAIL_SKIP_MAX_CACHED");
+            const char* mcs = strata::env("NOSTROMA_TAIL_SKIP_MAX_CACHED");
             const double max_cached = mcs != nullptr && mcs[0] != 0 ? std::atof(mcs) / 100.0 : max_cached_default;
             const bool nearly_all_cached = !host_res.empty() && !all_experts_resident &&
                                            (double) cached_experts >= max_cached * (double) host_res.size();
@@ -13934,8 +13935,8 @@ int main(int argc, char** argv) {
                 drive.d.res_mut = host_res.data();
                 drive.d.in_flight.assign(host_res.size(), 0);
                 drive.d.fetch_avail.assign((size_t) g.n_layers, 0);
-                if (const char* v = std::getenv("STRATA_ADAPT_FETCH_MIN")) drive.d.fetch_min = (float) std::atof(v);
-                if (const char* v = std::getenv("STRATA_ADAPT_FETCH_MARGIN")) drive.d.fetch_margin = (float) std::atof(v);
+                if (const char* v = strata::env("NOSTROMA_ADAPT_FETCH_MIN")) drive.d.fetch_min = (float) std::atof(v);
+                if (const char* v = strata::env("NOSTROMA_ADAPT_FETCH_MARGIN")) drive.d.fetch_margin = (float) std::atof(v);
                 std::fprintf(stderr, "strata serve: STRATA_ADAPT_FETCH=%d: the PCIe share takes each layer's most-routed "
                                      "misses and admits those routed >= %.2f and %.2f more than a resident one%s\n",
                              drive.d.fetch_admit, drive.d.fetch_min, drive.d.fetch_margin,
@@ -13983,8 +13984,8 @@ int main(int argc, char** argv) {
                               : adapt_lag() != 1 || adapt_nowait() ? "not with STRATA_ADAPT_LAG / STRATA_ADAPT_NOWAIT"
                               // the resident RAM mode is exact too (soft_commit_exchanges) but not a win everywhere: RTX A4000 +7.0%
                               // (5/5 pairs), RTX 3060 on a 46 GB box -2.6% (0/5; the CPU experts and the copies share the RAM bandwidth)
-                              : src.complement_ready() && !(std::getenv("STRATA_ADAPT_OVERLAP_RESIDENT") &&
-                                                            std::getenv("STRATA_ADAPT_OVERLAP_RESIDENT")[0] == '1')
+                              : src.complement_ready() && !(strata::env("NOSTROMA_ADAPT_OVERLAP_RESIDENT") &&
+                                                            strata::env("NOSTROMA_ADAPT_OVERLAP_RESIDENT")[0] == '1')
                                     ? "not in the resident RAM mode unless STRATA_ADAPT_OVERLAP_RESIDENT=1"
                               : drive.d.usage.empty() ? "the adaptive tier is off"
                               : nullptr;
@@ -13999,7 +14000,7 @@ int main(int argc, char** argv) {
                 // command buffer until something flushes it, and nothing does while the host only spins on the pinned
                 // int: the first request stopped with "copies for layer 45 never landed".  STRATA_ADAPT_SIGNAL=copy asks
                 // for the stream-ordered copy there too (the enqueue then flushes the stream), =host everywhere.
-                const char* asig = std::getenv("STRATA_ADAPT_SIGNAL");
+                const char* asig = strata::env("NOSTROMA_ADAPT_SIGNAL");
 #if defined(_WIN32)
                 const bool sig_copy = asig != nullptr && asig[0] == 'c';
 #else
@@ -14033,7 +14034,7 @@ int main(int argc, char** argv) {
                                      "(same tokens, a layer waits for its own copies)%s\n",
                              !peer.valid() ? "" : agate.peer_hland != nullptr ? "; the peer tier's copies too, over its own link (stream-ordered copies)"
                                                                               : "; the peer tier's copies too, over its own link (host functions)");
-            else if (std::getenv("STRATA_ADAPT_OVERLAP") != nullptr)   // the env var was set: say what stopped it
+            else if (strata::env("NOSTROMA_ADAPT_OVERLAP") != nullptr)   // the env var was set: say what stopped it
                 std::fprintf(stderr, "strata serve: STRATA_ADAPT_OVERLAP=1 is off: %s\n", aov_why);
         } else
             std::fprintf(stderr, "strata serve: adaptive overlap: off%s%s\n",
@@ -14108,7 +14109,7 @@ int main(int argc, char** argv) {
             ver.set_always_publish(true);
             for (auto& st : stages) st->ver.set_always_publish(true);
         }
-        const bool res_checking = std::getenv("STRATA_ADAPT_CHECKRES") != nullptr && serial_windows;
+        const bool res_checking = strata::env("NOSTROMA_ADAPT_CHECKRES") != nullptr && serial_windows;
         std::vector<int32_t> res_back;
         int64_t res_windows = 0, res_bad = 0, res_bad_windows = 0;
         if (res_checking) {
@@ -14278,7 +14279,7 @@ int main(int argc, char** argv) {
                 const Swap& s = swaps[si];
                 if (aov && (si == 0 || swaps[si - 1].layer != s.layer)) {
                     // test hook (STRATA_ADAPT_OVERLAP_SLOW_US=N): a slow link, to make the windows wait for the copies
-                    static const int slow_us = [] { const char* e = std::getenv("STRATA_ADAPT_OVERLAP_SLOW_US"); return e ? std::atoi(e) : 0; }();
+                    static const int slow_us = [] { const char* e = strata::env("NOSTROMA_ADAPT_OVERLAP_SLOW_US"); return e ? std::atoi(e) : 0; }();
                     static int slow_arg = slow_us;
                     if (slow_us > 0)
                         cudaLaunchHostFunc(adapt_stream, [](void* p) { std::this_thread::sleep_for(std::chrono::microseconds(*(int*) p)); }, &slow_arg);
@@ -14908,7 +14909,7 @@ int main(int argc, char** argv) {
             };
         }
         // STRATA_TRACE=1: one stderr line per step of a request (the log shows where a request stops)
-        const bool trace = std::getenv("STRATA_TRACE") != nullptr;
+        const bool trace = strata::env("NOSTROMA_TRACE") != nullptr;
         auto tr = [&](const char* what, long long a = -1, long long b = -1) {
             if (!trace) return;
             static Clock::time_point t0;   // process-wide: the stages run on different threads
@@ -15069,9 +15070,9 @@ int main(int argc, char** argv) {
                 M.budget("resident_budget_bytes", (int64_t) o.resident_budget);
                 M.budget("batch_slots", (int64_t) o.batch);
                 M.budget("conversation_cache_mib", (int64_t) o.conversation_cache_mib);
-                M.path("decode", "route-tail-skip", std::getenv("STRATA_ROUTE_TAIL_SKIP") == nullptr || std::getenv("STRATA_ROUTE_TAIL_SKIP")[0] != '0',
-                       std::getenv("STRATA_ROUTE_TAIL_SKIP") == nullptr ? "STRATA_ROUTE_TAIL_SKIP not set: the engine default applies (it skips tails only where the configuration allows)"
-                                                                         : (std::string("STRATA_ROUTE_TAIL_SKIP=") + std::getenv("STRATA_ROUTE_TAIL_SKIP")));
+                M.path("decode", "route-tail-skip", strata::env("NOSTROMA_ROUTE_TAIL_SKIP") == nullptr || strata::env("NOSTROMA_ROUTE_TAIL_SKIP")[0] != '0',
+                       strata::env("NOSTROMA_ROUTE_TAIL_SKIP") == nullptr ? "STRATA_ROUTE_TAIL_SKIP not set: the engine default applies (it skips tails only where the configuration allows)"
+                                                                         : (std::string("STRATA_ROUTE_TAIL_SKIP=") + strata::env("NOSTROMA_ROUTE_TAIL_SKIP")));
                 M.path("transfer", "dma-batch", strata::core::dma_batch_mode() != 0,
                        strata::core::dma_batch_mode() != 0 ? "STRATA_DMA_BATCH" : "mode 0: one copy per expert (the default loop)",
                        std::string("mode ") + std::to_string(strata::core::dma_batch_mode()));
@@ -15082,11 +15083,11 @@ int main(int argc, char** argv) {
         // GPU spinning forever.  STRATA_WATCHDOG_S=0 turns it off.  Issue #31: before it does, it reports what every
         // part was doing (stall_report), so one occurrence says where the wait is.
         {
-            const char* ws = std::getenv("STRATA_WATCHDOG_S");
+            const char* ws = strata::env("NOSTROMA_WATCHDOG_S");
             const int limit = ws ? std::atoi(ws) : 60;   // one step (a prompt layer, a verify window) takes seconds
             // #1407: while the OS is still reading the file tier (major faults / bytes read advance), a silent step is
             // slow, not stuck; it gets up to STRATA_WATCHDOG_IO_S (default 10 x the limit) of such time. 0 = no allowance.
-            const char* wio = std::getenv("STRATA_WATCHDOG_IO_S");
+            const char* wio = strata::env("NOSTROMA_WATCHDOG_IO_S");
             const int io_limit = wio ? std::atoi(wio) : limit * 10;
             if (limit > 0)
                 std::thread([limit, io_limit] {
@@ -15154,7 +15155,7 @@ int main(int argc, char** argv) {
                     (void) cudaMemcpy(wh.data(), warm_dev, wn, cudaMemcpyDeviceToHost);
             }
             (void) cudaGetLastError();
-            if (std::getenv("STRATA_TRACE") != nullptr)
+            if (strata::env("NOSTROMA_TRACE") != nullptr)
                 std::fprintf(stderr, "strata trace: kfd quiet: staged copy before READY %s\n", warm_dev != nullptr ? "done" : "skipped (no device memory)");
         }
 #endif
@@ -15167,7 +15168,7 @@ int main(int argc, char** argv) {
         // that reuses nothing does (the engine's state after session_init); no checkpoint, conversation entry, RNG draw, policy sample or statistic is touched (the policy's observe_*
         // calls live in the decode loop); the expert cache may page in what the dummy token routes to (speed only).  STRATA_WINDOW_WARM=0: off (research switch).
         {
-            static const bool warm_off = [] { const char* v = std::getenv("STRATA_WINDOW_WARM"); return v != nullptr && v[0] == '0'; }();
+            static const bool warm_off = [] { const char* v = strata::env("NOSTROMA_WINDOW_WARM"); return v != nullptr && v[0] == '0'; }();
             if (!warm_off && o.spec >= 2 && n_stages == 1 && o.batch <= 0) {
                 const Clock::time_point w0 = Clock::now();
                 std::vector<int32_t> wtok((size_t) o.spec, 1), wout((size_t) o.spec + 1, 0);
@@ -15217,10 +15218,10 @@ int main(int argc, char** argv) {
         bool policy_is_df2 = use_df2;   // which drafter's costs `policy` holds (the engine's first drafter; swapped with policy_idle when a request uses the other one)
         struct DraftBandit { double tps[2] = {0, 0}; int n[2] = {0, 0}; int64_t reqs = 0; };   // [1] = DFlash2, [0] = MTP: decode tok/s of finished requests (--draft-rule learn)
         std::unordered_map<uint64_t, DraftBandit> bandit;
-        static const bool draft_log = std::getenv("STRATA_DRAFT_LOG") != nullptr;   // one stderr line per request: drafter, tokens, rounds, ms, upkeep ms
-        static const bool draft_keep_off = std::getenv("STRATA_DRAFT_KEEP") != nullptr && std::atoi(std::getenv("STRATA_DRAFT_KEEP")) == 0;   // diagnostic: do not keep the idle drafter current
+        static const bool draft_log = strata::env("NOSTROMA_DRAFT_LOG") != nullptr;   // one stderr line per request: drafter, tokens, rounds, ms, upkeep ms
+        static const bool draft_keep_off = strata::env("NOSTROMA_DRAFT_KEEP") != nullptr && std::atoi(strata::env("NOSTROMA_DRAFT_KEEP")) == 0;   // diagnostic: do not keep the idle drafter current
         int64_t draft_req_count = 0;
-        const bool spec_cost = [] { const char* v = std::getenv("STRATA_SPEC_COST"); return v != nullptr && v[0] == '1'; }();   // cost-aware MTP window (A/B arm)
+        const bool spec_cost = [] { const char* v = strata::env("NOSTROMA_SPEC_COST"); return v != nullptr && v[0] == '1'; }();   // cost-aware MTP window (A/B arm)
         strata::spec::DraftPolicy::ChainState chain_st;
         int chain_rows = 1;   // the window the cost-aware rule kept in the MTP chain just drafted
         policy.set_robust(spec_cost);
@@ -15257,7 +15258,7 @@ int main(int argc, char** argv) {
             // a machine with no table (a new engine, driver, model or setting discards the file) builds one from the rounds of its normal requests, with live
             // costs deciding meanwhile: no learning stretch.  The old one-start stretch (forced filler windows, a burst of requests) runs only for the test
             // harnesses that set STRATA_DRAFT_COSTS_LEARN=1; the server and the launcher never do.
-            const char* dc_lv = std::getenv("STRATA_DRAFT_COSTS_LEARN");
+            const char* dc_lv = strata::env("NOSTROMA_DRAFT_COSTS_LEARN");
             const bool dc_force_learn = dc_lv != nullptr && dc_lv[0] == '1';
             const bool dc_read_ok = strata::spec::read_cost_file(o.draft_costs, dc_key, cf, why);
             if (dc_read_ok && cf.fresh) {   // a file of the passive stretch: the real rounds collected so far
@@ -15505,9 +15506,9 @@ int main(int argc, char** argv) {
         // STRATA_BATCH_DF2_DEFER=0: every round drafts for every slot, spare rows or not (the first measurement's behaviour, for the A/B)
         // STRATA_BATCH_DF2_CONF=P (default: --draft-conf, else 0.35; 0 off): a slot's draft rows stop where the product of the selector's probabilities falls below P;
         // STRATA_BATCH_DF2_MAXX=N: at most N draft rows a slot and window (default kDrafts)
-        const double df2_conf = [&] { const char* e = std::getenv("STRATA_BATCH_DF2_CONF"); return e != nullptr && e[0] != '\0' ? std::atof(e) : (o.draft_conf > 0.0 ? o.draft_conf : 0.35); }();
-        const int df2_cap = [] { const char* e = std::getenv("STRATA_BATCH_DF2_MAXX"); return e != nullptr && e[0] != '\0' ? std::max(0, std::atoi(e)) : 99; }();
-        const bool batch_df2_defer = [] { const char* e = std::getenv("STRATA_BATCH_DF2_DEFER"); return !(e != nullptr && e[0] == '0'); }();
+        const double df2_conf = [&] { const char* e = strata::env("NOSTROMA_BATCH_DF2_CONF"); return e != nullptr && e[0] != '\0' ? std::atof(e) : (o.draft_conf > 0.0 ? o.draft_conf : 0.35); }();
+        const int df2_cap = [] { const char* e = strata::env("NOSTROMA_BATCH_DF2_MAXX"); return e != nullptr && e[0] != '\0' ? std::max(0, std::atoi(e)) : 99; }();
+        const bool batch_df2_defer = [] { const char* e = strata::env("NOSTROMA_BATCH_DF2_DEFER"); return !(e != nullptr && e[0] == '0'); }();
         // timing of the batch windows since the slots were last all idle (one stderr line then)
         double bt_run = 0, bt_commit = 0, bt_emit = 0;
         double bt_wait0 = 0, bt_pool0 = 0;
@@ -15526,7 +15527,7 @@ int main(int argc, char** argv) {
         double serve_adapt_drain_ms = 0.0;   // 149: the request's wait for the adaptive round in flight
         int64_t bt_a_rounds0 = 0, bt_a_swapped0 = 0;   // the asynchronous tier's counters when the timed windows began
         Clock::time_point bt_start = Clock::now();
-        const char* batch_telemetry_env = std::getenv("STRATA_BATCH_TELEMETRY");
+        const char* batch_telemetry_env = strata::env("NOSTROMA_BATCH_TELEMETRY");
         const bool batch_telemetry_enabled = batch_telemetry_env != nullptr &&
                                              batch_telemetry_env[0] == '1' && batch_telemetry_env[1] == '\0';
         strata::core::BatchWindowSampler batch_telemetry(batch_telemetry_enabled);
@@ -15569,7 +15570,7 @@ int main(int argc, char** argv) {
         // round trip through host memory, which costs ~40-90 ms per admission on a 4-card split); each device is
         // synchronized once before and once after.  Opt-in: STRATA_SLOT_COPY_DIRECT=1 (default: the host path).
         static const bool slot_copy_direct = [] {
-            const char* v = std::getenv("STRATA_SLOT_COPY_DIRECT");
+            const char* v = strata::env("NOSTROMA_SLOT_COPY_DIRECT");
             return v != nullptr && v[0] != '\0' && v[0] != '0';
         }();
         auto direct_slot_copy = [&](bool into_slot, int b, const std::vector<int32_t>& ids, std::string& e) -> bool {
@@ -16348,7 +16349,7 @@ int main(int argc, char** argv) {
         // slot; the swapped-in experts land before the next launch), then goes on.  Never while a prompt is read beside
         // the slots (its loan of cache slots), nor with --adapt-async (its own ticks).
         // (the rule: batch_groups.hpp pipe_adapt_every / pipe_adapt_due, tested in batch_groups_test)
-        const int pipe_adapt_every = strata::program::batch_groups::pipe_adapt_every(std::getenv("STRATA_PIPE_ADAPT_EVERY"));
+        const int pipe_adapt_every = strata::program::batch_groups::pipe_adapt_every(strata::env("NOSTROMA_PIPE_ADAPT_EVERY"));
         int64_t pa_windows = 0, pa_last = 0, pa_rounds = 0, pa_swaps = 0;
         double pa_ms = 0;
         auto pa_due = [&] {
@@ -17847,7 +17848,7 @@ int main(int argc, char** argv) {
                     }
                     if (cudaDeviceSynchronize() != cudaSuccess) { std::printf("ERR stage sync\n"); return 1; }
                 }
-                if (use_mtp && std::getenv("STRATA_SNAPSHOT_VERIFY") != nullptr) {
+                if (use_mtp && strata::env("NOSTROMA_SNAPSHOT_VERIFY") != nullptr) {
                     uint64_t draft_hash = 0;
                     const auto& draft_kv = stages.empty() || mtp_first ? incoming->kv.back() : incoming->stage_images.back().kv.back();
                     const strata::core::OnDevice on_d(stages.empty() || mtp_first ? 0 : stages.back()->dev);
@@ -17874,7 +17875,7 @@ int main(int argc, char** argv) {
                 cvec_cached = incoming->cvec;
                 resume = parked.tokens;
                 from_live = parked.live;
-                if (std::getenv("STRATA_SNAPSHOT_FULL_CAPTURE") == nullptr) {
+                if (strata::env("NOSTROMA_SNAPSHOT_FULL_CAPTURE") == nullptr) {
                     std::vector<std::vector<strata::core::ConversationKv>> stage_kv;   // every stage's, for its next park
                     for (auto& si : incoming->stage_images) stage_kv.push_back(std::move(si.kv));
                     conversations.retain(std::move(incoming->kv), int64_t(live.size()), std::move(stage_kv), live);
@@ -17907,7 +17908,7 @@ int main(int argc, char** argv) {
             if (kvg.on) {
                 kv_quiesce();
                 // STRATA_KV_GROW_HOLD=1 (opt-in): keep the K/V as long as the longest parked conversation; default: trim to this request alone, as 0.1.40
-                static const bool hold_on = [] { const char* v = std::getenv("STRATA_KV_GROW_HOLD"); return v != nullptr && std::atoi(v) != 0; }();
+                static const bool hold_on = [] { const char* v = strata::env("NOSTROMA_KV_GROW_HOLD"); return v != nullptr && std::atoi(v) != 0; }();
                 if (!kvg_trim(n + 256, hold_on ? conversations.longest_tokens() + 256 : 0)) {
                     std::printf("ERR the K/V could not give its VRAM back to the expert cache\n");
                     std::fflush(stdout);
@@ -17933,7 +17934,7 @@ int main(int argc, char** argv) {
                         if ((int64_t) k.ids.size() == resume && starts_with(k.ids, k.imgs)) { c = &k; lent = true; }
                 if (!lent) lent_slot = -1;
                 if (c != nullptr) c->used = ++check_clock;   // mounting through it is the use LRU counts
-                static const bool reread = std::getenv("STRATA_CKPT_REREAD") != nullptr;
+                static const bool reread = strata::env("NOSTROMA_CKPT_REREAD") != nullptr;
                 if (reread && c != nullptr) {
                     // THE CHECK OF THE CHECKPOINT: instead of restoring it, read its tokens again from position 0 in
                     // one run (below, with the prompt path's slots lent like any read) - the same chunks the request
@@ -18066,7 +18067,7 @@ int main(int argc, char** argv) {
             // token, with the misses on the CPU.  Each part below is decided on its own, so a long first message is
             // read batched and its header still goes through the windows.  Picture rows need the batched path.
             // STRATA_CKPT_REREAD compares a restored checkpoint with a batched re-read, so it keeps every read batched.
-            static const bool no_short = std::getenv("STRATA_CKPT_REREAD") != nullptr;
+            static const bool no_short = strata::env("NOSTROMA_CKPT_REREAD") != nullptr;
             int64_t req_short_read = o.short_read;   // STRATA_PIPELINE_SWITCH may set it per request (short_read=)
             if (short_read_off_once) {   // #3465: the request after non-finite logits in a prompt window
                 short_read_off_once = false;
@@ -18086,14 +18087,14 @@ int main(int argc, char** argv) {
             // rollbacks) on one server, with the same expert placement
             int pl_pw = pipe ? o.pipeline_windows : 0;
             float pl_theta = [] {   // a speculative window is launched only when its estimated chance is at least this
-                const char* v = pipe_dbg_env("STRATA_PIPELINE_THETA");
+                const char* v = pipe_dbg_env("NOSTROMA_PIPELINE_THETA");
                 return v ? (float) std::atof(v) : 0.2f;
             }();
             int pl_force_miss = [] {   // exactness test: every k-th speculative window gets a wrong first token
-                const char* v = pipe_dbg_env("STRATA_PIPELINE_FORCE_MISS");
+                const char* v = pipe_dbg_env("NOSTROMA_PIPELINE_FORCE_MISS");
                 return v ? std::max(0, std::atoi(v)) : 0;
             }();
-            if (static const char* sw = pipe_dbg_env("STRATA_PIPELINE_SWITCH"); sw != nullptr && pipe) {
+            if (static const char* sw = pipe_dbg_env("NOSTROMA_PIPELINE_SWITCH"); sw != nullptr && pipe) {
                 if (std::FILE* f = std::fopen(sw, "r")) {
                     char buf[256] = {};
                     const size_t nr = std::fread(buf, 1, sizeof buf - 1, f);
@@ -18221,7 +18222,7 @@ int main(int argc, char** argv) {
             auto read_windows = [&](int64_t a, int64_t b, std::string& e) -> bool {
                 // (STRATA_LOGPOS reads every window's logits: the serial loop)
                 // the pipelined prompt read stays two-stage (three or more stages read serially; only the decode overlaps)
-                if (pipe && n_stages == 2 && pl_pw >= 1 && std::getenv("STRATA_LOGPOS") == nullptr) return read_windows_pl(a, b, e);
+                if (pipe && n_stages == 2 && pl_pw >= 1 && strata::env("NOSTROMA_LOGPOS") == nullptr) return read_windows_pl(a, b, e);
                 strata::core::progress_at("reading the prompt (verify windows), from token", a);   // #217: not "batched"
                 // every token is committed and the picks are discarded: no head sampling (see set_head_sampling)
                 struct NoHeadSampling {
@@ -18261,11 +18262,11 @@ int main(int argc, char** argv) {
                     // column is the log-probability of STRATA_LOGPOS_EXTRA (default 248046, <|im_end|>), so the
                     // end-of-turn mass a chat model puts on raw text can be taken out of the measurement
                     static std::FILE* logpos = [] {
-                        const char* p = std::getenv("STRATA_LOGPOS");
+                        const char* p = strata::env("NOSTROMA_LOGPOS");
                         return p != nullptr ? std::fopen(p, "ab") : nullptr;
                     }();
                     static const int32_t logpos_extra = [] {
-                        const char* p = std::getenv("STRATA_LOGPOS_EXTRA");
+                        const char* p = strata::env("NOSTROMA_LOGPOS_EXTRA");
                         return p != nullptr ? (int32_t) std::atoi(p) : (int32_t) 248046;
                     }();
                     if (logpos != nullptr && !ver.window_logprobs(nxt.data(), T, q, logpos_extra, logpos, e))
@@ -18300,7 +18301,7 @@ int main(int argc, char** argv) {
             // (split in two halves so a layer split can queue every stage's copies before it waits for any: #340)
             // STRATA_REFILL_PARTS=1 (gfx1151's table): a lent slot of a GGUF read in place is refilled from the pieces in the mapping.
             // The default assembles the blob in a staging buffer first (a 4 MB copy on this thread), then copies that.
-            static const bool refill_parts = [] { const char* v = std::getenv("STRATA_REFILL_PARTS"); return v != nullptr && std::atoi(v) != 0; }();
+            static const bool refill_parts = [] { const char* v = strata::env("NOSTROMA_REFILL_PARTS"); return v != nullptr && std::atoi(v) != 0; }();
             auto refill_issue = [&](PfPart& p, std::string& e) -> bool {
                 tr("refill start", (long long) p.lent.size());
                 const strata::core::OnDevice on(p.dev);
@@ -18341,7 +18342,7 @@ int main(int argc, char** argv) {
             // #340: with several stages every stage's copies go out first (each card on its own link), then each is
             // waited for - the same copies into the same slots, so the same cache; one stage: refill_one exactly.
             // STRATA_REFILL_SERIAL=1: stage after stage, as 0.1.30/0.1.31.
-            static const bool refill_serial = std::getenv("STRATA_REFILL_SERIAL") != nullptr;
+            static const bool refill_serial = strata::env("NOSTROMA_REFILL_SERIAL") != nullptr;
             auto refill = [&](std::string& e) -> bool {
                 const auto t_rf = Clock::now();
                 int64_t n_lent = 0, n_parts = 0;
@@ -18538,7 +18539,7 @@ int main(int argc, char** argv) {
             // prompt does not stop the others.  The slots' windows then see the cache without the slots this prompt
             // borrowed (marked missing: those experts run on the CPU), never a prompt buffer.
             static const double decode_share = [] {
-                const char* v = std::getenv("STRATA_BATCH_DECODE_SHARE");
+                const char* v = strata::env("NOSTROMA_BATCH_DECODE_SHARE");
                 return v != nullptr ? std::max(0.0, std::atof(v)) : 0.5;
             }();
             bool batch_fatal = false;
@@ -18558,7 +18559,7 @@ int main(int argc, char** argv) {
                 for (const auto& x : bs) busy += x.active ? 1 : 0;
                 strata::prefill::Prefill::set_share_blocked(busy > 0);
                 static int said = 0;
-                static const bool on = [] { const char* v = std::getenv("STRATA_PREFILL_CPU_SHARE_BATCH"); return v != nullptr && v[0] == '1'; }();
+                static const bool on = [] { const char* v = strata::env("NOSTROMA_PREFILL_CPU_SHARE_BATCH"); return v != nullptr && v[0] == '1'; }();
                 if (on && said < 4) {
                     ++said;
                     std::fprintf(stderr, "strata batch: CPU share for this read: %s (%d slot(s) decoding)\n", busy > 0 ? "off" : "on", busy);
@@ -18694,7 +18695,7 @@ int main(int argc, char** argv) {
                 // borrows no cache slots (--no-prefill-borrow), so the windows' experts stay where they are.  The same
                 // bytes are computed as in the serial form (a window's rows do not depend on what else is on the GPU).
                 static const bool conc1 = [] {
-                    const char* v = std::getenv("STRATA_BATCH_CONCURRENT_READ");
+                    const char* v = strata::env("NOSTROMA_BATCH_CONCURRENT_READ");
                     return v != nullptr && std::atoi(v) != 0;
                 }();
                 auto run_conc = [&](int64_t q, int64_t r) -> bool {
@@ -18758,7 +18759,7 @@ int main(int argc, char** argv) {
                 // (a layer split reads its stages as a pipeline over one run's chunks: beside slots a chunk at a time, with
                 // none decoding in pieces of STRATA_BATCH_YIELD_CHUNKS chunks (default 8; 0 = one run) so a BYIELD is taken)
                 static const int64_t yield_chunks = [] {
-                    const char* v = std::getenv("STRATA_BATCH_YIELD_CHUNKS");
+                    const char* v = strata::env("NOSTROMA_BATCH_YIELD_CHUNKS");
                     return v != nullptr ? (int64_t) std::max(0, std::atoi(v)) : (int64_t) 8;
                 }();
                 // a piece's chunk: the buffers' chunk, or with a plan as many whole planned chunks as that holds (the
@@ -18820,16 +18821,16 @@ int main(int argc, char** argv) {
                 // I/O read-ahead: one thread at a time).  Pictures are read the usual way (their rows go up through
                 // pinned slots of a size known only then).
                 static const bool pr_conc = [&] {
-                    const char* v = std::getenv("STRATA_PIPED_CONCURRENT");
+                    const char* v = strata::env("NOSTROMA_PIPED_CONCURRENT");
                     if (v == nullptr || std::atoi(v) == 0) return false;
                     auto env_on = [](const char* k) {
                         const char* x = std::getenv(k);
                         return x != nullptr && std::atoi(x) != 0;
                     };
                     strata::program::ConcurrentReadSetup s;
-                    s.prefill_help = env_on("STRATA_PREFILL_HELP");
-                    s.split_mtp_batch = env_on("STRATA_SPLIT_MTP_BATCH");
-                    s.fs_slots = env_on("STRATA_FS_SLOTS");
+                    s.prefill_help = env_on("NOSTROMA_PREFILL_HELP");
+                    s.split_mtp_batch = env_on("NOSTROMA_SPLIT_MTP_BATCH");
+                    s.fs_slots = env_on("NOSTROMA_FS_SLOTS");
                     s.pcie_dma = o.pcie_mode == "dma";
                     // (--remote-expert-opt works only through a helper cache, so without one it does not count)
                     s.helper_caches = prefill_src != srcp;
@@ -18846,7 +18847,7 @@ int main(int argc, char** argv) {
                 // runs beside the decoding slots on its own thread; a shorter one takes the usual path (drained windows,
                 // no priority streams' cost on the short prompts' TTFT and throughput).  Unset or 0: every read, as before.
                 static const int64_t pr_conc_min = [] {
-                    const char* v = std::getenv("STRATA_PIPED_CONCURRENT_MIN");
+                    const char* v = strata::env("NOSTROMA_PIPED_CONCURRENT_MIN");
                     return v != nullptr ? (int64_t) std::max(0LL, std::atoll(v)) : (int64_t) 0;
                 }();
                 if (piped && pr_conc && req_imgs.empty() && (b0 - a0) >= pr_conc_min) {   // (with no slot decoding it only watches for a BYIELD)
@@ -18866,11 +18867,11 @@ int main(int argc, char** argv) {
                     // STRATA_PIPED_CONCURRENT_UNPIN=0 keeps the inherited CPUs (an A/B); STRATA_TEST_CONC_ON_HOST_CPU=1
                     // (Windows, a test) puts them on the host thread's CPUs first, as Linux does.
                     static const bool conc_unpin = [] {
-                        const char* v = std::getenv("STRATA_PIPED_CONCURRENT_UNPIN");
+                        const char* v = strata::env("NOSTROMA_PIPED_CONCURRENT_UNPIN");
                         return v == nullptr || std::atoi(v) != 0;
                     }();
 #if defined(_WIN32)
-                    static const bool conc_on_host = std::getenv("STRATA_TEST_CONC_ON_HOST_CPU") != nullptr;
+                    static const bool conc_on_host = strata::env("NOSTROMA_TEST_CONC_ON_HOST_CPU") != nullptr;
                     std::vector<ULONG> host_cpu_sets;
                     if (conc_on_host) {
                         const HANDLE self = GetCurrentThread();
@@ -18953,7 +18954,7 @@ int main(int argc, char** argv) {
                             // STRATA_TEST_BELL_SLEEP_US=N (a test, an A/B of the wait below): sleep N us instead, as
                             // the first form of this thread did (a whole timer tick on Windows)
                             static const int test_sleep_us = [] {
-                                const char* t = std::getenv("STRATA_TEST_BELL_SLEEP_US");
+                                const char* t = strata::env("NOSTROMA_TEST_BELL_SLEEP_US");
                                 return t != nullptr ? std::max(0, std::atoi(t)) : 0;
                             }();
                             if (test_sleep_us > 0) {
@@ -19080,15 +19081,15 @@ int main(int argc, char** argv) {
                 // STRATA_BATCH_DECODE_SHARE x the piece's time, capped / floored by STRATA_PIPED_DECODE_MAX_MS /
                 // _MIN_MS, and are drained (pipe_drain) before the next piece, as before any read.  Unset: one run.
                 static const int64_t pr_piece = [] {
-                    const char* v = std::getenv("STRATA_PIPED_READ_PIECE");
+                    const char* v = strata::env("NOSTROMA_PIPED_READ_PIECE");
                     return v != nullptr ? (int64_t) std::max(0, std::atoi(v)) : (int64_t) 0;
                 }();
                 static const double pr_cap = [] {
-                    const char* v = std::getenv("STRATA_PIPED_DECODE_MAX_MS");
+                    const char* v = strata::env("NOSTROMA_PIPED_DECODE_MAX_MS");
                     return v != nullptr ? std::max(0.0, std::atof(v)) : 0.0;
                 }();
                 static const double pr_floor = [] {
-                    const char* v = std::getenv("STRATA_PIPED_DECODE_MIN_MS");
+                    const char* v = strata::env("NOSTROMA_PIPED_DECODE_MIN_MS");
                     return v != nullptr ? std::max(0.0, std::atof(v)) : 0.0;
                 }();
                 const bool pr_on = piped && pr_piece > 0;
@@ -19262,7 +19263,7 @@ int main(int argc, char** argv) {
             // either.  STRATA_PENALTY_PROMPT=1 brings the old window back (the last penalty_last_n tokens of prompt + reply).
             // The history is rebuilt from the request's prompt ids every time, so a conversation restored from the cache or a
             // saved slot seeds it exactly as a cold read does.
-            static const bool pen_prompt = strata::kernels::penalty_counts_prompt(std::getenv("STRATA_PENALTY_PROMPT"));
+            static const bool pen_prompt = strata::kernels::penalty_counts_prompt(strata::env("NOSTROMA_PENALTY_PROMPT"));
             ver.set_history(hist_n > 0 ? d_hist : nullptr, hist_n);
             if (pipe) ver_b.set_history(hist_n > 0 ? d_hist : nullptr, hist_n);
             bool cancelled = false;
@@ -19299,7 +19300,7 @@ int main(int argc, char** argv) {
                         break;
                     }
             static const bool message_checkpoint = [] {
-                const char* e = std::getenv("STRATA_CACHE_MESSAGE_BOUNDARY");
+                const char* e = strata::env("NOSTROMA_CACHE_MESSAGE_BOUNDARY");
                 return e != nullptr && std::atoi(e) != 0;
             }();
             // Only add a snapshot; the existing token and image checks still decide reuse.
@@ -19345,7 +19346,7 @@ int main(int argc, char** argv) {
                 if (hist_n > 0 && !pen_prompt) return -1;   // #4590: the merged window's prompt rows would join the reply-only penalty window
                 if (to != n - 1 || to == turn_at || to == root_at || to == message_at || to == pin_at) return -1;
                 if (!req_imgs.empty() || kvg.on || peer.valid() || remote_caches || remote_opt || fs_swap) return -1;
-                if (std::getenv("STRATA_LOGPOS") != nullptr) return -1;
+                if (strata::env("NOSTROMA_LOGPOS") != nullptr) return -1;
                 if (host_res.empty() || !pending.empty() ||
                     std::any_of(host_res.begin(), host_res.end(), [](int32_t r) { return r < 0; }))
                     return -1;
@@ -19456,8 +19457,8 @@ int main(int argc, char** argv) {
             std::vector<float> dprob(DS, 0.0f);
             std::array<float, 8> dwin_s{};   // the probabilities the current window was chosen from (STRATA_SPEC_COST)
             // STRATA_SPEC_TRACE=<file> in serve (bench only, off by default): per round "R p T a sfx ms k match | probs | drafts | lookup draft | committed tokens"
-            static std::FILE* const df2_trace = [] { const char* tf = std::getenv("STRATA_SPEC_TRACE"); return tf != nullptr && tf[0] != '\0' ? std::fopen(tf, "a") : nullptr; }();
-            static const bool trace_nopick = std::getenv("STRATA_SPEC_TRACE_NOPICK") != nullptr;   // the lookup draft is logged but never taken
+            static std::FILE* const df2_trace = [] { const char* tf = strata::env("NOSTROMA_SPEC_TRACE"); return tf != nullptr && tf[0] != '\0' ? std::fopen(tf, "a") : nullptr; }();
+            static const bool trace_nopick = strata::env("NOSTROMA_SPEC_TRACE_NOPICK") != nullptr;   // the lookup draft is logged but never taken
             std::array<int32_t, 8> tr_d{};
             std::array<int32_t, 16> tr_s{};
             int tr_k = 0, tr_match = 0;
@@ -19485,7 +19486,7 @@ int main(int argc, char** argv) {
             // (each accepted row plus the one that follows): "position, forced token, logp(forced), argmax, logp(argmax), match, ..."
             static const std::vector<std::vector<int32_t>> fol_sets = [] {
                 std::vector<std::vector<int32_t>> v;
-                if (const char* f = std::getenv("STRATA_FOLLOW"); f != nullptr && f[0] != '\0') {
+                if (const char* f = strata::env("NOSTROMA_FOLLOW"); f != nullptr && f[0] != '\0') {
                     std::ifstream in(f);
                     std::string line;
                     while (std::getline(in, line)) {
@@ -19500,7 +19501,7 @@ int main(int argc, char** argv) {
                 return v;
             }();
             static size_t fol_next = 0;
-            static std::FILE* const fol_lp = [] { const char* p = std::getenv("STRATA_FOLLOW_LOGPOS"); return p != nullptr && p[0] != '\0' ? std::fopen(p, "ab") : nullptr; }();
+            static std::FILE* const fol_lp = [] { const char* p = strata::env("NOSTROMA_FOLLOW_LOGPOS"); return p != nullptr && p[0] != '\0' ? std::fopen(p, "ab") : nullptr; }();
             const std::vector<int32_t>* fol = nullptr;
             if (!fol_sets.empty()) {
                 if (fol_next < fol_sets.size() && !fol_sets[fol_next].empty()) fol = &fol_sets[fol_next];
@@ -19509,16 +19510,16 @@ int main(int argc, char** argv) {
             // on by default on every backend (measured on HIP: 4 x R9700, Qwen3.8-Flash-Next IQ3_S, 0 of 16 continuations fell back to
             // the older checkpoint against 4 of 16 without it, #4677; it changes no emitted token, only which accepted rows the
             // session keeps); STRATA_SERVE_STOP_BOUND=0 turns it off
-            static const bool stop_bound = strata::core::serve_stop_bound_on(std::getenv("STRATA_SERVE_STOP_BOUND"));
+            static const bool stop_bound = strata::core::serve_stop_bound_on(strata::env("NOSTROMA_SERVE_STOP_BOUND"));
             // a window that finishes after the server's STOP is dropped whole (no commit, no tokens): the session ends at the rows the
             // client was sent.  Research switch, on by default; STRATA_SERVE_STOP_SKIP=0 turns it off (serve_stop_bound.hpp)
-            static const bool stop_skip = strata::core::serve_stop_skip_on(std::getenv("STRATA_SERVE_STOP_SKIP"));
+            static const bool stop_skip = strata::core::serve_stop_skip_on(strata::env("NOSTROMA_SERVE_STOP_SKIP"));
             int64_t chain_windows = 0, chain_drafts = 0, chain_ok = 0;   // --lookup-chain's own counts
             int64_t t2_rej[8] = {}, t2_hit[8] = {};   // STRATA_MTP_TOP2: rejections inside the MTP drafts by depth, runner-up hits
             int64_t dp_tested[8] = {}, dp_ok[8] = {};   // STRATA_SPEC_DEPTH=1: MTP drafts tested / accepted by depth
             std::vector<int32_t> cbuf((size_t) S, 0), ctail;
             strata::spec::PromptLookupSource lookup_src(sfx);
-            static const bool chain_fixed = std::getenv("STRATA_LOOKUP_CHAIN_FIXED") != nullptr;   // no policy gate
+            static const bool chain_fixed = strata::env("NOSTROMA_LOOKUP_CHAIN_FIXED") != nullptr;   // no policy gate
             int64_t draft_offered = 0, draft_accepted = 0;
             // what the session holds once this request is done: the prompt read so far, then every committed token
             std::vector<int32_t> consumed;
@@ -19546,7 +19547,7 @@ int main(int argc, char** argv) {
             auto cap_now = [&]() -> int64_t { return hold_on ? std::min<int64_t>(max_new, req_hold_n) : (int64_t) max_new; };
             const Clock::time_point d0 = Clock::now();
             // STRATA_DECODE_TIMING=1: where a request's decode time goes (one line per request)
-            static const bool dec_timing = std::getenv("STRATA_DECODE_TIMING") != nullptr;
+            static const bool dec_timing = strata::env("NOSTROMA_DECODE_TIMING") != nullptr;
             struct DecSnap {
                 double wait, pool, host, plan, actq, jobs, run;
                 int64_t misses, entries, hits, pcie;
@@ -19616,7 +19617,7 @@ int main(int argc, char** argv) {
                 auto SDf = [&](const PW& w) { return (void*) PSD[w.seq & 1]; };
                 const float theta = pl_theta;
                 const int force_miss = pl_force_miss;
-                static const bool pl_log = pipe_dbg_env("STRATA_PIPELINE_LOG") != nullptr;
+                static const bool pl_log = pipe_dbg_env("NOSTROMA_PIPELINE_LOG") != nullptr;
                 // the snapshot of the GDN state window `seq` reads on front stage `st` (overlapped: before its launch
                 // there, on the stage's side stream)
                 auto snap_take = [&](int st, int seq) -> bool {
@@ -19673,7 +19674,7 @@ int main(int argc, char** argv) {
                     return 1;
                 };
                 // STRATA_PIPELINE_TRACE=<file>: every event of the loop with its time (appended per request)
-                static const char* pl_trace_path = pipe_dbg_env("STRATA_PIPELINE_TRACE");
+                static const char* pl_trace_path = pipe_dbg_env("NOSTROMA_PIPELINE_TRACE");
                 std::string pl_trace;
                 const Clock::time_point pl_tr0 = Clock::now();
                 auto tre = [&](const char* ev, int seq, int x0 = 0, int x1 = 0) {
@@ -19689,7 +19690,7 @@ int main(int argc, char** argv) {
                     // a doomed window (its guess was wrong) gets empty plans: no expert work on the CPU or the GPU for
                     // its remaining layers, so it frees stage 0 and the pool sooner (its rows are discarded and the
                     // undo restores everything it wrote).  STRATA_PIPELINE_DOOM_SKIP=0: served in full.
-                    static const bool doom_skip = [] { const char* e = pipe_dbg_env("STRATA_PIPELINE_DOOM_SKIP"); return e == nullptr || std::atoi(e) != 0; }();
+                    static const bool doom_skip = [] { const char* e = pipe_dbg_env("NOSTROMA_PIPELINE_DOOM_SKIP"); return e == nullptr || std::atoi(e) != 0; }();
                     const bool skip = doom_skip && doomed && &w == &D;
                     if (v.service(skip ? nullptr : &drive_pool_split, SDf(w), err) < 0) return false;
                     if (v.done(err)) {
@@ -19809,7 +19810,7 @@ int main(int argc, char** argv) {
                 // speculated behind it (a copied stretch is mostly accepted whole).  STRATA_PIPELINE_LOOKUP_PON: B's
                 // estimate (default 0.75; 0 = no lookup B)
                 static const float pl_lookup_pon = [] {
-                    const char* v = pipe_dbg_env("STRATA_PIPELINE_LOOKUP_PON");
+                    const char* v = pipe_dbg_env("NOSTROMA_PIPELINE_LOOKUP_PON");
                     return v ? (float) std::atof(v) : 0.75f;
                 }();
                 auto pick_lookup = [&](PW& w, const int32_t* chain0) {
@@ -19856,11 +19857,11 @@ int main(int argc, char** argv) {
                 double last_verdict = 0.0;
                 int64_t pl_disagree = 0, pl_late = 0;
                 static const bool pl_prestage = [] {   // STRATA_PIPELINE_PRESTAGE=0: B staged at its launch
-                    const char* v = pipe_dbg_env("STRATA_PIPELINE_PRESTAGE");
+                    const char* v = pipe_dbg_env("NOSTROMA_PIPELINE_PRESTAGE");
                     return v == nullptr || std::atoi(v) != 0;
                 }();
                 static const bool pl_agree = [] {   // STRATA_PIPELINE_AGREE=0: only the old chain's probabilities
-                    const char* v = pipe_dbg_env("STRATA_PIPELINE_AGREE");
+                    const char* v = pipe_dbg_env("NOSTROMA_PIPELINE_AGREE");
                     return v == nullptr || std::atoi(v) != 0;
                 }();
                 auto ms_now = [&]() { return std::chrono::duration<double, std::milli>(Clock::now() - pl_t0).count(); };
@@ -20016,7 +20017,7 @@ int main(int argc, char** argv) {
                     // (its snapshot taken first) right before B launches, as stage 0 alone did with two stages
                     // STRATA_PIPELINE_SPEC_DEPTH=k (debug): B runs speculatively on the first k front stages only
                     static const int pl_spec_depth = [] {
-                        const char* v = pipe_dbg_env("STRATA_PIPELINE_SPEC_DEPTH");
+                        const char* v = pipe_dbg_env("NOSTROMA_PIPELINE_SPEC_DEPTH");
                         return v ? std::max(1, std::atoi(v)) : 1 << 20;
                     }();
                     if (B.ready && !B.fl && B.fr < pl_nf && B.fr < pl_spec_depth && A.fr > B.fr && !doomed) {
@@ -20478,7 +20479,7 @@ int main(int argc, char** argv) {
                 // the largest difference first.  One blob read each, on this thread; the RAM stays the same size, and
                 // the routing, the weights and the VRAM tier's own rule are untouched.
                 static const int ram_adapt_n = [] {
-                    const char* e = std::getenv("STRATA_RAM_ADAPT");
+                    const char* e = strata::env("NOSTROMA_RAM_ADAPT");
                     return e != nullptr ? std::max(0, std::atoi(e)) : 0;
                 }();
                 if (ram_adapt_n > 0 && ram_adapt2.on && !first_window && !drive.d.usage.empty() && pending.empty() &&
@@ -20633,7 +20634,7 @@ int main(int argc, char** argv) {
                 // Diagnostics (as in generate): STRATA_DUMP_FIRST_LOGITS=<path> writes the logits of each request's first
                 // window to <path>.<n>, so the prompt paths (a peer card's share, a split) can be compared by KL
                 if (first_window) {
-                    static const char* fl = std::getenv("STRATA_DUMP_FIRST_LOGITS");
+                    static const char* fl = strata::env("NOSTROMA_DUMP_FIRST_LOGITS");
                     static int fl_n = 0;
                     if (fl != nullptr) {
                         std::vector<float> row((size_t) ver.vocab());
@@ -20761,7 +20762,7 @@ int main(int argc, char** argv) {
 #if defined(STRATA_HAVE_DFLASH2)
                 // The request ends here, so no draft follows and the window's committed rows would never reach the drafter's ring or its log: every turn would
                 // leave a hole of a + 1 positions behind it, which a later turn that resumes after this one finds blank (and cannot rebuild). Update them now.
-                static const bool df2_end_update = std::getenv("STRATA_DF2_END_UPDATE") == nullptr || std::getenv("STRATA_DF2_END_UPDATE")[0] != '0';   // =0: the pre-fix behaviour (diagnostics)
+                static const bool df2_end_update = strata::env("NOSTROMA_DF2_END_UPDATE") == nullptr || strata::env("NOSTROMA_DF2_END_UPDATE")[0] != '0';   // =0: the pre-fix behaviour (diagnostics)
                 if (df2_end_update && use_df2 && req_df2 && !merged && (eos || produced_n >= cap_now())) {
                     const float* tp_end = df2_win_taps(a + 1, err);   // (on a layer split: every stage's taps gathered onto the drafter's card)
                     if (tp_end == nullptr || !df2.context(tp_end, a + 1, p, err)) { if (adapt_thr.joinable()) adapt_thr.join(); std::printf("ERR %s\n", err.c_str()); return 1; }
@@ -21058,7 +21059,7 @@ int main(int argc, char** argv) {
                 std::fprintf(stderr, "strata serve: STRATA_EXPERT_NIBBLE_RECHECK: %lld 4-bit slots hash as at load (%.0f ms)\n",
                              (long long) checked, std::chrono::duration<double, std::milli>(Clock::now() - rt0).count());
             }
-            static const bool state_hash = std::getenv("STRATA_STATE_HASH") != nullptr;
+            static const bool state_hash = strata::env("NOSTROMA_STATE_HASH") != nullptr;
             if (state_hash && !cancelled && o.prompt_cache > 0) {   // every finished request, ckpt=0 too (parity gates)
                 // DEBUG: a fingerprint of every part of the session over the positions it holds ([0, L)), and
                 // separately of what lies past them in the last KV page (stale cells, fine unless something reads them)
@@ -21096,7 +21097,7 @@ int main(int argc, char** argv) {
                 };
                 const ConvStateSizes z = conv_state_sizes(g, ss);
                 uint64_t h_gdn = hash_dev(ss.gdn_state, z.gdn, 1469598103934665603ull);
-                if (std::getenv("STRATA_STATE_HASH_GDN") != nullptr && ss.gdn_alloc > 0) {   // per GDN layer: which one differs first
+                if (strata::env("NOSTROMA_STATE_HASH_GDN") != nullptr && ss.gdn_alloc > 0) {   // per GDN layer: which one differs first
                     const size_t per = z.gdn / (size_t) ss.gdn_alloc;
                     std::string s;
                     char b[8];
@@ -21454,7 +21455,7 @@ int main(int argc, char** argv) {
                     fb_prev = fb;
                 }
             }
-            static const bool cold_log = std::getenv("STRATA_COLD_OVERLAP") != nullptr || std::getenv("STRATA_IO_STATS") != nullptr;
+            static const bool cold_log = strata::env("NOSTROMA_COLD_OVERLAP") != nullptr || strata::env("NOSTROMA_IO_STATS") != nullptr;
             if (drive.d.cold_mode != 0 && cold_log) {   // 149-cold STRATA_COLD_OVERLAP: this request's layers that had a blob to read
                 static strata::core::ExpertDispatch cp;
                 const strata::core::ExpertDispatch& c = drive.d;
@@ -21475,7 +21476,7 @@ int main(int argc, char** argv) {
             }
             // STRATA_SPLIT_TIMING: where each verify stage's host time went, cumulative per window since the start
             // (waiting for its GPU to ring a layer, the CPU pool and plan per layer, staging the window)
-            if (static const bool st_timing = std::getenv("STRATA_SPLIT_TIMING") != nullptr; st_timing)
+            if (static const bool st_timing = strata::env("NOSTROMA_SPLIT_TIMING") != nullptr; st_timing)
                 for (int st = 0; st < n_stages; ++st) {
                     const strata::core::Verifier& v = stage_ver(st);
                     const double w = v.windows > 0 ? (double) v.windows : 1.0;
@@ -21504,7 +21505,7 @@ int main(int argc, char** argv) {
             if (o.lookup_chain > 0)
                 std::fprintf(stderr, "strata serve: lookup chain: %lld of %lld windows, %lld of %lld chained drafts accepted\n",
                              (long long) chain_windows, (long long) dec_windows, (long long) chain_ok, (long long) chain_drafts);
-            if (std::getenv("STRATA_SPEC_DEPTH") != nullptr)
+            if (strata::env("NOSTROMA_SPEC_DEPTH") != nullptr)
                 std::fprintf(stderr, "strata serve: spec depth: accepted/tested %lld/%lld %lld/%lld %lld/%lld %lld/%lld %lld/%lld\n",
                              (long long) dp_ok[0], (long long) dp_tested[0], (long long) dp_ok[1], (long long) dp_tested[1],
                              (long long) dp_ok[2], (long long) dp_tested[2], (long long) dp_ok[3], (long long) dp_tested[3],
@@ -21681,7 +21682,7 @@ int main(int argc, char** argv) {
         }
         uma_refuse_chunk_if_full(o.prefill_chunk, borrow != nullptr, xcache.gib());
         mem_mark("the prompt path's buffers");
-        if (std::getenv("STRATA_TRACE") != nullptr) {   // what the buffers of this chunk take, and (Windows) the commit left
+        if (strata::env("NOSTROMA_TRACE") != nullptr) {   // what the buffers of this chunk take, and (Windows) the commit left
             std::fprintf(stderr, "strata trace: the prompt path's own buffers for a %lld-token chunk: %lld MiB (bytes_needed_owned)", (long long) o.prefill_chunk,
                          (long long) (strata::prefill::Prefill::bytes_needed_owned(g, ss, o.prefill_chunk, srcp != nullptr) >> 20));
 #if defined(_WIN32)
@@ -22113,9 +22114,9 @@ int main(int argc, char** argv) {
                 drive.d.res_mut = host_res.data();
                 drive.d.in_flight.assign(host_res.size(), 0);
                 drive.d.fetch_avail.assign((size_t) g.n_layers, 0);
-                if (const char* v = std::getenv("STRATA_ADAPT_FETCH_MIN")) drive.d.fetch_min = (float) std::atof(v);
-                if (const char* v = std::getenv("STRATA_ADAPT_FETCH_MARGIN")) drive.d.fetch_margin = (float) std::atof(v);
-                drive.d.fetch_log_on = std::getenv("STRATA_ADAPT_FETCH_VERIFY") != nullptr;
+                if (const char* v = strata::env("NOSTROMA_ADAPT_FETCH_MIN")) drive.d.fetch_min = (float) std::atof(v);
+                if (const char* v = strata::env("NOSTROMA_ADAPT_FETCH_MARGIN")) drive.d.fetch_margin = (float) std::atof(v);
+                drive.d.fetch_log_on = strata::env("NOSTROMA_ADAPT_FETCH_VERIFY") != nullptr;
                 std::fprintf(stderr, "strata generate: STRATA_ADAPT_FETCH=%d: the PCIe share takes each layer's most-routed "
                                      "misses and admits those routed >= %.2f and %.2f more than a resident one%s\n",
                              drive.d.fetch_admit, drive.d.fetch_min, drive.d.fetch_margin,
@@ -22125,7 +22126,7 @@ int main(int argc, char** argv) {
         // before every window: the device's table follows the host's (the tier's evictions while its copies are in
         // flight, STRATA_ADAPT_FETCH's admissions - see the serve path); the hook's captures live in this block, so it
         // is taken off the verifier when the block ends
-        const bool res_checking = std::getenv("STRATA_ADAPT_CHECKRES") != nullptr && d_res != nullptr;
+        const bool res_checking = strata::env("NOSTROMA_ADAPT_CHECKRES") != nullptr && d_res != nullptr;
         std::vector<int32_t> res_back;
         int64_t res_windows = 0, res_bad = 0, res_bad_windows = 0;
         if (res_checking) {
@@ -22190,7 +22191,7 @@ int main(int argc, char** argv) {
         auto apply_pending = [&](bool wait) {
             if (pending.empty()) return;
             // STRATA_TRACE_ADAPT=1: whether a round's copies had landed when the next window read the table
-            static const bool trace_pending = std::getenv("STRATA_TRACE_ADAPT") != nullptr;
+            static const bool trace_pending = strata::env("NOSTROMA_TRACE_ADAPT") != nullptr;
             if (wait) cudaEventSynchronize(adapt_ev);
             else if (cudaEventQuery(adapt_ev) != cudaSuccess) {
                 if (trace_pending)
@@ -22227,7 +22228,7 @@ int main(int argc, char** argv) {
             // STRATA_TRACE_ADAPT: why an adapt round did or did not swap.  Default off, one getenv, and it
             // reports the only thing that can make an adapt round a coin flip: whether the PREVIOUS round's
             // asynchronous expert copies had landed by the time this round started.
-            static const bool trace_adapt = std::getenv("STRATA_TRACE_ADAPT") != nullptr;
+            static const bool trace_adapt = strata::env("NOSTROMA_TRACE_ADAPT") != nullptr;
             if (!pending.empty()) {
                 if (trace_adapt)
                     std::fprintf(stderr, "strata: ADAPT round=%lld SKIPPED, %zu swaps still in flight\n",
@@ -22333,7 +22334,7 @@ int main(int argc, char** argv) {
         // measures the cost of each verify width (with --spec-oracle drafts every row is accepted); the first round of a
         // width (its graph capture) is not counted
         std::vector<int> t_cycle;
-        if (const char* tc = std::getenv("STRATA_SPEC_T_CYCLE"); tc != nullptr && tc[0] != '\0') {
+        if (const char* tc = strata::env("NOSTROMA_SPEC_T_CYCLE"); tc != nullptr && tc[0] != '\0') {
             for (const char* q = tc; *q != '\0';) {
                 const int v = std::atoi(q);
                 if (v >= 1 && v <= o.spec) t_cycle.push_back(v);
@@ -22345,10 +22346,10 @@ int main(int argc, char** argv) {
         // lookup window, round ms, the MTP draft probabilities), for offline window-length policy studies
         // STRATA_SPEC_COST=1 (A/B arm, bench): the MTP window by expected tokens per ms at this machine's measured row costs
         // (DraftPolicy::keep_draft, step by step) instead of "draft probability >= --spec-min-p"
-        const bool spec_cost = [] { const char* v = std::getenv("STRATA_SPEC_COST"); return v != nullptr && v[0] == '1'; }();
+        const bool spec_cost = [] { const char* v = strata::env("NOSTROMA_SPEC_COST"); return v != nullptr && v[0] == '1'; }();
         std::vector<float> dwin((size_t) o.spec, 0.0f);   // the draft probabilities this round's window was chosen from
         std::FILE* spec_trace = nullptr;
-        if (const char* tf = std::getenv("STRATA_SPEC_TRACE"); tf != nullptr && tf[0] != '\0') spec_trace = std::fopen(tf, "w");
+        if (const char* tf = strata::env("NOSTROMA_SPEC_TRACE"); tf != nullptr && tf[0] != '\0') spec_trace = std::fopen(tf, "w");
         std::vector<double> t_cycle_ms((size_t) o.spec + 1, 0.0);
         std::vector<int64_t> t_cycle_n((size_t) o.spec + 1, 0), t_cycle_seen((size_t) o.spec + 1, 0);
         // plan v0.3 P6: with a native pack the first window is the last prompt token alone (it produces the first
@@ -22393,7 +22394,7 @@ int main(int argc, char** argv) {
         auto source_policy = policy;   // this generation's: committed outcomes only (observe_committed)
         strata::spec::DraftPolicy::ChainState chain_st;
         int chain_rows = 1;   // STRATA_SPEC_COST: the window the cost-aware rule kept in the MTP chain just drafted
-        if (const char* tab = std::getenv("STRATA_SPEC_COST_TABLE"); spec_cost && tab != nullptr && tab[0] != '\0') {
+        if (const char* tab = strata::env("NOSTROMA_SPEC_COST_TABLE"); spec_cost && tab != nullptr && tab[0] != '\0') {
             // "T1,T2,..;T1,T2,..;T1,..": the row costs of the 3 context buckets (< 6K, < 24K, longer); one list seeds the first
             double ms[strata::spec::DraftPolicy::kMaxT] = {};
             int n = 0, bucket = 0;
@@ -22435,7 +22436,7 @@ int main(int argc, char** argv) {
         const int64_t misses0 = drive.d.multi_misses, entries0 = drive.d.multi_entries;
         // STRATA_SPEC_WATCH=<seconds> (diagnostics, off by default): the serve watchdog for this loop.  A run whose verify
         // windows and prompt chunks stop beating for that long prints the stage it is in and the stall report, then ends.
-        if (const char* sw = std::getenv("STRATA_SPEC_WATCH"); sw != nullptr && std::atoi(sw) > 0) {
+        if (const char* sw = strata::env("NOSTROMA_SPEC_WATCH"); sw != nullptr && std::atoi(sw) > 0) {
             const int limit = std::atoi(sw);
             strata::core::progress().busy.store(true);
             std::thread([limit] {
@@ -22477,7 +22478,7 @@ int main(int argc, char** argv) {
                         return true;
                     }
                 }
-                static const bool wait_commit_first = std::getenv("STRATA_DF2_WAITCOMMIT") != nullptr;   // measurement: no overlap with the async commit
+                static const bool wait_commit_first = strata::env("NOSTROMA_DF2_WAITCOMMIT") != nullptr;   // measurement: no overlap with the async commit
                 if (wait_commit_first && !ver.wait_commit(err)) return false;
                 int32_t dd[strata::core::Dflash2Drafter::kDrafts];
                 float pp[strata::core::Dflash2Drafter::kDrafts];
@@ -22591,7 +22592,7 @@ int main(int argc, char** argv) {
                 chain_n = strata::spec::propose_from_sources(lookup_src, ctail.data(), nt, T - 1,
                                                              std::min(o.lookup_chain, room - T), o.lookup_chain_min,
                                                              cbuf.data(), &cm, &csrc);
-                if (chain_n > 0 && std::getenv("STRATA_LOOKUP_CHAIN_FIXED") == nullptr) {
+                if (chain_n > 0 && strata::env("NOSTROMA_LOOKUP_CHAIN_FIXED") == nullptr) {
                     double p_mtp = 1.0;
                     for (int i = 0; i < T - 1; ++i) p_mtp *= dprob[(size_t) i];
                     chain_n = policy.chain(T, p_mtp, chain_n, cm);
@@ -22694,7 +22695,7 @@ int main(int argc, char** argv) {
                 // Diagnostics: the first window runs the prompt's last token over the state the prompt path left
                 // (keys, values, recurrent state), so its logits carry whatever that path did. A native pack never
                 // runs the per-token loop --dump-logits reads; this is where prompt paths can be compared by output.
-                if (const char* fl = std::getenv("STRATA_DUMP_FIRST_LOGITS")) {
+                if (const char* fl = strata::env("NOSTROMA_DUMP_FIRST_LOGITS")) {
                     std::vector<float> row((size_t) ver.vocab());
                     std::FILE* f = ver.copy_logits(0, row.data()) ? std::fopen(fl, "wb") : nullptr;
                     if (f == nullptr || std::fwrite(row.data(), sizeof(float), row.size(), f) != row.size())
@@ -23125,7 +23126,7 @@ std::vector<uint64_t> reserve_low_address_space(uint64_t limit) {
 }  // namespace
 
 int main(int argc, char** argv) {
-    const char* iso = std::getenv("STRATA_STACK_ISOLATE");
+    const char* iso = strata::env("NOSTROMA_STACK_ISOLATE");
     if (iso == nullptr || iso[0] != '0') {
         ULONG_PTR lo = 0, hi = 0;
         GetCurrentThreadStackLimits(&lo, &hi);

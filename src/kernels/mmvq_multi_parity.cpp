@@ -29,6 +29,7 @@
 // group blocks differently: IQ4_XS takes 16 blocks per iteration with 4 warps and 8 with 2, so at n_in = 2048 (8
 // blocks of 256) each thread holds at most one block in both layouts and they coincide; its case uses n_in = 4096.
 #include "strata/kernels/iq_kernels.hpp"
+#include "strata/env.hpp"
 #include "strata/kernels/native_mmvq.hpp"
 
 #include <cuda_runtime.h>
@@ -242,7 +243,7 @@ int main() {
     // gfx906: the wave64 layout (one wavefront per row) is the same kernel for every column count, so multi_exact
     // has nothing to switch and the control cannot see a difference.  The control with power is the CUDA layout:
     // ctest's mmvq_multi_parity_cuda_layout runs this with STRATA_MMVQ_WAVE=0.
-    if (off.powerless_cases != 0 && !(std::getenv("STRATA_MMVQ_WAVE") && std::string(std::getenv("STRATA_MMVQ_WAVE")) == "0")) {
+    if (off.powerless_cases != 0 && !(strata::env("NOSTROMA_MMVQ_WAVE") && std::string(strata::env("NOSTROMA_MMVQ_WAVE")) == "0")) {
         std::printf("\nmmvq_multi_parity: ok (gfx906 wave64 layout: every column count runs the same exact kernel, "
                     "so the negative control has no other layout to find; mmvq_multi_parity_cuda_layout checks it).\n");
         return 0;

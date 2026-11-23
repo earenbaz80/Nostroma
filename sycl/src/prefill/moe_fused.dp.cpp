@@ -19,6 +19,7 @@
 // activations are stored in it (perm32), and a lane's two B registers (h = 0 and 1) are adjacent: one 8-byte load.
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
+#include "strata/env.hpp"
 #include "strata/kprof.hpp"
 #include <dpct/dpct.hpp>
 #include "strata/sycl_queue.hpp"
@@ -842,7 +843,7 @@ DevInfo g_dev[32];
 // work items and arithmetic: the results do not change).  STRATA_PF_OCC=N sets the blocks per WGP (an experiment knob).
 static int wgp_blocks(int occ) {
     static const int env = [] {
-        const char* v = std::getenv("STRATA_PF_OCC");
+        const char* v = strata::env("NOSTROMA_PF_OCC");
         return v != nullptr ? std::atoi(v) : 0;
     }();
     return env > 0 ? env : 2 * std::max(occ, 1);
@@ -947,7 +948,7 @@ bool available() { return strata::core::kCompiledGeometry.n_embd == 2560 && stra
 // (moe_fused_iq) stay opt-in: STRATA_PF_FUSED=1 (requested()).
 bool enabled() {
     static const bool env = [] {
-        const char* v = std::getenv("STRATA_PF_FUSED");
+        const char* v = strata::env("NOSTROMA_PF_FUSED");
 #if defined(__HIPCC__)
         return v != nullptr && v[0] == '1';   // Aurora: the gfx11 WMMA kernels are opt-in (STRATA_PF_FUSED=1)
 #else
@@ -958,7 +959,7 @@ bool enabled() {
 }
 bool requested() {
     static const bool env = [] {
-        const char* v = std::getenv("STRATA_PF_FUSED");
+        const char* v = strata::env("NOSTROMA_PF_FUSED");
         return v != nullptr && v[0] == '1';
     }();
     return env && available();

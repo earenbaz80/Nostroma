@@ -22,6 +22,7 @@
 #pragma once
 
 #include "strata/core/emulate.hpp"
+#include "strata/env.hpp"
 
 #include <cstdlib>
 
@@ -30,7 +31,7 @@ namespace strata {
 /// STRATA_SM120_PERF (read once): unset or anything but "0" = on
 inline bool sm120_series() {
     static const bool on = [] {
-        const char* e = std::getenv("STRATA_SM120_PERF");
+        const char* e = strata::env("NOSTROMA_SM120_PERF");
         return e == nullptr || std::atoi(e) != 0;
     }();
     return on;

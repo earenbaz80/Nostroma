@@ -16,6 +16,7 @@
 #pragma once
 
 #include <cuda_runtime.h>
+#include "strata/env.hpp"
 
 #include <cstddef>
 #include <cstdio>
@@ -170,7 +171,7 @@ private:
         bool pending = false;
     };
     static bool pageable_forced() {
-        static const bool v = [] { const char* e = std::getenv("STRATA_TEST_PAGEABLE"); return e != nullptr && e[0] == '1'; }();
+        static const bool v = [] { const char* e = strata::env("NOSTROMA_TEST_PAGEABLE"); return e != nullptr && e[0] == '1'; }();
         return v;
     }
     Slot slots_[kSlots];

@@ -1,5 +1,6 @@
 // src/platform/direct_file.cpp - see include/strata/platform/direct_file.hpp.
 #include "strata/platform/direct_file.hpp"
+#include "strata/env.hpp"
 #include "strata/platform/aux_cpus.hpp"
 
 #include <algorithm>
@@ -61,7 +62,7 @@ struct Pending {
 /// The number of issuing threads: STRATA_IO_THREADS, else 4 (Windows: overlapped submits) / 16 (Linux: each
 /// thread does one blocking pread, so the thread count is the queue depth).
 int io_threads(int dflt) {
-    const char* v = std::getenv("STRATA_IO_THREADS");
+    const char* v = strata::env("NOSTROMA_IO_THREADS");
     const int n = v ? std::atoi(v) : dflt;
     return std::clamp(n, 1, 64);
 }

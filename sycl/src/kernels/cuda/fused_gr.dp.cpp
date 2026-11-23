@@ -1,4 +1,5 @@
 #include "b60_weight_cache.hpp"
+#include "strata/env.hpp"
 #include "b60_layout_state.hpp"
 #include "strata/kernels/q8_1_finite.hpp"
 // src/kernels/cuda/fused_gr.cu - see include/strata/kernels/fused_gr.hpp.
@@ -74,7 +75,7 @@ __dpct_inline__ float warp_sum(float v) {
 }
 
 int g_gr_cached_norm_mode=[](){
-    const char* e=std::getenv("STRATA_SYCL_GR_CACHED_NORM");
+    const char* e=strata::env("NOSTROMA_SYCL_GR_CACHED_NORM");
     return e&&std::atoi(e)==3?3:0;
 }();
 bool gr_overlap(const void* a,size_t as,const void* b,size_t bs){
@@ -567,12 +568,12 @@ __dpct_inline__ void gr_norm_cached_write_kernel(GrMulti m) {
     }
 }
 const bool g_gr_norm_direct_bounds = [] {
-    const char* value = std::getenv("STRATA_SYCL_GR_NORM_BOUNDS");
+    const char* value = strata::env("NOSTROMA_SYCL_GR_NORM_BOUNDS");
     return value && value[0] == '1';
 }();
 
 bool gr_norm_split() {   // default; STRATA_GR_NORM_SPLIT=0: one work-group per token
-    static const bool v = std::getenv("STRATA_GR_NORM_SPLIT") == nullptr || std::atoi(std::getenv("STRATA_GR_NORM_SPLIT")) != 0;
+    static const bool v = strata::env("NOSTROMA_GR_NORM_SPLIT") == nullptr || std::atoi(strata::env("NOSTROMA_GR_NORM_SPLIT")) != 0;
     return v;
 }
 
@@ -811,7 +812,7 @@ __dpct_inline__ void gr_down_reduce_kernel(GrMulti m) {
 // keep the compiler's default GRF and the same kernels as before. STRATA_GR_LARGE_GRF=1 forces it on, =0 off.
 bool gr_large_grf(sycl::queue* q) {
     static const bool v = [q] {
-        const char* e = std::getenv("STRATA_GR_LARGE_GRF");
+        const char* e = strata::env("NOSTROMA_GR_LARGE_GRF");
         if (e != nullptr) return std::atoi(e) != 0;
         return strata::intel_gpu_gen(q->get_device()) == strata::IntelGpuGen::Alchemist;
     }();
@@ -825,14 +826,14 @@ bool gr_large_grf(sycl::queue* q) {
 // elsewhere the 80 / 160-group kernels as before. STRATA_GR_MORE_GROUPS=1 forces it on, =0 off.
 bool gr_more_groups(sycl::queue* q) {
     static const bool v = [q] {
-        const char* e = std::getenv("STRATA_GR_MORE_GROUPS");
+        const char* e = strata::env("NOSTROMA_GR_MORE_GROUPS");
         if (e != nullptr) return std::atoi(e) != 0;
         return strata::intel_gpu_gen(q->get_device()) == strata::IntelGpuGen::Alchemist;
     }();
     return v;
 }
 bool gr_down_sliced() {   // default (gr_bench: GR read 108.6 -> 76.5 us at 6 tokens); STRATA_GR_DOWN_SLICED=0: direct
-    static const bool v = std::getenv("STRATA_GR_DOWN_SLICED") == nullptr || std::atoi(std::getenv("STRATA_GR_DOWN_SLICED")) != 0;
+    static const bool v = strata::env("NOSTROMA_GR_DOWN_SLICED") == nullptr || std::atoi(strata::env("NOSTROMA_GR_DOWN_SLICED")) != 0;
     return v;
 }
 float* slice_partials(sycl::queue* q) {
@@ -846,7 +847,7 @@ float* slice_partials(sycl::queue* q) {
     return p;
 }
 bool gr_down_direct() {   // default; STRATA_GR_DOWN_DIRECT=0: the tiled kernel (gr_bench: 13-19% slower at 3-6 tokens)
-    static const bool v = std::getenv("STRATA_GR_DOWN_DIRECT") == nullptr || std::atoi(std::getenv("STRATA_GR_DOWN_DIRECT")) != 0;
+    static const bool v = strata::env("NOSTROMA_GR_DOWN_DIRECT") == nullptr || std::atoi(strata::env("NOSTROMA_GR_DOWN_DIRECT")) != 0;
     return v;
 }
 
@@ -1147,7 +1148,7 @@ auto &lo = *sycl::ext::oneapi::group_local_memory_for_overwrite<
 }
 
 bool g_gr_lo_once = [] {
-    const char* value = std::getenv("STRATA_SYCL_GR_LO_ONCE");
+    const char* value = strata::env("NOSTROMA_SYCL_GR_LO_ONCE");
     return value && std::atoi(value) != 0;
 }();
 void launch_gr_up_prepared_lo(const GrMulti& m0, dpct::queue_ptr stream) {
@@ -1201,12 +1202,12 @@ void launch_gr_up_more(dpct::queue_ptr st, const GrMulti& m) {
 // latency-bound on Xe2 (B70: 23.7 us for 6.55 MB of BF16, 46% of the bandwidth). STRATA_GR_UP_COLS=8 / 4 run 320 /
 // 640 blocks with 4 / 2 rows per warp; every row's dot and butterfly and every column's stream sum are the same.
 inline int gr_up_cols() {
-    static const int v = [] { const char* e = std::getenv("STRATA_GR_UP_COLS"); const int c = e ? std::atoi(e) : UPM_COLS;
+    static const int v = [] { const char* e = strata::env("NOSTROMA_GR_UP_COLS"); const int c = e ? std::atoi(e) : UPM_COLS;
                               return c == 4 || c == 8 || c == 32 || c == 64 ? c : UPM_COLS; }();
     return v;
 }
 inline bool gr_up_ilp() {
-    static const bool v = [] { const char* e = std::getenv("STRATA_GR_UP_ILP"); return e && e[0] == '1'; }();
+    static const bool v = [] { const char* e = strata::env("NOSTROMA_GR_UP_ILP"); return e && e[0] == '1'; }();
     return v;
 }
 template <int C>
@@ -1943,7 +1944,7 @@ void launch_multi(const GrMulti &m, int variant, dpct::queue_ptr st,
         // #443, opt-in STRATA_GR_DOWN_MAX4=1: launches of up to 4 tokens hold 4 tokens' sums per thread instead of
         // kFusedGrMaxT - the same tile, block size, accumulation order and plain/split/staged path, so the same bits
         // (read once: this runs per layer when decode is not captured)
-        static const bool max4_on = [] { const char* v = std::getenv("STRATA_GR_DOWN_MAX4"); return v && std::atoi(v) != 0; }();
+        static const bool max4_on = [] { const char* v = strata::env("NOSTROMA_GR_DOWN_MAX4"); return v && std::atoi(v) != 0; }();
         const bool max4 = max4_on && ct <= 4;
         if (staged) {
             if (max4) {
@@ -2114,7 +2115,7 @@ void launch_multi(const GrMulti &m, int variant, dpct::queue_ptr st,
 
 /// STRATA_HC_SPLIT: unset or 2 = the newest the check accepts (staged), 1 = at most split, 0 = the plain read
 int env_variant() {
-    const char* e = std::getenv("STRATA_HC_SPLIT");
+    const char* e = strata::env("NOSTROMA_HC_SPLIT");
     if (e == nullptr || e[0] == '\0') return kHcStaged;
     if (e[0] == '0') return kHcPlain;
     if (e[0] == '1') return kHcSplit;
@@ -2364,7 +2365,7 @@ auto &lo = (*sycl::ext::oneapi::group_local_memory_for_overwrite<
 
 class GrUpLoVec4;
 inline bool gr_lo_vec4_enabled() {
-    static const bool on=[] {const char* p=std::getenv("STRATA_PRIVATE_GR_LO_VEC4");return p&&std::atoi(p)!=0;}();
+    static const bool on=[] {const char* p=strata::env("NOSTROMA_PRIVATE_GR_LO_VEC4");return p&&std::atoi(p)!=0;}();
     return on;
 }
 void launch_gr_up_lo_vec4(dpct::queue_ptr st,const GrMulti& m) {
@@ -2383,7 +2384,7 @@ __dpct_inline__ float b60_gr_q8_warp_max(float value){
  for(int off=16;off>0;off>>=1)value=sycl::fmax(value,dpct::experimental::permute_sub_group_by_xor(0xffffffffu,sycl::ext::oneapi::this_work_item::get_sub_group(),value,off));
  return value;
 }
-inline bool b60_gr_q8_up32_enabled(){static const bool on=[] {const char*p=std::getenv("STRATA_PRIVATE_GR_Q8_UP32");return p&&p[0]=='1';}();return on&&b60_layout_requested();}
+inline bool b60_gr_q8_up32_enabled(){static const bool on=[] {const char*p=strata::env("NOSTROMA_PRIVATE_GR_Q8_UP32");return p&&p[0]=='1';}();return on&&b60_layout_requested();}
 __dpct_inline__ void b60_gr_q8_up32_t1_kernel(GrMulti m) {   // stream sum unchanged, so the same bits; more blocks, fewer serial rows per warp
     constexpr int COLS=32;
     constexpr bool ILP=false;
@@ -2514,7 +2515,7 @@ void launch_b60_gr_q8_up32_t1(dpct::queue_ptr st,GrMulti m){
  st->parallel_for<B60GrQ8Up32T1>(r,props,[=](sycl::nd_item<3>) [[sycl::reqd_sub_group_size(32)]] {b60_gr_q8_up32_t1_kernel(m);});
 }
 
-inline bool gr_up_rows16_enabled(){static const bool on=[] {const char*p=std::getenv("STRATA_PRIVATE_GR_UP_ROWS16");return p&&p[0]=='1';}();return on&&b60_layout_requested()&&b60_main_actor();}
+inline bool gr_up_rows16_enabled(){static const bool on=[] {const char*p=strata::env("NOSTROMA_PRIVATE_GR_UP_ROWS16");return p&&p[0]=='1';}();return on&&b60_layout_requested()&&b60_main_actor();}
 void gf_dispatch_up(dpct::queue_ptr,GrMulti);
 class GrUpFromLo;
 class GrReduceSilu;
@@ -2527,7 +2528,7 @@ void launch_gr_up_from_lo(dpct::queue_ptr st,const GrMulti& m) {
 }
 
 inline bool gr_combo_silu_enabled() {
-    static const bool enabled=[] {const char* p=std::getenv("STRATA_PRIVATE_GR_SILU_FROM_LO");return p&&std::atoi(p)!=0;}();
+    static const bool enabled=[] {const char* p=strata::env("NOSTROMA_PRIVATE_GR_SILU_FROM_LO");return p&&std::atoi(p)!=0;}();
     return enabled;
 }
 
@@ -2683,12 +2684,12 @@ __dpct_inline__ void gf_postop(GrMulti m) {
 }
 
 bool gf_enabled(dpct::queue_ptr st,const GrMulti& m) {
-    static const bool enabled=[] {const char* s=std::getenv("STRATA_PRIVATE_GR_F32_REG");return s&&std::atoi(s)!=0;}();
+    static const bool enabled=[] {const char* s=strata::env("NOSTROMA_PRIVATE_GR_F32_REG");return s&&std::atoi(s)!=0;}();
     return enabled && m.T>=1 && m.T<=4 && gr_down_sliced() && !gr_more_groups(st) && !gr_large_grf(st) &&
         gr_norm_split() && gr_up_cols()==16 && !gr_up_ilp() && strata::intel_gpu_gen(st->get_device())==strata::IntelGpuGen::Battlemage;
 }
 bool gf_phase(const char* phase) {
-    const char* p=std::getenv("STRATA_PRIVATE_GR_F32_PHASE");
+    const char* p=strata::env("NOSTROMA_PRIVATE_GR_F32_PHASE");
     return !p || std::strcmp(p,"both")==0 || std::strcmp(p,phase)==0;
 }
 template<int E> class GfDown;
@@ -2761,7 +2762,7 @@ template<int E>void gp_launch_compute(dpct::queue_ptr st,GrMulti m){
 }
 
 
-inline bool gr_2d_pair_enabled(){static const bool enabled=[] {const char*p=std::getenv("STRATA_PRIVATE_GR_2D_PAIR");return p&&p[0]=='1';}();return enabled&&b60_main_actor();}
+inline bool gr_2d_pair_enabled(){static const bool enabled=[] {const char*p=strata::env("NOSTROMA_PRIVATE_GR_2D_PAIR");return p&&p[0]=='1';}();return enabled&&b60_main_actor();}
 template<int E>
 SYCL_ESIMD_FUNCTION ESIMD_INLINE void gf_down_2d(GrMulti m,int sl,int tile) {
 #pragma clang fp contract(off)
@@ -2892,7 +2893,7 @@ struct GcDown {const uint16_t *w_down,*w_inject;float *xn,*part2;};
 // Merge with the head: GrMulti gained two bools (cached_norm, cached_lo, the #4185 port) after the PR measured 1384; they sit at the end, so every earlier
 // field keeps its offset and the PR's kernels (which read fields by name) are unaffected; the size is 1384 plus at most the padding of the two bools.
 static_assert(sizeof(FusedGrArgs)==168 && sizeof(GrMulti)==1392 && sizeof(GcDown)==32);
-inline bool gc_enabled(){static const bool on=[] {const char*p=std::getenv("STRATA_PRIVATE_B60_NEXT_POOL");return p&&p[0]=='1';}();return on&&b60_main_actor();}
+inline bool gc_enabled(){static const bool on=[] {const char*p=strata::env("NOSTROMA_PRIVATE_B60_NEXT_POOL");return p&&p[0]=='1';}();return on&&b60_main_actor();}
 template<int E>
 SYCL_ESIMD_FUNCTION ESIMD_INLINE void gc_down(GcDown m,int sl,int tile) {
 #pragma clang fp contract(off)
@@ -2966,7 +2967,7 @@ template<int E>void gc_launch_down(dpct::queue_ptr st,GrMulti full){
  });
 }
 
-inline bool gr_soa_enabled(){static const bool enabled=[] {const char*p=std::getenv("STRATA_PRIVATE_GR_SOA_CACHE");return p&&p[0]=='1';}();return enabled&&b60_main_actor();}
+inline bool gr_soa_enabled(){static const bool enabled=[] {const char*p=strata::env("NOSTROMA_PRIVATE_GR_SOA_CACHE");return p&&p[0]=='1';}();return enabled&&b60_main_actor();}
 template<int E>
 SYCL_ESIMD_FUNCTION ESIMD_INLINE void gf_down_soa(GrMulti m,int sl,int tile) {
 #pragma clang fp contract(off)
@@ -3166,7 +3167,7 @@ bool fused_gr_read_multi(const FusedGrArgs* a, int n_tok, float* xn_scratch, voi
         for(int t=0;t<n_tok;++t){m.a[t].w_down=down;if(n_tok==4)m.a[t].w_up=up;}
     }
     // STRATA_GR_V3=1: the two-kernel read above (another summation order - opt-in)
-    static const bool v3 = [] { const char* v = std::getenv("STRATA_GR_V3"); return v != nullptr && std::atoi(v) != 0; }();
+    static const bool v3 = [] { const char* v = strata::env("NOSTROMA_GR_V3"); return v != nullptr && std::atoi(v) != 0; }();
     static int split3[64] = {};   // per device: 0 = not decided yet, 1 / 2 = column halves S, -1 = does not fit
     int dev3 = 0;
     if (v3) {
@@ -3797,7 +3798,7 @@ int fused_gr_variant() {
     const int v = dev >= 0 && dev < 64 ? g_variant[dev].load() : 0;
     if (v > 0) return v;
     // not checked on this card: the plain read, unless STRATA_HC_SPLIT names a variant (a test such as gr_parity)
-    const char* e = std::getenv("STRATA_HC_SPLIT");
+    const char* e = strata::env("NOSTROMA_HC_SPLIT");
     return e != nullptr && (e[0] == '1' || e[0] == '2') ? env_variant() : kHcPlain;
 }
 
@@ -3807,7 +3808,7 @@ void fused_gr_check() {
     if (dev < 0 || dev >= 64 || g_variant[dev].load() > 0) return;
     // SYCL port: the port's own read (sliced down / split norm, STRATA_GR_DOWN_SLICED etc.) does not use upstream's
     // variants, and their self-test crashes on the B70 (0.1.32 merge, under investigation): opt-in only.
-    if (std::getenv("STRATA_HC_CHECK") == nullptr) {
+    if (strata::env("NOSTROMA_HC_CHECK") == nullptr) {
         g_variant[dev].store(kHcPlain);
         return;
     }

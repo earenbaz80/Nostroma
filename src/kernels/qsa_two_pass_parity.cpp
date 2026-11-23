@@ -6,6 +6,7 @@
 // larger cases, the time of each scorer (one synthetic run, not a benchmark).  Needs CUDA sm_80+ (77 = skipped
 // otherwise, and on HIP).
 #include "strata/kernels/qsa.hpp"
+#include "strata/env.hpp"
 #include "strata/kernels/qsa_select.hpp"
 #include "strata/kernels/qsa_two_pass.hpp"
 
@@ -192,7 +193,7 @@ int main() {
     return 77;
 #endif
 #if defined(_WIN32)
-    if (std::getenv("STRATA_SELECT_TWO_PASS") == nullptr) _putenv_s("STRATA_SELECT_TWO_PASS", "1");
+    if (strata::env("NOSTROMA_SELECT_TWO_PASS") == nullptr) _putenv_s("STRATA_SELECT_TWO_PASS", "1");
 #else
     setenv("STRATA_SELECT_TWO_PASS", "1", 0);   // read once, at the first call
 #endif

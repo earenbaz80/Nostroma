@@ -1,4 +1,5 @@
 #include "b60_mtp_q8_cache.hpp"
+#include "strata/env.hpp"
 #include "b60_weight_cache.hpp"
 #include "strata/core/on_device.hpp"
 #include "b60_layout_state.hpp"
@@ -93,7 +94,7 @@ constexpr float EPS = 1e-6f;
 // #783 PR-i: STRATA_MTP_CATCHUP_ALL=1 catches the drafter's K/V up for the whole verified window, rejected rows included
 bool mtp_catchup_all() {
     static const bool on = [] {
-        const char* v = std::getenv("STRATA_MTP_CATCHUP_ALL");
+        const char* v = strata::env("NOSTROMA_MTP_CATCHUP_ALL");
         return v != nullptr && v[0] != '\0' && v[0] != '0';
     }();
     return on;
@@ -553,7 +554,7 @@ bool MtpDrafter::load(const std::string &rt_dir, const ModelGeometry &g,
     // on stage 0 waits for it, so its stream gets the highest priority there (STRATA_MTP_PRIORITY=0: the default)
     bool prio = false;
 #if !defined(STRATA_USE_HIP)   // (HIP: the default priority)
-    static const bool hi_prio = [] { const char* v = std::getenv("STRATA_MTP_PRIORITY"); return v == nullptr || std::atoi(v) != 0; }();
+    static const bool hi_prio = [] { const char* v = strata::env("NOSTROMA_MTP_PRIORITY"); return v == nullptr || std::atoi(v) != 0; }();
     int prio_lo = 0, prio_hi = 0;
     /*
     DPCT1027: The call to cudaDeviceGetStreamPriorityRange was replaced with
@@ -613,13 +614,13 @@ namespace {
 // STRATA_MTP_FULL_HEAD=1 (a diagnostic): draft over the whole vocabulary (the main head itself) instead of
 // rt/draft_vocab.bin's subset - the reference head, to measure what the subset costs in acceptance
 bool full_head_env() {
-    static const bool on = [] { const char* v = std::getenv("STRATA_MTP_FULL_HEAD"); return v && v[0] == '1'; }();
+    static const bool on = [] { const char* v = strata::env("NOSTROMA_MTP_FULL_HEAD"); return v && v[0] == '1'; }();
     return on;
 }
 }  // namespace
 
 bool MtpDrafter::top2_env() {
-    static const bool on = [] { const char* v = std::getenv("STRATA_MTP_TOP2"); return v && v[0] == '1'; }();
+    static const bool on = [] { const char* v = strata::env("NOSTROMA_MTP_TOP2"); return v && v[0] == '1'; }();
     return on;
 }
 
@@ -954,7 +955,7 @@ bool MtpDrafter::record_front(int T, int row0, dpct::queue_ptr cs,
         // #783 PR-d (stuchapin909): the T tokens' K norm, K/V rotation and K/V append each run once over all T rows
         // (every row is independent; the rope keeps its per-token positions). STRATA_NO_BATCH_KV_STEP=1 appends per token.
         static const bool no_batch_kv = [] {
-            const char* v = std::getenv("STRATA_NO_BATCH_KV_STEP");
+            const char* v = strata::env("NOSTROMA_NO_BATCH_KV_STEP");
             return v != nullptr && v[0] != '\0' && v[0] != '0';
         }();
         // #783 PR-f (stuchapin909): the per-head RMSNorm and the rope fused (bit-identical to the pair, rope_parity
@@ -1088,14 +1089,14 @@ bool MtpDrafter::record_rest(int step_row, dpct::queue_ptr cs,
         const SForm none{};
         const bool need_bf16_x = !shared_expert_native_bf16_enabled();
         static const bool fuse_head_gr = [] {
-            const char* v = std::getenv("STRATA_FUSE_HEAD_GR");
+            const char* v = strata::env("NOSTROMA_FUSE_HEAD_GR");
             return v != nullptr && std::atoi(v) != 0;
         }();
         static const bool head_mix_multi_on = [] {
 #if defined(STRATA_USE_HIP)
             return false;
 #else
-            const char* v = std::getenv("STRATA_HEAD_MIX_MULTI");
+            const char* v = strata::env("NOSTROMA_HEAD_MIX_MULTI");
             return v == nullptr || std::atoi(v) != 0;
 #endif
         }();
@@ -1105,7 +1106,7 @@ bool MtpDrafter::record_rest(int step_row, dpct::queue_ptr cs,
 #if defined(STRATA_USE_HIP)
             return false;
 #else
-            const char* v = std::getenv("STRATA_MTP_SHARED_BRANCH");
+            const char* v = strata::env("NOSTROMA_MTP_SHARED_BRANCH");
             return v == nullptr || std::atoi(v) != 0;
 #endif
         }();
@@ -1171,7 +1172,7 @@ bool MtpDrafter::record_rest(int step_row, dpct::queue_ptr cs,
             shared_rows();
         }
         static const bool no_multi_gr = [] {   // #783 PR-g: STRATA_NO_MULTI_GR=1 keeps the per-token GR calls
-            const char* v = std::getenv("STRATA_NO_MULTI_GR");
+            const char* v = strata::env("NOSTROMA_NO_MULTI_GR");
             return v != nullptr && v[0] != '\0' && v[0] != '0';
         }();
         for (int t = 0; t < T; ++t) {
@@ -1464,7 +1465,7 @@ bool MtpDrafter::prefill(const float* R_rows, const int32_t* next_tokens, int64_
     // 32768, mixed load (chats, 32K and 7K prompts, deep follow-ups): E-4 hung in the first round on 2 of 2 tries,
     // the old loop ran 30 of 30 rounds clean, prompt speed unchanged.
     static const bool per_group_sync = [] {
-        if (const char* v = std::getenv("STRATA_MTP_PREFILL_SYNC")) return std::atoi(v) != 0;
+        if (const char* v = strata::env("NOSTROMA_MTP_PREFILL_SYNC")) return std::atoi(v) != 0;
 #if defined(STRATA_USE_HIP)
         return true;
 #else

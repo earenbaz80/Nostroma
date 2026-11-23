@@ -24,6 +24,7 @@
 // SOFTWARE.
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
+#include "strata/env.hpp"
 #include "strata/kprof.hpp"
 #include <dpct/dpct.hpp>
 #include "strata/sycl_queue.hpp"
@@ -206,7 +207,7 @@ bool same_scaling(const RopeScaling& a, const RopeScaling& b) {
 // opt-in: STRATA_ROPE_TABLE=1 (the table's angles differ from the fast-math ones in the last bits, so outputs move)
 bool rope_table_enabled() {
     static const bool on = [] {
-        const char* e = std::getenv("STRATA_ROPE_TABLE");
+        const char* e = strata::env("NOSTROMA_ROPE_TABLE");
         return e != nullptr && e[0] == '1';
     }();
     return on;
@@ -229,10 +230,10 @@ void native_rope_set_enabled(bool value) { enabled.store(value, std::memory_orde
 bool native_rope_enabled() { return enabled.load(std::memory_order_relaxed); }
 bool native_norm_rope_usable(int head_dim, int n_rot) {
     static const bool on = [] {
-        const char* off = std::getenv("STRATA_NO_NORM_ROPE");
+        const char* off = strata::env("NOSTROMA_NO_NORM_ROPE");
         if (off != nullptr && off[0] != '\0' && off[0] != '0') return false;
 #if defined(__HIPCC__)
-        const char* v = std::getenv("STRATA_NORM_ROPE");   // AMD: opt in until rope_parity check 6 passes there
+        const char* v = strata::env("NOSTROMA_NORM_ROPE");   // AMD: opt in until rope_parity check 6 passes there
         return v != nullptr && v[0] != '\0' && v[0] != '0';
 #else
         return true;

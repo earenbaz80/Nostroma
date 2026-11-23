@@ -1,6 +1,7 @@
 // src/core/device.cu - P2.S1: the CUDA side of the runtime core.
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
+#include "strata/env.hpp"
 #include "strata/kprof.hpp"
 #include <dpct/dpct.hpp>
 #include "strata/sycl_queue.hpp"
@@ -225,7 +226,7 @@ hipError_t mem_get_info(size_t* free_bytes, size_t* total_bytes) {
     if (free_bytes == nullptr || total_bytes == nullptr) return hipMemGetInfo(free_bytes, total_bytes);
     const hipError_t e = first_mem_get_info(free_bytes, total_bytes);
     static const bool off = [] {
-        const char* v = std::getenv("STRATA_WDDM_BUDGET");
+        const char* v = strata::env("NOSTROMA_WDDM_BUDGET");
         return v != nullptr && std::atoi(v) == 0;
     }();
     if (e != hipSuccess || off || free_bytes == nullptr || total_bytes == nullptr) return e;

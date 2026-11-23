@@ -14,6 +14,7 @@
 #pragma once
 
 #include <cstdlib>
+#include "strata/env.hpp"
 #include <cstring>
 
 namespace strata {
@@ -25,7 +26,7 @@ inline bool is_026_token(const char* v) {
 
 /// STRATA_DEFAULTS=026 (read once).
 inline bool qwen_defaults_026() {
-    static const bool on = is_026_token(std::getenv("STRATA_DEFAULTS"));
+    static const bool on = is_026_token(strata::env("NOSTROMA_DEFAULTS"));
     return on;
 }
 

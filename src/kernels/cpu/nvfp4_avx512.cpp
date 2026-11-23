@@ -8,6 +8,7 @@
 //
 // Needs AVX512F/BW/VL and VNNI - what cpu_avx512_ok() checks before anything here is called.
 #include "strata/kernels/cpu/nvfp4_avx512.hpp"
+#include "strata/env.hpp"
 
 #define GGML_COMMON_DECL_CPP
 #define GGML_COMMON_IMPL_CPP
@@ -49,7 +50,7 @@ constexpr Ue4m3Table kUe4m3;
 // (read on first use, behind the CPU check: a static initialiser here would run on every CPU, see above)
 inline int prefetch_distance() {
     static const int v = [] {
-        const char* e = std::getenv("STRATA_NVFP4_PREFETCH");
+        const char* e = strata::env("NOSTROMA_NVFP4_PREFETCH");
         return e ? std::atoi(e) : 2048;
     }();
     return v;

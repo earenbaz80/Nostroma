@@ -18,6 +18,7 @@
 // Reported per product: relative Frobenius error and the worst element relative to the row's largest output.
 // 8-bit activations land near 0.5%; FP4 activations near 10% - the difference between the two modes.
 #include "strata/prefill/mmq_ids_margin.hpp"
+#include "strata/env.hpp"
 #include "strata/prefill/moe_mmq.hpp"
 
 #include "ggml.h"
@@ -337,7 +338,7 @@ int main(int argc, char** argv) {
     if (argc >= 3 && std::string(argv[2]) == "--group") return group(argv[1]);
     if (argc >= 5 && std::string(argv[2]) == "--real") return real(argv[1], argv[3], std::atoi(argv[4]));
     if (argc >= 3 && std::string(argv[2]) == "--layers") return layers(argv[1], argc >= 4 ? std::atoi(argv[3]) : 7);
-    const char* mode = std::getenv("STRATA_PREFILL_NVFP4");
+    const char* mode = strata::env("NOSTROMA_PREFILL_NVFP4");
     std::printf("mode %s, FP4 activations: %s\n", mode ? mode : "default", mmq::fp4_activations(GGML_TYPE_NVFP4) ? "yes" : "no");
     std::vector<int> Ts;
     for (int i = 2; i < argc; ++i) Ts.push_back(std::atoi(argv[i]));

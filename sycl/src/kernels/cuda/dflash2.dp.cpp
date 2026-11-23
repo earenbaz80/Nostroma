@@ -12,6 +12,7 @@
 // Everything is asynchronous on the queue, allocates nothing and can be recorded into a sycl graph.
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
+#include "strata/env.hpp"
 #include <dpct/dpct.hpp>
 #include "strata/sycl_queue.hpp"
 #include "strata/kernels/dflash2.hpp"
@@ -191,9 +192,9 @@ constexpr int PS4 = 9;    // stride of the transposed probabilities P[key][query
 void df2_attention(const float* q, const float* kring, const float* vring, const float* kblk, const float* vblk, const int32_t* anchor_pos, int ring_slots,
                    int window, float* part, void* xq, float* xd, void* stream, const int64_t* tag, const int32_t* epoch_ptr) {
     sycl::queue* qu = strata::q_of(stream);
-    static const int env_v = [] { const char* e = std::getenv("STRATA_DF2_ATTN"); return e ? std::atoi(e) : 0; }();
+    static const int env_v = [] { const char* e = strata::env("NOSTROMA_DF2_ATTN"); return e ? std::atoi(e) : 0; }();
     const int av = g_attn_variant != 0 ? g_attn_variant : env_v != 0 ? env_v : DF2_ATTN_AUTO;
-    static const int env_ck = [] { const char* e = std::getenv("STRATA_DF2_ATTN_CHUNK"); return e ? std::atoi(e) : 0; }();
+    static const int env_ck = [] { const char* e = strata::env("NOSTROMA_DF2_ATTN_CHUNK"); return e ? std::atoi(e) : 0; }();
     const int CK = g_attn_chunk != 0 ? g_attn_chunk : env_ck == 128 ? 128 : DF2_ATTN_CHUNK_AUTO;   // keys per work-group: 64 (33 chunks) or 128 (17)
     const int nch = CK == 128 ? kDf2MaxChunks : kDf2PartChunks;
     if (av == 2) {
@@ -713,7 +714,7 @@ void df2_gemm(const Df2Mat* mats, int n, const void* xq, const float* xd, int n_
     segs.n = n;
     const int8_t* xqp = static_cast<const int8_t*>(xq);
     sycl::queue* q = strata::q_of(stream);
-    static const int env_v = [] { const char* e = std::getenv("STRATA_DF2_GEMM4"); return e ? std::atoi(e) : 0; }();
+    static const int env_v = [] { const char* e = strata::env("NOSTROMA_DF2_GEMM4"); return e ? std::atoi(e) : 0; }();
     const int v = g_gemm_variant != 0 ? g_gemm_variant : env_v != 0 ? env_v : DF2_Q4_AUTO(rows);
     switch (v) {   // the ids are the CUDA file's (W warps a block, R rows a warp)
         case 10: gemm4_nc<4, 4, 2>(q, segs, xqp, xd, n_in, rows, ncols); break;

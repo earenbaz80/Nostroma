@@ -19,6 +19,7 @@
 // reference: (S, h_v, S) with j fastest instead of (S, S, h_v).  A layout mix-up is silent, so the state is
 // filled with a value that encodes its own coordinates.
 #include "strata/kernels/gdn.hpp"
+#include "strata/env.hpp"
 #include "strata/kernels/fused_gdn.hpp"
 #include "strata/kernels/verify_kernels.hpp"
 #include "strata/kernels/native_mmvq.hpp"
@@ -510,7 +511,7 @@ int main(int argc, char** argv) {
                 // at (t - tb) * value_dim: the bytes native_quantize_q8_1 makes of y rows [tb, n), the outputs and the state
                 // unchanged by asking for it, and nothing written past those rows (the engine's second group has tb > 0)
                 if (c.tb < n) {
-                    if (std::getenv("STRATA_GDN_PARITY_TRACE")) std::printf("    trace: T=%d '%s' with a q8_1 destination\n", T, c.name);
+                    if (strata::env("NOSTROMA_GDN_PARITY_TRACE")) std::printf("    trace: T=%d '%s' with a q8_1 destination\n", T, c.name);
                     const size_t qb = (size_t) (vd / 32) * 36, rows = (size_t) (n - c.tb);
                     void *d_q = dev((size_t) T * qb), *d_qr = dev((size_t) T * qb);
                     check(cudaMemset(d_q, 0x5a, (size_t) T * qb), "q0");

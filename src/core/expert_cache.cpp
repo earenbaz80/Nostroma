@@ -1,5 +1,6 @@
 // src/core/expert_cache.cpp - R4's slot storage and residency table.  Read the header first.
 #include "strata/core/expert_cache.hpp"
+#include "strata/env.hpp"
 #include "strata/core/expert_cache_refuse.hpp"
 
 // #533's segmented cache uses CUDA's virtual memory management (cuMem*): not on HIP, neither the RDNA backend nor
@@ -136,7 +137,7 @@ size_t device_free_bytes() {
             std::fclose(m);
             // STRATA_UMA_HEADROOM_GIB: a whole number of GiB, 0..1024; anything else keeps the default 6 (said once)
             static const long gib = [] {
-                const char* h = std::getenv("STRATA_UMA_HEADROOM_GIB");
+                const char* h = strata::env("NOSTROMA_UMA_HEADROOM_GIB");
                 if (h == nullptr) return 6L;
                 char* end = nullptr;
                 const long v = std::strtol(h, &end, 10);
@@ -152,7 +153,7 @@ size_t device_free_bytes() {
 #endif
 #if defined(STRATA_EC_NVML_FREE)
     static const bool device_wide = [] {
-        const char* v = std::getenv("STRATA_VRAM_FREE");
+        const char* v = strata::env("NOSTROMA_VRAM_FREE");
         return v != nullptr && std::strcmp(v, "device") == 0;
     }();
     if (device_wide) {

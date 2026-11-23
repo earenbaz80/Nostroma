@@ -19,6 +19,7 @@
 #pragma once
 
 #include <cstdint>
+#include "strata/env.hpp"
 #include <cstdio>
 #include <cstdlib>
 #include <map>
@@ -185,7 +186,7 @@ private:
 /// The process-wide manifest: on when STRATA_MANIFEST names a file.
 inline Manifest& instance() {
     static Manifest m([] {
-        const char* v = std::getenv("STRATA_MANIFEST");
+        const char* v = strata::env("NOSTROMA_MANIFEST");
         return std::string(v != nullptr ? v : "");
     }());
     return m;

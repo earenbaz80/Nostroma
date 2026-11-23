@@ -12,6 +12,7 @@
 //   5 evicted    : a stash too small to keep A: the resume is cold (missing rows reported, *cold set)
 // Exit 0 when every assertion holds.
 #include "strata/core/dflash2.hpp"
+#include "strata/env.hpp"
 
 #include <cuda_runtime.h>
 
@@ -96,7 +97,7 @@ int count_bad(Dflash2Drafter& d, const std::vector<float>& ref, int64_t lo, int6
 int main(int argc, char** argv) {
     if (argc < 2) { std::printf("usage: dflash2_ring_test PACK [device]\n"); return 2; }
     const int device = argc > 2 ? std::atoi(argv[2]) : 0;
-    const bool log_off_run = std::getenv("STRATA_DF2_RING_LOG") != nullptr && std::getenv("STRATA_DF2_RING_LOG")[0] == '0';
+    const bool log_off_run = strata::env("NOSTROMA_DF2_RING_LOG") != nullptr && strata::env("NOSTROMA_DF2_RING_LOG")[0] == '0';
     cudaSetDevice(device);
     std::string err;
     const int64_t P = 4227, N = 4232;   // the resumed prefix and the prompt (the agent prompt's numbers)

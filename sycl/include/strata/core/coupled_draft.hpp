@@ -33,6 +33,7 @@
 
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
+#include "strata/env.hpp"
 #include <dpct/dpct.hpp>
 #include "strata/kernels/sampler.hpp"
 
@@ -54,7 +55,7 @@ inline constexpr int kCoupledHistCap = 4096;
 
 inline bool& coupled_draft_state() {
     static bool on = [] {
-        const char* e = std::getenv("STRATA_SPEC_COUPLED");
+        const char* e = strata::env("NOSTROMA_SPEC_COUPLED");
         return e != nullptr && *e != '\0' && std::strcmp(e, "0") != 0;
     }();
     return on;

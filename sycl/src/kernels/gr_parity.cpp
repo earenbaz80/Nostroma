@@ -21,6 +21,7 @@
 //      Asserted as a property, not as a value, because that is what the source comment claims.
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
+#include "strata/env.hpp"
 #include <dpct/dpct.hpp>
 #include "strata/kernels/gr.hpp"
 #include "strata/kernels/fused_gr.hpp"
@@ -485,7 +486,7 @@ int fused_multi_lds_parity(const float* d_norm, const uint16_t* d_down, const ui
     };
     // the split read (STRATA_GR_V3=1) sums in another order than the single-token kernel: equal within float
     // rounding, not to the bit, so it is compared with a relative tolerance; the default kernels bit for bit
-    static const bool v3 = [] { const char* v = std::getenv("STRATA_GR_V3"); return v != nullptr && std::atoi(v) != 0; }();
+    static const bool v3 = [] { const char* v = strata::env("NOSTROMA_GR_V3"); return v != nullptr && std::atoi(v) != 0; }();
     auto close = [](const std::vector<float>& x, const std::vector<float>& y) {
         double worst = 0.0, mag = 1e-30;
         for (size_t i = 0; i < x.size(); ++i) {

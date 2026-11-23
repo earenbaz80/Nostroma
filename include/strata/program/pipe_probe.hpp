@@ -14,6 +14,7 @@
 #pragma once
 
 #include <algorithm>
+#include "strata/env.hpp"
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
@@ -30,8 +31,8 @@ public:
 
     PipeProbe(int n_stages, size_t n_groups)
         : n_(std::min(n_stages, kMaxStages)), n_groups_(n_groups) {
-        timing_ = std::getenv("STRATA_P4_TIMING") != nullptr;
-        const char* tr = std::getenv("STRATA_P4_TRACE");
+        timing_ = strata::env("NOSTROMA_P4_TIMING") != nullptr;
+        const char* tr = strata::env("NOSTROMA_P4_TRACE");
         if (tr != nullptr) {
             const char* path = (tr[0] == '\0' || std::strcmp(tr, "1") == 0) ? "strata-p4-trace.csv" : tr;
             trace_ = std::fopen(path, "w");

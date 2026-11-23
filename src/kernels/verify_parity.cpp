@@ -5,6 +5,7 @@
 // one it stands in for, on random inputs that include -0.0, denormals, NaN, -inf and large values.  The tests
 // follow eddoursul's fork (MIT; verify_parity.cpp), ported to this tree's kernels.
 #include "strata/kernels/elementwise.hpp"
+#include "strata/env.hpp"
 #include "strata/kernels/f16_bits.hpp"
 #include "strata/kernels/quantize_act.hpp"
 #include "strata/kernels/sampler.hpp"
@@ -129,7 +130,7 @@ int test_mapped_multi(std::mt19937& rng, cudaStream_t s) {
             copy_i32_from_mapped(d_ref[i] + off[i], d_src[i] + off[i], words[i], s);
         mc[i] = {d_out[i] + off[i], d_src[i] + off[i], words[i]};
     }
-    const char* prev = std::getenv("STRATA_MTP_MULTI_COPY");
+    const char* prev = strata::env("NOSTROMA_MTP_MULTI_COPY");
     const std::string saved = prev ? prev : "";
     for (const char* mode : {"1", "0"}) {
 #if defined(_WIN32)

@@ -23,6 +23,7 @@
 #pragma once
 
 #include <atomic>
+#include "strata/env.hpp"
 #include <cstdint>
 #include <cstdlib>
 #include <string>
@@ -62,7 +63,7 @@ inline const char* fix_env(Fix f) {
     return "STRATA_KFD_QUIET_LOAD";
 }
 
-inline bool env_on(Fix f) { return switch_on(std::getenv("STRATA_KFD_QUIET"), std::getenv(fix_env(f))); }
+inline bool env_on(Fix f) { return switch_on(strata::env("NOSTROMA_KFD_QUIET"), std::getenv(fix_env(f))); }
 
 /// Load and Exit: the device class and the switches.
 inline bool on(Fix f) { return class_flag().load(std::memory_order_relaxed) && env_on(f); }
@@ -89,7 +90,7 @@ inline LoadMoves load_moves(bool cls, const char* all, const char* one) {
 /// so the copy takes the path the lent refill's 1.3 MiB blobs take with GPU_PINNED_MIN_XFER_SIZE set (XFER).
 inline constexpr size_t kStagedWarmBytes = 2u << 20;
 inline LoadMoves load_moves() {
-    return load_moves(class_flag().load(std::memory_order_relaxed), std::getenv("STRATA_KFD_QUIET"), std::getenv(fix_env(Fix::Load)));
+    return load_moves(class_flag().load(std::memory_order_relaxed), strata::env("NOSTROMA_KFD_QUIET"), std::getenv(fix_env(Fix::Load)));
 }
 
 // ---- NOREG: the expert arena is not registered with the GPU driver on the class ---------------------------------------------------

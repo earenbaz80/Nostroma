@@ -23,6 +23,7 @@
 //                             SM, as on cards with more or fewer SMs (scale), and both with the engine's grids on
 //                             32 to all of this card's SMs, the others held by a sleeping kernel (fewer_sms)
 #include <cuda_fp16.h>
+#include "strata/env.hpp"
 #include <cuda_runtime.h>
 
 #include <algorithm>
@@ -569,7 +570,7 @@ cudaError_t gdn_rec_chunked(float* state, const float* h, const float* gate, con
             return cudaErrorNotSupported;
         }
         // as in kernels.cu: STRATA_GDN_CHUNKED=2 skips the SM-count test (to measure a card under 128 SMs)
-        static const bool any_sms = [] { const char* v = std::getenv("STRATA_GDN_CHUNKED"); return v != nullptr && std::atoi(v) >= 2; }();
+        static const bool any_sms = [] { const char* v = strata::env("NOSTROMA_GDN_CHUNKED"); return v != nullptr && std::atoi(v) >= 2; }();
         if (major < 8 || (!any_sms && sms < HK * (S / GDV)) || (size_t) smem < kChunkScanSmem)
             return cudaErrorNotSupported;
     }

@@ -20,6 +20,7 @@
 //   - `sampler_kernel` (`STRATA_OLD_SAMPLER=1`), the kernel of engine 0.1.20, kept as the reference.
 // The two new ones share `sampled_tail_warp` (top_p / min_p / temperature / draw on one warp).
 #include "strata/kernels/sampler.hpp"
+#include "strata/env.hpp"
 #include "strata/core/coupled_draft.hpp"
 #include "strata/core/spec_prob.hpp"
 #include "strata/core/spec_proposal.hpp"
@@ -1274,7 +1275,7 @@ void sample_tokens(const float* logits, int n_tokens, int n_vocab, const int* hi
         // Without penalties (shmem == 0: no window) on sm_90+, a cluster of CTAs per token - the same token; see
         // `sampler_greedy_cluster_kernel`.  STRATA_ARGMAX_MULTI=0: always the one-block kernel.
         static const bool multi = [] {
-            const char* v = std::getenv("STRATA_ARGMAX_MULTI");
+            const char* v = strata::env("NOSTROMA_ARGMAX_MULTI");
             return !v || std::atoi(v) != 0;
         }();
         // One block per token, 1,024 threads over the vocabulary.  See `sampler_greedy_kernel`.

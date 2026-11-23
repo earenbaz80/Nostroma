@@ -1,6 +1,7 @@
 // src/prefill/kernels.cu - see include/strata/prefill/kernels.hpp.
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
+#include "strata/env.hpp"
 #include "strata/kprof.hpp"
 #include <dpct/dpct.hpp>
 #include "strata/sycl_queue.hpp"
@@ -1270,7 +1271,7 @@ __dpct_inline__ void gdn_rec_kh_kernel(float *__restrict__ state,
 bool gdn_keyhead_ok() {
     // SYCL port: upstream picks it by SM count and occupancy (NVIDIA thresholds, measured on Ada/Ampere). On Xe the
     // key-head kernel is an A/B until measured: STRATA_GDN_KEYHEAD=1 runs it, anything else keeps the kernel before.
-    static const bool on = [] { const char* v = std::getenv("STRATA_GDN_KEYHEAD"); return v != nullptr && std::atoi(v) == 1; }();
+    static const bool on = [] { const char* v = strata::env("NOSTROMA_GDN_KEYHEAD"); return v != nullptr && std::atoi(v) == 1; }();
     return on;
 }
 #endif
@@ -2211,7 +2212,7 @@ void kv_append(const float* K, const float* V, int64_t T, int64_t pos0, const in
                uint16_t* k_pool, uint16_t* v_pool, int8_t* k_q, int8_t* v_q, uint16_t* k_scale, uint16_t* v_scale,
                void* stream, const strata::kernels::KvHostPools* host, const strata::kernels::KvHostPools* stage) {
     if (T <= 0) return;
-    static const bool wide_env = [] { const char* v = std::getenv("STRATA_KV_WIDE_HOST"); return !(v && v[0] == '0'); }();
+    static const bool wide_env = [] { const char* v = strata::env("NOSTROMA_KV_WIDE_HOST"); return !(v && v[0] == '0'); }();
     const bool wide = wide_env;
     {
         auto exp_props = sycl::ext::oneapi::experimental::properties{
@@ -2541,7 +2542,7 @@ void gdn_gates(const float* ab, const float* dt, const float* ssm_a, float* gate
     check("gdn_gates");
 }
 void gdn_conv(float* history, const float* qkv, const float* conv_w, float* h, int64_t T, float eps, void* stream) {
-    static const bool serial = std::getenv("STRATA_GDN_CONV_SERIAL") != nullptr;   // the old walk (A/B)
+    static const bool serial = strata::env("NOSTROMA_GDN_CONV_SERIAL") != nullptr;   // the old walk (A/B)
     if (serial || T <= CONV_TILE) {
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
@@ -2555,7 +2556,7 @@ void gdn_conv(float* history, const float* qkv, const float* conv_w, float* h, i
                     gdn_conv_kernel(history, qkv, conv_w, h, T);
                 });
     } else {
-        static const bool fused = [] { const char* v = std::getenv("STRATA_GDN_CONVL2"); return v && std::atoi(v) != 0; }();
+        static const bool fused = [] { const char* v = strata::env("NOSTROMA_GDN_CONVL2"); return v && std::atoi(v) != 0; }();
         if (fused) {
             {
                 auto exp_props = sycl::ext::oneapi::experimental::properties{
@@ -2655,7 +2656,7 @@ static bool gdn_xe_device(void* stream) {
 }
 static bool gdn_xe_on(void* stream) {
     static const bool on = [stream] {
-        const char* v = std::getenv("STRATA_GDN_XE");
+        const char* v = strata::env("NOSTROMA_GDN_XE");
         if (v && *v) return std::atoi(v) != 0 && gdn_xe_device(stream);
         return strata::intel_gpu_gen(strata::q_of(stream)->get_device()) == strata::IntelGpuGen::Alchemist &&
                gdn_xe_device(stream);
@@ -2688,14 +2689,14 @@ void gdn_recurrence_variant(int variant, float* state, const float* h, const flo
     }
     if (variant == 1) {
         if (T > 0) {
-            static const int pp = [] { const char* v = std::getenv("STRATA_GDN_PP"); return v ? std::atoi(v) : 0; }();
+            static const int pp = [] { const char* v = strata::env("NOSTROMA_GDN_PP"); return v ? std::atoi(v) : 0; }();
             if (pp == 2)
                 gdn_rec_quad2c_kernel<<<HV * (S / C2CB), QTH, 0, (cudaStream_t) stream>>>(state, h, gate, beta, y, T);
             else if (pp)
                 gdn_rec_quad_pp_kernel<<<HV * (S / QCB), QTH, 0, (cudaStream_t) stream>>>(state, h, gate, beta, y, T);
             else
                 gdn_rec_quad_kernel<<<HV * (S / QCB), QTH, 0, (cudaStream_t) stream>>>(state, h, gate, beta, y, T);
-            static const bool noy = [] { const char* v = std::getenv("STRATA_GDN_NOY"); return v && std::atoi(v) != 0; }();
+            static const bool noy = [] { const char* v = strata::env("NOSTROMA_GDN_NOY"); return v && std::atoi(v) != 0; }();
             if (noy)
                 gdn_out_norm_loop_kernel<false><<<(unsigned) std::min<int64_t>(T * HV, 4096), S, 0, (cudaStream_t) stream>>>(
                     z, gamma, eps, y, y16, T * HV, ld16);
@@ -2709,7 +2710,7 @@ void gdn_recurrence_variant(int variant, float* state, const float* h, const flo
 #else
     (void) variant;   // the quad recurrence kernels are AMD-only
 #endif
-    static const bool serial = std::getenv("STRATA_GDN_REC_HEADS") != nullptr;   // the one-block-per-head kernel (A/B)
+    static const bool serial = strata::env("NOSTROMA_GDN_REC_HEADS") != nullptr;   // the one-block-per-head kernel (A/B)
     // variant 6 = the Xe sub-group recurrence + the unchanged norm kernel (gdn_recurrence: gdn_xe_on)
     const bool xe = T > 0 && !serial && variant == 6;
     if (xe && !gdn_xe_device(stream)) throw std::runtime_error("GDN Xe variant requires an Intel GPU with 16-lane sub-groups");
@@ -2733,7 +2734,7 @@ void gdn_recurrence_variant(int variant, float* state, const float* h, const flo
                                        y16, T, ld16);
                     });
     } else {
-        static const bool pipe = [] { const char* v = std::getenv("STRATA_GDN_PIPELINE"); return v == nullptr || std::atoi(v) != 0; }();
+        static const bool pipe = [] { const char* v = strata::env("NOSTROMA_GDN_PIPELINE"); return v == nullptr || std::atoi(v) != 0; }();
         if (xe) {
             detail::gdn_xe_launch(*strata::q_of(stream), state, h, gate, beta, y, T);
         } else
@@ -2759,7 +2760,7 @@ void gdn_recurrence_variant(int variant, float* state, const float* h, const flo
             auto exp_props = sycl::ext::oneapi::experimental::properties{
                 sycl::ext::oneapi::experimental::use_root_sync};
 
-            if([]{const char* e=std::getenv("STRATA_SYCL_GDN_PREFILL_REG_QK");return e&&e[0]=='1';}()){
+            if([]{const char* e=strata::env("NOSTROMA_SYCL_GDN_PREFILL_REG_QK");return e&&e[0]=='1';}()){
                 strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gdn_rec_cols_pipe_local_probe>>(
                     sycl::nd_range<3>(sycl::range(1,1,HV*NCB)*sycl::range(1,RG,CB),sycl::range(1,RG,CB)),exp_props,
                     [=](sycl::nd_item<3>) [[sycl::reqd_sub_group_size(16)]] {gdn_rec_cols_pipe_local_kernel(state,h,gate,beta,y,T);});
@@ -2811,8 +2812,8 @@ void gdn_recurrence(float* state, const float* h, const float* gate, const float
     // Aurora (S23): four lanes per column + the grid-stride norm, the same bits (tests/hip/gdn_rec_head.cpp);
     // STRATA_GDN_HEAD=1 (on by default on gfx1151; off with STRATA_GDN_HEAD=0 or STRATA_GDN_REC_HEADS) takes them
     // (AMD builds only; the arch defaults set STRATA_GDN_HEAD=1 on gfx1151 and leave other cards on the earlier kernels)
-    static const bool head = [] { const char* v = std::getenv("STRATA_GDN_HEAD"); return v != nullptr && std::atoi(v) != 0; }();
-    static const bool serial = std::getenv("STRATA_GDN_REC_HEADS") != nullptr;
+    static const bool head = [] { const char* v = strata::env("NOSTROMA_GDN_HEAD"); return v != nullptr && std::atoi(v) != 0; }();
+    static const bool serial = strata::env("NOSTROMA_GDN_REC_HEADS") != nullptr;
     const int v = head && !serial ? 1 : (!serial && gdn_xe_on(stream)) ? 6 : 0;
     gdn_recurrence_variant(v, state, h, gate, beta, z, gamma, eps, y, y16, T, stream, ld16);
 }

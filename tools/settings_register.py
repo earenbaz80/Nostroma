@@ -43,9 +43,17 @@ SKIP_PARTS = ("node_modules", "/tests/", "/test/", "__pycache__")
 STATUSES = ("default", "rollback", "opt-in", "research", "retire-candidate", "unsure", "retired")
 HAND_FIELDS = ("status", "owner", "note", "retire_after", "retired_in")
 
-NAME_RE = re.compile(r"STRATA_[A-Z0-9_]+")
-# a call whose first argument is the name literal: getenv, env_on, env_int, pipe_dbg_env, il_env_on, kva_env_flag ...
-CALL_RE = re.compile(r'(\w*(?:getenv|env\w*|\w*_env\w*)\s*\(\s*)"(STRATA_[A-Z0-9_]+)"')
+# The product is Nostroma, so a setting is written NOSTROMA_<SETTING>; every name used to be STRATA_<SETTING> and the
+# engine still reads that one as the fallback (include/strata/env.hpp). The register keeps the old prefix as its key, so
+# data/settings-register.json, the settings page and the app do not move in the same change as the sources.
+NAME_RE = re.compile(r"(?:STRATA|NOSTROMA)_[A-Z0-9_]+")
+# a call whose first argument is the name literal: getenv, strata::env, env_on, env_int, pipe_dbg_env, kva_env_flag ...
+CALL_RE = re.compile(r'([\w:]*(?:getenv|env\w*|\w*_env\w*)\s*\(\s*)"((?:STRATA|NOSTROMA)_[A-Z0-9_]+)"')
+
+
+def _key(name: str) -> str:
+    """The register key of a name the engine reads: NOSTROMA_X and STRATA_X are the same setting."""
+    return "STRATA_" + name[len("NOSTROMA_"):] if name.startswith("NOSTROMA_") else name
 WRITE_FN_RE = re.compile(r"put|set_env|unset|setenv")
 
 FLAG_FNS = {"env_on", "env_flag", "il_env_on", "kva_env_flag", "env_tri"}
@@ -315,14 +323,14 @@ def scan_engine():
     for p in _files(ENGINE_DIRS):
         rel = _rel(p)
         lines = _read_lines(p)
-        if not any("STRATA_" in l for l in lines):
+        if not any(NAME_RE.search(l) for l in lines):
             continue
         states = None
         for i, l in enumerate(lines):
-            if "STRATA_" not in l:
+            if not NAME_RE.search(l):
                 continue
             for m in CALL_RE.finditer(l):
-                fn, name = m.group(1), m.group(2)
+                fn, name = m.group(1), _key(m.group(2))
                 if states is None:
                     states = _pp_states(lines)
                 if WRITE_FN_RE.search(fn):
@@ -488,7 +496,7 @@ def scan_git(names):
             continue
         if cur is None or not line or line[0] not in "+-" or line.startswith(("+++", "---")):
             continue
-        for nm in set(NAME_RE.findall(line)):
+        for nm in {_key(n) for n in NAME_RE.findall(line)}:
             if nm in names:
                 if line[0] == "+" and nm not in first:
                     first[nm] = cur

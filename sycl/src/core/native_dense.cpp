@@ -1,5 +1,6 @@
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
+#include "strata/env.hpp"
 #include <dpct/dpct.hpp>
 #include "strata/sycl_queue.hpp"
 #include "strata/core/native_dense.hpp"
@@ -32,7 +33,7 @@ bool in_range(const std::string& name) {
 }
 // S23 experiment (STRATA_HC_Q8=1): the hyper-connection projections' Q8_0 bytes for the verify read
 bool hc_q8_env() {
-    static const bool on = [] { const char* v = std::getenv("STRATA_HC_Q8"); return v != nullptr && v[0] == '1'; }();
+    static const bool on = [] { const char* v = strata::env("NOSTROMA_HC_Q8"); return v != nullptr && v[0] == '1'; }();
     return on;
 }
 bool hc_q8_name(const std::string& name) {
@@ -105,7 +106,7 @@ struct DenseSlab {
 DenseSlab& dense_slab() { static DenseSlab s; return s; }
 size_t dense_slab_bytes() {
     static const size_t v = [] {
-        if (const char* e = std::getenv("STRATA_DENSE_SLAB_MIB")) return (size_t) (std::atol(e) > 0 ? std::atol(e) : 0) << 20;
+        if (const char* e = strata::env("NOSTROMA_DENSE_SLAB_MIB")) return (size_t) (std::atol(e) > 0 ? std::atol(e) : 0) << 20;
         // on by default where it is measured: an Arc A-series card under the i915 driver (A750: 4K-token prompt 112.6 ->
         // 185.6 tok/s, output bit-identical); other drivers and cards keep one allocation per matrix
         return strata::intel_gpu_driver() == "i915" ? ((size_t) 256 << 20) : (size_t) 0;
@@ -394,7 +395,7 @@ bool NativeDense::load(const std::vector<std::string> &shards,
                 for (const auto& tensor : gguf.tensors()) {
                     // S25: the F32 inject rows hold BF16-exact values: the read takes the pack's BF16 rows unless
                     // STRATA_HC_Q8_INJECT=1 asks for a Q8_0 copy
-                    static const bool q8_inject = [] { const char* v = std::getenv("STRATA_HC_Q8_INJECT"); return v && v[0] == '1'; }();
+                    static const bool q8_inject = [] { const char* v = strata::env("NOSTROMA_HC_Q8_INJECT"); return v && v[0] == '1'; }();
                     const bool f32_inject = q8_inject && tensor.type == 0 && tensor.name.ends_with("_inject.weight");
                     if ((tensor.type != 8 && !f32_inject) || !hc_q8_name(tensor.name) || tensor.shape.size() != 2) continue;
                     auto found = table.table_.find(tensor.name);

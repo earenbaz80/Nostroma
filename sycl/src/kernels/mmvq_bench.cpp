@@ -1,6 +1,7 @@
 // sycl/src/kernels/mmvq_bench.cpp - SYCL port: time the dense native_mmvq kernels on random weights.
 //   mmvq_bench [n_in] [n_out] [ncols]      (weights are random bytes: dequant cost is data-independent)
 #include "strata/kernels/native_mmvq.hpp"
+#include "strata/env.hpp"
 #include <sycl/sycl.hpp>
 #include <dpct/dpct.hpp>
 #include <algorithm>
@@ -34,7 +35,7 @@ int main(int argc, char** argv) {
         strata::kernels::native_q6_k_mmvq(w, xq, y, n_in, n_out, ncols, s); s->wait(); s->memcpy(y1.data(), y, y1.size() * 4).wait();
         double num = 0, den = 0; for (size_t i = 0; i < y0.size(); ++i) { num += std::fabs((double) y0[i] - y1[i]); den += std::fabs((double) y0[i]); }
         std::printf("wide vs shared: rel %.3e over %zu outputs (first %g vs %g)\n", num / (den > 0 ? den : 1), y0.size(), y0[0], y1[0]);
-        strata::kernels::native_mmvq_set_q6k_wide(std::getenv("STRATA_MMVQ_WIDE") == nullptr || std::atoi(std::getenv("STRATA_MMVQ_WIDE")) != 0);
+        strata::kernels::native_mmvq_set_q6k_wide(strata::env("NOSTROMA_MMVQ_WIDE") == nullptr || std::atoi(strata::env("NOSTROMA_MMVQ_WIDE")) != 0);
     }
     {   // warm up until the clocks are up (~300 ms of work), then time
         const auto w0 = std::chrono::steady_clock::now();
@@ -55,7 +56,7 @@ int main(int argc, char** argv) {
     std::printf("q6_k mmvq %d x %d, %d cols: %.1f us  (%.1f GB/s of weights)  checksum %016llx\n", n_in, n_out, ncols, us, wbytes / us / 1e3, cs);
     // STRATA_BENCH_PLANAR=1 (#2340): the same matrix as STRATA_Q6_PLANAR planes, bitwise against the GGUF-layout result above; then a
     // gathered row subset (the MTP draft head's case) against the same rows of the full result. Exit 1 on any difference.
-    const char* pe = std::getenv("STRATA_BENCH_PLANAR");
+    const char* pe = strata::env("NOSTROMA_BENCH_PLANAR");
     if (pe && std::atoi(pe) != 0) {
         void* w2 = sycl::malloc_device(wbytes, *s);
         s->memcpy(w2, hw.data(), wbytes).wait();

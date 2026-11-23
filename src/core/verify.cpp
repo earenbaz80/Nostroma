@@ -5,6 +5,7 @@
 #define STRATA_VERIFY_HGL 1
 #endif
 #include "strata/core/batch_rows.hpp"
+#include "strata/env.hpp"
 #include "strata/core/sm75_series.hpp"
 #include "strata/core/sm120_series.hpp"
 #include "strata/core/defaults_026.hpp"
@@ -111,8 +112,8 @@ namespace {
 constexpr float EPS = 1e-6f;
 using Clock = std::chrono::steady_clock;
 double ms_since(Clock::time_point t) { return std::chrono::duration<double, std::milli>(Clock::now() - t).count(); }
-const bool g_dbg = std::getenv("STRATA_VERIFY_DEBUG") != nullptr;
-inline bool g_lfuse() { static const bool on = [] { const char* v = std::getenv("STRATA_LFUSE"); return v != nullptr && v[0] == '1'; }(); return on; }
+const bool g_dbg = strata::env("NOSTROMA_VERIFY_DEBUG") != nullptr;
+inline bool g_lfuse() { static const bool on = [] { const char* v = strata::env("NOSTROMA_LFUSE"); return v != nullptr && v[0] == '1'; }(); return on; }
 // STRATA_ROUTE_RESIDENT=<margin logits> (+ STRATA_ROUTE_RESIDENT_RANKS=lo-hi, default 6-9): residency-biased routing.
 struct RouteResidentCfg;
 RouteResidentCfg& route_resident_cfg();
@@ -168,20 +169,20 @@ struct RouteResidentCfg {
 RouteResidentCfg& route_resident_cfg() {
     static RouteResidentCfg c;
     static const bool parsed = [] {
-        if (const char* v = std::getenv("STRATA_ROUTE_RESIDENT")) c.margin = (float) std::atof(v);
-        if (const char* v = std::getenv("STRATA_ROUTE_RESIDENT_RANKS")) std::sscanf(v, "%d-%d", &c.lo, &c.hi);
+        if (const char* v = strata::env("NOSTROMA_ROUTE_RESIDENT")) c.margin = (float) std::atof(v);
+        if (const char* v = strata::env("NOSTROMA_ROUTE_RESIDENT_RANKS")) std::sscanf(v, "%d-%d", &c.lo, &c.hi);
         return true;
     }();
     (void) parsed;
     return c;
 }
-inline bool g_lfuse_gate() { static const bool on = [] { const char* v = std::getenv("STRATA_LFUSE_GATE"); return v == nullptr || v[0] != '0'; }(); return on; }
-inline bool g_lfuse_pair() { static const bool on = [] { const char* v = std::getenv("STRATA_LFUSE_PAIR"); return v == nullptr || v[0] != '0'; }(); return on; }
-inline bool g_qdedup() { static const bool on = [] { const char* v = std::getenv("STRATA_VERIFY_QDEDUP"); return v != nullptr && std::atoi(v) != 0; }(); return on; }
+inline bool g_lfuse_gate() { static const bool on = [] { const char* v = strata::env("NOSTROMA_LFUSE_GATE"); return v == nullptr || v[0] != '0'; }(); return on; }
+inline bool g_lfuse_pair() { static const bool on = [] { const char* v = strata::env("NOSTROMA_LFUSE_PAIR"); return v == nullptr || v[0] != '0'; }(); return on; }
+inline bool g_qdedup() { static const bool on = [] { const char* v = strata::env("NOSTROMA_VERIFY_QDEDUP"); return v != nullptr && std::atoi(v) != 0; }(); return on; }
 // S26 STRATA_QFUSE=1: activation q8_1 images written by their producers (the GDN output norm) - the same bytes
 // fork F4 (Eddoursul): 2-4 token dense projections read an interleaved copy of the q8_1 activations (bitwise the same
 // outputs); STRATA_MMVQ_IL=0 keeps native_mmvq's multi-column kernels
-inline bool g_mmvq_il() { static const bool on = [] { const char* v = std::getenv("STRATA_MMVQ_IL"); return v == nullptr || v[0] != '0'; }(); return on; }
+inline bool g_mmvq_il() { static const bool on = [] { const char* v = strata::env("NOSTROMA_MMVQ_IL"); return v == nullptr || v[0] != '0'; }(); return on; }
 // STRATA_SELECT_LONG=1 (opt-in): a window graph past select_long_at() cells takes the long-context QSA select
 // (qsa_block_topk_long's multi-CTA top-k through topk_scratch_, qsa_block_scores_long's shuffle-free decode scorer;
 // both compute capability 6.x by default, the same ids and score bits).  Each costs ~6 more kernels a call, which only
@@ -189,7 +190,7 @@ inline bool g_mmvq_il() { static const bool on = [] { const char* v = std::geten
 // verifier keeps a second set of window graphs for it.  Off: no scratch, no second graphs.
 inline bool select_long_on() {
     static const bool on = [] {
-        const char* v = std::getenv("STRATA_SELECT_LONG");
+        const char* v = strata::env("NOSTROMA_SELECT_LONG");
         if (v == nullptr || v[0] != '1') return false;
         if (strata::kernels::qsa_topk_multi_scratch_ints(1) <= 0) {   // a build without the multi-CTA kernels: no second graphs
             std::fprintf(stderr, "strata verify: STRATA_SELECT_LONG=1 needs the CUDA build with STRATA_EXPERIMENTAL_SM60; "
@@ -203,7 +204,7 @@ inline bool select_long_on() {
 // STRATA_SELECT_LONG_AT: the threshold in cells (default 65536; 0: always)
 inline int64_t select_long_at() {
     static const int64_t at = [] {
-        const char* v = std::getenv("STRATA_SELECT_LONG_AT");
+        const char* v = strata::env("NOSTROMA_SELECT_LONG_AT");
         return v != nullptr && v[0] != 0 ? (int64_t) std::atoll(v) : (int64_t) 65536;
     }();
     return at;
@@ -212,7 +213,7 @@ inline int64_t select_long_at() {
 inline bool g_qfuse_hc() {
 #if defined(STRATA_USE_HIP)
     static const bool on = [] {
-        const char* v = std::getenv("STRATA_QFUSE_HC");
+        const char* v = strata::env("NOSTROMA_QFUSE_HC");
         if (v != nullptr) return std::atoi(v) != 0;
         int dev = 0;
         cudaDeviceProp p;
@@ -230,7 +231,7 @@ inline bool g_qfuse_hc() {
 #if defined(STRATA_USE_HIP) || defined(STRATA_HIP_GFX906) || defined(STRATA_GPU_METAL)
     return false;
 #else
-    static const bool on = [] { const char* v = std::getenv("STRATA_GRAPH_PRIO"); return v != nullptr && std::atoi(v) != 0; }();
+    static const bool on = [] { const char* v = strata::env("NOSTROMA_GRAPH_PRIO"); return v != nullptr && std::atoi(v) != 0; }();
     return on;
 #endif
 }
@@ -260,7 +261,7 @@ inline cudaError_t prio_node_deps(cudaGraphNode_t node, cudaGraphNode_t* deps, s
 // branches of the window's graph (bitwise the same outputs); 0 = in line, and no branch stream is created.  Unset: 2 on a
 // compute capability 12.0 card (sm120_series.hpp; STRATA_SM120_PERF=0 turns it off), 0 elsewhere.
 inline int g_side_mixer() {
-    static const int env = [] { const char* v = std::getenv("STRATA_SIDE_MIXER"); return v ? std::max(0, std::min(2, std::atoi(v))) : -1; }();
+    static const int env = [] { const char* v = strata::env("NOSTROMA_SIDE_MIXER"); return v ? std::max(0, std::min(2, std::atoi(v))) : -1; }();
     if (env >= 0) return env;
 #if defined(STRATA_USE_HIP) || defined(STRATA_GPU_METAL)
     return 0;
@@ -285,11 +286,11 @@ inline int g_side_mixer() {
 // Measured on an RTX 3060 12 GB only (IQ3_XXS; at 1.5 story +15%, code +37% decode against off).  Any value in the variable wins on every card.
 // The value is read once.
 inline float g_route_prior() {
-    static const char* const env_s = std::getenv("STRATA_ROUTE_PRIOR");
+    static const char* const env_s = strata::env("NOSTROMA_ROUTE_PRIOR");
     static const float lambda = strata::route_prior_resolve(env_s, false, false, 0.0);
     return lambda;
 }
-inline bool g_qfuse() { static const bool on = [] { const char* v = std::getenv("STRATA_QFUSE"); return v != nullptr && std::atoi(v) != 0; }(); return on; }
+inline bool g_qfuse() { static const bool on = [] { const char* v = strata::env("NOSTROMA_QFUSE"); return v != nullptr && std::atoi(v) != 0; }(); return on; }
 #define VDBG(...) do { if (g_dbg) { std::fprintf(stderr, "verify dbg: " __VA_ARGS__); std::fflush(stderr); } } while (0)
 
 struct Bump {
@@ -306,19 +307,19 @@ struct Bump {
 //   STRATA_VERIFY_COHERENT=1  the handshake words and rows in explicitly coherent (fine-grained) host memory
 //   STRATA_DOORBELL_STORE=1   the GPU stores each step's ring instead of read-modify-writing it over PCIe
 bool env_on(const char* name) {
-    const char* e = std::getenv(name);
+    const char* e = strata::env(name);          // NOSTROMA_* wins, the old STRATA_* name still works (strata/env.hpp)
     return e != nullptr && e[0] != 0 && e[0] != '0';
 }
 #if defined(STRATA_USE_HIP)
-const bool g_coherent = env_on("STRATA_VERIFY_COHERENT");
-const bool g_doorbell_store = env_on("STRATA_DOORBELL_STORE");
+const bool g_coherent = env_on("NOSTROMA_VERIFY_COHERENT");
+const bool g_doorbell_store = env_on("NOSTROMA_DOORBELL_STORE");
 #endif
-const bool g_trace = env_on("STRATA_VERIFY_TRACE");
+const bool g_trace = env_on("NOSTROMA_VERIFY_TRACE");
 // STRATA_LAUNCH_PROBE (STRIX-TDR): process start, and the first windows' launch timing
 const Clock::time_point g_proc_t0 = Clock::now();
 Clock::time_point probe_proc_t0() { return g_proc_t0; }
-const bool g_no_multi_gr = env_on("STRATA_NO_MULTI_GR");   // #783 PR-g: per-token GR reads/writes and generic-T kernels again
-const bool g_no_batch_kv = env_on("STRATA_NO_BATCH_KV_STEP");   // #783 PR-d: per-token K/V and indexer appends again
+const bool g_no_multi_gr = env_on("NOSTROMA_NO_MULTI_GR");   // #783 PR-g: per-token GR reads/writes and generic-T kernels again
+const bool g_no_batch_kv = env_on("NOSTROMA_NO_BATCH_KV_STEP");   // #783 PR-d: per-token K/V and indexer appends again
 // STRATA_BATCH_SELF_COMMIT=1 (opt-in): a batch window whose rows are each another slot's one token keeps them itself,
 // as a one-token window does (record_window): the GDN conv histories and states advance inside the window graph, and
 // no commit graph runs after it.  Such a window's commit is unconditional (each slot keeps its one row), and the rest
@@ -326,13 +327,13 @@ const bool g_no_batch_kv = env_on("STRATA_NO_BATCH_KV_STEP");   // #783 PR-d: pe
 // same rows, the PLE histories are put back to the window's own snapshot.
 // Read at the first use, not at program start: the engine sets the Windows gfx1151 parallel-request defaults (arch_defaults.cpp) in main(),
 // after namespace-scope constants are initialised, so a constant here would never see them.
-bool batch_self_commit_on() { static const bool v = env_on("STRATA_BATCH_SELF_COMMIT"); return v; }
+bool batch_self_commit_on() { static const bool v = env_on("NOSTROMA_BATCH_SELF_COMMIT"); return v; }
 #define g_batch_self_commit (batch_self_commit_on())
 // STRATA_QSA_SLOTS=1 (opt-in): in a batch window, a QSA layer's block scores, top-k and attention run as one launch
 // each over the window's rows (up to 8 per launch, each row reading its own slot's indexer keys and K/V) instead of
 // one call per row; every row is computed by the same kernel with the same arithmetic as its own call.  Not with a
 // streamed KV cache (a row's block resolve could evict the blocks an earlier row of the same slot selected).
-bool qsa_slots_on() { static const bool v = env_on("STRATA_QSA_SLOTS"); return v; }
+bool qsa_slots_on() { static const bool v = env_on("NOSTROMA_QSA_SLOTS"); return v; }
 #define g_qsa_slots (qsa_slots_on())
 
 // every row of a batch window is another slot's (no slot has proposal rows)
@@ -356,7 +357,7 @@ bool batch_self_commits(const int* rows, int S) { return g_batch_self_commit && 
 // Read on first use, after that table ran.
 bool sh_stream_on() {
     static const bool on = [] {
-        if (const char* v = std::getenv("STRATA_SH_STREAM")) return v[0] != '0';
+        if (const char* v = strata::env("NOSTROMA_SH_STREAM")) return v[0] != '0';
 #if defined(STRATA_USE_HIP)
         return false;
 #else
@@ -376,7 +377,7 @@ bool sh_stream_on() {
 // 2 on HIP, 0 elsewhere (the CUDA path is unchanged).  STRATA_VERIFY_EARLY_PLE_FLAG=0 / 1 / 2 forces a mode.
 int early_ple_flag_mode() {
     static const int mode = [] {
-        if (const char* v = std::getenv("STRATA_VERIFY_EARLY_PLE_FLAG")) return std::atoi(v) < 0 ? 0 : std::min(2, std::atoi(v));
+        if (const char* v = strata::env("NOSTROMA_VERIFY_EARLY_PLE_FLAG")) return std::atoi(v) < 0 ? 0 : std::min(2, std::atoi(v));
 #if defined(STRATA_USE_HIP)
         return 2;
 #else
@@ -394,13 +395,13 @@ int early_ple_flag_mode() {
 bool head_mix_multi_enabled() {
 #if defined(STRATA_USE_HIP)
     static const bool on = [] {
-        const char* v = std::getenv("STRATA_HEAD_MIX_MULTI");
+        const char* v = strata::env("NOSTROMA_HEAD_MIX_MULTI");
         return v != nullptr && std::atoi(v) != 0;
     }();
     return on;
 #else
     static const bool on = [] {
-        const char* v = std::getenv("STRATA_HEAD_MIX_MULTI");
+        const char* v = strata::env("NOSTROMA_HEAD_MIX_MULTI");
         return v == nullptr || std::atoi(v) != 0;
     }();
     return on;
@@ -433,7 +434,7 @@ bool device_is_sm75() {
 bool fuse_wait_on() {
 #if defined(STRATA_USE_HIP)
     static const int env = [] {
-        const char* v = std::getenv("STRATA_FUSE_WAIT");
+        const char* v = strata::env("NOSTROMA_FUSE_WAIT");
         return v != nullptr ? (std::atoi(v) != 0 ? 1 : 0) : -1;
     }();
     if (env >= 0) return env != 0;
@@ -449,7 +450,7 @@ bool fuse_wait_on() {
     // CUDA: STRATA_FUSE_WAIT=1 folds both waits (the plan's and the CPU rows'), =2 only the plan's, =0 neither.  Turing
     // default 2 (RTX 2080 Ti, Flash-Next Q2_0, two runs each: +0.6..+1.4 % decode); the rows' version makes every row
     // block of the copy poll the flag over PCIe and was -1.5 % there, so it stays opt-in.
-    static const int env = [] { const char* v = std::getenv("STRATA_FUSE_WAIT"); return v != nullptr ? std::atoi(v) : -1; }();
+    static const int env = [] { const char* v = strata::env("NOSTROMA_FUSE_WAIT"); return v != nullptr ? std::atoi(v) : -1; }();
     if (env >= 0) return env == 1 || env == 2;
     return device_is_sm75();
 #endif
@@ -459,7 +460,7 @@ bool fuse_rows_on() {
 #if defined(STRATA_USE_HIP)
     return fuse_wait_on();
 #else
-    static const bool on = [] { const char* v = std::getenv("STRATA_FUSE_WAIT"); return v != nullptr && std::atoi(v) == 1; }();
+    static const bool on = [] { const char* v = strata::env("NOSTROMA_FUSE_WAIT"); return v != nullptr && std::atoi(v) == 1; }();
     return on;
 #endif
 }
@@ -467,7 +468,7 @@ bool fuse_rows_on() {
 // 143-amdk: STRATA_FUSE_CONVAB=1 - the GDN conv and the a/b projections in one launch.  Opt-in: measured -0.3% on gfx1201 (the a/b dot chain is the longer one).
 bool fuse_convab_on() {
 #if defined(STRATA_USE_HIP)
-    static const bool on = [] { const char* v = std::getenv("STRATA_FUSE_CONVAB"); return v != nullptr && std::atoi(v) != 0; }();
+    static const bool on = [] { const char* v = strata::env("NOSTROMA_FUSE_CONVAB"); return v != nullptr && std::atoi(v) != 0; }();
     return on;
 #else
     return false;
@@ -477,7 +478,7 @@ bool fuse_convab_on() {
 // 143-amdk: STRATA_FUSE_HITS - moe_hit_add folded into the combine (gfx12 default; =0 / 1 forces off / on)
 bool fuse_hits_on() {
 #if defined(STRATA_USE_HIP)
-    static const int env = [] { const char* v = std::getenv("STRATA_FUSE_HITS"); return v != nullptr ? (std::atoi(v) != 0 ? 1 : 0) : -1; }();
+    static const int env = [] { const char* v = strata::env("NOSTROMA_FUSE_HITS"); return v != nullptr ? (std::atoi(v) != 0 ? 1 : 0) : -1; }();
     if (env >= 0) return env != 0;
     static int per_dev[64];   // 0 unknown, 1 no, 2 yes
     int dev = 0;
@@ -495,13 +496,13 @@ bool fuse_hits_on() {
 bool one_token_self_commit() {
 #if defined(STRATA_USE_HIP)
     static const bool on = [] {
-        const char* v = std::getenv("STRATA_ONE_TOKEN_COMMIT");   // HIP: opt-in (=1)
+        const char* v = strata::env("NOSTROMA_ONE_TOKEN_COMMIT");   // HIP: opt-in (=1)
         return v != nullptr && std::atoi(v) != 0;
     }();
     return on;
 #else
     static const bool on = [] {
-        const char* v = std::getenv("STRATA_ONE_TOKEN_COMMIT");
+        const char* v = strata::env("NOSTROMA_ONE_TOKEN_COMMIT");
         return v == nullptr || std::atoi(v) != 0;
     }();
     return on;
@@ -594,20 +595,20 @@ std::string released_note(bool drained) {
 // #267 test hook: STRATA_TEST_VERIFY_STALL=N withholds the last layer's flag in the N-th window (1-based), so the
 // GPU spins on a flag nobody raises - the bounded window wait and the release are then what ends it.  Unset: never.
 const int64_t g_test_stall = [] {
-    const char* e = std::getenv("STRATA_TEST_VERIFY_STALL");
+    const char* e = strata::env("NOSTROMA_TEST_VERIFY_STALL");
     return e != nullptr ? (int64_t) std::atoll(e) : (int64_t) 0;
 }();
 // The overlapped split's hand-off wait on the GPU is bounded: STRATA_SPLIT_WAIT_MS (default 30000, 0 = no bound).
 // The host's own per-layer wait (20 s, #267) normally ends a stalled window first; this bound is the backstop for
 // a host that is gone (a killed process must not leave a kernel spinning on its card).
 const unsigned long long g_split_wait_ns = [] {
-    const char* e = std::getenv("STRATA_SPLIT_WAIT_MS");
+    const char* e = strata::env("NOSTROMA_SPLIT_WAIT_MS");
     return (unsigned long long) (e != nullptr ? std::atoll(e) : 30000) * 1000000ull;
 }();
 // test hook: STRATA_TEST_HANDOFF_DROP=N - the writing stage's N-th window (1-based) leaves its hand-off flag down, as
 // if the publish were lost; the reading stage's bounded wait (or the host's) must then end the window cleanly.
 const int64_t g_test_drop = [] {
-    const char* e = std::getenv("STRATA_TEST_HANDOFF_DROP");
+    const char* e = strata::env("NOSTROMA_TEST_HANDOFF_DROP");
     return e != nullptr ? (int64_t) std::atoll(e) : (int64_t) 0;
 }();
 }  // namespace
@@ -988,7 +989,7 @@ bool Verifier::init(const WeightTable& wt, const ModelGeometry& g, SessionState&
               mapped(T * K * N * 4, (void**) &h_ymiss_, (void**) &m_ymiss_);
     if (!ok) { err = "verify: mapped staging allocation failed " + strata::core::pin_exhausted_hint(); return false; }
     // DFlash2 taps: set_taps (the drafter) or STRATA_TAP_FILE (the research dump); off, and nothing is allocated or captured, otherwise
-    const char* tap_path = std::getenv("STRATA_TAP_FILE");
+    const char* tap_path = strata::env("NOSTROMA_TAP_FILE");
     if (tap_path != nullptr && tap_path[0] == '\0') tap_path = nullptr;
     // A layer split's stage taps the requested layers inside its own range [lb_, le_) into its own buffer [max_t][its taps][n_embd];
     // gather_taps() lands every stage's rows on the drafter's card.  The research dump (STRATA_TAP_FILE) needs the whole model in one verifier.
@@ -999,7 +1000,7 @@ bool Verifier::init(const WeightTable& wt, const ModelGeometry& g, SessionState&
         if (tap_path == nullptr) {
             for (int l : tap_req_) if (l >= lb_ && l < le_ && l < g.n_layers - 1) tap_layers_.push_back(l);
         } else {
-            const char* tl = std::getenv("STRATA_TAP_LAYERS");
+            const char* tl = strata::env("NOSTROMA_TAP_LAYERS");
             std::string list = tl != nullptr && tl[0] != '\0' ? tl : "5,15,25,35,45";
             for (size_t i = 0; i < list.size();) {
                 const size_t j = list.find(',', i);
@@ -1151,8 +1152,8 @@ bool Verifier::init(const WeightTable& wt, const ModelGeometry& g, SessionState&
         std::fprintf(stderr, "strata verify trace (#649): on\n");
 #endif
     }
-    prof_on_ = std::getenv("STRATA_VERIFY_PROFILE") != nullptr;
-    if (const char* rs = std::getenv("STRATA_ROUTE_STATS"); rs != nullptr && rs[0] == '1') {
+    prof_on_ = strata::env("NOSTROMA_VERIFY_PROFILE") != nullptr;
+    if (const char* rs = strata::env("NOSTROMA_ROUTE_STATS"); rs != nullptr && rs[0] == '1') {
         const size_t nrs = (size_t) 17 * (size_t) g.n_layers * 16;   // [T 0..16][layer][row 0..15]
         if (cudaMalloc((void**) &rs_dev_, nrs * 8) == cudaSuccess) {
             cudaMemset(rs_dev_, 0, nrs * 8);
@@ -1204,8 +1205,8 @@ bool Verifier::init(const WeightTable& wt, const ModelGeometry& g, SessionState&
     auto make_stream = [&](cudaStream_t* s, int gp = 0) -> cudaError_t {
 #if !defined(STRATA_USE_HIP) && !defined(STRATA_HIP_GFX906)
         static const bool hi = [] {   // (STRATA_PIPED_CONCURRENT_PRIO=0: the default priority)
-            const char* v = std::getenv("STRATA_PIPED_CONCURRENT");
-            const char* p = std::getenv("STRATA_PIPED_CONCURRENT_PRIO");
+            const char* v = strata::env("NOSTROMA_PIPED_CONCURRENT");
+            const char* p = strata::env("NOSTROMA_PIPED_CONCURRENT_PRIO");
             return v != nullptr && std::atoi(v) != 0 && (p == nullptr || std::atoi(p) != 0);
         }();
         int lo = 0, top = 0;
@@ -1230,7 +1231,7 @@ bool Verifier::init(const WeightTable& wt, const ModelGeometry& g, SessionState&
     // its own (ROCm hands queues out per priority).  Sharing one with the window's stream, --pcie-mode dma's copies and
     // their host function queue behind the window's graph, which spins on the flag they raise (a timeout at layer 1).
     {
-        static const bool cp = [] { const char* v = std::getenv("STRATA_COPY_HIP_PRIO"); return v != nullptr && std::atoi(v) != 0; }();
+        static const bool cp = [] { const char* v = strata::env("NOSTROMA_COPY_HIP_PRIO"); return v != nullptr && std::atoi(v) != 0; }();
         int lo = 0, hi = 0;
         if (cp && hipDeviceGetStreamPriorityRange(&lo, &hi) == hipSuccess)
             copy_made = hipStreamCreateWithPriority(&copy_, hipStreamNonBlocking, hi) == hipSuccess;
@@ -1256,7 +1257,7 @@ bool Verifier::init(const WeightTable& wt, const ModelGeometry& g, SessionState&
     {   // STRATA_DF_BRANCH=1 (opt-in): the mixer's side branches.  Off by default: on Linux (open modules, GSP) a
         // stage's window with the branches stopped inside its graph when an NVML query (nvidia-smi) came between
         // requests (2x RTX 3090 and 2x RTX 2080 Ti, #905); never seen on Windows.  0 / unset: one stream, as before
-        const char* v = std::getenv("STRATA_DF_BRANCH");
+        const char* v = strata::env("NOSTROMA_DF_BRANCH");
         df_branch_ = v != nullptr && std::atoi(v) != 0;
         if (df_branch_ && df_fork_ == nullptr) {
             bool okb = cudaEventCreateWithFlags(&df_fork_, cudaEventDisableTiming) == cudaSuccess;
@@ -1276,7 +1277,7 @@ bool Verifier::init(const WeightTable& wt, const ModelGeometry& g, SessionState&
         strata::dispatch::note("init: all-resident graph declined: no expert table on this device (no cache, or no residency map)");
     if (h_plan_err_ != nullptr) *(volatile uint32_t*) h_plan_err_ = 0;
     if (hits.h_res != nullptr && hits.d_res != nullptr && hits.cache_base != nullptr) {
-        const char* v_ar = std::getenv("STRATA_VERIFY_ALL_RESIDENT");
+        const char* v_ar = strata::env("NOSTROMA_VERIFY_ALL_RESIDENT");
         if (v_ar == nullptr || std::atoi(v_ar) != 0) {
             bool all_ok = true;
             for (int64_t l = lb_; l < le_ && all_ok; ++l) {
@@ -1306,7 +1307,7 @@ bool Verifier::init(const WeightTable& wt, const ModelGeometry& g, SessionState&
     // E-6: a layer whose routed experts are all resident is planned on the device (STRATA_VERIFY_DEVICE_PLAN=1: on;
     // exact, but neutral on RIBPC 1-2 GPUs: off by default)
     {
-        const char* v = std::getenv("STRATA_VERIFY_DEVICE_PLAN");
+        const char* v = strata::env("NOSTROMA_VERIFY_DEVICE_PLAN");
         // (not with set_always_publish: the device table may lag the host's while windows are in flight)
         device_plan_ = !all_resident_ && !always_publish_ && (v != nullptr && std::atoi(v) != 0);
     }
@@ -1369,7 +1370,7 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
     const int G = ((split_ && T >= 2) || T > kVerifyMaxT) && !batch_rec_ ? 2 : 1;
     // Pipelined windows must wait for the host verdict/snapshot fence before mutating state.
     const bool self_commit = T == 1 && !always_publish_ && !batch_rec_ && !g_qfuse() && one_token_self_commit();   // see Verifier::commit
-    static const bool dec_batch = [] { const char* v = std::getenv("STRATA_DEC_BATCH"); return v == nullptr || std::atoi(v) != 0; }();
+    static const bool dec_batch = [] { const char* v = strata::env("NOSTROMA_DEC_BATCH"); return v == nullptr || std::atoi(v) != 0; }();
     // fork 34a35db: the GDN gates and the QSA indexer beside the projections (STRATA_SIDE_MIXER=1; 0 / unset = in line)
     const int side_mixer_mode = g_side_mixer();
     const bool side_mixer = side_mixer_mode >= 1;
@@ -1402,12 +1403,12 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
         bool prev;
         explicit PdlScope(bool on) : prev(pdl_scope()) { pdl_scope() = on; }
         ~PdlScope() { pdl_scope() = prev; }
-    } pdl_window(G == 1 && pdl_supported() && (std::getenv("STRATA_DF_PDL") != nullptr || (ar_on() && !batch_rec_)));
+    } pdl_window(G == 1 && pdl_supported() && (strata::env("NOSTROMA_DF_PDL") != nullptr || (ar_on() && !batch_rec_)));
     // BW-MEASURE (dispatch counters, include/strata/core/dispatch_stats.hpp): the window's counts go to the bin of this T and graph kind
     // (0 = zero-doorbell all-resident, 1 = doorbell graph with CPU / PCIe experts, 2 = batch)
     strata::dispatch::Scope dsp_scope(T, batch_rec_ ? 2 : (ar_on() ? 0 : 1));
     strata::dispatch::notef("win groups=%ld all_resident=%ld device_plan=%ld", (long) G, (long) ar_on(), (long) device_plan_);
-    strata::dispatch::notef("win pdl=%ld side_mixer=%ld side_proj=%ld", (long) (G == 1 && pdl_supported() && (std::getenv("STRATA_DF_PDL") != nullptr || (ar_on() && !batch_rec_))), (long) side_mixer_mode, (long) side_proj);
+    strata::dispatch::notef("win pdl=%ld side_mixer=%ld side_proj=%ld", (long) (G == 1 && pdl_supported() && (strata::env("NOSTROMA_DF_PDL") != nullptr || (ar_on() && !batch_rec_))), (long) side_mixer_mode, (long) side_proj);
     strata::dispatch::notef("win df_branch=%ld sh_stream=%ld prof=%ld", (long) (df_branch_ && G == 1 && !batch_rec_ && !prof_on_ && !side_mixer), (long) sh_stream_on(), (long) prof_on_);
     // STRATA_DF_BRANCH: mixer work that reads only the layer's input runs on a side stream inside the graph.  fork(i)
     // makes side i depend on everything captured on `cs` so far, join(i) makes `cs` depend on everything captured on
@@ -1508,7 +1509,7 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
             }
             float* normalized = (float*) ((uint8_t*) ss.ple.scratch + ple_block_scratch_bytes());
             static const bool ple_batch_env = [] {
-                const char* e = std::getenv("STRATA_PLE_BATCH");
+                const char* e = strata::env("NOSTROMA_PLE_BATCH");
                 return !e || e[0] != '0';
             }();
             const bool ple_batch_kv = ple_batch_env && dec_batch && n > 1 && ss.ple.w.key_bf16 != nullptr &&
@@ -1517,7 +1518,7 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
             // S25 (STRATA_PLE_BATCH=1): the key and value projections depend only on each row's n-gram embedding, so
             // the group's rows run through the multi-row forms of the same kernels (the weights read once); every
             // row's arithmetic is the single-row call's. The history-dependent rest stays row by row.
-            static const bool ple_batch = [] { const char* e = std::getenv("STRATA_PLE_BATCH"); return e && e[0] == '1'; }();
+            static const bool ple_batch = [] { const char* e = strata::env("NOSTROMA_PLE_BATCH"); return e && e[0] == '1'; }();
             PleWeights pw = ss.ple.w;
             const bool nkey = pw.key_native_data != nullptr && pw.key_bf16 == nullptr;
             const bool batched = !ple_batch_kv && ple_batch && n > 1 && (pw.key_bf16 != nullptr || nkey) && ple_native_bf16_enabled();
@@ -1552,7 +1553,7 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
             // writes the commit's history snapshots.  Scratch: layer 0's expert rows, combined by now, and the
             // hyper-connection read's `lo_`, which the read below rewrites.
             static const bool ple_post_env = [] {
-                const char* e = std::getenv("STRATA_DF_PLE");
+                const char* e = strata::env("NOSTROMA_DF_PLE");
                 return e != nullptr && std::atoi(e) != 0;
             }();
             const bool ple_post = ple_batch_kv && ple_post_env && !batch_rec_;
@@ -1625,7 +1626,7 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
         };
         const bool q8_attn = gr_read_group(0, pending, inj2_, inj_);   // true: xq_ holds mixed's q8_1 (STRATA_QFUSE)
         {   // measurement only: STRATA_DUMMY_NODES=k adds k empty kernel nodes per layer (what one node costs in a window)
-            static const int dummy = [] { const char* e = std::getenv("STRATA_DUMMY_NODES"); return e != nullptr ? std::atoi(e) : 0; }();
+            static const int dummy = [] { const char* e = strata::env("NOSTROMA_DUMMY_NODES"); return e != nullptr ? std::atoi(e) : 0; }();
             for (int d = 0; d < dummy; ++d) gpu_noop(cs);
         }
         if (inputs_pending) {   // the window's steps and positions, before the first mixer reads them
@@ -1640,7 +1641,7 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
         // forces it off / on
         auto quant_in = [&](const float* x, int n_in) {
 #if !defined(STRATA_USE_HIP)
-            static const int qil_env = [] { const char* v = std::getenv("STRATA_QIL"); return v != nullptr ? std::atoi(v) : -1; }();
+            static const int qil_env = [] { const char* v = strata::env("NOSTROMA_QIL"); return v != nullptr ? std::atoi(v) : -1; }();
             const bool qil = qil_env >= 0 ? qil_env != 0 : device_is_sm75();
             if (qil && n >= 2 && n <= 4 && g_mmvq_il()) {
                 strata::kernels::native_quantize_q8_1_il(x, xq_, xil_, n_in, n, cs);
@@ -1764,7 +1765,7 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
                 }
                 // the recurrence from the untouched state over tokens [0, te); outputs only for this group's
                 static const bool gdn_groups_on = [] {   // STRATA_BATCH_GDN_GROUPS=1, all slots in one launch
-                    const char* v = std::getenv("STRATA_BATCH_GDN_GROUPS");
+                    const char* v = strata::env("NOSTROMA_BATCH_GDN_GROUPS");
                     return v != nullptr && std::atoi(v) != 0;
                 }();
                 if (batch_rec_ && gdn_groups_on && te - tb <= 8) {
@@ -1843,7 +1844,7 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
                 // the first verify graph launch with --kv q4_0 + KV streaming + MTP; whether the graph size is the cause is
                 // not confirmed)
                 static const bool qb_q4 = [] {
-                    const char* e = std::getenv("STRATA_DF_QB_Q4");
+                    const char* e = strata::env("NOSTROMA_DF_QB_Q4");
                     return e == nullptr || std::atoi(e) != 0;
                 }();
                 const bool qb = dec_batch && n > 1 && native_qsa_enabled() && native_rope_enabled() && (!st.kv_q4 || qb_q4);
@@ -2069,7 +2070,7 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
                 // instead of 3-4 one-row launches per row; the same per-row arithmetic.  Not with KV streaming
                 // (qsa_kv_resolve has work per slot then).
                 static const bool attn_rows = [] {
-                    const char* v = std::getenv("STRATA_BATCH_ATTN_ROWS");
+                    const char* v = strata::env("NOSTROMA_BATCH_ATTN_ROWS");
                     return v != nullptr && std::atoi(v) != 0;
                 }();
                 bool rows_ok = batch_rec_ && attn_rows && te - tb <= strata::kernels::kAttnRowsMax;
@@ -2156,7 +2157,7 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
                 if (qbr) join(0);   // the query, for attention
                 const QsaAttnPools pools = qsa_attn_pools(st);
                 // STRATA_QSA_SPLIT_ATTN=1: the split tensor-core attention where it applies (int8 KV, sm_80+)
-                static const bool split_attn = [] { const char* v = std::getenv("STRATA_QSA_SPLIT_ATTN"); return v != nullptr && std::atoi(v) != 0; }();
+                static const bool split_attn = [] { const char* v = strata::env("NOSTROMA_QSA_SPLIT_ATTN"); return v != nullptr && std::atoi(v) != 0; }();
                 if (!(split_attn && qsa_decode_attn_split(qcur_ + tb * NH * HD, pools, sel_ + (size_t) tb * cap_,
                                                           step_ + tb * kStepCount, cap_, s,
                                                           attn_scratch_ + (size_t) tb * attn_scratch_floats_,
@@ -2193,7 +2194,7 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
         // with CPU experts in the window the shared expert forks off once the doorbell is published (it no longer
         // competes with it for the GPU's first microseconds); STRATA_SH_FORK_LATE=0 forks at the top as before
         static const bool sh_fork_late_env = [] {
-            const char* e = std::getenv("STRATA_SH_FORK_LATE");
+            const char* e = strata::env("NOSTROMA_SH_FORK_LATE");
             return !e || e[0] != '0';
         }();
         const bool sh_fork = sh_stream_on() && !prof_on_ && sh_cs_ != nullptr && ev_fork_ != nullptr && ev_join_ != nullptr;
@@ -2345,7 +2346,7 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
 
     // ---------------------------------------------------------------- post(l, group): experts, combine
     static const bool fuse_head_gr_env = [] {
-        const char* e = std::getenv("STRATA_FUSE_HEAD_GR");
+        const char* e = strata::env("NOSTROMA_FUSE_HEAD_GR");
         return e && e[0] == '1';
     }();
     const bool fuse_head_gr = fuse_head_gr_env && (le_ == g.n_layers) && (head_ != nullptr && head_->loaded()) &&
@@ -2794,7 +2795,7 @@ bool Verifier::capture(int T, std::string& err) {
         return false;
     }
 #if defined(STRATA_USE_HIP)   // 143-amdk: the same listing on HIP (kernel names by hipKernelNameRefByPtr); STRATA_VERIFY_NODES=2 also lists the first nodes in graph order
-    if (std::getenv("STRATA_VERIFY_NODES") != nullptr) {
+    if (strata::env("NOSTROMA_VERIFY_NODES") != nullptr) {
         size_t nn = 0;
         hipGraphGetNodes(graph, nullptr, &nn);
         std::vector<hipGraphNode_t> nodes(nn);
@@ -2822,7 +2823,7 @@ bool Verifier::capture(int T, std::string& err) {
             } else if (ty == hipGraphNodeTypeMemcpy) name = "memcpy";
             else if (ty == hipGraphNodeTypeMemset) name = "memset";
             ++kinds[name];
-            if (std::atoi(std::getenv("STRATA_VERIFY_NODES")) >= 2 && shown++ < 400) seq += "\n  " + name.substr(0, 110);
+            if (std::atoi(strata::env("NOSTROMA_VERIFY_NODES")) >= 2 && shown++ < 400) seq += "\n  " + name.substr(0, 110);
         }
         std::vector<std::pair<int, std::string>> v;
         for (auto& [k2, c] : kinds) v.push_back({c, k2});
@@ -2833,7 +2834,7 @@ bool Verifier::capture(int T, std::string& err) {
     }
 #endif
 #if !defined(STRATA_USE_HIP) && !defined(STRATA_GPU_METAL)   // a CUDA debug listing (node types, kernel names)
-    if (std::getenv("STRATA_VERIFY_NODES") != nullptr) {   // what the window graph holds
+    if (strata::env("NOSTROMA_VERIFY_NODES") != nullptr) {   // what the window graph holds
         size_t nn = 0;
         cudaGraphGetNodes(graph, nullptr, &nn);
         std::vector<cudaGraphNode_t> nodes(nn);
@@ -2898,7 +2899,7 @@ bool Verifier::capture(int T, std::string& err) {
     }
 #endif
 #if defined(STRATA_USE_HIP)
-    if (env_on("STRATA_LAUNCH_PROBE")) {   // STRIX-TDR: how many nodes (about one AQL packet each) the window graph holds
+    if (env_on("NOSTROMA_LAUNCH_PROBE")) {   // STRIX-TDR: how many nodes (about one AQL packet each) the window graph holds
         size_t nn = 0, nk = 0;
         hipGraphGetNodes(graph, nullptr, &nn);
         std::vector<hipGraphNode_t> nodes(nn);
@@ -2953,7 +2954,7 @@ bool Verifier::capture_commit(std::string& err) {
 #if defined(STRATA_GPU_METAL)   // no batched commit kernels on Metal: the per-layer loop (the Mac engine's gated path)
         static const bool commit_batch = false;
 #else
-        static const bool commit_batch = [] { const char* e = std::getenv("STRATA_COMMIT_BATCH"); return !e || e[0] != '0'; }();
+        static const bool commit_batch = [] { const char* e = strata::env("NOSTROMA_COMMIT_BATCH"); return !e || e[0] != '0'; }();
 #endif
         bool gdn_batched = false;
         if (commit_batch) {
@@ -3328,7 +3329,7 @@ bool Verifier::run(int T, const int32_t* tokens, int64_t pos0, PoolMultiFn pool,
         *(volatile uint32_t*) h_flag_ = 1;
         flag_raised = true;
     }
-    static const bool probe_on = env_on("STRATA_LAUNCH_PROBE");
+    static const bool probe_on = env_on("NOSTROMA_LAUNCH_PROBE");
     static std::atomic<int> probe_count{0};
     const int probe_idx = probe_on && !pre ? probe_count.fetch_add(1) : -1;
     const bool probe_this = probe_idx >= 0 && probe_idx < 12;
@@ -3347,7 +3348,7 @@ bool Verifier::run(int T, const int32_t* tokens, int64_t pos0, PoolMultiFn pool,
 #if defined(STRATA_VERIFY_HGL)
         // A blocking instrumented launch cannot also serve the graph's CPU doorbells.
         static const bool threaded_launch = [] {
-            const char* value = std::getenv("STRATA_VERIFY_ASYNC_LAUNCH");
+            const char* value = strata::env("NOSTROMA_VERIFY_ASYNC_LAUNCH");
             return value != nullptr && value[0] == '1';
         }();
         strata::dispatch::Stats::get().graph_launch(T, ar_on() ? 0 : 1);
@@ -3667,7 +3668,7 @@ bool Verifier::run(int T, const int32_t* tokens, int64_t pos0, PoolMultiFn pool,
     // the same place STRATA_DBG_NAN copies from).  One record is
     // {int32 magic, int32 T, int32 n_vocab, int32 record, int64 position}, then T * n_vocab FP32 rows; row 0 is
     // the window's first position (the last prompt token of a prefill), which is what a KL comparison wants.
-    if (const char* logits_path = std::getenv("STRATA_LOGITS_DUMP")) {
+    if (const char* logits_path = strata::env("NOSTROMA_LOGITS_DUMP")) {
         static std::FILE* lf = std::fopen(logits_path, "wb");
         static int32_t lrec = 0;
         if (lf != nullptr) {
@@ -3690,7 +3691,7 @@ bool Verifier::run(int T, const int32_t* tokens, int64_t pos0, PoolMultiFn pool,
             }
         }
     }
-    if (static const bool dbg = std::getenv("STRATA_DBG_NAN") != nullptr; dbg) {   // debug: the first non-finite head
+    if (static const bool dbg = strata::env("NOSTROMA_DBG_NAN") != nullptr; dbg) {   // debug: the first non-finite head
         static bool reported = false;
         if (!reported) {
             std::vector<float> h((size_t) T * (size_t) n_vocab_);
@@ -3830,7 +3831,7 @@ bool Verifier::window_logprobs(const int32_t* targets, int T, int64_t pos0, int3
     // before the rows are scored, so the token-forcing checker (tools/force_check.py) can be shown to reject a faulty build
     {
         static const std::pair<int64_t, float> fault = [] {
-            const char* v = std::getenv("STRATA_FORCE_FAULT");
+            const char* v = strata::env("NOSTROMA_FORCE_FAULT");
             long long m = 0;
             float b = 0.0f;
             if (v != nullptr && std::sscanf(v, "%lld:%f", &m, &b) == 2 && m > 0) return std::make_pair((int64_t) m, b);
@@ -3865,7 +3866,7 @@ bool Verifier::window_logprobs(const int32_t* targets, int T, int64_t pos0, int3
         // STRATA_LOGPOS_TOPK=K: the K most likely tokens and their log-probabilities too (`id:logprob`), for a
         // top-k comparison with another engine on the same tokens (docs/UNSLOTH_Q4.md)
         static const int topk = [] {
-            const char* v = std::getenv("STRATA_LOGPOS_TOPK");
+            const char* v = strata::env("NOSTROMA_LOGPOS_TOPK");
             return v != nullptr ? std::max(0, std::min(256, std::atoi(v))) : 0;
         }();
         if (topk > 0) {
@@ -3883,7 +3884,7 @@ bool Verifier::window_logprobs(const int32_t* targets, int T, int64_t pos0, int3
 }
 
 namespace { bool g_commit_async = false; }
-void Verifier::set_commit_async(bool on) { g_commit_async = on && std::getenv("STRATA_COMMIT_SYNC") == nullptr; }
+void Verifier::set_commit_async(bool on) { g_commit_async = on && strata::env("NOSTROMA_COMMIT_SYNC") == nullptr; }
 
 bool Verifier::commit(int n_keep, std::string& err) {
 #if defined(STRATA_GPU_METAL)
@@ -3907,7 +3908,7 @@ bool Verifier::commit(int n_keep, std::string& err) {
             cudaEvent_t b = nullptr, e = nullptr;
             double ms = 0;
             int64_t n = 0;
-            CommitTiming() { const char* v = std::getenv("STRATA_COMMIT_TIMING"); on = v != nullptr && v[0] == '1'; }
+            CommitTiming() { const char* v = strata::env("NOSTROMA_COMMIT_TIMING"); on = v != nullptr && v[0] == '1'; }
         } ct;
         if (ct.on && ct.b == nullptr &&
             (cudaEventCreate(&ct.b) != cudaSuccess || cudaEventCreate(&ct.e) != cudaSuccess)) { ct.on = false; (void) cudaGetLastError(); }
@@ -4089,7 +4090,7 @@ bool Verifier::capture_commit_batch(const int* rows, int S, int hbase, std::stri
                 // STRATA_BATCH_GDN_GROUPS=1: one-row groups (no --batch-mtp proposals) commit their recurrence
                 // in one launch for all slots; the conv commits stay per slot
                 static const bool gdn_groups_on = [] {
-                    const char* v = std::getenv("STRATA_BATCH_GDN_GROUPS");
+                    const char* v = strata::env("NOSTROMA_BATCH_GDN_GROUPS");
                     return v != nullptr && std::atoi(v) != 0;
                 }();
                 bool one_row = S <= 8;
@@ -5105,7 +5106,7 @@ int Verifier::batch_poll(PoolMultiFn pool, void* user, std::string& err) {
 // #879: STRATA_NAN_GUARD=0 turns the guard off (no kernel is recorded; the graphs are captured once, so it is read once)
 bool Verifier::nan_guard_on() {
     static const bool on = [] {
-        const char* v = std::getenv("STRATA_NAN_GUARD");
+        const char* v = strata::env("NOSTROMA_NAN_GUARD");
         return v == nullptr || std::atoi(v) != 0;
     }();
     return on;
@@ -5116,7 +5117,7 @@ namespace {
 const std::vector<long long>& nan_inject_list() {
     static const std::vector<long long> list = [] {
         std::vector<long long> v;
-        if (const char* e = std::getenv("STRATA_NAN_INJECT"))
+        if (const char* e = strata::env("NOSTROMA_NAN_INJECT"))
             for (const char* q = e; *q != 0;) {
                 char* end = nullptr;
                 const long long n = std::strtoll(q, &end, 10);

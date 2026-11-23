@@ -2,6 +2,7 @@
 //
 // See include/strata/kernels/ngram.hpp for the semantics, the rival readings, and the note on MADV_RANDOM.
 #include "strata/kernels/ngram.hpp"
+#include "strata/env.hpp"
 #include "strata/artifact/gguf_reader.hpp"
 #include "strata/artifact/dequant.hpp"
 #include "strata/kernels/f16_bits.hpp"
@@ -276,7 +277,7 @@ struct PleTable::Impl {
     uint64_t table_offset = 0;
     mutable int check_reports = 0;
     static bool check_on() {
-        static const bool on = [] { const char* v = std::getenv("STRATA_PLE_CHECK"); return v != nullptr && std::atoi(v) != 0; }();
+        static const bool on = [] { const char* v = strata::env("NOSTROMA_PLE_CHECK"); return v != nullptr && std::atoi(v) != 0; }();
         return on;
     }
     /// One decoded row (`out160`, from `raw`): when a value is not finite or beyond 1e5 (a real PLE value is orders smaller; the

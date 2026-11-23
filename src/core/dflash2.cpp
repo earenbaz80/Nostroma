@@ -1,5 +1,6 @@
 // src/core/dflash2.cpp - see include/strata/core/dflash2.hpp.
 #include "strata/core/dflash2.hpp"
+#include "strata/env.hpp"
 
 #include "strata/core/native_head.hpp"
 #include "strata/core/on_device.hpp"
@@ -81,7 +82,7 @@ void Dflash2Drafter::prof_free() {
 
 // STRATA_DF2_SKIP=attn,head,ctx,mlp,qkvo (measurement only): leaves those parts out of the round, so the graph's GPU time without them can be read
 static bool skip_part(const char* what) {
-    static const std::string list = [] { const char* e = std::getenv("STRATA_DF2_SKIP"); return std::string(e ? e : ""); }();
+    static const std::string list = [] { const char* e = strata::env("NOSTROMA_DF2_SKIP"); return std::string(e ? e : ""); }();
     return !list.empty() && list.find(what) != std::string::npos;
 }
 
@@ -213,12 +214,12 @@ bool Dflash2Drafter::make_streams(std::string& err) {
     // (CUDA by default; on HIP only with STRATA_DF2_PRIO=1, where the engine's other streams keep the default priority)
     int prio_lo = 0, prio_hi = 0;
 #if defined(STRATA_USE_HIP)
-    static const bool hi_prio = [] { const char* e = std::getenv("STRATA_DF2_PRIO"); return e && e[0] == '1'; }();
+    static const bool hi_prio = [] { const char* e = strata::env("NOSTROMA_DF2_PRIO"); return e && e[0] == '1'; }();
     if (hi_prio) hipDeviceGetStreamPriorityRange(&prio_lo, &prio_hi);
     if (hipStreamCreateWithPriority(&cs_, hipStreamNonBlocking, hi_prio ? prio_hi : 0) != cudaSuccess ||
         hipStreamCreateWithPriority(&cs2_, hipStreamNonBlocking, hi_prio ? prio_hi : 0) != cudaSuccess) {
 #else
-    static const bool hi_prio = [] { const char* e = std::getenv("STRATA_DF2_PRIO"); return !(e && e[0] == '0'); }();
+    static const bool hi_prio = [] { const char* e = strata::env("NOSTROMA_DF2_PRIO"); return !(e && e[0] == '0'); }();
     cudaDeviceGetStreamPriorityRange(&prio_lo, &prio_hi);
     if (cudaStreamCreateWithPriority(&cs_, cudaStreamNonBlocking, hi_prio ? prio_hi : 0) != cudaSuccess ||
         cudaStreamCreateWithPriority(&cs2_, cudaStreamNonBlocking, hi_prio ? prio_hi : 0) != cudaSuccess) {
@@ -233,8 +234,8 @@ bool Dflash2Drafter::make_streams(std::string& err) {
     }
     for (int l = 0; l < 8; ++l)
         if (cudaEventCreateWithFlags(&ev_ctx_[l], cudaEventDisableTiming) != cudaSuccess) { err = "dflash2: events"; return false; }
-    if (const char* e = std::getenv("STRATA_DF2_PROFILE"); e && e[0] == '1') prof_ = new Prof();
-    if (const char* e = std::getenv("STRATA_DF2_TIMING"); e && e[0] == '1') {
+    if (const char* e = strata::env("NOSTROMA_DF2_PROFILE"); e && e[0] == '1') prof_ = new Prof();
+    if (const char* e = strata::env("NOSTROMA_DF2_TIMING"); e && e[0] == '1') {
         timing_ = true;
         cudaEventCreate(&ev_a_);
         cudaEventCreate(&ev_b_);
@@ -343,7 +344,7 @@ bool Dflash2Drafter::bind(const WeightTable& wt, const NativeHead* head, const s
     const void* hw = head->weights();
     const int64_t row_bytes = (int64_t) head->row_bytes();
     int64_t head_rows = row_bytes > 0 ? (int64_t) (head->weight_bytes() / (uint64_t) row_bytes) : 0;
-    if (!vocab.empty() && shared_.rows != nullptr && !std::getenv("STRATA_DF2_SHARE_HEAD_OFF") && shared_.type == head->type() &&
+    if (!vocab.empty() && shared_.rows != nullptr && !strata::env("NOSTROMA_DF2_SHARE_HEAD_OFF") && shared_.type == head->type() &&
         shared_.n == (int64_t) vocab.size() && shared_.vocab_host != nullptr && *shared_.vocab_host == vocab && shared_.vocab_dev != nullptr) {
         // DF-05: the MTP drafter gathered these very rows (same vocabulary ids in the same order, the main head's own layout and type): use them
         dhead_ = const_cast<uint8_t*>(shared_.rows);
@@ -521,7 +522,7 @@ bool Dflash2Drafter::record_block(cudaStream_t cs, std::string& err, bool rope) 
         }
         if (!skip_part("head")) {
             // the verify window's head kernel (interleaved activations, rows a warp by the card's table): bitwise native_mmvq's output, so the drafts are the same
-            static const bool il_on = [] { const char* e = std::getenv("STRATA_DF2_HEAD_IL"); return !(e && e[0] == '0'); }();
+            static const bool il_on = [] { const char* e = strata::env("NOSTROMA_DF2_HEAD_IL"); return !(e && e[0] == '0'); }();
             if (il_on && native_mmvq_il_supported(head_type_, ndraft_, (int) n_dvocab_)) {
                 native_q8_1_interleave(xq_, xil_, N_, ndraft_, cs);
                 native_mmvq_il(head_type_, head_w_, xq_, xil_, logits_, N_, (int) n_dvocab_, ndraft_, cs);
@@ -556,7 +557,7 @@ bool Dflash2Drafter::capture(int n, const float* taps, std::string& err) {
 #else
     static const bool fork_default = true;
 #endif
-    static const bool fork_on = [] { const char* e = std::getenv("STRATA_DF2_FORK"); return e && e[0] ? e[0] == '1' : fork_default; }();
+    static const bool fork_on = [] { const char* e = strata::env("NOSTROMA_DF2_FORK"); return e && e[0] ? e[0] == '1' : fork_default; }();
     fork_ = fork_on && prof_ == nullptr && cs2_ != nullptr;
     if (fork_) {
         cudaEventRecord(ev_fork_, cs_);
@@ -748,9 +749,9 @@ uint64_t Dflash2Drafter::ring_stash_bytes() const {
 void Dflash2Drafter::init_ring_log() {
     const OnDevice on_device(device_);
     for (int64_t& t : slot_pos_) t = -1;
-    const char* off = std::getenv("STRATA_DF2_RING_LOG");
+    const char* off = strata::env("NOSTROMA_DF2_RING_LOG");
     if (off && off[0] == '0') { log_on_ = false; return; }
-    if (const char* e = std::getenv("STRATA_DF2_LOG_MIB"); e && e[0]) stash_budget_ = (uint64_t) std::max(0, std::atoi(e)) << 20;
+    if (const char* e = strata::env("NOSTROMA_DF2_LOG_MIB"); e && e[0]) stash_budget_ = (uint64_t) std::max(0, std::atoi(e)) << 20;
     if (h_logq_ == nullptr && cudaHostAlloc((void**) &h_logq_, (size_t) kRows * N_, cudaHostAllocDefault) != cudaSuccess) h_logq_ = nullptr;
     if (h_logd_ == nullptr && cudaHostAlloc((void**) &h_logd_, (size_t) kRows * (N_ / 32) * 4, cudaHostAllocDefault) != cudaSuccess) h_logd_ = nullptr;
     log_on_ = h_logq_ != nullptr && h_logd_ != nullptr;
@@ -822,7 +823,7 @@ bool Dflash2Drafter::rebuild(int64_t lo, int64_t hi, int64_t* rebuilt, int64_t* 
         if (slot_pos_[(size_t) (p % kRing)] == (((int64_t) epoch_ << 32) | p)) continue;   // the ring already holds this row
         if (cur_.logged(p)) pos.push_back((int32_t) p);
         else {
-            if (++*missing <= 8 && std::getenv("STRATA_DF2_RING_STATS") != nullptr) std::fprintf(stderr, "strata dflash2 ring: position %lld was never logged (hist %zu)\n", (long long) p, cur_.hist.size());
+            if (++*missing <= 8 && strata::env("NOSTROMA_DF2_RING_STATS") != nullptr) std::fprintf(stderr, "strata dflash2 ring: position %lld was never logged (hist %zu)\n", (long long) p, cur_.hist.size());
         }
     }
     if (pos.empty()) return true;
@@ -941,7 +942,7 @@ bool Dflash2Drafter::begin_request(const int32_t* ids, int64_t n, int64_t resume
             rebuilt = 0;
         }
     }
-    static const bool verbose = std::getenv("STRATA_DF2_RING_STATS") != nullptr;
+    static const bool verbose = strata::env("NOSTROMA_DF2_RING_STATS") != nullptr;
     if (verbose)
         std::fprintf(stderr, "strata dflash2 ring: request %lld resume %lld of %lld: live log %.1f MiB (%lld positions), parked %zu lineages %.1f MiB, rebuilt %lld rows (missing %lld) in %.2f ms%s\n",
                      (long long) ring_stats.requests, (long long) resume, (long long) n, (double) cur_.bytes() / 1048576.0, (long long) cur_.hist.size(), stash_.size(),

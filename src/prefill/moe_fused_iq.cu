@@ -20,6 +20,7 @@
 // ldmatrix.  The products are mma.sync m16n8k32 (m16n8k16 for the formats with a scale per 16 values); the epilogues
 // (SwiGLU, H to int8 per 32 features; down into the per-slot rows) are moe_fused.cu's.
 #include "strata/prefill/moe_fused_iq.hpp"
+#include "strata/env.hpp"
 #include "strata/prefill/pf_fused_override.hpp"
 #include "strata/prefill/fused_tile_rule.hpp"
 #include "strata/prefill/fused_tq_default.hpp"
@@ -2256,25 +2257,25 @@ int host_astages() {
 // STRATA_PF_FUSED_Q50 on CUDA: "1" sets the Q5_0 down kernels up (dev_info) and lets native_supported take the Q5_0-down layers on
 // any sm_80+ card; anything else (unset, "0") keeps those layers on the dequantize + FP16 GEMM path (the default)
 bool q50_cuda_requested() {
-    static const bool on = [] { const char* v = std::getenv("STRATA_PF_FUSED_Q50"); return v != nullptr && v[0] == '1'; }();
+    static const bool on = [] { const char* v = strata::env("NOSTROMA_PF_FUSED_Q50"); return v != nullptr && v[0] == '1'; }();
     return on;
 }
 // STRATA_PF_FUSED_Q8D on CUDA: "1" sets the Q8_0 down kernels up (dev_info) and lets native_supported take a Q8_0 down behind an i-quant
 // gate/up (the pinned UD-IQ4_XS: IQ3_S / Q8_0 in 4 layers, IQ4_XS / Q8_0 in 1) on any sm_80+ card; anything else keeps those layers on MMQ
 bool q8d_cuda_requested() {
-    static const bool on = [] { const char* v = std::getenv("STRATA_PF_FUSED_Q8D"); return v != nullptr && v[0] == '1'; }();
+    static const bool on = [] { const char* v = strata::env("NOSTROMA_PF_FUSED_Q8D"); return v != nullptr && v[0] == '1'; }();
     return on;
 }
 // STRATA_PF_FUSED_Q8GU on CUDA: "1" sets the Q8_0 gate/up kernels up (dev_info) and lets native_supported take a Q8_0 gate/up with a Q8_0
 // down (the Q8_0 set's 48 layers, UD-Q6_K_XL's one Q8_0 layer) on any sm_80+ card; anything else keeps those layers on MMQ
 bool q8gu_cuda_requested() {
-    static const bool on = [] { const char* v = std::getenv("STRATA_PF_FUSED_Q8GU"); return v != nullptr && v[0] == '1'; }();
+    static const bool on = [] { const char* v = strata::env("NOSTROMA_PF_FUSED_Q8GU"); return v != nullptr && v[0] == '1'; }();
     return on;
 }
 // STRATA_PF_FUSED_Q6K on CUDA: "1" sets the Q6_K gate/up kernels up (dev_info) and lets native_supported take a Q6_K gate/up with a Q8_0
 // down (UD-Q6_K_XL's 47 layers, UD-Q5_K_XL's one Q6_K layer) on any sm_80+ card; anything else keeps those layers on MMQ
 bool q6k_cuda_requested() {
-    static const bool on = [] { const char* v = std::getenv("STRATA_PF_FUSED_Q6K"); return v != nullptr && v[0] == '1'; }();
+    static const bool on = [] { const char* v = strata::env("NOSTROMA_PF_FUSED_Q6K"); return v != nullptr && v[0] == '1'; }();
     return on;
 }
 // STRATA_PF_FUSED_TQ on CUDA (the rule is include/strata/prefill/fused_tq_default.hpp, pinned by tests/prefill/fused_tq_default_test.cpp): unset = the trellis kernels are
@@ -2318,15 +2319,15 @@ template <int T, bool GU> void t75_setup(DevInfo& d, int& occ) {
 // STRATA_PF_FUSED_NT=256 (sm_80+, opt-in): the 256-thread kernels (native_kernel's NT)
 // STRATA_PF_FUSED_F16=1 (sm_80+, opt-in, changes the output at rounding level): the NT = 256 kernels' F16 products
 bool f16c_requested() {
-    static const bool on = [] { const char* v = std::getenv("STRATA_PF_FUSED_F16"); return v != nullptr && v[0] == '1'; }();
+    static const bool on = [] { const char* v = strata::env("NOSTROMA_PF_FUSED_F16"); return v != nullptr && v[0] == '1'; }();
     return on;
 }
 bool nt256_requested() {
-    static const bool on = [] { const char* v = std::getenv("STRATA_PF_FUSED_NT"); return v != nullptr && std::atoi(v) == 256; }();
+    static const bool on = [] { const char* v = strata::env("NOSTROMA_PF_FUSED_NT"); return v != nullptr && std::atoi(v) == 256; }();
     return on || f16c_requested();
 }
 bool ws_requested() {
-    static const bool on = [] { const char* v = std::getenv("STRATA_PF_FUSED_WS"); return v != nullptr && v[0] == '1'; }();
+    static const bool on = [] { const char* v = strata::env("NOSTROMA_PF_FUSED_WS"); return v != nullptr && v[0] == '1'; }();
     return on;
 }
 template <int T, bool GU> bool setup_ws() {
@@ -2350,7 +2351,7 @@ template <int T, bool GU> bool setup_nt(int& occ) {
 // work items and arithmetic: the results do not change).  STRATA_PF_OCC=N sets the blocks per WGP (an experiment knob).
 static int wgp_blocks(int occ) {
     static const int env = [] {
-        const char* v = std::getenv("STRATA_PF_OCC");
+        const char* v = strata::env("NOSTROMA_PF_OCC");
         return v != nullptr ? std::atoi(v) : 0;
     }();
     return env > 0 ? env : 2 * std::max(occ, 1);
@@ -2363,7 +2364,7 @@ static int wgp_blocks(int occ) {
 // STRATA_PF_OCC_W=N sets it for every occupancy variant (an experiment knob).
 static int occ_blocks(bool w12, int type, bool gu) {
     static const int env = [] {
-        const char* v = std::getenv("STRATA_PF_OCC_W");
+        const char* v = strata::env("NOSTROMA_PF_OCC_W");
         return v != nullptr ? std::atoi(v) : 0;
     }();
     if (env > 0) return env;
@@ -2420,20 +2421,20 @@ const DevInfo& dev_info() {
     d.s120 = strata::sm120_default(major, minor);   // (takes the raw attributes, as is_sm120 does)
     d.s121 = major == 12 && minor == 1;             // GB10 (DGX Spark): its own tile threshold, see pick_ww
     // the sm_86 rule class (raw attributes, as s120; fused_tile::s86_class: compute capability 8.6, and since 11-12 8.0 and 8.9): STRATA_PF_FUSED_SM86=0 is a diagnostic for bug reports (MMQ on these cards again); it goes with MMQ
-    static const bool sm86_off = [] { const char* v = std::getenv("STRATA_PF_FUSED_SM86"); return v != nullptr && v[0] == '0'; }();
+    static const bool sm86_off = [] { const char* v = strata::env("NOSTROMA_PF_FUSED_SM86"); return v != nullptr && v[0] == '0'; }();
     d.s86 = strata::prefill::fused_tile::s86_class(major, minor, sm86_off);
     major = strata::cc_major_of(major);   // STRATA_EMULATE_CC counts (tests)
     minor = strata::cc_minor_of(minor);
     cudaDeviceGetAttribute(&d.sms, cudaDevAttrMultiProcessorCount, dev);
     // Turing (sm_75): the same kernels with plain copies and m8n8k16 MMAs, opt-in (STRATA_PF_FUSED_SM75=1)
-    static const bool sm75 = [] { const char* v = std::getenv("STRATA_PF_FUSED_SM75"); return v != nullptr && v[0] == '1'; }();
+    static const bool sm75 = [] { const char* v = strata::env("NOSTROMA_PF_FUSED_SM75"); return v != nullptr && v[0] == '1'; }();
     if (major < 8 && !(major == 7 && minor == 5 && sm75)) return d;
     int occ = 1 << 20;
     if (major < 8) {   // Turing: the canonical Q2_0 pack's kernels (the codebook formats' do not fit 64 KB at 4 warps a row)
         d.t75 = true;
         d.ok = setup_one<T_Q2_0, true>(occ) && setup_one<T_Q2_0, false>(occ);
         // the i-quant pairs (kT75Formats) on the same kernels, in a build that takes the Turing set (STRATA_PF_FUSED_SM75); STRATA_PF_FUSED_SM75_IQ=0 leaves them off (a diagnostic: the int8 dp4a kernels again)
-        static const bool iq_off = [] { const char* v = std::getenv("STRATA_PF_FUSED_SM75_IQ"); return v != nullptr && v[0] == '0'; }();
+        static const bool iq_off = [] { const char* v = strata::env("NOSTROMA_PF_FUSED_SM75_IQ"); return v != nullptr && v[0] == '0'; }();
         if (d.ok && !iq_off) {
             t75_setup<T_IQ2_XXS, true>(d, occ); t75_setup<T_IQ2_XS, true>(d, occ); t75_setup<T_IQ2_S, true>(d, occ);
             t75_setup<T_IQ3_XXS, true>(d, occ); t75_setup<T_IQ3_S, true>(d, occ); t75_setup<T_IQ4_XS, true>(d, occ);
@@ -2449,7 +2450,7 @@ const DevInfo& dev_info() {
     // STRATA_PF_FUSED_Q2N=1: the native Q2_0 pack's Q2_0 gate/up on these kernels here too (what #2145 took with
     // STRATA_PF_FUSED=1 on every CUDA card until b6443f3a kept it to Turing).  Its own variable, so STRATA_PF_FUSED=1 keeps
     // its bits: unset, the kernel is not set up and the Q2_0 layers keep MMQ.  A failed setup leaves occ as it was.
-    static const bool q2n = [] { const char* v = std::getenv("STRATA_PF_FUSED_Q2N"); return v != nullptr && v[0] == '1'; }();
+    static const bool q2n = [] { const char* v = strata::env("NOSTROMA_PF_FUSED_Q2N"); return v != nullptr && v[0] == '1'; }();
     if (int o2 = occ; q2n && d.ok && setup_one<T_Q2_0, true>(o2)) { d.q2n = true; occ = o2; }
     d.occ = d.ok ? occ : 1;
     // STRATA_PF_FUSED_Q50=1 (opt-in on CUDA, off by default): the Q5_0 down projections (UD-IQ4_XS v31: 33 of 48 layers, which have
@@ -2464,8 +2465,8 @@ const DevInfo& dev_info() {
     // The decode is the HIP kernels' (load_unit / convert: int8 codes, a scale and a minimum per 32 values); the minimum enters as s1 d_x (sum of the activation
     // codes), from the sums quant_act_nat_kernel and the K-quant gate/up epilogue store in the spare bytes.  Their own occupancy (occ_kq); a failed setup leaves
     // those layers on MMQ.  (kq_on() below is the HIP builds' reading of the switch; strata-q36 sets STRATA_PF_FUSED_KQ=1 itself, so its cards are unchanged.)
-    static const int kq_env = strata::prefill::fused_tile::pf_env(std::getenv("STRATA_PF_FUSED_KQ"));
-    static const int kq_sm40_env = strata::prefill::fused_tile::sm40_env_of(std::getenv("STRATA_PF_FUSED_SM40"));
+    static const int kq_env = strata::prefill::fused_tile::pf_env(strata::env("NOSTROMA_PF_FUSED_KQ"));
+    static const int kq_sm40_env = strata::prefill::fused_tile::sm40_env_of(strata::env("NOSTROMA_PF_FUSED_SM40"));
     const bool kq_want = strata::prefill::fused_tile::kq_takes(kq_env, {d.s120, d.s121, d.sms, d.s86}, kq_sm40_env);
     if (int o4 = 1 << 20; d.ok && kq_want && setup_one<T_Q4_K, true>(o4) && setup_one<T_Q5_K, true>(o4) && setup_one<T_Q5_1, false>(o4)) {
         d.kq = true;
@@ -2533,13 +2534,13 @@ const DevInfo& dev_info() {
 // expert path's at rounding level; KL-gated, see aurora_s23.md)
 bool kq_on() {
     static const bool on = [] {
-        const char* v = std::getenv("STRATA_PF_FUSED_KQ");
+        const char* v = strata::env("NOSTROMA_PF_FUSED_KQ");
         if (v != nullptr && v[0] != '\0') return v[0] == '1';
 #if defined(__HIPCC__) && defined(_WIN32)
         // Round 0215 (STRIX-FIT): on a Strix Halo (gfx1151) under Windows the K-quant experts of UD-Q4_K_XL (Q4_K / Q5_K gate/up, Q5_1 / Q8_0 down)
         // take the fused matrix-core kernels (the F16 ones with STRATA_PF_F16=1, which the gfx1151 prompt set turns on) by default.
         // STRATA_PF_FUSED_KQ=0 or STRATA_GFX1151_DEFAULTS=0 keeps the earlier route.
-        const char* off = std::getenv("STRATA_GFX1151_DEFAULTS");
+        const char* off = strata::env("NOSTROMA_GFX1151_DEFAULTS");
         if (off != nullptr && off[0] == '0') return false;
         int dev = 0;
         cudaDeviceProp prop;
@@ -2598,7 +2599,7 @@ bool d_covered(int t) {
 bool q8d_f16_default(const DevInfo& d) {
 #if defined(__HIPCC__)
     if (d.w12 || !d.g1151) return false;
-    static const bool off = [] { const char* v = std::getenv("STRATA_PF_Q8D_F16"); return v != nullptr && v[0] == '0'; }();
+    static const bool off = [] { const char* v = strata::env("NOSTROMA_PF_Q8D_F16"); return v != nullptr && v[0] == '0'; }();
     return !off;
 #else
     (void) d;
@@ -2617,11 +2618,11 @@ bool q8d_f16_default(const DevInfo& d) {
 bool q50_on(const DevInfo& d) {
 #if defined(__HIPCC__)
     if (!d.w12 && !d.g1151) return false;
-    static const int env = [] { const char* v = std::getenv("STRATA_PF_FUSED_Q50"); return v == nullptr || v[0] == '\0' ? -1 : (v[0] == '1' ? 1 : 0); }();
+    static const int env = [] { const char* v = strata::env("NOSTROMA_PF_FUSED_Q50"); return v == nullptr || v[0] == '\0' ? -1 : (v[0] == '1' ? 1 : 0); }();
     if (env >= 0) return env == 1;
     if (d.w12) return strata::core::kGfx12PromptDefaultsOn;   // gfx12: on by default under Linux, opt-in under Windows
 #if defined(_WIN32)
-    const char* off = std::getenv("STRATA_GFX1151_DEFAULTS");
+    const char* off = strata::env("NOSTROMA_GFX1151_DEFAULTS");
     return !(off != nullptr && off[0] == '0');
 #else
     return false;
@@ -2637,25 +2638,25 @@ bool q50_on(const DevInfo& d) {
 // The same switch as CUDA's.  No new kernel: the gfx12 int8 Q8_0 down instances exist for the K-quant route.  gfx11 keeps its own rules (q8d_f16_default,
 // STRATA_PF_F16): not measured with this switch.
 bool q8d_hip_requested() {
-    static const bool on = [] { const char* v = std::getenv("STRATA_PF_FUSED_Q8D"); return v != nullptr && v[0] == '1'; }();
+    static const bool on = [] { const char* v = strata::env("NOSTROMA_PF_FUSED_Q8D"); return v != nullptr && v[0] == '1'; }();
     return on;
 }
 // STRATA_PF_FUSED_TQ on HIP (phase 4, opt-in, gfx12 only): "1" lets Gyro-S's TQK6 / TQK7 and Gyro-M's TQ2_T / TQ2_T layers take native_w11_kernel's
 // trellis instances instead of MMQ (the decode is CUDA's: 15-bit states, MMQ's int8 codebook tq_lut_i8, one scale a 128-value block; Hadamard-folded
 // downs through the FP32-H epilogue and rot_quant_h_kernel, as on CUDA).  The same switch as CUDA's.  gfx1151: STRATA_PF_TQ_G1151 (below); other gfx11: keeps its path.
 bool tq_hip_requested() {
-    static const bool on = [] { const char* v = std::getenv("STRATA_PF_FUSED_TQ"); return v != nullptr && v[0] == '1'; }();
+    static const bool on = [] { const char* v = strata::env("NOSTROMA_PF_FUSED_TQ"); return v != nullptr && v[0] == '1'; }();
     return on;
 }
 // STRATA_PF_TQ_G1151 (internal): gfx1151 (Strix Halo) takes the trellis instances too, with STRATA_PF_FUSED_TQ=1 (a build without MMQ sets it): 1 on, any other value
 // off, unset = fused_tq_hip::kG1151DefaultOn under Windows (STRATA_GFX1151_DEFAULTS=0 off).  The rule: include/strata/prefill/fused_tq_hip.hpp, pinned by
 // tests/prefill/fused_tq_hip_test.cpp.  gfx12 is unchanged (STRATA_PF_FUSED_TQ=1 alone); every other HIP device keeps its path.
 static int tq_g1151_switch() {
-    static const int v = strata::prefill::fused_tq_hip::parse_switch(std::getenv("STRATA_PF_TQ_G1151"));
+    static const int v = strata::prefill::fused_tq_hip::parse_switch(strata::env("NOSTROMA_PF_TQ_G1151"));
     return v;
 }
 static bool tq_g1151_defaults_off() {
-    static const bool off = [] { const char* v = std::getenv("STRATA_GFX1151_DEFAULTS"); return v != nullptr && v[0] == '0'; }();
+    static const bool off = [] { const char* v = strata::env("NOSTROMA_GFX1151_DEFAULTS"); return v != nullptr && v[0] == '0'; }();
     return off;
 }
 #if defined(_WIN32)
@@ -2675,14 +2676,14 @@ static bool tq_hip_pair(const DevInfo& d, bool gyro_s, bool gyro_m) {
 // layer) take native_w11_kernel's Q8_0 gate/up instance instead of MMQ (32-value blocks, two a stage, like the Q8_0 down; the same decode as CUDA's).  The
 // same switch as CUDA's.  gfx11: not measured, keeps MMQ.
 bool q8gu_hip_requested() {
-    static const bool on = [] { const char* v = std::getenv("STRATA_PF_FUSED_Q8GU"); return v != nullptr && v[0] == '1'; }();
+    static const bool on = [] { const char* v = strata::env("NOSTROMA_PF_FUSED_Q8GU"); return v != nullptr && v[0] == '1'; }();
     return on;
 }
 // STRATA_PF_FUSED_Q6K on HIP (phase 4, opt-in, gfx12 only): "1" lets a Q6_K gate/up with a Q8_0 down (UD-Q6_K_XL's 47 layers, UD-Q5_K_XL's one) take
 // native_w11_kernel's Q6_K gate/up instance instead of MMQ (the K-quant library, STRATA_MMQ_KQ=1, on gfx12).  256-value superblocks, an int8 scale per
 // 16 values (native_w11's per-16 path), the same decode as CUDA's.  The same switch as CUDA's.  gfx11: not measured, keeps its route.
 bool q6k_hip_requested() {
-    static const bool on = [] { const char* v = std::getenv("STRATA_PF_FUSED_Q6K"); return v != nullptr && v[0] == '1'; }();
+    static const bool on = [] { const char* v = strata::env("NOSTROMA_PF_FUSED_Q6K"); return v != nullptr && v[0] == '1'; }();
     return on;
 }
 #endif
@@ -2803,7 +2804,7 @@ bool staged_blobs_ok(const Batch& b, const NativeGeom& g) {
 // STRATA_PF_FUSED_TILE=64|128 as a work item (4 / 2), 0 when the variable does not force one.  Read once.
 int forced_ww() {
     static const int forced = [] {
-        const char* v = std::getenv("STRATA_PF_FUSED_TILE");
+        const char* v = strata::env("NOSTROMA_PF_FUSED_TILE");
         const int t = v ? std::atoi(v) : 0;
         return t == 64 ? 4 : t == 128 ? 2 : 0;
     }();
@@ -2818,7 +2819,7 @@ int pick_ww(int64_t n, int n_expert, bool staged, bool wide, int kq) {
     const strata::prefill::fused_tile::Pick pk = strata::prefill::fused_tile::pick({d.s120, d.s121, d.sms, d.s86}, n, n_expert, staged, wide, kq);
     using strata::prefill::fused_tile::Why;
     if (pk.why != Why::kBand) {
-        static const bool dbg = [] { const char* v = std::getenv("STRATA_PF_TILE_DEBUG"); return v != nullptr && v[0] == '1'; }();
+        static const bool dbg = [] { const char* v = strata::env("NOSTROMA_PF_TILE_DEBUG"); return v != nullptr && v[0] == '1'; }();
         if (dbg) {
             const double avg = (double) n / std::max(n_expert, 1);
             const char* cls = pk.why == Why::kS121 ? "s121" : pk.why == Why::kS120Small ? "s120 small" : pk.why == Why::kStaged ? "staged" : pk.why == Why::kS86Wide ? "s86 wide" : pk.why == Why::kS86Kq ? "s86 kq" : pk.why == Why::kS120Kq ? "s120 kq" : "s120";
@@ -2864,8 +2865,8 @@ int staged_blob_fallbacks() {
 
 bool gfx12_iq2s_default() {
     static const bool on = [] {
-        const char* v = std::getenv("STRATA_PF_FUSED_IQ2S");
-        const char* all = std::getenv("STRATA_PF_FUSED");
+        const char* v = strata::env("NOSTROMA_PF_FUSED_IQ2S");
+        const char* all = strata::env("NOSTROMA_PF_FUSED");
         // ON by default on gfx12 (owner decision 11-01, amd-q RESULTS.md section 12; the quick quality suite lost 2 of 19 tasks with it on, the full suite
         // decided).  STRATA_PF_FUSED_IQ2S=0 turns it off, as does STRATA_PF_FUSED=0.
         return strata::core::kGfx12PromptDefaultsOn && !(v != nullptr && v[0] == '0') && !(all != nullptr && all[0] == '0');
@@ -2880,8 +2881,8 @@ bool gfx12_iq2s_default() {
 // Windows gfx12: opt-in (STRATA_PF_FUSED=1), as before.  Like gfx12_iq2s_default, native_supported applies it to gfx12 cards only (d.w12).
 static bool gfx12_iq2x_default() {
     static const bool on = [] {
-        const char* v = std::getenv("STRATA_PF_FUSED_IQ2X");
-        const char* all = std::getenv("STRATA_PF_FUSED");
+        const char* v = strata::env("NOSTROMA_PF_FUSED_IQ2X");
+        const char* all = strata::env("NOSTROMA_PF_FUSED");
         return strata::core::kGfx12PromptDefaultsOn && !(v != nullptr && v[0] == '0') && !(all != nullptr && all[0] == '0');
     }();
     return on;
@@ -2890,7 +2891,7 @@ static bool gfx12_iq2x_default() {
 
 bool native_supported(int gu_type, int d_type) {
     static const bool off = [] {   // STRATA_PF_FUSED_NATIVE=0: the native packs keep MMQ under STRATA_PF_FUSED=1 (A/B)
-        const char* v = std::getenv("STRATA_PF_FUSED_NATIVE");
+        const char* v = strata::env("NOSTROMA_PF_FUSED_NATIVE");
         return v != nullptr && v[0] == '0';
     }();
     // gfx12: fused::available() (the Q2_0 pack's expert_w11_kernel, not ported) stays false, so requested() does too; the
@@ -2899,7 +2900,7 @@ bool native_supported(int gu_type, int d_type) {
     // prompt path equal to MMQ's within noise, 96 prompts each; Q2_0: prompt 4K +16.7%, 20K +19.0%, teacher-forced KL 0.0004 / 0.0016,
     // tasks equal to MMQ's); STRATA_PF_FUSED=0 turns it off, =1 keeps the opt-in for every covered format
     static const int env_set = [] {
-        const char* v = std::getenv("STRATA_PF_FUSED");
+        const char* v = strata::env("NOSTROMA_PF_FUSED");
         return v == nullptr || v[0] == '\0' ? -1 : (v[0] == '1' ? 1 : 0);
     }();
     // the small-card prompt path (pf_fused_override.hpp) reads an unset STRATA_PF_FUSED as 1
@@ -2943,7 +2944,7 @@ bool native_supported(int gu_type, int d_type) {
     // path, w4a4 for Blackwell's FP4 MMA: both stay as they are).  The kernels' arithmetic is MMQ's w4a8 class (int8 products, FP32 scales, the weight_scale_2 values on the FP32 products).
     // Not with the NT = 256 / warp-specialized opt-ins (no NVFP4 form of theirs).
     if (gu_type == T_NVFP4 || d_type == T_NVFP4) {
-        static const bool mode_ok = [] { const char* v = std::getenv("STRATA_PREFILL_NVFP4"); return v == nullptr || v[0] == '\0' || std::strcmp(v, "w4a8") == 0; }();
+        static const bool mode_ok = [] { const char* v = strata::env("NOSTROMA_PREFILL_NVFP4"); return v == nullptr || v[0] == '\0' || std::strcmp(v, "w4a8") == 0; }();
         const DevInfo& d = dev_info();
         return gu_type == T_NVFP4 && d_type == T_NVFP4 && env_set == 1 && mode_ok && d.ok && d.nvfp4 && !d.t75 && d.occ_nt <= 0 && !d.ws;
     }
@@ -2985,7 +2986,7 @@ bool native_supported(int gu_type, int d_type) {
         // the owner's word of 11-12 (RTX A4000, IQ3_XXS set, end to end: prompt time MMQ / fused 1.000 / 1.003 / 1.028 / 1.012 at 2K / 4K / 8K / 20K, forced-token KL against the FP16 prompt path
         // 0.930 [0.881, 0.988] at 2,048 and 0.973 [0.898, 1.057] at 8,192 ids); STRATA_PF_FUSED_SM40=0 takes them back to MMQ (a diagnostic like STRATA_PF_FUSED_SM86=0).  The rule itself is
         // fused_tile::default_takes_env (unit-tested over every card flag, SM count, switch state and launch kind).  This whole branch is CUDA-only (the #if !defined(__HIPCC__) above): a HIP build never reads it.
-        static const int sm40_env = [] { const char* v = std::getenv("STRATA_PF_FUSED_SM40"); return v == nullptr ? -1 : (v[0] == '0' ? 0 : 1); }();
+        static const int sm40_env = [] { const char* v = strata::env("NOSTROMA_PF_FUSED_SM40"); return v == nullptr ? -1 : (v[0] == '0' ? 0 : 1); }();
         return d.ok && strata::prefill::fused_tile::default_takes_env(env, {d.s120, d.s121, d.sms, d.s86}, sm40_env, sw_on(gu_type, true), d_type == T_IQ4_NL || d_type == T_Q2_0, gu_type) && !d.t75 &&
                d_covered_on(d_type, d);
     }
@@ -3065,7 +3066,7 @@ static thread_local bool g_p1a_used = false;
 bool p1a_wanted() {
 #if defined(__HIPCC__)
     static const bool on = [] {
-        const char* v = std::getenv("STRATA_PF_P1A");
+        const char* v = strata::env("NOSTROMA_PF_P1A");
         return v != nullptr && v[0] == '1' && v[1] == '\0' && dev_info().g1151;
     }();
     return on;
@@ -3075,7 +3076,7 @@ bool p1a_wanted() {
 }
 [[maybe_unused]] static bool p1a_l2() {
 #if defined(__HIPCC__)
-    static const bool on = [] { const char* v = std::getenv("STRATA_PF_P1A_L2"); return v != nullptr && v[0] == '1' && v[1] == '\0'; }();
+    static const bool on = [] { const char* v = strata::env("NOSTROMA_PF_P1A_L2"); return v != nullptr && v[0] == '1' && v[1] == '\0'; }();
     return on;
 #else
     return false;   // (the P1A kernels run on gfx1151 only: p1a_wanted)
@@ -3151,7 +3152,7 @@ void experts_native(const Batch& b, const NativeGeom& g, int n_expert, int64_t n
 #else
         // STRATA_PF_KQ_OCC=1 (a trial switch, off by default, HIP only): the K-quant kernels too (Q4_K / Q5_K gate/up, Q5_1 down) take the
         // occupancy launch above (the H tile on the weight buffers, occ_blocks per WGP; the VGPR cap only where nw_capped says so).
-        static const bool kq_occ = [] { const char* v = std::getenv("STRATA_PF_KQ_OCC"); return v != nullptr && v[0] == '1'; }();
+        static const bool kq_occ = [] { const char* v = strata::env("NOSTROMA_PF_KQ_OCC"); return v != nullptr && v[0] == '1'; }();
         const bool occ_gu = g.gu_type == T_IQ2_XXS || g.gu_type == T_IQ2_XS || g.gu_type == T_IQ2_S ||
                             g.gu_type == T_IQ3_XXS || g.gu_type == T_IQ3_S || g.gu_type == T_IQ4_XS || g.gu_type == T_Q2_0 ||
                             (kq_occ && (g.gu_type == T_Q4_K || g.gu_type == T_Q5_K));

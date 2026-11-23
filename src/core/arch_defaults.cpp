@@ -1,5 +1,6 @@
 // src/core/arch_defaults.cpp - see include/strata/core/arch_defaults.hpp.
 #include "strata/core/arch_defaults.hpp"
+#include "strata/env.hpp"
 #include "strata/core/defaults_026.hpp"
 #include "strata/core/amd_community.hpp"
 #include "strata/core/gfx12_extra.hpp"
@@ -37,7 +38,7 @@ std::vector<std::pair<std::string, std::string>> arch_default_env(const char* gc
         // and does nothing (measured: with and without it identical, 0.0 to +0.1%).
         // STRATA_GDN_CONVL2 is AMD-only on purpose: it is not bitwise on CUDA 13.3 sm_120 (#1522), and this table is never
         // consulted by a CUDA build.
-        const char* off12 = std::getenv("STRATA_GFX12_DEFAULTS");
+        const char* off12 = strata::env("NOSTROMA_GFX12_DEFAULTS");
         if (off12 != nullptr && off12[0] == '0') return t;
         t = {
             {"STRATA_GDN_HEAD", "1"},
@@ -61,7 +62,7 @@ std::vector<std::pair<std::string, std::string>> arch_default_env(const char* gc
         return t;
     }
     if (!strata::kernels::gfx_arch_is_gfx1151(gcn_arch)) return t;
-    const char* off = std::getenv("STRATA_GFX1151_DEFAULTS");
+    const char* off = strata::env("NOSTROMA_GFX1151_DEFAULTS");
     if (off != nullptr && off[0] == '0') return t;
     // Exact (bitwise) on Aurora, each with its measured gain in aurora_s23.md:
     t = {
@@ -107,7 +108,7 @@ std::vector<std::pair<std::string, std::string>> arch_default_env(const char* gc
 
 bool gfx12_prefill_share_default(const char* gcn_arch, bool defaults026) {
     if (defaults026 || !strata::kernels::gfx_arch_is_gfx12(gcn_arch)) return false;
-    const char* off12 = std::getenv("STRATA_GFX12_DEFAULTS");
+    const char* off12 = strata::env("NOSTROMA_GFX12_DEFAULTS");
     return !(off12 != nullptr && off12[0] == '0');
 }
 
@@ -121,9 +122,9 @@ bool igpu_prompt_defaults_arch(const char* gcn_arch) {
 }
 
 bool igpu_prompt_set_enabled(const char* gcn_arch, bool windows) {
-    const char* off = std::getenv("STRATA_IGPU_DEFAULTS");
+    const char* off = strata::env("NOSTROMA_IGPU_DEFAULTS");
     if (off != nullptr && off[0] == '0') return false;
-    const char* e = std::getenv("STRATA_IGPU_PROMPT_SET");
+    const char* e = strata::env("NOSTROMA_IGPU_PROMPT_SET");
     if (e != nullptr && e[0] == '1') return true;
     if (e != nullptr && e[0] == '0') return false;
     // 0.2.8: Strix Halo (gfx1151) gets the matrix-core prompt set on Windows by default.  Measured on the strix box
@@ -138,7 +139,7 @@ bool igpu_prompt_set_enabled(const char* gcn_arch, bool windows) {
 
 bool igpu_uma_arena_default(const char* gcn_arch, bool integrated, bool windows, bool on) {
     if (!integrated) return false;
-    const char* reg = std::getenv("STRATA_UMA_REGISTER");
+    const char* reg = strata::env("NOSTROMA_UMA_REGISTER");
     if (reg != nullptr && reg[0] == '1') return false;
     // 0.2.1.2: a Strix Halo (gfx1151) on Windows.  Registering the 47 GiB arena with the driver took ALL the free VRAM (91 GiB before,
     // 0 after; BIOS carve-out 64 GB + 32 GB shared): the expert cache got 0 slots and the engine exited ("the embedding buffer
@@ -240,7 +241,7 @@ static std::vector<std::pair<std::string, std::string>> parallel_stack_table() {
 std::vector<std::pair<std::string, std::string>> parallel_default_env(const char* gcn_arch, bool windows, int batch_slots) {
     std::vector<std::pair<std::string, std::string>> t;
     if (!windows || batch_slots < 2 || !strata::kernels::gfx_arch_is_gfx1151(gcn_arch)) return t;
-    const char* off = std::getenv("STRATA_GFX1151_DEFAULTS");
+    const char* off = strata::env("NOSTROMA_GFX1151_DEFAULTS");
     if (off != nullptr && off[0] == '0') return t;
     return parallel_stack_table();
 }
@@ -293,7 +294,7 @@ std::vector<std::string> apply_gdn_chunked_default(bool linux_host, bool all_gfx
 std::vector<std::pair<std::string, std::string>> launch_default_env(const char* gcn_arch, bool windows) {
     std::vector<std::pair<std::string, std::string>> t;
     if (!windows || !strata::kernels::gfx_arch_is_gfx1151(gcn_arch)) return t;
-    const char* off = std::getenv("STRATA_GFX1151_DEFAULTS");
+    const char* off = strata::env("NOSTROMA_GFX1151_DEFAULTS");
     if (off != nullptr && off[0] == '0') return t;
     t = {{"STRATA_VERIFY_ASYNC_LAUNCH", "1"}};
     return t;
@@ -336,13 +337,13 @@ std::vector<std::string> apply_arch_defaults(const char* gcn_arch, bool integrat
         else if (kq)   // the engine says nothing more on a pack without K-quant experts: the variable is never read there
             std::fprintf(stderr, "strata: gfx12 (RDNA4): a model with K-quant experts (Unsloth UD-Q4/Q5/Q6_K_XL) reads its prompt on llama.cpp's MMQ kernels (+10..17%% prompt speed on an R9700, "
                                  "first-token KL against the FP16 path about 0.03; STRATA_MMQ_KQ=0 or STRATA_GFX12_DEFAULTS=0 turns it off)\n");
-        const char* wm = std::getenv("STRATA_SELECT_WMMA");   // the line is only true while the scorer switch is not set to 0
+        const char* wm = strata::env("NOSTROMA_SELECT_WMMA");   // the line is only true while the scorer switch is not set to 0
         if (any && !(wm != nullptr && wm[0] == '0'))
             std::fprintf(stderr, "strata: gfx12 (RDNA4): the matrix-core QSA block scorer is on once a prompt is past 28,672 tokens (+5.7%% prompt speed at 98K on an R9700, shorter prompts unchanged; "
                                  "the first-token KL against the warp kernel is 0.002 on average above 30K; STRATA_SELECT_WMMA=0 or STRATA_GFX12_DEFAULTS=0 turns it off)\n");
     }
-    if (strata::kernels::gfx_arch_is_gfx12(gcn_arch) && std::getenv("STRATA_GDN_CHUNKED") == nullptr) {   // the length-gated chunked GDN scan (prefill/kernels.cu: gdn_chunked_auto)
-        const char* off12 = std::getenv("STRATA_GFX12_DEFAULTS");
+    if (strata::kernels::gfx_arch_is_gfx12(gcn_arch) && strata::env("NOSTROMA_GDN_CHUNKED") == nullptr) {   // the length-gated chunked GDN scan (prefill/kernels.cu: gdn_chunked_auto)
+        const char* off12 = strata::env("NOSTROMA_GFX12_DEFAULTS");
         if (!(off12 != nullptr && off12[0] == '0'))
             std::fprintf(stderr, "strata: RDNA4 (gfx12): prompt chunks of 30,000+ tokens use the chunked GDN scan (STRATA_GDN_CHUNKED=0 turns it off)\n");
     }
@@ -380,7 +381,7 @@ std::vector<std::string> apply_arch_defaults(const char* gcn_arch, bool integrat
 #endif
     // Linux integrated gfx11 (gfx1103 / gfx1150 / gfx1151): the prompt experts on Nostroma's fused int8 kernels.  Silent: the prefill's own line
     // ("prompt experts on the fused int8 kernels (STRATA_PF_FUSED=1 ...") is printed when the kernels are taken.  A value the user set is kept (=0 = MMQ).
-    if (igpu_fused_prompt_default(gcn_arch, integrated, win_host) && std::getenv("STRATA_PF_FUSED") == nullptr)
+    if (igpu_fused_prompt_default(gcn_arch, integrated, win_host) && strata::env("NOSTROMA_PF_FUSED") == nullptr)
         set_default({"STRATA_PF_FUSED", "1"});
     for (const auto& kv : parallel_default_env(gcn_arch, win_host, batch_slots)) {
         if (std::getenv(kv.first.c_str()) != nullptr) continue;

@@ -4,6 +4,7 @@
 // Measured standalone on the A770 (64 experts, gamma-distributed rows, vs per-expert oneMKL): down 6.1x at mean 40
 // rows, 2.8x at 160, 1.75x at 320; gate/up 3.0x / 1.46x / 0.79x (oneMKL wins above ~250 rows: the caller picks).
 #include <sycl/sycl.hpp>
+#include "strata/env.hpp"
 #include "strata/kprof.hpp"
 #include <sycl/ext/oneapi/matrix/matrix.hpp>
 #include <sycl/ext/intel/experimental/grf_size_properties.hpp>
@@ -150,7 +151,7 @@ int mode() {
     // The kernels are joint_matrix 8x8x16 on sub-group 8 (DG2, Arc A-series) or, in a STRATA_XMX_SG16 build, 8x16x16 on
     // sub-group 16 (Xe2, Battlemage).
     static const int v = [] {
-        const char* e = std::getenv("STRATA_PF_XMX");
+        const char* e = strata::env("NOSTROMA_PF_XMX");
         // 0.1.48 (owner approved 2026-10-18): mode 2 (the fused grouped XMX launch) is the default on Arc Alchemist (A-series): A750 prompts +30..39% (4K), +32..35% (1-2K tokens),
         // first-token KL 0.002 against a 0.0005 floor, HumanEval / reasoning / agent / CJK / needles inside the run-to-run spread; Battlemage is
         // 7-11% slower with it, so it stays off there.  STRATA_PF_XMX=0 turns it off, 1 is the dequantize + grouped XMX variant.
@@ -175,7 +176,7 @@ int mode() {
 bool enabled() { return mode() != 0; }
 
 int gu_max_mean() {
-    static const int v = [] { const char* e = std::getenv("STRATA_PF_XMX_GU_MAX"); return e ? std::atoi(e) : 250; }();
+    static const int v = [] { const char* e = strata::env("NOSTROMA_PF_XMX_GU_MAX"); return e ? std::atoi(e) : 250; }();
     return v;
 }
 

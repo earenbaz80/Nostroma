@@ -19,6 +19,7 @@
 #pragma once
 
 #include <atomic>
+#include "strata/env.hpp"
 #include <chrono>
 #include <cstdint>
 #include <cstdlib>
@@ -138,7 +139,7 @@ Result settle(ReadFn read_fn, NowFn now_fn, SleepFn sleep_fn, double quiet_s, do
 inline void settle_before_ready() {
 #if defined(__linux__)
     if (!kfd_settle_flag().load(std::memory_order_relaxed)) return;
-    if (const char* e = std::getenv("STRATA_NO_KFD_SETTLE"); e != nullptr && e[0] != '\0' && e[0] != '0') return;
+    if (const char* e = strata::env("NOSTROMA_NO_KFD_SETTLE"); e != nullptr && e[0] != '\0' && e[0] != '0') return;
     const std::string dir = own_proc_dir();
     using clock = std::chrono::steady_clock;
     const auto base = clock::now();

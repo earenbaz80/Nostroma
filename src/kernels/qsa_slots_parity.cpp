@@ -6,6 +6,7 @@
 // STRATA_ATTN_LANECELL=1 for the lane-cell kernels.  Where a launcher declines by design (STRATA_SCORES_MULTI=0, the
 // pre-sm_75 attention, the gfx906 query swizzle) the engine keeps its per-row calls and the test skips (77).
 #include "strata/kernels/kv_q4.hpp"
+#include "strata/env.hpp"
 #include "strata/kernels/kv_q8.hpp"
 #include "strata/kernels/qsa.hpp"
 #include "strata/kernels/qsa_decode_attn.hpp"
@@ -204,7 +205,7 @@ int main() {
         std::puts("SKIP: no CUDA device");
         return 77;
     }
-    if (const char* v = std::getenv("STRATA_SCORES_MULTI"); v && std::atoi(v) == 0) {
+    if (const char* v = strata::env("NOSTROMA_SCORES_MULTI"); v && std::atoi(v) == 0) {
         std::puts("SKIP: STRATA_SCORES_MULTI=0 (the slots launch is off; the engine keeps the per-row calls)");
         return 77;
     }
@@ -220,6 +221,6 @@ int main() {
     if (cases == 0) return 77;
     std::printf("PASS: %d cases (4 KV formats x 1/2/4/8 rows of different slots%s, %d declined): scores, ids and "
                 "attention bitwise identical to one call per row\n", cases,
-                std::getenv("STRATA_ATTN_LANECELL") ? ", lane-cell" : "", skipped);
+                strata::env("NOSTROMA_ATTN_LANECELL") ? ", lane-cell" : "", skipped);
     return 0;
 }

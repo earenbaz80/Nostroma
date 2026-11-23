@@ -20,6 +20,7 @@
 // filled with a value that encodes its own coordinates.
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
+#include "strata/env.hpp"
 #include <dpct/dpct.hpp>
 #include "strata/kernels/gdn.hpp"
 #include "strata/kernels/fused_gdn.hpp"
@@ -919,7 +920,7 @@ int main(int argc, char** argv) {
                                 std::memcmp(st.data(), (c.n_keep < 0 ? st0 : sr).data(), st.size() * 4) != 0 ? ", state too" : "");
                     ++sn_bad;
                 }
-                if (std::getenv("STRATA_GDN_VERIFY_BENCH")) {
+                if (strata::env("NOSTROMA_GDN_VERIFY_BENCH")) {
                     auto hash = [](const std::vector<float>& values) {
                         uint64_t h = 1469598103934665603ull;
                         for (float v : values) {

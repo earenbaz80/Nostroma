@@ -5,6 +5,7 @@
 // With "cold sets" > 1 it also times the read with the weights rotating over that many copies (a layer's weights are
 // cold in the engine) and prints the per-stage split (norm / down / up) from the GPU stamps.
 #include "strata/kernels/fused_gr.hpp"
+#include "strata/env.hpp"
 #include "strata/kernels/verify_kernels.hpp"
 
 #include <cuda_runtime.h>
@@ -57,9 +58,9 @@ static std::vector<uint8_t> q8_0_of_bf16(const std::vector<uint16_t>& w, size_t 
 int main(int argc, char** argv) {
     // the bench's contract is the default kernels' bitwise hashes; the split read (a default on a 12.0 card since 0.2.7) is another summation order
 #if defined(_WIN32)
-    if (std::getenv("STRATA_GR_V3") == nullptr) _putenv_s("STRATA_GR_V3", "0");
+    if (strata::env("NOSTROMA_GR_V3") == nullptr) _putenv_s("STRATA_GR_V3", "0");
 #else
-    if (std::getenv("STRATA_GR_V3") == nullptr) setenv("STRATA_GR_V3", "0", 1);
+    if (strata::env("NOSTROMA_GR_V3") == nullptr) setenv("STRATA_GR_V3", "0", 1);
 #endif
     setvbuf(stdout, nullptr, _IONBF, 0);
     const int iters = argc > 1 ? std::atoi(argv[1]) : 500;
@@ -228,7 +229,7 @@ int main(int argc, char** argv) {
         uint8_t* dqm; unsigned* dcnt;   // the q8_1 image of mixed (STRATA_QFUSE_HC) as the engine asks for it
         cudaMalloc((void**) &dqm, (size_t) TM * (N / 32) * 36); cudaMalloc((void**) &dcnt, (N / 32) * 4);
         cudaMemset(dcnt, 0, (N / 32) * 4);
-        const bool with_q = std::getenv("STRATA_BENCH_QMIXED") != nullptr;
+        const bool with_q = strata::env("NOSTROMA_BENCH_QMIXED") != nullptr;
         unsigned long long* dst;
         cudaMalloc((void**) &dst, (size_t) iters * 4 * 8);
         std::vector<unsigned long long> hst((size_t) iters * 4);

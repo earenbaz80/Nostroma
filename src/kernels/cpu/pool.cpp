@@ -1,5 +1,6 @@
 // src/kernels/cpu/pool.cpp - P2.S3: the CPU expert pool.  Read pool.hpp first; it explains the protocol.
 #include "strata/kernels/cpu/pool.hpp"
+#include "strata/env.hpp"
 #include "strata/core/progress.hpp"
 #include "strata/platform/aux_cpus.hpp"
 #include "strata/kernels/cpu/expert_layout.hpp"
@@ -43,7 +44,7 @@ namespace {
 // deeper C0.2 state (slower wake).  MSVC x64 only for now (the intrinsics need no target flag there); other builds spin.
 uint64_t umwait_cycles() {
     static const uint64_t c = [] {
-        const char* e = std::getenv("STRATA_POOL_UMWAIT");
+        const char* e = strata::env("NOSTROMA_POOL_UMWAIT");
         if (e == nullptr || std::atoll(e) <= 0) return (uint64_t) 0;
 #if defined(_MSC_VER) && defined(_M_X64) && !defined(__clang__)   // MSVC proper: clang-cl (the Windows HIP build) has no WAITPKG intrinsics by default
         int r[4] = {0, 0, 0, 0};
@@ -61,13 +62,13 @@ uint64_t umwait_cycles() {
     return c;
 }
 unsigned umwait_state() {
-    static const unsigned s = [] { const char* e = std::getenv("STRATA_POOL_UMWAIT_C02"); return e && *e == '1' ? 0u : 1u; }();
+    static const unsigned s = [] { const char* e = strata::env("NOSTROMA_POOL_UMWAIT_C02"); return e && *e == '1' ? 0u : 1u; }();
     return s;   // 1 = C0.1 (light), 0 = C0.2
 }
 // STRATA_POOL_UMWAIT_ESC=<TSC cycles> (experimental): an escalating wait - C0.1 for the first cycles of a park, C0.2 after
 // (a wait that has lasted that long is a GPU phase, a draft or a prompt read, where a slower wake costs little).
 uint64_t umwait_escalate() {
-    static const uint64_t c = [] { const char* e = std::getenv("STRATA_POOL_UMWAIT_ESC"); return e ? (uint64_t) (std::max)(0LL, std::atoll(e)) : (uint64_t) 0; }();
+    static const uint64_t c = [] { const char* e = strata::env("NOSTROMA_POOL_UMWAIT_ESC"); return e ? (uint64_t) (std::max)(0LL, std::atoll(e)) : (uint64_t) 0; }();
     return c;
 }
 
@@ -584,7 +585,7 @@ bool pin_this_thread(int core, [[maybe_unused]] int worker = -1) {
 // Where the NUMA topology is read from: /sys. STRATA_TEST_SYSFS_ROOT=<dir> reads <dir>/devices/system/{node,cpu} instead,
 // so a test can give the pool a made-up two-node machine (pool_tasks_test); nobody sets it for real.
 std::string sysfs_root() {
-    const char* e = std::getenv("STRATA_TEST_SYSFS_ROOT");
+    const char* e = strata::env("NOSTROMA_TEST_SYSFS_ROOT");
     return e != nullptr && *e != '\0' ? std::string(e) : std::string("/sys");
 }
 
@@ -620,7 +621,7 @@ NumaSplitDecision decide_real_numa_split([[maybe_unused]] const std::vector<int>
                                          [[maybe_unused]] bool pinned) {
 #if defined(__linux__)
     // the expert source's own reading of it (expert_source.cpp): exactly "1"
-    const char* rotate = std::getenv("STRATA_EXCHANGE_ROTATE");
+    const char* rotate = strata::env("NOSTROMA_EXCHANGE_ROTATE");
     return decide_numa_split(thread_core, n_workers, pinned, rotate != nullptr && std::strcmp(rotate, "1") == 0, cpu_numa_node);
 #else
     NumaSplitDecision d;
@@ -735,14 +736,14 @@ ExpertPool::ExpertPool(int n_workers, bool pin, bool host_works, PoolAffinity af
     if (tasks < 0 || tasks > kMaxTasks) throw std::invalid_argument("expert pool tasks must be in 0..4096");
     pinned_ = pin;
     layout_ = logical_cpu_layout();   // now, before anything pins the caller (Linux reads the calling thread's allowed CPUs)
-    if (const char* e = std::getenv("STRATA_POOL_SPIN_US"))   // a test knob; see kSpinBeforeSleep
+    if (const char* e = strata::env("NOSTROMA_POOL_SPIN_US"))   // a test knob; see kSpinBeforeSleep
         spin_before_sleep_ = std::chrono::microseconds((std::max)(0, std::atoi(e)));
     // STRATA_NUMA_SPLIT, read here for the worker count (the split itself is decided below, once the count is known).
     // 0.2.2: with 2 or more NUMA nodes and neither variable set the split is tried by itself, and STRATA_NUMA_POOL=0 turns that
     // off (numa_pool.hpp).  One node: pick_numa_pool says Unchanged and nothing below differs from the pool before the split.
-    const char* env = std::getenv("STRATA_NUMA_SPLIT");
+    const char* env = strata::env("NOSTROMA_NUMA_SPLIT");
     const int numa_nodes = numa_node_count();
-    const NumaPoolPick pool_pick = pick_numa_pool(std::getenv("STRATA_NUMA_POOL"), env, numa_nodes);
+    const NumaPoolPick pool_pick = pick_numa_pool(strata::env("NOSTROMA_NUMA_POOL"), env, numa_nodes);
     if (!pool_pick.log.empty()) std::fprintf(stderr, "%s\n", pool_pick.log.c_str());
     if (pool_pick.choice == NumaPoolChoice::Off) env = nullptr;
     bool auto_pool = pool_pick.choice == NumaPoolChoice::Auto;   // the split without STRATA_NUMA_SPLIT: only if it can run

@@ -1,4 +1,5 @@
 #include "strata/core/native_dense.hpp"
+#include "strata/env.hpp"
 #include "strata/core/run_manifest.hpp"
 #include <cstdlib>
 #include "strata/core/weights.hpp"
@@ -49,7 +50,7 @@ bool hc_q8_env() {
     // unset / auto = on for gfx12 (RDNA4: the R9700 decode +2.5 to +4%, KL 0.0003-0.0010 over its noise floor) unless
     // STRATA_GFX12_DEFAULTS=0; also on for gfx1151 (Strix Halo, STRATA_HC_Q8=0 turns it off), off elsewhere
     static const bool on = [] {
-        const char* v = std::getenv("STRATA_HC_Q8");
+        const char* v = strata::env("NOSTROMA_HC_Q8");
         if (v != nullptr && v[0] == '1') return true;
         if (v != nullptr && v[0] != '\0' && std::strcmp(v, "auto") != 0) return false;
 #if defined(STRATA_USE_HIP)
@@ -67,7 +68,7 @@ bool hc_q8_env() {
                 return true;
             }
         }
-        const char* d = std::getenv("STRATA_GFX12_DEFAULTS");
+        const char* d = strata::env("NOSTROMA_GFX12_DEFAULTS");
         if (d != nullptr && d[0] == '0') return false;
         int dev = 0;
         cudaDeviceProp p;
@@ -85,12 +86,12 @@ bool hc_q8_env() {
 }
 // STRATA_HC_Q8_ALL_STAGES=1: the Q8_0 hyper-connection rows of every layer are copied to every stage (the behaviour before #3559)
 bool hc_q8_stage_local() {
-    static const bool on = [] { const char* v = std::getenv("STRATA_HC_Q8_ALL_STAGES"); return !(v != nullptr && v[0] == '1'); }();
+    static const bool on = [] { const char* v = strata::env("NOSTROMA_HC_Q8_ALL_STAGES"); return !(v != nullptr && v[0] == '1'); }();
     return on;
 }
 // STRATA_HC_Q8_INJECT=1: the F32 inject rows get a Q8_0 copy too (S25)
 bool hc_q8_inject_env() {
-    static const bool on = [] { const char* v = std::getenv("STRATA_HC_Q8_INJECT"); return v && v[0] == '1'; }();
+    static const bool on = [] { const char* v = strata::env("NOSTROMA_HC_Q8_INJECT"); return v && v[0] == '1'; }();
     return on;
 }
 bool hc_q8_name(const std::string& name) {
@@ -494,7 +495,7 @@ bool NativeDense::load(const std::vector<std::string>& shards, WeightTable& tabl
                 pending.push_back(Pending{&ref, (int) tensor.type, bytes, std::move(data), std::move(packed)});
             }
             if (strata::core::manifest::enabled()) {
-                const char* v = std::getenv("STRATA_HC_Q8");
+                const char* v = strata::env("NOSTROMA_HC_Q8");
                 strata::core::manifest::instance().path("dense", "hc_q8", hc_q8_env(),
                     hc_q8_env() ? (v != nullptr && v[0] == '1' ? "STRATA_HC_Q8=1" : "architecture default (gfx12 / gfx1151 HIP)")
                                 : (v != nullptr && v[0] != '\0' && std::strcmp(v, "auto") != 0 ? "STRATA_HC_Q8 turned it off"
@@ -644,7 +645,7 @@ bool NativeDense::gguf_carries_q8_hc(const std::vector<std::string>& shards) {
 }
 
 bool NativeDense::apply_hc_q8_default(const std::vector<std::string>& shards) {
-    if (std::getenv("STRATA_HC_Q8") != nullptr || !gguf_carries_q8_hc(shards)) return false;
+    if (strata::env("NOSTROMA_HC_Q8") != nullptr || !gguf_carries_q8_hc(shards)) return false;
 #if defined(_WIN32)
     _putenv_s("STRATA_HC_Q8", "1");
 #else

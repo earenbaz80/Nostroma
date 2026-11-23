@@ -1,4 +1,5 @@
 #include "b60_layout_state.hpp"
+#include "strata/env.hpp"
 // Private phase-boundary adapter for the measured same-payload layouts.
 #include <sycl/sycl.hpp>
 #include <cstdint>
@@ -303,8 +304,8 @@ void b60_exchange_single_expert(uint8_t* device,uint8_t* mirror,int gu,size_t up
     sycl::get_pointer_type(mirror,q.get_context())!=sycl::usm::alloc::host||
     sycl::get_pointer_device(device,q.get_context())!=q.get_device())
   throw std::invalid_argument("B60 packed mirror exchange ownership");
- const bool pack16=[] {const char* p=std::getenv("STRATA_PRIVATE_GU_XXS_PACKED");return p&&p[0]=='1';}();
- const bool pack29=[] {const char* p=std::getenv("STRATA_PRIVATE_GU_IQ1_PACKED");return p&&p[0]=='1';}();
+ const bool pack16=[] {const char* p=strata::env("NOSTROMA_PRIVATE_GU_XXS_PACKED");return p&&p[0]=='1';}();
+ const bool pack29=[] {const char* p=strata::env("NOSTROMA_PRIVATE_GU_IQ1_PACKED");return p&&p[0]=='1';}();
  // Own a contiguous raw mirror word: all PCIe accesses coalesce. The four
  // scattered resident bytes are in VRAM and belong only to this work-item.
  // The bijection permits in-place exchange without a temporary expert blob.
@@ -326,8 +327,8 @@ void b60_exchange_single_expert(uint8_t* device,uint8_t* mirror,int gu,size_t up
 void b60_stage_single_experts(unsigned long long* ptrs,const int32_t* count,int cap,int gu,size_t up,size_t down,size_t bytes,void* stream){
  const auto s=single_stage;auto& q=*static_cast<sycl::queue*>(stream);
  if(!s.data||!s.begin||!q.is_in_order()||q.get_device()!=s.queue->get_device()||cap<1||cap>s.cap||bytes>s.stride||bytes%4||down+460800!=bytes||up*2!=down||!(gu==22||gu==16||gu==29))throw std::invalid_argument("B60 single staging plan/geometry");
- const bool pack16=[] {const char* p=std::getenv("STRATA_PRIVATE_GU_XXS_PACKED");return p&&p[0]=='1';}();
- const bool pack29=[] {const char* p=std::getenv("STRATA_PRIVATE_GU_IQ1_PACKED");return p&&p[0]=='1';}();
+ const bool pack16=[] {const char* p=strata::env("NOSTROMA_PRIVATE_GU_XXS_PACKED");return p&&p[0]=='1';}();
+ const bool pack29=[] {const char* p=strata::env("NOSTROMA_PRIVATE_GU_IQ1_PACKED");return p&&p[0]=='1';}();
  // Each 16 KiB stripe owns disjoint words. All stripes see the original ptrs.
  const size_t stripes=(bytes+16383)/16384;
  q.parallel_for<B60SingleExpertStageCopy>(sycl::nd_range<2>(sycl::range<2>(size_t(cap),stripes*256),sycl::range<2>(1,256)),[=](sycl::nd_item<2> it){

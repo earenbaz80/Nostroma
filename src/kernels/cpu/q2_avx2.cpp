@@ -7,6 +7,7 @@
 // chunk scale, minus the weight scale times the chunk's `hx` (the -1 code offset); the quantizer is the scalar rule,
 // bit for bit.
 #include "strata/kernels/cpu/expert.hpp"
+#include "strata/env.hpp"
 #include "strata/kernels/cpu/expert_layout.hpp"
 
 #include <immintrin.h>
@@ -144,7 +145,7 @@ void rows_bp(const uint8_t* w, size_t row_bytes, int npairs, const ActQ* const* 
 }
 
 const bool kBitplane = [] {
-    const char* e = std::getenv("STRATA_Q2_BITPLANE");
+    const char* e = strata::env("NOSTROMA_Q2_BITPLANE");
     return e != nullptr && e[0] == '1';
 }();
 

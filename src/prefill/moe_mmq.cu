@@ -2,6 +2,7 @@
 // from the pinned llama.cpp checkout the build already takes ggml from; src/prefill/ggml_cuda_host.cu supplies the
 // few host symbols of ggml-cuda.cu it references.
 #include "strata/prefill/moe_mmq.hpp"
+#include "strata/env.hpp"
 
 #include "common.cuh"
 #include "mmq.cuh"
@@ -48,7 +49,7 @@ bool kq_ok() {
     return kq::available();
 #else
     static const bool on = [] {
-        const char* v = std::getenv("STRATA_MMQ_KQ");
+        const char* v = strata::env("NOSTROMA_MMQ_KQ");
         return v != nullptr && v[0] == '1';
     }();
     return on;
@@ -198,7 +199,7 @@ bool built() { return true; }
 
 Nvfp4Mode nvfp4_mode() {
     static const Nvfp4Mode m = [] {
-        const char* e = std::getenv("STRATA_PREFILL_NVFP4");
+        const char* e = strata::env("NOSTROMA_PREFILL_NVFP4");
         if (e == nullptr || std::strcmp(e, "w4a8") == 0) return Nvfp4Mode::W4A8;
         if (std::strcmp(e, "w4a4") == 0) return Nvfp4Mode::W4A4;
         if (std::strcmp(e, "fp16") == 0) return Nvfp4Mode::FP16;
@@ -336,7 +337,7 @@ void quantize(const float* x, const int32_t* ids, void* xq, int t, int64_t cols,
 void quantize_scatter(const float* x, const int32_t* slot, const int32_t* src, void* xq, int t, int64_t cols, int64_t ld,
                       int64_t tokens, int k_used, void* stream) {
     if (tokens <= 0 || k_used <= 0) return;
-    static const bool gather = [] { const char* e = std::getenv("STRATA_QUANT_GATHER"); return e != nullptr && std::atoi(e) != 0; }();
+    static const bool gather = [] { const char* e = strata::env("NOSTROMA_QUANT_GATHER"); return e != nullptr && std::atoi(e) != 0; }();
     if (gather) {
         quantize(x, src, xq, t, cols, ld, tokens * k_used, stream);
         return;
@@ -541,7 +542,7 @@ bool launch_splits_k(int t, int64_t w_rows, int64_t max_rows, int n_experts) {
 
 int direct_mode() {
     static const int mode = [] {
-        const char* v = std::getenv("STRATA_MMQ_DIRECT");
+        const char* v = strata::env("NOSTROMA_MMQ_DIRECT");
         const int m = v ? std::atoi(v) : 0;
         if (m != 1 && m != 2) return 0;
         if (!tab_built()) {

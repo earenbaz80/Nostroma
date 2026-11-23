@@ -1,6 +1,7 @@
 // sycl/src/core/dflash2.cpp - the DFlash2 drafter on an Intel GPU.  Port of src/core/dflash2.cpp; see sycl/include/strata/core/dflash2.hpp for the differences.
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
+#include "strata/env.hpp"
 #include <dpct/dpct.hpp>
 #include "strata/sycl_queue.hpp"
 #include "strata/core/dflash2.hpp"
@@ -157,7 +158,7 @@ bool Dflash2Drafter::load(const std::string& path, int device, std::string& err)
             cs_->memcpy(blob_ + t.off, stage.data(), t.bytes).wait();
         }
     }
-    if (const char* e = std::getenv("STRATA_DF2_TIMING"); e && e[0] == '1') timing_ = true;
+    if (const char* e = strata::env("NOSTROMA_DF2_TIMING"); e && e[0] == '1') timing_ = true;
     return alloc(err);
 } catch (const std::exception& e) {
     err = std::string("dflash2: ") + e.what();
@@ -211,8 +212,8 @@ bool Dflash2Drafter::alloc(std::string& err) try {
     cs_->memset(d_meta_, 0, kMetaBytes);
     cs_->memset(tag_, 0xff, (size_t) kRing * 8);   // -1: no slot holds a context row yet
     for (int64_t& t : slot_pos_) t = -1;
-    if (const char* e = std::getenv("STRATA_DF2_RING_LOG"); e && e[0] == '0') log_on_ = false;
-    if (const char* e = std::getenv("STRATA_DF2_LOG_MIB"); e && e[0]) stash_budget_ = (uint64_t) std::max(0, std::atoi(e)) << 20;
+    if (const char* e = strata::env("NOSTROMA_DF2_RING_LOG"); e && e[0] == '0') log_on_ = false;
+    if (const char* e = strata::env("NOSTROMA_DF2_LOG_MIB"); e && e[0]) stash_budget_ = (uint64_t) std::max(0, std::atoi(e)) << 20;
     if (log_on_) {
         h_logq_ = (int8_t*) sycl::malloc_host((size_t) kRows * N_, *cs_);
         h_logd_ = (float*) sycl::malloc_host((size_t) kRows * (N_ / 32) * 4, *cs_);
@@ -570,7 +571,7 @@ bool Dflash2Drafter::rebuild(int64_t lo, int64_t hi, int64_t* rebuilt, int64_t* 
         if (slot_pos_[(size_t) (p % kRing)] == (((int64_t) epoch_ << 32) | p)) continue;   // the ring already holds this row
         if (cur_.logged(p)) pos.push_back((int32_t) p);
         else {
-            if (++*missing <= 8 && std::getenv("STRATA_DF2_RING_STATS") != nullptr) std::fprintf(stderr, "strata dflash2 ring: position %lld was never logged (hist %zu)\n", (long long) p, cur_.hist.size());
+            if (++*missing <= 8 && strata::env("NOSTROMA_DF2_RING_STATS") != nullptr) std::fprintf(stderr, "strata dflash2 ring: position %lld was never logged (hist %zu)\n", (long long) p, cur_.hist.size());
         }
     }
     if (pos.empty()) return true;
@@ -673,7 +674,7 @@ bool Dflash2Drafter::begin_request(const int32_t* ids, int64_t n, int64_t resume
             rebuilt = 0;
         }
     }
-    static const bool verbose = std::getenv("STRATA_DF2_RING_STATS") != nullptr;
+    static const bool verbose = strata::env("NOSTROMA_DF2_RING_STATS") != nullptr;
     if (verbose)
         std::fprintf(stderr, "strata dflash2 ring: request %lld resume %lld of %lld: live log %.1f MiB (%lld positions), parked %zu lineages %.1f MiB, rebuilt %lld rows (missing %lld) in %.2f ms%s\n",
                      (long long) ring_stats.requests, (long long) resume, (long long) n, (double) cur_.bytes() / 1048576.0, (long long) cur_.hist.size(), stash_.size(),

@@ -8,6 +8,7 @@
 #pragma once
 
 #include <cmath>
+#include "strata/env.hpp"
 #include <cstdlib>
 #include <algorithm>
 
@@ -48,7 +49,7 @@ inline bool skip_draft_for_lookup(bool df2_active, int min_match, int lookup_k, 
 /// STRATA_DF2_LOOKUP_SKIP=N (match length in tokens; 0 = off).  `build_default`: what a build without the variable uses (Metal 8, others 0 until measured).
 inline int df2_lookup_skip_min(int build_default) {
     static const int v = [build_default] {
-        const char* e = std::getenv("STRATA_DF2_LOOKUP_SKIP");
+        const char* e = strata::env("NOSTROMA_DF2_LOOKUP_SKIP");
         return e != nullptr && e[0] != '\0' ? std::atoi(e) : build_default;
     }();
     return v;

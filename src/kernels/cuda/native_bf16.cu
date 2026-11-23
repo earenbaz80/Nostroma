@@ -1,4 +1,5 @@
 #include "strata/core/bw_dense_defaults.hpp"
+#include "strata/env.hpp"
 #include "strata/kernels/bf16_gemv.hpp"
 #include "strata/kernels/window_limits.hpp"
 #include "s26_tsum.cuh"
@@ -314,7 +315,7 @@ void launch_rows(const float* x, int64_t ldx, const uint16_t* w, float* y, int64
                  cudaStream_t st, const uint16_t* w_aux = nullptr, float* y_aux = nullptr, int64_t ldy_aux = 0) {
     constexpr int RPB = 4;
     const unsigned nb = (unsigned) ((n_out + RPB - 1) / RPB);
-    static const bool ts = [] { const char* v = std::getenv("STRATA_TSUM"); return v && v[0] == '1'; }();
+    static const bool ts = [] { const char* v = strata::env("NOSTROMA_TSUM"); return v && v[0] == '1'; }();
     if (w_aux != nullptr) {   // S26 STRATA_LFUSE: + one aux row block
 #define S26_AUX(TSV) \
         if (n_tok <= 4) bf16_f32_mmvf_rows_kernel<B, 4, RPB, TSV, true><<<nb + 1, B, 0, st>>>(x, ldx, w, y, ldy, n_in, n_out, n_tok, w_aux, y_aux, ldy_aux); \
@@ -340,7 +341,7 @@ void mmvf_chk_report() {
 // BW-DENSE STRATA_SMALL_UNR bit 0: see bf16_f32_mmvf_multi_kernel (bw_dense_defaults.hpp: on for a 12.0 card, else off; the variable wins)
 int mmvf_fast_bit() {
     static int per_dev[64];   // 0 unknown, else bit + 1
-    const char* e = std::getenv("STRATA_SMALL_UNR");
+    const char* e = strata::env("NOSTROMA_SMALL_UNR");
     if (e != nullptr) return std::atoi(e) & 1;
 #if defined(__HIPCC__)
     return 0;
@@ -362,7 +363,7 @@ int mmvf_fast() {
     const int b = mmvf_fast_bit();
     if (b == 0) return 0;
     static const bool chk = [] {
-        const char* c = std::getenv("STRATA_MMVF_CHECK");
+        const char* c = strata::env("NOSTROMA_MMVF_CHECK");
         const bool on = c != nullptr && c[0] == '1';
         if (on) std::atexit(mmvf_chk_report);
         return on;
@@ -387,7 +388,7 @@ int mmvf_block_size(int64_t n_in) {
 bool bf16_gemv_fp32_mmvf_multi_aux(const float* x, int64_t ldx, const uint16_t* w, float* y, int64_t ldy,
                                    int64_t n_in, int64_t n_out, int n_tok, const uint16_t* w_aux, float* y_aux,
                                    int64_t ldy_aux, void* stream) {
-    static const bool rows = [] { const char* v = std::getenv("STRATA_MMVF_ROWS"); return v && v[0] == '1'; }();
+    static const bool rows = [] { const char* v = strata::env("NOSTROMA_MMVF_ROWS"); return v && v[0] == '1'; }();
     // exactly the conditions under which both calls would take the rows / multi kernels at the same block size
     if (!rows || n_out < 64 || n_tok < 2 || n_tok > 8 || n_in <= 0 || (n_in & 1) != 0 || (ldx & 1) != 0 || x == nullptr ||
         w == nullptr || y == nullptr || w_aux == nullptr || y_aux == nullptr || (reinterpret_cast<uintptr_t>(x) & 7u) != 0)
@@ -417,7 +418,7 @@ void bf16_gemv_fp32_mmvf_multi(const float* x, int64_t ldx, const uint16_t* w, f
         x == nullptr || w == nullptr || y == nullptr || (reinterpret_cast<uintptr_t>(x) & 7u) != 0)
         throw std::invalid_argument("bf16_gemv_fp32_mmvf_multi: 1..8 rows (16 in a wide build), even n_in/ldx, aligned pointers");
     const cudaStream_t st = (cudaStream_t) stream;
-    static const bool rows = [] { const char* v = std::getenv("STRATA_MMVF_ROWS"); return v && v[0] == '1'; }();
+    static const bool rows = [] { const char* v = strata::env("NOSTROMA_MMVF_ROWS"); return v && v[0] == '1'; }();
     if (rows && n_out >= 64 && n_tok <= 8) {   // (the opt-in rows kernels hold 8 columns: a wider window takes the switch below)
         const int ni = (int) n_in, no = (int) n_out;
         switch (mmvf_block_size(n_in)) {

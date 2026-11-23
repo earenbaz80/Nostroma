@@ -13,6 +13,7 @@
 #pragma once
 
 #include <cstdlib>
+#include "strata/env.hpp"
 
 namespace strata::core {
 
@@ -33,7 +34,7 @@ struct AdaptAsyncAuto {
 
 /// STRATA_ADAPT_ASYNC as the process sees it (-1 unset).
 inline int adapt_async_env() {
-    const char* v = std::getenv("STRATA_ADAPT_ASYNC");
+    const char* v = strata::env("NOSTROMA_ADAPT_ASYNC");
     return v == nullptr || v[0] == '\0' ? -1 : std::atoi(v);
 }
 

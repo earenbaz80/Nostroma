@@ -1,4 +1,5 @@
 #include <sycl/sycl.hpp>
+#include "strata/env.hpp"
 #include <dpct/dpct.hpp>
 #include "strata/core/remote_experts.hpp"
 
@@ -99,7 +100,7 @@ bool RemoteExperts::preflight(int device, double &free_gib,
     // The layer waits for this GPU on the CPU pool's critical path: spin instead of sleeping, whose wake-up
     // costs more than a small expert batch takes (measured: ~0.3 ms per round trip on Windows).  Only possible
     // before the device's context exists, so first thing; STRATA_REMOTE_SPIN=0 keeps the driver's default.
-    const char* spin = std::getenv("STRATA_REMOTE_SPIN");
+    const char* spin = strata::env("NOSTROMA_REMOTE_SPIN");
     /*
     DPCT1007: Migration of cudaInitDevice is not supported.
     */
@@ -311,7 +312,7 @@ bool RemoteExperts::open(int device, int slots, int64_t layers, int64_t experts,
     if (!allocated) { close(); return false; }
     // Zero-copy: the helper reads its input from, and writes its compact rows into, the pinned host buffers
     // directly - two copies fewer per layer, each of which is a PCIe round trip.  STRATA_REMOTE_ZEROCOPY=0 copies.
-    const char* zc = std::getenv("STRATA_REMOTE_ZEROCOPY");
+    const char* zc = strata::env("NOSTROMA_REMOTE_ZEROCOPY");
     zero_copy_ = !(zc && zc[0] == '0') &&
                  DPCT_CHECK_ERROR(*(void **)&z_x_ = (float *)h_x_) == 0 &&
                  DPCT_CHECK_ERROR(*(void **)&z_out_ = (float *)h_out_) == 0;

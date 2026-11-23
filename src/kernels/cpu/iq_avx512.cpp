@@ -9,6 +9,7 @@
 // Formats: IQ2_XXS (16), IQ2_XS (17), IQ3_XXS (18), IQ3_S (21), IQ2_S (22).  IQ1_M stays on ggml-cpu (no shipped
 // model has IQ1_M expert rows: the 'Coder IQ1_M' pack's gate/up are IQ2_S / IQ3_XXS / IQ3_S).
 #include "strata/kernels/cpu/iq_avx512.hpp"
+#include "strata/env.hpp"
 #include "strata/kernels/cpu/expert_layout.hpp"
 
 #define GGML_COMMON_DECL_CPP
@@ -40,7 +41,7 @@ inline uint64_t u64(const uint8_t* p) { uint64_t v; std::memcpy(&v, p, 8); retur
 // 0.2.5: DEFAULT on where gathers are fast (Intel server and HEDT cores with AVX-512: cpu_gather_fast), off on Zen 4 (microcoded);
 // STRATA_IQ_GATHER=1 / 0 force it either way.  The same words are loaded, so the results are bit for bit the scalar decode's.
 const bool gather = [] {
-    const char* v = std::getenv("STRATA_IQ_GATHER");
+    const char* v = strata::env("NOSTROMA_IQ_GATHER");
     return v != nullptr && v[0] != '\0' ? std::atoi(v) != 0 : cpu_gather_fast();
 }();
 // the grid lookups by one 64-bit gather of eight entries (IQ2_XXS / IQ2_XS / IQ2_S): `idx` = eight 32-bit indices
@@ -48,7 +49,7 @@ inline __m512i gather64(__m256i idx, const void* grid) { return _mm512_i32gather
 // E-2: software prefetch distance in bytes (STRATA_IQ_PREFETCH; 0 = off): -2-3% gate/up time on IQ3_S decode
 // (the rows are read at ~30 GB/s by 6 cores, near what DDR5 with 4 KB pages gives: the pool is memory-bound)
 const int prefetch_ahead = [] {
-    const char* v = std::getenv("STRATA_IQ_PREFETCH");
+    const char* v = strata::env("NOSTROMA_IQ_PREFETCH");
     return v ? std::atoi(v) : 2048;
 }();
 

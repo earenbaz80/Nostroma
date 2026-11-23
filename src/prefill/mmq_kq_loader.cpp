@@ -3,6 +3,7 @@
 // which the engine does before it sizes the expert cache (src/program/generate.cpp).  Without the library, or with an
 // interface of another version, the K-quants keep the FP16 prompt path and the engine says so once.
 #include "strata/prefill/mmq_kq_abi.hpp"
+#include "strata/env.hpp"
 
 #include <cuda_runtime.h>
 
@@ -107,7 +108,7 @@ const Lib& lib() {
 
 bool wanted() {
     static const bool on = [] {
-        const char* v = std::getenv("STRATA_MMQ_KQ");
+        const char* v = strata::env("NOSTROMA_MMQ_KQ");
         return v != nullptr && v[0] == '1';
     }();
     return on;

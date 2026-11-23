@@ -20,6 +20,7 @@
 #pragma once
 
 #include <atomic>
+#include "strata/env.hpp"
 #include <chrono>
 #include <cstdint>
 #include <cstdio>
@@ -46,7 +47,7 @@ namespace page_cache_drop {
 
 /// STRATA_NO_ARENA_CACHE_DROP: anything but empty or 0 turns the give-back off.
 inline bool off_by_env() {
-    const char* e = std::getenv("STRATA_NO_ARENA_CACHE_DROP");
+    const char* e = strata::env("NOSTROMA_NO_ARENA_CACHE_DROP");
     return e != nullptr && e[0] != '\0' && e[0] != '0';
 }
 

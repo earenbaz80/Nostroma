@@ -20,6 +20,7 @@
 //   6. `gr_write`'s `2*sigmoid`, which centres the gate on 1 so a ZERO injection is a plain residual add.
 //      Asserted as a property, not as a value, because that is what the source comment claims.
 #include "strata/kernels/gr.hpp"
+#include "strata/env.hpp"
 #include "strata/kernels/fused_gr.hpp"
 #include "strata/kernels/native_mmvq.hpp"
 
@@ -339,7 +340,7 @@ int fused_multi_lds_parity(const float* d_norm, const uint16_t* d_down, const ui
     };
     // the split read (STRATA_GR_V3=1) sums in another order than the single-token kernel: equal within float
     // rounding, not to the bit, so it is compared with a relative tolerance; the default kernels bit for bit
-    static const bool v3 = [] { const char* v = std::getenv("STRATA_GR_V3"); return v != nullptr && std::atoi(v) != 0; }();
+    static const bool v3 = [] { const char* v = strata::env("NOSTROMA_GR_V3"); return v != nullptr && std::atoi(v) != 0; }();
     auto close = [](const std::vector<float>& x, const std::vector<float>& y) {
         double worst = 0.0, mag = 1e-30;
         for (size_t i = 0; i < x.size(); ++i) {
@@ -464,7 +465,7 @@ int fused_multi_lds_parity(const float* d_norm, const uint16_t* d_down, const ui
         // and must return false without writing when STRATA_QFUSE_HC_LOCAL=0 and q8_cnt == nullptr.
         if (!v3) {
             int cf_bad = 0;
-            const char* prev_loc = std::getenv("STRATA_QFUSE_HC_LOCAL");
+            const char* prev_loc = strata::env("NOSTROMA_QFUSE_HC_LOCAL");
             const std::string saved_loc = prev_loc ? prev_loc : "";
 #if defined(_WIN32)
             _putenv_s("STRATA_QFUSE_HC_LOCAL", "1");
@@ -538,8 +539,8 @@ int fused_multi_lds_parity(const float* d_norm, const uint16_t* d_down, const ui
     // native_quantize_q8_1 makes of `mixed`, nothing outside the written ranges changed, and the counters are back at zero.
     if (!v3) {
         // (STRATA_GRP_REPS=N more repetitions, STRATA_GRP_KEEP_GOING=1 counts every failure instead of stopping at the first: to measure a rare one)
-        const int REPS = std::getenv("STRATA_GRP_REPS") ? std::max(1, std::atoi(std::getenv("STRATA_GRP_REPS"))) : 200;
-        const bool keep_going = std::getenv("STRATA_GRP_KEEP_GOING") != nullptr;
+        const int REPS = strata::env("NOSTROMA_GRP_REPS") ? std::max(1, std::atoi(strata::env("NOSTROMA_GRP_REPS"))) : 200;
+        const bool keep_going = strata::env("NOSTROMA_GRP_KEEP_GOING") != nullptr;
         const size_t B = (size_t) (N / 32) * 36;   // one token's q8_1 image
         uint8_t *d_qa = nullptr, *d_qb = nullptr, *d_qabs = nullptr, *d_ref2 = nullptr;
         unsigned* d_cnt2 = nullptr;
@@ -680,9 +681,9 @@ int fused_multi_lds_parity(const float* d_norm, const uint16_t* d_down, const ui
 int main(int argc, char** argv) {
     // this test compares the default kernels bit for bit; the split read (a default on a 12.0 card since 0.2.7) is STRATA_GR_V3=1 below
 #if defined(_WIN32)
-    if (std::getenv("STRATA_GR_V3") == nullptr) _putenv_s("STRATA_GR_V3", "0");
+    if (strata::env("NOSTROMA_GR_V3") == nullptr) _putenv_s("STRATA_GR_V3", "0");
 #else
-    if (std::getenv("STRATA_GR_V3") == nullptr) setenv("STRATA_GR_V3", "0", 1);
+    if (strata::env("NOSTROMA_GR_V3") == nullptr) setenv("STRATA_GR_V3", "0", 1);
 #endif
     bool selftest = false;
     for (int i = 1; i < argc; ++i) {

@@ -11,6 +11,7 @@
 //      conv_out, result), so a mismatch can be attributed to a stage instead of guessed at - and the weights
 //      in it were checked to be the artifact's real ones before this test was written.
 #include "strata/kernels/ple.hpp"
+#include "strata/env.hpp"
 #include "strata/kernels/ngram.hpp"
 #include "strata/kernels/f16_bits.hpp"
 #include "strata/kernels/native_mmvq.hpp"
@@ -254,7 +255,7 @@ int main(int argc, char** argv) {
     bool check_fixtures = false;
     std::string pack = "pack/full";
     // --gguf, else $STRATA_PLE_GGUF, else the development layout (run from the engine root)
-    std::string gguf = std::getenv("STRATA_PLE_GGUF") ? std::getenv("STRATA_PLE_GGUF")
+    std::string gguf = strata::env("NOSTROMA_PLE_GGUF") ? strata::env("NOSTROMA_PLE_GGUF")
                                                       : "../../Q2_0/Qwen3.8-Flash-Next-GSQ-RCO-Q2_0-00002-of-00002.gguf";
     std::string in_bin = "bench/micro/ple_in.bin", out_bin = "bench/micro/ple_out.bin";
     for (int i = 1; i < argc; ++i) {

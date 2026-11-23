@@ -19,6 +19,7 @@
 // calls it only behind cpu_avx1_ok().  No static constructors at namespace scope (#391): the tables below
 // are constexpr, like iq_avx2.cpp's.
 #include "strata/kernels/cpu/iq_avx1.hpp"
+#include "strata/env.hpp"
 
 #include "ggml.h"
 
@@ -135,7 +136,7 @@ inline float hsum4(__m128 v) {
 // E-2 prefetching, the same knob as the AVX-2/512 kernels: STRATA_IQ_PREFETCH is the distance in bytes.
 int prefetch_distance() {
     static const int d = [] {
-        const char* v = std::getenv("STRATA_IQ_PREFETCH");
+        const char* v = strata::env("NOSTROMA_IQ_PREFETCH");
         return v ? std::atoi(v) : 2048;
     }();
     return d;

@@ -16,6 +16,7 @@
 // uploads that were submitted.
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
+#include "strata/env.hpp"
 #include <dpct/dpct.hpp>
 
 #include <array>
@@ -32,7 +33,7 @@ namespace strata::core {
 /// use; 0 until a measured win makes it 1).
 inline int dma_batch_mode(int default_mode = 0) {
     static const int mode = [default_mode] {
-        const char* e = std::getenv("STRATA_DMA_BATCH");
+        const char* e = strata::env("NOSTROMA_DMA_BATCH");
         return e != nullptr && e[0] != '\0' ? std::atoi(e) : default_mode;
     }();
     return mode;

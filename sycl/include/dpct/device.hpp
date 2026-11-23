@@ -10,6 +10,7 @@
 #define __DPCT_DEVICE_HPP__
 
 #include <algorithm>
+#include "strata/env.hpp"
 #include <array>
 #include <climits>
 #include <cstdlib>
@@ -683,7 +684,7 @@ private:
       eh = exception_handler;
     }
     // STRATA_KPROF=1 (include/strata/kprof.hpp): every queue profiles, whatever this translation unit defined
-    static const bool kprof_on = [] { const char* v = std::getenv("STRATA_KPROF"); return v != nullptr && v[0] != '0'; }();
+    static const bool kprof_on = [] { const char* v = strata::env("NOSTROMA_KPROF"); return v != nullptr && v[0] != '0'; }();
     if (kprof_on) {
       _queues.push_back(std::make_shared<sycl::queue>(
           _ctx, *this, eh,

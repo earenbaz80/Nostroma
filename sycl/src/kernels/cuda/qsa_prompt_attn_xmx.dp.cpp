@@ -13,6 +13,7 @@
 // K^T packed as 4-byte pairs with INT8 converted on the load, hi and lo halves of Q accumulated into one accumulator per
 // scale group, and one accumulator update per chunk after the whole P.V product has run in registers.
 #include "strata/kernels/qsa_prompt_attn_xmx.hpp"
+#include "strata/env.hpp"
 #include "strata/kprof.hpp"
 #include "strata/core/geometry.hpp"
 #include "strata/kernels/qsa_decode_attn.hpp"
@@ -369,7 +370,7 @@ bool dispatch(const float* q, const QsaAttnPools& pools, const int32_t* ids, con
 bool qsa_prompt_attn_xmx(const float* q, const QsaAttnPools& pools, const int32_t* ids, const int32_t* steps, int64_t cap,
                          const QsaShapes& s, float* attn, int64_t n_q, void* stream) {
     // STRATA_PROMPT_ATTN_XMX=1 (64-cell chunks) or =32 (32-cell chunks); unset or 0: the caller's fallback
-    static const int mode = [] { const char* v = std::getenv("STRATA_PROMPT_ATTN_XMX"); return v ? std::atoi(v) : 0; }();
+    static const int mode = [] { const char* v = strata::env("NOSTROMA_PROMPT_ATTN_XMX"); return v ? std::atoi(v) : 0; }();
     if (mode == 0 || n_q <= 0) return false;
     if (pools.k_q4 != nullptr || s.head_dim != HD || s.n_head != (int64_t) G * s.n_head_kv || cap <= 0 || !ids || !steps ||
         !pools.page_table)

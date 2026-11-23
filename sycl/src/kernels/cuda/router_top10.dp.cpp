@@ -53,6 +53,7 @@
 //     version was O(k*n) with a serial `exp` inside.
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
+#include "strata/env.hpp"
 #include "strata/kprof.hpp"
 #include <dpct/dpct.hpp>
 #include "strata/sycl_queue.hpp"
@@ -836,9 +837,9 @@ void router_top10(const float *logits, int n_tokens, int n_expert, int k,
 #if defined(STRATA_HIP_GFX906)
         // gfx906 (wave64): the one-wavefront kernel below stays the default; the S6 kernel is wave32-shaped and only
         // runs here on request (STRATA_HIP_ROUTER_FAST=1) until it is measured on this card
-        static const bool old = std::getenv("STRATA_HIP_ROUTER_FAST") == nullptr;
+        static const bool old = strata::env("NOSTROMA_HIP_ROUTER_FAST") == nullptr;
 #else
-        static const bool old = std::getenv("STRATA_HIP_ROUTER_OLD") != nullptr;
+        static const bool old = strata::env("NOSTROMA_HIP_ROUTER_OLD") != nullptr;
 #endif
         if (!old && n_tokens > 0 && n_expert > 64 && n_expert <= 512 && k > 0 && k <= 32) {
             launch_generic(logits, n_tokens, n_expert, k, ids, weights, stream, 1);
@@ -869,7 +870,7 @@ void router_top10(const float *logits, int n_tokens, int n_expert, int k,
         std::exit(1);
     }
 #if defined(STRATA_HIP_GFX906)
-    if (n_expert <= 64 * RW_PER && !std::getenv("STRATA_ROUTER_BLOCK")) {
+    if (n_expert <= 64 * RW_PER && !strata::env("NOSTROMA_ROUTER_BLOCK")) {
         router_top10_wave_kernel<<<(unsigned) n_tokens, 64, 0, (cudaStream_t) stream>>>(logits, n_tokens, n_expert, k,
                                                                                        ids, weights);
         const cudaError_t e = cudaGetLastError();

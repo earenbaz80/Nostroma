@@ -14,6 +14,7 @@
 // Disabled (the default) kp() is a pointer wrapper and the launch is the plain queue call.
 #pragma once
 #include <sycl/sycl.hpp>
+#include "strata/env.hpp"
 #include <sycl/ext/oneapi/experimental/profiling_tag.hpp>
 #include <algorithm>
 #include <cstdio>
@@ -29,7 +30,7 @@ namespace strata {
 namespace kprof {
 
 inline bool enabled() {
-    static const bool on = [] { const char* v = std::getenv("STRATA_KPROF"); return v != nullptr && v[0] != '0'; }();
+    static const bool on = [] { const char* v = strata::env("NOSTROMA_KPROF"); return v != nullptr && v[0] != '0'; }();
     return on;
 }
 
@@ -116,7 +117,7 @@ inline void note(sycl::queue* q, const sycl::event& ev, const char* name) {
 }
 
 inline std::string report_locked(State& s) {
-    static const int top = [] { const char* v = std::getenv("STRATA_KPROF_TOP"); return v ? std::atoi(v) : 45; }();
+    static const int top = [] { const char* v = strata::env("NOSTROMA_KPROF_TOP"); return v ? std::atoi(v) : 45; }();
     std::string out;
     char b[512];
     for (auto& [name, ps] : s.phases) {
@@ -180,7 +181,7 @@ inline void flush_locked(State& s, const std::string& phase) {
     ++ps.flushes;
     ++s.total_flushes;
     s.recs.clear();
-    static const long long every = [] { const char* v = std::getenv("STRATA_KPROF_EVERY"); return v ? std::atoll(v) : 0LL; }();
+    static const long long every = [] { const char* v = strata::env("NOSTROMA_KPROF_EVERY"); return v ? std::atoll(v) : 0LL; }();
     if (every > 0 && ps.flushes % every == 0) {
         std::fprintf(stderr, "%s", report_locked(s).c_str());
         std::fflush(stderr);

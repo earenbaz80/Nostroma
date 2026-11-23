@@ -1,5 +1,6 @@
 // src/kernels/cpu/expert_layout.cpp - plan v0.3 P6: the per-layer expert table.  See the header.
 #include "strata/kernels/cpu/expert_layout.hpp"
+#include "strata/env.hpp"
 #include "strata/kernels/cpu/hadamard.hpp"
 
 #include <atomic>
@@ -27,7 +28,7 @@ int cpu_isa_cap() {
     // STRATA_FORCE_ISA (tests, the experimental older-CPU builds): the engine's own dispatch acts as if this CPU
     // stopped at that level.  ggml-cpu is not affected: it runs what the build compiled it for.
     static const int cap = [] {
-        const char* f = std::getenv("STRATA_FORCE_ISA");
+        const char* f = strata::env("NOSTROMA_FORCE_ISA");
         if (f == nullptr || f[0] == '\0') return 3;
         const std::string v(f);
         if (v == "avx2") return 2;
@@ -73,7 +74,7 @@ std::string cpu_name() {
 }
 #else
 bool cpu_isa_free() {                                    // STRATA_FORCE_AVX2 and the ISA cap, shared by the probes
-    if (const char* f = std::getenv("STRATA_FORCE_AVX2"); f != nullptr && f[0] == '1') return false;
+    if (const char* f = strata::env("NOSTROMA_FORCE_AVX2"); f != nullptr && f[0] == '1') return false;
     return cpu_isa_cap() >= 3;
 }
 
@@ -113,7 +114,7 @@ bool cpu_avx512_ok() {
 
 bool cpu_avx512bw_ok() {
     static const bool ok = [] {
-        if (const char* f = std::getenv("STRATA_FORCE_AVX2"); f != nullptr && f[0] == '1') return false;
+        if (const char* f = strata::env("NOSTROMA_FORCE_AVX2"); f != nullptr && f[0] == '1') return false;
         unsigned r[4] = {0, 0, 0, 0};
         auto cpuid = [&](unsigned leaf, unsigned sub) {
 #if defined(_MSC_VER)
@@ -175,7 +176,7 @@ static void isa_probe(unsigned& ebx, unsigned& ecx) {
 
 bool cpu_vbmi_ok() {                                     // the byte-permute shuffles (VPERMB, VPMULTISHIFTQB)
     // STRATA_NO_VBMI=1 answers no (a test knob: it runs the substitute q2 unpack on a CPU that has VBMI)
-    static const bool ok = cpu_isa_free() && std::getenv("STRATA_NO_VBMI") == nullptr && [] {
+    static const bool ok = cpu_isa_free() && strata::env("NOSTROMA_NO_VBMI") == nullptr && [] {
         unsigned ebx = 0, ecx = 0;
         isa_probe(ebx, ecx);
         // AVX-512F + VL + VBMI (ECX bit 1).  Cascade Lake has F/BW/VL/VNNI but NOT VBMI: that is the
@@ -197,7 +198,7 @@ bool cpu_vnni_ok() {                                     // VNNI's dpbusd at all
         // AVX-2 rows it runs today (measured under SDE Cascade Lake: every multi-token gate/up line and the Q2_0 rows differ), so turning it on
         // changes that CPU's output.  Every CPU that has VBMI as well answers as before.
         if (cpu_avx512_ok()) return true;
-        const char* e = std::getenv("STRATA_VNNI_TIER");
+        const char* e = strata::env("NOSTROMA_VNNI_TIER");
         return e != nullptr && e[0] == '1';
     }();
     return ok;
@@ -309,7 +310,7 @@ void cpuid_regs(unsigned leaf, unsigned sub, unsigned r[4]) {
 
 int iq256_gather_setting() {
     static const int s = [] {
-        const char* v = std::getenv("STRATA_IQ256_GATHER");
+        const char* v = strata::env("NOSTROMA_IQ256_GATHER");
         if (v == nullptr || v[0] == '\0') return -1;
         return std::atoi(v) != 0 ? 1 : 0;
     }();
@@ -360,7 +361,7 @@ bool cpu_gather_fast_here() {
 
 bool cpu_avxvnni_ok() {
     static const bool ok = [] {
-        if (const char* v = std::getenv("STRATA_NO_AVXVNNI"); v != nullptr && std::atoi(v) != 0) return false;
+        if (const char* v = strata::env("NOSTROMA_NO_AVXVNNI"); v != nullptr && std::atoi(v) != 0) return false;
         if (isa_floor_build()[0] != '\0' || cpu_isa_cap() < 3 || !cpu_avx2_ok()) return false;
         unsigned r[4];
         cpuid_regs(0, 0, r);

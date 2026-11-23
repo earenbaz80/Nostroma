@@ -1,5 +1,6 @@
 // src/core/copy_queue.cpp - see include/strata/copy_queue.hpp.
 #include "strata/copy_queue.hpp"
+#include "strata/env.hpp"
 #include "strata/sycl_queue.hpp"
 
 #include <dpct/dpct.hpp>
@@ -71,7 +72,7 @@ bool is_copy_engine_queue(const sycl::queue* q) {
 
 
 sycl::queue* make_copy_engine_queue(const char* what) {
-    static const bool off = [] { const char* v = std::getenv("STRATA_COPY_ENGINE"); return v && v[0] == '0'; }();
+    static const bool off = [] { const char* v = strata::env("NOSTROMA_COPY_ENGINE"); return v && v[0] == '0'; }();
     if (off) return nullptr;
 #ifndef STRATA_HAVE_ZE_API
     (void) what;
@@ -89,7 +90,7 @@ sycl::queue* make_copy_engine_queue(const char* what) {
         // completion flag became a copy-engine memcpy (4K and 600-token prompts, 10+ minutes, GPU not hung), and the measured gain
         // there was 1.4% (a prompt there is compute bound).
         {
-            const char* force = std::getenv("STRATA_COPY_ENGINE");
+            const char* force = strata::env("NOSTROMA_COPY_ENGINE");
             if (!(force && force[0] == '1') && strata::intel_gpu_gen(dev) != strata::IntelGpuGen::Battlemage) return nullptr;
         }
         // The legacy Level Zero adapter already puts memcpy on the copy engine (and its kernel launches are slower); only

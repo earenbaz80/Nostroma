@@ -1,5 +1,6 @@
 // src/core/pinned.cu - P2.S1: the pinned host arena and the parallel expert load.
 #include "strata/core/pinned.hpp"
+#include "strata/env.hpp"
 #include "strata/platform/memory.hpp"
 #include "strata/core/pin_budget.hpp"
 #include "strata/core/arch_defaults.hpp"   // arena_skip_thp_request
@@ -268,7 +269,7 @@ void* reserve(uint64_t bytes, PageBacking& got, std::string& note, const std::st
     // fails with ERROR_PRIVILEGE_NOT_HELD.  That is the EXPECTED outcome on a desktop, not an error.
     SIZE_T large = GetLargePageMinimum();
     // A/B switch: STRATA_NO_LARGEPAGES=1 skips the large-page attempt, same run, same boot.
-    if (large > 0 && std::getenv("STRATA_NO_LARGEPAGES") == nullptr) {
+    if (large > 0 && strata::env("NOSTROMA_NO_LARGEPAGES") == nullptr) {
         // MEM_LARGE_PAGES requires the allocation size to be an exact multiple of the large page size -
         // anything else is ERROR_INVALID_PARAMETER (87), which reads like a privilege problem but is not.
         // Round up: the slack is under 2 MB and the tail stays unused.
@@ -285,7 +286,7 @@ void* reserve(uint64_t bytes, PageBacking& got, std::string& note, const std::st
         note = "large pages refused for " + std::to_string((unsigned long long) lbytes) + " B (GetLargePageMinimum=" +
                std::to_string((unsigned long long) large) + ", VirtualAlloc error " +
                std::to_string((unsigned long long) GetLastError()) + "); using 4 KB pages";
-    } else if (std::getenv("STRATA_NO_LARGEPAGES") != nullptr) {
+    } else if (strata::env("NOSTROMA_NO_LARGEPAGES") != nullptr) {
         note = "large pages skipped (STRATA_NO_LARGEPAGES); using 4 KB pages";
     } else {
         note = "this system has no large-page minimum; using 4 KB pages";
@@ -436,7 +437,7 @@ void* reserve(uint64_t bytes, PageBacking& got, std::string& note, const std::st
 
     // STRATA_NO_LARGEPAGES=1 is the same-run A/B switch the Windows branch documents; honor it
     // here too, so the large-page path can be compared without changing the pool or rebooting.
-    if (std::getenv("STRATA_NO_LARGEPAGES") != nullptr) {
+    if (strata::env("NOSTROMA_NO_LARGEPAGES") != nullptr) {
         note = "large pages skipped (STRATA_NO_LARGEPAGES); using 4 KB pages";
     } else {
         void* p = mmap(nullptr, bytes, PROT_READ | PROT_WRITE,
@@ -491,10 +492,10 @@ void* reserve(uint64_t bytes, PageBacking& got, std::string& note, const std::st
     // from the device before the arena is made; a huge-page move inside the registered arena resets that GPU in a prompt), every other
     // device as before.  =0 asks for them there too (the user's choice; #2126's free-block check below still applies); any other value
     // skips the request on any device (as before).
-    const char* no_thp = std::getenv("STRATA_NO_ARENA_THP");
+    const char* no_thp = strata::env("NOSTROMA_NO_ARENA_THP");
     const bool user_no_thp = no_thp != nullptr && no_thp[0] != '0';
     const bool skip_thp_request = arena_skip_thp_request(no_thp, thp_mode == "always", arena_no_thp_flag().load(std::memory_order_relaxed));
-    if (std::getenv("STRATA_NO_LARGEPAGES") == nullptr && skip_thp_request) {
+    if (strata::env("NOSTROMA_NO_LARGEPAGES") == nullptr && skip_thp_request) {
         const std::string four_k = "; using 4 KB pages";
         if (note.size() >= four_k.size() && note.compare(note.size() - four_k.size(), four_k.size(), four_k) == 0)
             note.resize(note.size() - four_k.size());
@@ -503,7 +504,7 @@ void* reserve(uint64_t bytes, PageBacking& got, std::string& note, const std::st
                     : thp_mode == "always"
                     ? "; transparent huge pages are on for every mapping (THP always): MADV_HUGEPAGE not requested"
                     : "; huge pages not requested on this graphics chip";
-    } else if (std::getenv("STRATA_NO_LARGEPAGES") == nullptr && std::getenv("STRATA_ARENA_THP") == nullptr &&
+    } else if (strata::env("NOSTROMA_NO_LARGEPAGES") == nullptr && strata::env("NOSTROMA_ARENA_THP") == nullptr &&
                free_huge_bytes() < bytes / 2) {
         // #2126: THP "madvise" + defrag "madvise" makes every fault of a MADV_HUGEPAGE mapping reclaim and compact
         // until it finds a 2 MiB block.  When less than half of the arena could be backed by blocks that are free
@@ -516,7 +517,7 @@ void* reserve(uint64_t bytes, PageBacking& got, std::string& note, const std::st
                 " GiB of free 2 MiB blocks for a " + std::to_string(bytes >> 30) +
                 " GiB arena, compaction would stall the load (STRATA_ARENA_THP=1 requests them anyway) (#2126)";
         std::fprintf(stderr, "strata: expert arena: %s\n", note.c_str());   // said now: the load that follows can take minutes
-    } else if (std::getenv("STRATA_NO_LARGEPAGES") == nullptr && madvise(p, bytes, MADV_HUGEPAGE) == 0) {
+    } else if (strata::env("NOSTROMA_NO_LARGEPAGES") == nullptr && madvise(p, bytes, MADV_HUGEPAGE) == 0) {
         const std::string four_k = "; using 4 KB pages";
         if (note.size() >= four_k.size() && note.compare(note.size() - four_k.size(), four_k.size(), four_k) == 0)
             note.resize(note.size() - four_k.size());
@@ -583,17 +584,17 @@ void set_held_address_space(std::vector<uint64_t> bases) {
 bool arena_no_register() {
 #if defined(STRATA_USE_HIP) && defined(__linux__)   // kfd_quiet NOREG scope: Linux HIP only, every other build keeps its old text
     // an explicit setting wins over the engine's flag (kfd_quiet.hpp arena_unregistered: the same rule as before, testable)
-    return strata::core::kfd_quiet::arena_unregistered(std::getenv("STRATA_ARENA_PIN_GIB"),
+    return strata::core::kfd_quiet::arena_unregistered(strata::env("NOSTROMA_ARENA_PIN_GIB"),
                                                        arena_uma_no_register_flag().load(std::memory_order_relaxed));
 #else
-    const char* e = std::getenv("STRATA_ARENA_PIN_GIB");
+    const char* e = strata::env("NOSTROMA_ARENA_PIN_GIB");
     if (e != nullptr && *e != '\0') return std::string(e) == "none";   // an explicit setting wins over the engine's flag
     return arena_uma_no_register_flag().load(std::memory_order_relaxed);
 #endif
 }
 
 int arena_pin_cap_gib() {
-    const char* e = std::getenv("STRATA_ARENA_PIN_GIB");
+    const char* e = strata::env("NOSTROMA_ARENA_PIN_GIB");
     if (e == nullptr || *e == '\0') return -1;
     if (std::string(e) == "none") return -1;   // 153-igpu: handled by arena_no_register(); no cap otherwise
     if (std::string(e) == "auto") return -2;   // #243: the Windows shared-memory budget sets the sliced pin's cap
@@ -797,7 +798,7 @@ PinnedArena::PinnedArena(uint64_t bytes, const std::vector<uint64_t>& bounds,
     if (base && arena_no_register()) {
         // 153-igpu (UMA mode): nothing is registered; the whole arena stays resident through the working-set lock instead
         slice_bytes = 1;   // "sliced" with no slice registered: the destructor unlocks from offset registered_bytes (0)
-        const char* env = std::getenv("STRATA_ARENA_LOCK");
+        const char* env = strata::env("NOSTROMA_ARENA_LOCK");
 #if defined(STRATA_USE_HIP) && defined(__linux__)   // kfd_quiet NOREG scope: Linux HIP only, every other build keeps its old text
         // (kfd_quiet.hpp NOREG, the Radeon 780M class under Linux: when the engine chose this mode, no mlock is tried and nothing is said
         // about it; a STRATA_ARENA_LOCK the user set decides as before)
@@ -873,7 +874,7 @@ PinnedArena::PinnedArena(uint64_t bytes, const std::vector<uint64_t>& bounds,
                    std::to_string(registered_slices) + " slices pinned (" + std::to_string(registered_bytes >> 30) +
                    " GiB); " + note;
             if (registered_bytes < bytes) {
-                const char* env = std::getenv("STRATA_ARENA_LOCK");
+                const char* env = strata::env("NOSTROMA_ARENA_LOCK");
                 if (backing == PageBacking::LargePages) {   // #779: large pages cannot be paged out: nothing to lock
                     note = "large pages are resident without a lock; " + note;
                 } else if (env == nullptr || std::string(env) != "0") {
@@ -901,7 +902,7 @@ PinnedArena::PinnedArena(uint64_t bytes, const std::vector<uint64_t>& bounds,
             // Plan v0.3 P0.1: keep it RESIDENT instead. Unpinned, Windows trims the arena under memory pressure
             // and the CPU pool's rate then depends on the OS; locking it through the working set needs no
             // special privilege. STRATA_ARENA_LOCK=0 is the A/B arm.
-            const char* env = std::getenv("STRATA_ARENA_LOCK");
+            const char* env = strata::env("NOSTROMA_ARENA_LOCK");
             if (backing == PageBacking::LargePages) {       // #779: large pages cannot be paged out: nothing to lock
                 note = "large pages are resident without a lock; " + note;
             } else if (env == nullptr || std::string(env) != "0") {
@@ -989,7 +990,7 @@ PinnedArena::PinnedArena(uint64_t bytes, ByNeed, const std::vector<std::pair<uin
     note = "pin by need: " + std::to_string(pin_ranges.size()) + " ranges registered (" + std::to_string(total >> 20) +
            " MiB)" + (refused ? ", the driver refused the next one" : capped ? ", the cap was reached" : "") +
            "; " + note;
-    const char* env = std::getenv("STRATA_ARENA_LOCK");
+    const char* env = strata::env("NOSTROMA_ARENA_LOCK");
     if (backing == PageBacking::LargePages) {   // #779: large pages cannot be paged out: nothing to lock
         note = "large pages are resident without a lock; " + note;
         locked_ranges.clear();
@@ -1038,7 +1039,7 @@ void PinnedArena::register_slices(std::atomic<int>& ready) {
     note = "cudaHostRegister per layer, pipelined with the load: " + std::to_string(registered_slices) + " of " +
            std::to_string(n) + " slices pinned; " + note;
     if (i < n && base != nullptr) {   // the rest stays resident through the working-set lock, as the sliced fallback does
-        const char* env = std::getenv("STRATA_ARENA_LOCK");
+        const char* env = strata::env("NOSTROMA_ARENA_LOCK");
         if (backing == PageBacking::LargePages) {           // #779: large pages cannot be paged out: nothing to lock
             note = "large pages are resident without a lock; " + note;
         } else if (env == nullptr || std::string(env) != "0") {
@@ -1161,7 +1162,7 @@ LoadStats load_experts_direct(const std::string& path, uint8_t* dst, const std::
 
 bool experts_unbuffered(const std::vector<std::string>& files, uint64_t arena_bytes, std::string& why,
                         bool cache_counts, uint64_t read_bytes) {
-    const char* env = std::getenv("STRATA_UNBUFFERED_LOAD");
+    const char* env = strata::env("NOSTROMA_UNBUFFERED_LOAD");
     if (env != nullptr && env[0] != '\0') {
         why = std::string("STRATA_UNBUFFERED_LOAD=") + env;
         return env[0] != '0';

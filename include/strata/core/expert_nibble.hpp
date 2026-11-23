@@ -21,6 +21,7 @@
 #pragma once
 
 #include "strata/kernels/cpu/expert_layout.hpp"
+#include "strata/env.hpp"
 
 #include <cstddef>
 #include <cstdint>
@@ -239,15 +240,15 @@ inline bool parse_list(const char* s, std::vector<int64_t>& out) {
 inline const Config& config() {
     static const Config c = [] {
         Config r;
-        const char* e = std::getenv("STRATA_EXPERT_NIBBLE");
+        const char* e = strata::env("NOSTROMA_EXPERT_NIBBLE");
         if (e != nullptr && e[0] != '\0' && std::strcmp(e, "0") != 0) {
             if (std::strcmp(e, "1") == 0) r.on = true;
             else r.error = std::string("STRATA_EXPERT_NIBBLE=") + e + ": expected 0 or 1";
         }
-        const char* rc = std::getenv("STRATA_EXPERT_NIBBLE_RECHECK");
+        const char* rc = strata::env("NOSTROMA_EXPERT_NIBBLE_RECHECK");
         r.recheck = rc != nullptr && std::strcmp(rc, "1") == 0;
         std::vector<int64_t> v;
-        if (const char* f = std::getenv("STRATA_EXPERT_NIBBLE_FMTS"); f != nullptr && f[0] != '\0') {
+        if (const char* f = strata::env("NOSTROMA_EXPERT_NIBBLE_FMTS"); f != nullptr && f[0] != '\0') {
             if (!detail::parse_list(f, v)) {
                 if (r.error.empty()) r.error = std::string("STRATA_EXPERT_NIBBLE_FMTS=") + f + ": expected ggml types, e.g. 22,18,21";
             } else {
@@ -260,7 +261,7 @@ inline const Config& config() {
                 }
             }
         }
-        if (const char* k = std::getenv("STRATA_EXPERT_NIBBLE_SKIP"); k != nullptr && k[0] != '\0') {
+        if (const char* k = strata::env("NOSTROMA_EXPERT_NIBBLE_SKIP"); k != nullptr && k[0] != '\0') {
             if (!detail::parse_list(k, r.skip) && r.error.empty())
                 r.error = std::string("STRATA_EXPERT_NIBBLE_SKIP=") + k + ": expected layer numbers, e.g. 40,44";
         }

@@ -15,6 +15,7 @@
 // (d) the GPU dequantizers of the prompt path and the embedding against `to_float` (Q8_0: bit for bit).
 // The synthetic mode and (d) follow eddoursul/Strata 8029fa9.
 #include "strata/artifact/gguf_reader.hpp"
+#include "strata/env.hpp"
 #include "strata/kernels/cpu/native_expert.hpp"
 #include "strata/kernels/cpu/expert.hpp"
 #include "strata/kernels/cpu/iq_avx512.hpp"
@@ -920,7 +921,7 @@ int main(int argc, char** argv) {
         return 2;
     }
     // #152's width check tests the opt-in rule (the multi-token kernels from one token on)
-    if (std::getenv("STRATA_IQ_MT_MIN") == nullptr) {
+    if (strata::env("NOSTROMA_IQ_MT_MIN") == nullptr) {
 #ifdef _WIN32
         _putenv_s("STRATA_IQ_MT_MIN", "1");
 #else

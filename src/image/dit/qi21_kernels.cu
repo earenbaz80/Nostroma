@@ -4,6 +4,7 @@
 // the timestep sinusoid, SiLU, GELU and txt_in's RMSNorm, written as ggml's CUDA kernels compute them (same formulas,
 // float maths); their reductions are fixed-order, so a run gives the same bytes every time.
 #include "qi21_kernels.hpp"
+#include "strata/env.hpp"
 
 #if defined(__HIP__) || defined(__HIPCC__) || defined(__HIP_PLATFORM_AMD__)
 #define QI_HIP 1
@@ -588,7 +589,7 @@ int has_fast_attn(int device) {
     const char* arch = prop.gcnArchName;
     for (const char* p : {"gfx1100", "gfx1101", "gfx1102", "gfx1103", "gfx1150", "gfx1151", "gfx1152"})
         if (std::strncmp(arch, p, 7) == 0) return 1;
-    const char* g12 = std::getenv("STRATA_QI_GFX12_ATTN");
+    const char* g12 = strata::env("NOSTROMA_QI_GFX12_ATTN");
     const bool rdna4 = std::strncmp(arch, "gfx1200", 7) == 0 || std::strncmp(arch, "gfx1201", 7) == 0;
     // gfx1200 / gfx1201: on by default (R9700: 8 steps 27.75 s -> 6.93 s at 1024, pictures 54 dB from the exact-attention ones);
     // STRATA_QI_GFX12_ATTN=0 turns it off

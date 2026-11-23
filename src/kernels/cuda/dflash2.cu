@@ -1,5 +1,6 @@
 // src/kernels/cuda/dflash2.cu - the small kernels of the DFlash2 drafter.  See include/strata/kernels/dflash2.hpp.
 #include "strata/kernels/dflash2.hpp"
+#include "strata/env.hpp"
 
 #include "strata/kernels/dp4a.hpp"
 #include "strata/kernels/gfx_arch.hpp"
@@ -1029,7 +1030,7 @@ void df2_gemm(const Df2Mat* mats, int n, const void* xq, const float* xd, int n_
     const int8_t* xqp = static_cast<const int8_t*>(xq);
     cudaStream_t st = (cudaStream_t) stream;
     if (mats[0].q4) {   // the Q4_0 pack: 4 warps a block when the rows allow, else 2; the rows-a-warp variants (bitwise the same results) by matrix size
-        static const int tune4 = [] { const char* e = std::getenv("STRATA_DF2_GEMM4"); return e ? std::atoi(e) : 0; }();   // 0: the table; 1: 8 rows a warp as before; 10 and up: that variant for every matrix (bench / A/B)
+        static const int tune4 = [] { const char* e = strata::env("NOSTROMA_DF2_GEMM4"); return e ? std::atoi(e) : 0; }();   // 0: the table; 1: 8 rows a warp as before; 10 and up: that variant for every matrix (bench / A/B)
         int v4 = g_gemm_variant != 0 ? g_gemm_variant : tune4 >= 10 ? tune4 : tune4 != 0 ? 1 : DF2_Q4_AUTO(rows);
 #define DF2_ROWS4_CASE(V, W, R, U) case V: gemm4_rows_kernel<W, R, U><<<(rows / 8) * (8 / R) / W, W * 32, 0, st>>>(segs, xqp, xd, n_in, ncols); break;
         switch (v4) {
@@ -1077,7 +1078,7 @@ void df2_gemm(const Df2Mat* mats, int n, const void* xq, const float* xd, int n_
         check("gemm4");
         return;
     }
-    static const int tune = [] { const char* e = std::getenv("STRATA_DF2_GEMM"); return e ? std::atoi(e) : 1; }();   // 1 (default): rows a warp by matrix size, bitwise the same results; 0: 8 rows a warp as before
+    static const int tune = [] { const char* e = strata::env("NOSTROMA_DF2_GEMM"); return e ? std::atoi(e) : 1; }();   // 1 (default): rows a warp by matrix size, bitwise the same results; 0: 8 rows a warp as before
     const int variant = g_gemm_variant != 0 ? g_gemm_variant
                         : tune == 0         ? (rows % 32 == 0 ? 1 : 2)
                         : rows <= 1024      ? 20

@@ -1,4 +1,5 @@
 #include "strata/core/conversation_snapshot.hpp"
+#include "strata/env.hpp"
 #include "strata/kernels/kv_q4.hpp"
 #include "conversation_checked.hpp"
 #include "conversation_copy.hpp"
@@ -137,13 +138,13 @@ struct VramKv {
 VramKv& vram_kv() { static VramKv v; return v; }
 size_t park_vram_budget() {
     static const size_t b = [] {
-        const char* v = std::getenv("STRATA_PARK_VRAM_MIB");
+        const char* v = strata::env("NOSTROMA_PARK_VRAM_MIB");
         const long long mib = v != nullptr ? std::atoll(v) : 0;
         return mib > 0 ? (size_t) mib << 20 : (size_t) 0;
     }();
     return b;
 }
-bool park_trace() { static const bool on = std::getenv("STRATA_PARK_TRACE") != nullptr; return on; }
+bool park_trace() { static const bool on = strata::env("NOSTROMA_PARK_TRACE") != nullptr; return on; }
 void vram_kv_free(VramKvSlot& s) {
     int cur = s.dev;
     (void) cudaGetDevice(&cur);
@@ -233,7 +234,7 @@ bool park_async_on() {
 #if defined(STRATA_USE_HIP) || defined(STRATA_HIP_GFX906) || defined(STRATA_GPU_METAL)
     return false;
 #else
-    static const bool on = [] { const char* v = std::getenv("STRATA_PARK_ASYNC"); return v != nullptr && v[0] == '1'; }();
+    static const bool on = [] { const char* v = strata::env("NOSTROMA_PARK_ASYNC"); return v != nullptr && v[0] == '1'; }();
     return on;
 #endif
 }
@@ -252,7 +253,7 @@ bool on_device(const void* p) {
 struct KvSaveTrace { double attrs = 0, resize = 0, copy = 0; long resize_faults = 0; };
 KvSaveTrace& kv_save_trace() { static KvSaveTrace t; return t; }
 bool park_trace_on() {
-    static const bool on = std::getenv("STRATA_PARK_TRACE") != nullptr;
+    static const bool on = strata::env("NOSTROMA_PARK_TRACE") != nullptr;
     return on;
 }
 

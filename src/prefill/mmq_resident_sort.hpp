@@ -2,6 +2,7 @@
 #pragma once
 
 #include <algorithm>
+#include "strata/env.hpp"
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
@@ -15,7 +16,7 @@ inline bool mmq_resident_sort_flag(const char* value) {
 }
 
 inline bool mmq_resident_sort_requested() {
-    static const bool on = mmq_resident_sort_flag(std::getenv("STRATA_MMQ_RESIDENT_SORT_NE"));
+    static const bool on = mmq_resident_sort_flag(strata::env("NOSTROMA_MMQ_RESIDENT_SORT_NE"));
     return on;
 }
 
@@ -25,7 +26,7 @@ inline bool mmq_resident_sort_requested() {
 // width: each expert's rows get the same bits in any full group. The partial group can take the stream-k split, whose
 // K boundaries depend on the group's tile count - leaving it unchanged keeps the prompt's bits.
 inline bool mmq_group_sort_requested() {
-    static const bool on = mmq_resident_sort_flag(std::getenv("STRATA_MMQ_GROUP_SORT"));
+    static const bool on = mmq_resident_sort_flag(strata::env("NOSTROMA_MMQ_GROUP_SORT"));
     return on;
 }
 

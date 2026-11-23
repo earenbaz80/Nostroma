@@ -1,4 +1,5 @@
 #include "strata/core/conversation_snapshot.hpp"
+#include "strata/env.hpp"
 #include "strata/core/conversation_file.hpp"
 #include "strata/kernels/kv_q4.hpp"
 #include <cuda_runtime.h>
@@ -131,7 +132,7 @@ void full_session(int fmt, int mode, int experts) {
     auto& g=main.g;
     g.n_layers=4; g.n_expert=experts;
     g.ssm_state_size=2; g.ssm_v_heads=2; g.ssm_conv_channels=8;
-    if (std::getenv("STRATA_TEST_BIG_GDN")) { g.ssm_state_size=64; g.ssm_v_heads=64; }   // a GDN state over 1 MiB: the async checkpoint path
+    if (strata::env("NOSTROMA_TEST_BIG_GDN")) { g.ssm_state_size=64; g.ssm_v_heads=64; }   // a GDN state over 1 MiB: the async checkpoint path
     SessionState ss;
     ss.max_cells=96; ss.qsa_states=&main.state;
     ss.layer_hi=g.n_layers; ss.gdn_alloc=g.n_gdn_layers(); ss.qsa_alloc=g.n_qsa_layers();   // the whole-model carve

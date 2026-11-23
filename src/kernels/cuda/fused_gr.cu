@@ -1,5 +1,6 @@
 // src/kernels/cuda/fused_gr.cu - see include/strata/kernels/fused_gr.hpp.
 #include "strata/core/emulate.hpp"
+#include "strata/env.hpp"
 #include "strata/core/sm75_series.hpp"
 #include "strata/core/sm120_series.hpp"
 #include "strata/core/dispatch_stats.hpp"
@@ -482,7 +483,7 @@ bool gr_up_wide_on() {
     return false;
 #else
     static const int env = [] {
-        const char* v = std::getenv("STRATA_GR_UP_WIDE");
+        const char* v = strata::env("NOSTROMA_GR_UP_WIDE");
         return v != nullptr ? (std::atoi(v) != 0 ? 1 : 0) : -1;
     }();
     if (env >= 0) return env != 0;
@@ -1511,7 +1512,7 @@ namespace {
 // default config) did not show the +2.8-3.5% of bench #832 (medians 0.97-0.99 of the off arm).
 bool gr_down_max4() {
     static const bool on = [] {
-        const char* v = std::getenv("STRATA_GR_DOWN_MAX4");
+        const char* v = strata::env("NOSTROMA_GR_DOWN_MAX4");
         return v != nullptr && std::atoi(v) != 0;
     }();
     return on;
@@ -1521,7 +1522,7 @@ bool gr_down_max4() {
 // STRATA_GR_NORM_FAST=0 / 1 forces it off / on
 bool norm_fast_on() {
 #if defined(__HIPCC__)
-    static const int env = [] { const char* e = std::getenv("STRATA_GR_NORM_FAST"); return e != nullptr ? (std::atoi(e) != 0 ? 1 : 0) : -1; }();
+    static const int env = [] { const char* e = strata::env("NOSTROMA_GR_NORM_FAST"); return e != nullptr ? (std::atoi(e) != 0 ? 1 : 0) : -1; }();
     if (env >= 0) return env != 0;
     static int per_dev[64];   // 0 unknown, 1 no, 2 yes
     int dev = 0;
@@ -1533,14 +1534,14 @@ bool norm_fast_on() {
     return per_dev[dev] == 2;
 #else
     // CUDA: opt-in with STRATA_GR_NORM_FAST=1 (measured on sm_70 only)
-    static const bool on = [] { const char* e = std::getenv("STRATA_GR_NORM_FAST"); return e != nullptr && std::atoi(e) != 0; }();
+    static const bool on = [] { const char* e = strata::env("NOSTROMA_GR_NORM_FAST"); return e != nullptr && std::atoi(e) != 0; }();
     return on;
 #endif
 }
 
 // STRATA_QFUSE_HC_LOCAL=0 puts the atomic-tail up kernel back under STRATA_QFUSE_HC (default: the 32-column kernel)
 bool qfuse_hc_local() {
-    const char* e = std::getenv("STRATA_QFUSE_HC_LOCAL");
+    const char* e = strata::env("NOSTROMA_QFUSE_HC_LOCAL");
     return e == nullptr || std::atoi(e) != 0;
 }
 // Turing: gr_up75_kernel for 3+ tokens (bitwise gr_up_multi_kernel; fused_gr_bench cold on an RTX 2080 Ti, up incl. a
@@ -1550,7 +1551,7 @@ bool up75_on() {
 #if defined(__HIPCC__)
     return false;
 #else
-    static const int env = [] { const char* v = std::getenv("STRATA_GR_UP75"); return v ? (std::atoi(v) != 0 ? 1 : 0) : -1; }();
+    static const int env = [] { const char* v = strata::env("NOSTROMA_GR_UP75"); return v ? (std::atoi(v) != 0 ? 1 : 0) : -1; }();
     if (env >= 0) return env != 0;
     static int per_dev[64];   // 0 unknown, 1 no, 2 yes
     int dev = 0;
@@ -1572,7 +1573,7 @@ int down_tg(int ct) {
     (void) ct;
     return 0;
 #else
-    static const int env = [] { const char* v = std::getenv("STRATA_GR_DOWN_TG"); return v ? std::atoi(v) : -1; }();
+    static const int env = [] { const char* v = strata::env("NOSTROMA_GR_DOWN_TG"); return v ? std::atoi(v) : -1; }();
     if (ct < 2) return 0;
     if (env >= 0) return env > 0 && env <= 3 && ct % env == 0 ? env : 0;
     // fused_gr_bench cold on an RTX 2080 Ti (down incl. a stamp): T 4 29.1 -> 27.3 us, T 6 38.5 -> 32.2 with pairs;
@@ -1598,7 +1599,7 @@ int down_tg(int ct) {
 // STRATA_GR_R2 (v3 read, 5..8-token launches; default 2): 0 = the generic kernels as before, 1 / 2 / 4 = the exact-T kernels with that many down
 // rows per warp (the same dots in the same order, so the same bits; fewer blocks stage the same activations less often)
 static int gr_r2() {
-    static const int v = [] { const char* e = std::getenv("STRATA_GR_R2"); return e != nullptr ? std::atoi(e) : 2; }();
+    static const int v = [] { const char* e = strata::env("NOSTROMA_GR_R2"); return e != nullptr ? std::atoi(e) : 2; }();
     return v == 1 || v == 2 || v == 4 ? v : 0;
 }
 void launch_multi(const GrMulti& m, int variant, cudaStream_t st, unsigned long long* stamp_buf, int stamp_i0) {
@@ -1629,7 +1630,7 @@ void launch_multi(const GrMulti& m, int variant, cudaStream_t st, unsigned long 
     strata::dispatch::kernel(strata::dispatch::kHc, variant, m.a[0].s_down != nullptr ? 1 : 0, tv, chunk_tok, n_tok);
     const size_t per_tok = (staged ? (size_t) 2 * H_TILE : (size_t) tv) * sizeof(float);
     static const bool no_multi_gr = [] {
-        const char* no = std::getenv("STRATA_NO_MULTI_GR");
+        const char* no = strata::env("NOSTROMA_NO_MULTI_GR");
         return no != nullptr && no[0] != '\0' && no[0] != '0';
     }();
     const bool exact_t = !no_multi_gr;
@@ -1747,7 +1748,7 @@ void launch_multi(const GrMulti& m, int variant, cudaStream_t st, unsigned long 
 
 /// STRATA_HC_SPLIT: unset or 2 = the newest the check accepts (staged), 1 = at most split, 0 = the plain read
 int env_variant() {
-    const char* e = std::getenv("STRATA_HC_SPLIT");
+    const char* e = strata::env("NOSTROMA_HC_SPLIT");
     if (e == nullptr || e[0] == '\0') return kHcStaged;
     if (e[0] == '0') return kHcPlain;
     if (e[0] == '1') return kHcSplit;
@@ -2605,16 +2606,16 @@ __global__ void __launch_bounds__(THREADS) gr_up_q8_fast_kernel(GrMulti m, const
 
 template <int T> void launch_q8_t(const GrMulti& m, float* part, float* ssg, cudaStream_t st, unsigned long long* stamp_buf,
                                   int stamp_i0) {
-    static const bool ts = [] { const char* v = std::getenv("STRATA_TSUM"); return v && v[0] == '1'; }();
+    static const bool ts = [] { const char* v = strata::env("NOSTROMA_TSUM"); return v && v[0] == '1'; }();
     if (stamp_buf) gpu_stamp(stamp_buf, stamp_i0, (void*) st);
-    static const bool pfs = [] { const char* v = std::getenv("STRATA_GR_Q8_PFS"); return v != nullptr && std::atoi(v) != 0; }();
+    static const bool pfs = [] { const char* v = strata::env("NOSTROMA_GR_Q8_PFS"); return v != nullptr && std::atoi(v) != 0; }();
     if (ts && pfs) gr_down_q8_fast_kernel<T, 4, true><<<dim3(LR / (WARPS * 4) + 1, Q8_NKC), THREADS, 0, st>>>(m, part, ssg);
     else if (ts) gr_down_q8_fast_kernel<T, 4><<<dim3(LR / (WARPS * 4) + 1, Q8_NKC), THREADS, 0, st>>>(m, part, ssg);
     else gr_down_q8_kernel<T><<<dim3(Q8_RG + 1, Q8_NKC), THREADS, 0, st>>>(m, part, ssg);
     if (stamp_buf) gpu_stamp(stamp_buf, stamp_i0 + 1, (void*) st);
 #if !STRATA_GR_FAST_BUILD
     if (m.a[0].q8_mixed != nullptr && qfuse_hc_local()) {   // HIP (not gfx906): the block owns a q8_1 group
-        static const int upg = [] { const char* v = std::getenv("STRATA_GR_Q32_G"); const int g = v ? std::atoi(v) : 1; return g == 2 || g == 4 || g == 8 ? g : 1; }();
+        static const int upg = [] { const char* v = strata::env("NOSTROMA_GR_Q32_G"); const int g = v ? std::atoi(v) : 1; return g == 2 || g == 4 || g == 8 ? g : 1; }();
         if (upg == 2) gr_up_q8_q32_kernel<T, 2><<<Q32_BLOCKS, Q32_THREADS, 0, st>>>(m, part, ssg);
         else if (upg == 4) gr_up_q8_q32_kernel<T, 4><<<Q32_BLOCKS, Q32_THREADS, 0, st>>>(m, part, ssg);
         else if (upg == 8) gr_up_q8_q32_kernel<T, 8><<<Q32_BLOCKS, Q32_THREADS, 0, st>>>(m, part, ssg);
@@ -2645,13 +2646,13 @@ void launch_q8(const GrMulti& m, float* scratch, cudaStream_t st, unsigned long 
 #if STRATA_GR_FAST_BUILD
 int g_gr_fast = -1;   // fused_gr_set_fast (the bench); -1 = STRATA_GR_FAST, else the card's default
 static bool gr_fast() {
-    static const int env = [] { const char* v = std::getenv("STRATA_GR_FAST"); return v ? (std::atoi(v) != 0 ? 1 : 0) : -1; }();
+    static const int env = [] { const char* v = strata::env("NOSTROMA_GR_FAST"); return v ? (std::atoi(v) != 0 ? 1 : 0) : -1; }();
     if (g_gr_fast >= 0) return g_gr_fast != 0;
     if (env >= 0) return env != 0;
 #if defined(__HIPCC__)
     return true;
 #else
-    { const char* v = std::getenv("STRATA_SM70_TABLE"); return cur_dev_volta() && v != nullptr && std::atoi(v) != 0; }   // PR 1401: opt-in   // CUDA: on Volta (V100-SXM2: 50.9 -> 46.7 us a read at T 1, bitwise); elsewhere opt-in
+    { const char* v = strata::env("NOSTROMA_SM70_TABLE"); return cur_dev_volta() && v != nullptr && std::atoi(v) != 0; }   // PR 1401: opt-in   // CUDA: on Volta (V100-SXM2: 50.9 -> 46.7 us a read at T 1, bitwise); elsewhere opt-in
 #endif
 }
 #else
@@ -2693,7 +2694,7 @@ static bool gr_v3_default_on(int dev) {
 // warp are slower (2 = +17% at T4) and stay off.  Default: 5 on a compute capability 12.0 card, 0 elsewhere (unmeasured there);
 // STRATA_GR_V3_PF=0 restores the plain kernels, any value forces that mask.
 static int v3_pf_mask() {
-    static const int env = [] { const char* e = std::getenv("STRATA_GR_V3_PF"); return e != nullptr ? std::atoi(e) : -1; }();
+    static const int env = [] { const char* e = strata::env("NOSTROMA_GR_V3_PF"); return e != nullptr ? std::atoi(e) : -1; }();
     if (env >= 0) return env;
 #if defined(__HIPCC__)
     return 0;
@@ -2865,7 +2866,7 @@ static bool fused_gr_read_multi_slice(const FusedGrArgs* a, int n_tok, float* xn
         return q8;
     }
     // the two-kernel read above (another summation order): STRATA_GR_V3=0 / 1, unset = gr_v3_default_on (a 12.0 card with > 13 GiB)
-    static const int v3_env = [] { const char* v = std::getenv("STRATA_GR_V3"); return v != nullptr ? (std::atoi(v) != 0 ? 1 : 0) : -1; }();
+    static const int v3_env = [] { const char* v = strata::env("NOSTROMA_GR_V3"); return v != nullptr ? (std::atoi(v) != 0 ? 1 : 0) : -1; }();
     static int split3[64] = {};   // per device: 0 = not decided yet, 1 / 2 = column halves S, -1 = does not fit
     int dev3 = 0;
     cudaGetDevice(&dev3);
@@ -2964,7 +2965,7 @@ static bool fused_gr_read_multi_slice(const FusedGrArgs* a, int n_tok, float* xn
     // per verify window).  Its fixed-order finish sums the K slices in another order than the single-token
     // fused_gr_read, so the multi-token read is then no longer bitwise equal to T single-token calls (gr_parity's
     // contract); off by default for that reason.
-    static const bool split_on = std::getenv("STRATA_GR_SPLIT") && std::string(std::getenv("STRATA_GR_SPLIT")) == "1";
+    static const bool split_on = strata::env("NOSTROMA_GR_SPLIT") && std::string(strata::env("NOSTROMA_GR_SPLIT")) == "1";
     if (split_on && a[0].s_down == nullptr) {   // its K-split down reads bf16 rows (not STRATA_HC_REQ8)
         const bool fast = gr_fast();
         if (fast) gr_norm_fast_kernel<<<n_tok, THREADS, 0, st>>>(m);
@@ -3265,7 +3266,7 @@ int fused_gr_variant() {
     const int v = dev >= 0 && dev < 64 ? g_variant[dev].load() : 0;
     if (v > 0) return v;
     // not checked on this card: the plain read, unless STRATA_HC_SPLIT names a variant (a test such as gr_parity)
-    const char* e = std::getenv("STRATA_HC_SPLIT");
+    const char* e = strata::env("NOSTROMA_HC_SPLIT");
     return e != nullptr && (e[0] == '1' || e[0] == '2') ? env_variant() : kHcPlain;
 }
 
@@ -3627,7 +3628,7 @@ KFn kernel_t(int T) {
     return nullptr;
 }
 bool dp_on() {
-    static const bool dp = [] { const char* v = std::getenv("STRATA_HC_PERSIST"); return v != nullptr && std::atoi(v) == 3; }();
+    static const bool dp = [] { const char* v = strata::env("NOSTROMA_HC_PERSIST"); return v != nullptr && std::atoi(v) == 3; }();
     return dp;
 }
 KFn kernel_for(int T) { return dp_on() ? kernel_t<true>(T) : kernel_t<false>(T); }
@@ -3647,7 +3648,7 @@ void launch(const FusedGrArgs* a, int n_tok, const DevState& st, cudaStream_t s,
     kernel_for(n_tok)<<<NB, THREADS, 0, s>>>(f);
 }
 bool env_on() {
-    static const bool on = [] { const char* v = std::getenv("STRATA_HC_PERSIST"); return v != nullptr && std::atoi(v) != 0; }();
+    static const bool on = [] { const char* v = strata::env("NOSTROMA_HC_PERSIST"); return v != nullptr && std::atoi(v) != 0; }();
     return on;
 }
 }  // namespace hcp

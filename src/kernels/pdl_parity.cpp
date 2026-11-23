@@ -15,6 +15,7 @@
 //      it has none.
 // Also copy_rows_strided against the cudaMemcpy2DAsync it replaces in the verify window.  GPU, synthetic, no model.
 #include "strata/kernels/bf16_bits.hpp"
+#include "strata/env.hpp"
 #include "strata/kernels/bf16_gemv.hpp"
 #include "strata/kernels/native_mmvq.hpp"
 #include "strata/kernels/pdl.hpp"
@@ -249,7 +250,7 @@ int main(int argc, char** argv) {
     size_t prog0, bad0, multi0, mixed0, prog1, bad1, multi1, mixed1;
     cudaGraphExec_t plain = capture(false, b, w_q8, w_iq4, w_b1, w_b2, s, side, ef, ej, prog0, bad0, multi0, mixed0);
     cudaGraphExec_t pdl = capture(true, b, w_q8, w_iq4, w_b1, w_b2, s, side, ef, ej, prog1, bad1, multi1, mixed1);
-    const char* mode = std::getenv("STRATA_DF_PDL");
+    const char* mode = strata::env("NOSTROMA_DF_PDL");
     const bool single = mode != nullptr && std::atoi(mode) == 2;
     std::printf("graph edges: ordinary capture %zu programmatic; PDL capture %zu programmatic, %zu not kernel to kernel, "
                 "%zu nodes with a programmatic and a non-kernel in-edge, %zu into a node with other in-edges%s\n", prog0,

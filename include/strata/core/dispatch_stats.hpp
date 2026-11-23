@@ -13,6 +13,7 @@
 #pragma once
 
 #include <atomic>
+#include "strata/env.hpp"
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -105,7 +106,7 @@ public:
         return o;
     }
     void write_report() {
-        const char* p = std::getenv("STRATA_DISPATCH_REPORT");
+        const char* p = strata::env("NOSTROMA_DISPATCH_REPORT");
         if (!on_ || p == nullptr || p[0] == '\0') return;
         const std::string j = json();
         if (std::FILE* f = std::fopen(p, "wb")) { std::fwrite(j.data(), 1, j.size(), f); std::fclose(f); }
@@ -113,7 +114,7 @@ public:
 
 private:
     Stats() {
-        const char* e = std::getenv("STRATA_DISPATCH_STATS");
+        const char* e = strata::env("NOSTROMA_DISPATCH_STATS");
         on_ = e == nullptr || e[0] != '0';
         for (auto& r : launches_) for (auto& c : r) c.store(0);
         if (on_) std::atexit([] { Stats::get().write_report(); });

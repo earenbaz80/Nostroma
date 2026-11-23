@@ -12,6 +12,7 @@
 // block's projections run on the GPU; its norms, gate and conv (10240 values) on the CPU between two command buffers
 // (layer 0 | layers 1..47 + head).
 #include "gguf_lite.h"
+#include "strata/env.hpp"
 #include "mtl_rt.h"
 #include "resource_path.h"
 #include "ref_quant.h"
@@ -74,7 +75,7 @@ namespace strata::metal_engine {
 // STRATA_METAL_GDN_SCAN=<gdn_scanr_4 | gdn_scanr_4_8 | gdn_scanr_4_4 | gdn_scanr_4_2> forces a kernel (A/B and diagnosis).
 static const char* gdn_scan_name(const std::string& device, int T) {
     static const std::string forced = [] {
-        const char* e = std::getenv("STRATA_METAL_GDN_SCAN");
+        const char* e = strata::env("NOSTROMA_METAL_GDN_SCAN");
         const std::string s = e ? e : "";
         return (s == "gdn_scanr_4" || s == "gdn_scanr_4_8" || s == "gdn_scanr_4_4" || s == "gdn_scanr_4_2") ? s : std::string();
     }();
@@ -88,7 +89,7 @@ static const char* gdn_scan_name(const std::string& device, int T) {
 // an M5 Max, T = 2048 / 4096): the GDN out projection (N 2560, K 6144) 64 x 128 (1.17 -> 0.99 ms), the wide input projections
 // (N >= 6144) 128 x 64.  Other chips keep 64 x 64 (M4: no gain).  STRATA_METAL_GEMM_TILES=0 keeps the old tiles everywhere.
 static void gemm_tile(const std::string& device, int Nn, int K, int& tm, int& tn) {
-    static const bool off = [] { const char* e = std::getenv("STRATA_METAL_GEMM_TILES"); return e && std::string(e) == "0"; }();
+    static const bool off = [] { const char* e = strata::env("NOSTROMA_METAL_GEMM_TILES"); return e && std::string(e) == "0"; }();
     if (off || device.rfind("Apple M5", 0) != 0) return;
     if (Nn == strata_metal::geo::N && K == strata_metal::geo::ZV) { tm = 64; tn = 128; }
     else if (Nn >= 6144) { tm = 128; tn = 64; }
@@ -97,7 +98,7 @@ static void gemm_tile(const std::string& device, int Nn, int K, int& tm, int& tn
 // T = 2048; gdn_pre / gdn_post read the pieces at that stride, function constant 7).  Bit-identical to the separate GEMMs.
 // STRATA_METAL_GDN_FUSE=0 keeps the separate ones.
 static bool gdn_fused_inputs(const std::string& device) {
-    static const bool off = [] { const char* e = std::getenv("STRATA_METAL_GDN_FUSE"); return e && std::string(e) == "0"; }();
+    static const bool off = [] { const char* e = strata::env("NOSTROMA_METAL_GDN_FUSE"); return e && std::string(e) == "0"; }();
     return !off && device.rfind("Apple M5", 0) == 0;
 }
 
@@ -147,7 +148,7 @@ struct ArgArgs { uint32_t n_vocab, parts; };
 // the threadgroup copy's values, 3-7% faster on the M5 Max; STRATA_METAL_CTAB=0 turns it off
 bool metal_ctab() {
     static const bool on = [] {
-        const char* e = std::getenv("STRATA_METAL_CTAB");
+        const char* e = strata::env("NOSTROMA_METAL_CTAB");
         return !(e && std::string(e) == "0");
     }();
     return on;
@@ -161,7 +162,7 @@ bool metal_ctab() {
 // =1 turns it on for any pack.
 bool g_f16_auto = false;
 bool metal_f16() {
-    static const int mode = [] { const char* e = std::getenv("STRATA_METAL_F16"); return e == nullptr || *e == '\0' ? -1 : (std::string(e) == "1" ? 1 : 0); }();
+    static const int mode = [] { const char* e = strata::env("NOSTROMA_METAL_F16"); return e == nullptr || *e == '\0' ? -1 : (std::string(e) == "1" ? 1 : 0); }();
     return mode == 1 || (mode < 0 && g_f16_auto);
 }
 bool f16_auto_for(const std::string& path, bool streaming) {
@@ -329,7 +330,7 @@ private:
         // of the words as empty grids (the marginal cost of a kernel class by leaving it out)
         static const std::vector<std::string> skip = [] {
             std::vector<std::string> v;
-            if (const char* e = std::getenv("STRATA_METAL_SKIP")) {
+            if (const char* e = strata::env("NOSTROMA_METAL_SKIP")) {
                 std::string s = e, w;
                 for (char c : s + ",") { if (c == ',') { if (!w.empty()) v.push_back(w); w.clear(); } else w += c; }
             }
@@ -482,10 +483,10 @@ private:
     // holds it from init, restored after a window that selected).  STRATA_METAL_FUSE=0: off.
     // gr_norm2 / moe_combine_sh2 (gr.metal, glue.metal): the same arithmetic with the loads batched ahead of the stores / sums (the
     // originals wait one memory latency per loop iteration).  Bitwise the same outputs.  STRATA_METAL_LDB=0: the original kernels.
-    bool ldb_ = !(std::getenv("STRATA_METAL_LDB") && std::string(std::getenv("STRATA_METAL_LDB")) == "0");
+    bool ldb_ = !(strata::env("NOSTROMA_METAL_LDB") && std::string(strata::env("NOSTROMA_METAL_LDB")) == "0");
     const char* k_norm() const { return ldb_ ? "gr_norm2" : "gr_norm"; }
     const char* k_comb() const { return ldb_ ? "moe_combine_sh2" : "moe_combine_sh"; }
-    bool fuse_ = !(std::getenv("STRATA_METAL_FUSE") && std::string(std::getenv("STRATA_METAL_FUSE")) == "0");
+    bool fuse_ = !(strata::env("NOSTROMA_METAL_FUSE") && std::string(strata::env("NOSTROMA_METAL_FUSE")) == "0");
     bool qdirty_ = false;
     // STRATA_METAL_KPROF=T (test tooling): once, after the 20th cached window of T tokens with the head, the GPU time
     // of each kernel class alone (the window's own dispatches of that pipeline + weight role, run by themselves)
@@ -614,7 +615,7 @@ private:
     // The drafter's K/V rows of a prompt chunk run on a second queue while the next chunk's main work runs on the first (the two touch
     // different buffers: the chunk's final residual rows are double-buffered, pb_.R / pb_.R2).  The drafter's rows of chunk c+1 wait for
     // chunk c's (they share the drafter's cache and scratch).  STRATA_METAL_MTP_OVERLAP=0: each chunk's rows run before the next chunk.
-    bool mtp_ovl_ = !(std::getenv("STRATA_METAL_MTP_OVERLAP") && std::string(std::getenv("STRATA_METAL_MTP_OVERLAP")) == "0");
+    bool mtp_ovl_ = !(strata::env("NOSTROMA_METAL_MTP_OVERLAP") && std::string(strata::env("NOSTROMA_METAL_MTP_OVERLAP")) == "0");
     void* mtp_async_ = nullptr;
     void mtp_wait() { if (mtp_async_) { cx_->wait_async(mtp_async_); mtp_async_ = nullptr; } }
     mtl::Buffer mpemb_;                    // the drafter's prompt embedding rows (mtp_prefill, one command buffer)
@@ -707,7 +708,7 @@ bool Window::init(const strata::core::ModelGeometry& g, strata::core::SessionSta
     nexp_ = (int) g.n_expert;   // 512, or 256 (the expert-pruned Coder); the routers' logits rows keep a 512-float stride either way
     eps_ = 1e-6f;
     const double t0 = now_ms();
-    if (const long rp = repack_pid_running(shard1); rp > 0 && !(std::getenv("STRATA_METAL_IGNORE_REPACK") && std::string(std::getenv("STRATA_METAL_IGNORE_REPACK")) == "1")) {
+    if (const long rp = repack_pid_running(shard1); rp > 0 && !(strata::env("NOSTROMA_METAL_IGNORE_REPACK") && std::string(strata::env("NOSTROMA_METAL_IGNORE_REPACK")) == "1")) {
         err = "metal window: a model repack or setup's preparation is running here (pid " + std::to_string(rp) + "): the engine is not started "
               "beside it (it froze a 128 GB Mac twice); wait for it to finish, or set STRATA_METAL_IGNORE_REPACK=1";
         return false;
@@ -855,7 +856,7 @@ bool Window::init(const strata::core::ModelGeometry& g, strata::core::SessionSta
     // ---- the HC read in Q8_0 (the owner's default on Metal, as STRATA_HC_Q8 on gfx12): the BF16 down / up / inject
     // matrices quantized once at load (ggml's q8_0 rule, ref_quant), read by gr_down_q8 / gr_up_q8
     {
-        const char* e = std::getenv("STRATA_HC_Q8");
+        const char* e = strata::env("NOSTROMA_HC_Q8");
         hc_q8_ = !(e && std::string(e) == "0");
     }
     {
@@ -909,7 +910,7 @@ bool Window::init(const strata::core::ModelGeometry& g, strata::core::SessionSta
         if (hc_q8_)
             for (const auto& kv : q8off_) skip.push_back(kv.first);
         if (!st_->load_dense(f_, *cx_, skip, W_, err)) return false;
-        const char* e = std::getenv("STRATA_METAL_PREFETCH");
+        const char* e = strata::env("NOSTROMA_METAL_PREFETCH");
         st_pred_ = !(e && std::atoi(e) <= 0);
         if (st_pred_) predL_ = A(4 * (size_t) G_NL * MAXT * 512);
         if (st_pred_ && st_->ahead2() > 0) predL2_ = A(4 * (size_t) G_NL * MAXT * 512);
@@ -946,7 +947,7 @@ void Window::gemv(std::vector<mtl::Dispatch>& ds, const gguf::Tensor& t, const A
     if (n_in >= 6144) { L = 32; Rr = 1; S = 8; K = 2; }
     else if (n_in == 640) { L = 8; Rr = 1; S = 4; K = 1; }
     else if (n_out <= 640 || ty == ref::Q2_0 || ty == ref::BF16) { L = 32; Rr = 1; S = 4; K = 1; }
-    static const bool gyro_tiles = !(std::getenv("STRATA_METAL_GYRO_TILES") && std::string(std::getenv("STRATA_METAL_GYRO_TILES")) == "0");   // off: the A/B arm
+    static const bool gyro_tiles = !(strata::env("NOSTROMA_METAL_GYRO_TILES") && std::string(strata::env("NOSTROMA_METAL_GYRO_TILES")) == "0");   // off: the A/B arm
     if (gyro_dense_ && gyro_tiles && ntok >= 2) {
         // Gyro's dense weights are Q5_K / Q6_K / Q8_0 (3.6 GB a token).  gemv_parity --one on the M4, 2 tokens: Q5_K 2560->10240
         // 261 us with 16,1,4,1 against 210 with 2,1,4,1 (-20%), 2560->6144 158 -> 129, 6144->2560 162 -> 139, 2560->12288
@@ -958,7 +959,7 @@ void Window::gemv(std::vector<mtl::Dispatch>& ds, const gguf::Tensor& t, const A
     {
         // windows of several tokens: NR rows a lane share each x load (the window's cost is its x traffic).  The sums
         // run in the same order for any NR, so the answers do not change.  STRATA_METAL_GEMV_NR (1, 2): the tile.
-        static const int nr_env = [] { const char* e = std::getenv("STRATA_METAL_GEMV_NR"); return e ? std::atoi(e) : 1; }();
+        static const int nr_env = [] { const char* e = strata::env("NOSTROMA_METAL_GEMV_NR"); return e ? std::atoi(e) : 1; }();
         if (ntok > 1 && nr_env == 2 && n_out >= 2048) {
             if (S == 8 && K == 2) { S = 4; K = 2; }
             if (S == 8 && K == 1) S = 4;
@@ -1022,7 +1023,7 @@ void Window::gr_read(std::vector<mtl::Dispatch>& ds, const std::string& pre, boo
     const bool q8 = is_q8(tdn) && is_q8(tup);
     const bool injf = q8 && !final_ && !q8off_.count(tin.name) && tin.type == ref::F32;
     mtl::Dispatch d2;
-    static const bool hcld = std::getenv("STRATA_METAL_HCLD") && std::string(std::getenv("STRATA_METAL_HCLD")) == "1";   // OFF (measured -10.9%, 4 of 4 rounds, M5 Max UD-Q4_K_XL): the HC kernels' units loaded two or three at a time, bitwise the same; registers and occupancy, as the earlier gemvu / moeu unrolls
+    static const bool hcld = strata::env("NOSTROMA_METAL_HCLD") && std::string(strata::env("NOSTROMA_METAL_HCLD")) == "1";   // OFF (measured -10.9%, 4 of 4 rounds, M5 Max UD-Q4_K_XL): the HC kernels' units loaded two or three at a time, bitwise the same; registers and occupancy, as the earlier gemvu / moeu unrolls
     const char* dn = injf ? (hcld ? "gr_downp_q8f_8_8" : "gr_down_q8f_8_8") : q8 ? (hcld ? "gr_downp_q8_8_8" : "gr_down_q8_8_8") : "gr_down_8_8";
     d2.p = P(lib_, dn, mtl::Constants().i(1, ntok), std::string(dn) + "#" + std::to_string(ntok));
     d2.args = {mtl::Arg::B(*bd, od), mtl::Arg::B(*bi, oi), mtl::Arg::B(xn_), mtl::Arg::B(lo_),
@@ -1463,12 +1464,12 @@ bool Window::run(int Tn, const int32_t* tokens, int64_t pos0, bool head, int32_t
         const double r0 = now_ms();
         last_gpu_ms_ = 1000.0 * run_ds(c);
         {
-            static const int kt = std::getenv("STRATA_METAL_KPROF") ? std::atoi(std::getenv("STRATA_METAL_KPROF")) : 0;
+            static const int kt = strata::env("NOSTROMA_METAL_KPROF") ? std::atoi(strata::env("NOSTROMA_METAL_KPROF")) : 0;
             static int seen = 0;
             if (kt == Tn && head && ++seen == 20 && !stream_) kprof(c.ds, Tn);
-            static const int st = std::getenv("STRATA_METAL_STEPPROF") ? std::atoi(std::getenv("STRATA_METAL_STEPPROF")) : 0;
+            static const int st = strata::env("NOSTROMA_METAL_STEPPROF") ? std::atoi(strata::env("NOSTROMA_METAL_STEPPROF")) : 0;
             static int seen2 = 0;
-            static const int st_at = std::getenv("STRATA_METAL_STEPPROF_AT") ? std::atoi(std::getenv("STRATA_METAL_STEPPROF_AT")) : 20;
+            static const int st_at = strata::env("NOSTROMA_METAL_STEPPROF_AT") ? std::atoi(strata::env("NOSTROMA_METAL_STEPPROF_AT")) : 20;
             if (st == Tn && head && ++seen2 == st_at && !stream_) stepprof(c.ds, Tn);
         }
         tp_rg_ = now_ms() - r0;
@@ -1644,7 +1645,7 @@ bool Window::stream_arena(std::string& err) {
     size_t len = sizeof phys;
     sysctlbyname("hw.memsize", &phys, &len, nullptr, 0);
     const double gb = 1e9;
-    if (!(std::getenv("STRATA_METAL_KEEP_HOST_WEIGHTS") && std::string(std::getenv("STRATA_METAL_KEEP_HOST_WEIGHTS")) == "1")) {
+    if (!(strata::env("NOSTROMA_METAL_KEEP_HOST_WEIGHTS") && std::string(strata::env("NOSTROMA_METAL_KEEP_HOST_WEIGHTS")) == "1")) {
         const uint64_t g = strata::gpu::purge_device_allocations(32u << 20);
         std::fprintf(stderr, "strata metal stream: %.2f GB of the host code's device weight copies given back (unused by the "
                              "Metal window)\n", g / 1e9);
@@ -1676,9 +1677,9 @@ bool Window::stream_arena(std::string& err) {
     am.available = avail_now();
     if (main_ss_ && main_ss_->ple.table && main_ss_->ple.table->mode() == strata::kernels::PleIo::Mmap)
         am.ple_mapped = (double) ss_->ple.table->rows() * 192.0;   // a row is at most 192 bytes (Q8_0 + its scale)
-    if (const char* e = std::getenv("STRATA_METAL_KEEP_FREE_GB")) am.keep_gb = std::atof(e);
-    if (const char* e = std::getenv("STRATA_METAL_ARENA_GB")) am.arena_gb = std::atof(e);
-    if (const char* e = std::getenv("STRATA_METAL_LEAVE_SHARE")) am.leave_share = std::atof(e);   // for measuring; the default is kLeaveShare
+    if (const char* e = strata::env("NOSTROMA_METAL_KEEP_FREE_GB")) am.keep_gb = std::atof(e);
+    if (const char* e = strata::env("NOSTROMA_METAL_ARENA_GB")) am.arena_gb = std::atof(e);
+    if (const char* e = strata::env("NOSTROMA_METAL_LEAVE_SHARE")) am.leave_share = std::atof(e);   // for measuring; the default is kLeaveShare
     const double keep = arena_keep(am);
     const double avail = am.available;
     double budget = arena_budget(am);
@@ -1689,7 +1690,7 @@ bool Window::stream_arena(std::string& err) {
         budget = std::max(budget, 1.0 * gb);
     }
     std::string prof;
-    if (const char* e = std::getenv("STRATA_METAL_EXPERT_PROFILE")) prof = e;
+    if (const char* e = strata::env("NOSTROMA_METAL_EXPERT_PROFILE")) prof = e;
     else prof = strata_metal::resource(nullptr, "data", STRATA_METAL_DATA_DEFAULT) + "/expert-profile.bin";
     std::fprintf(stderr, "strata metal stream: %.2f GB allocated before the arena (the process holds %.2f GB, %.2f GB resident); "
                          "RAM %.1f GB (%.1f GB available, %.1f GB kept for macOS), GPU working set %.1f GB\n", used / gb,
@@ -1706,7 +1707,7 @@ bool Window::stream_arena(std::string& err) {
                                                      "a Mac that runs short of memory can freeze (watchdog panics seen at 90+ GB "
                                                      "resident of 128)" : "");
     }
-    const char* epg = std::getenv("STRATA_METAL_PROMPT_GEMM");
+    const char* epg = strata::env("NOSTROMA_METAL_PROMPT_GEMM");
     const bool pg_on = !(epg && std::string(epg) == "0");
     bool minimal = false;   // the arena's least layout (the min slots) is not shrunk further: it goes ahead, filled in steps
     for (int tries = 0;; ++tries) {
@@ -1736,7 +1737,7 @@ bool Window::stream_arena(std::string& err) {
 }
 
 void Window::logpos(int Tn, const int32_t* tokens, int64_t pos0, bool head) {
-    static const char* path = std::getenv("STRATA_METAL_LOGPOS");
+    static const char* path = strata::env("NOSTROMA_METAL_LOGPOS");
     if (path == nullptr || !head) return;
     if (logpos_ == nullptr) logpos_ = std::fopen(path, "ab");
     if (logpos_ == nullptr) return;
@@ -1876,7 +1877,7 @@ void Window::stepprof(const std::vector<mtl::Dispatch>& ds, int Tn) {
     std::vector<size_t> routes;
     for (size_t i = 0; i < n; ++i)
         if (pname.count(ds[i].p) && pname[ds[i].p].rfind("moe_route", 0) == 0) routes.push_back(i);
-    const int reps = std::getenv("STRATA_METAL_STEPPROF_REPS") ? std::max(1, std::atoi(std::getenv("STRATA_METAL_STEPPROF_REPS"))) : 5;
+    const int reps = strata::env("NOSTROMA_METAL_STEPPROF_REPS") ? std::max(1, std::atoi(strata::env("NOSTROMA_METAL_STEPPROF_REPS"))) : 5;
     std::fprintf(stderr, "strata metal stepprof: T%d, %zu dispatches in %zu barrier groups, %zu layers routed, %d reps per prefix\n", Tn, n, m, routes.size(), reps);
     for (int i = 0; i < 40; ++i) cx_->run_graph(ds);   // clocks up
     const double full = [&] { std::vector<double> t; for (int i = 0; i < 15; ++i) t.push_back(1000.0 * cx_->run_graph(ds)); std::sort(t.begin(), t.end()); return t[7]; }();
@@ -1913,7 +1914,7 @@ void Window::stepprof(const std::vector<mtl::Dispatch>& ds, int Tn) {
     // per group: time, part (the experts if the group has any, else the dispatch with the most weight bytes, else the first), bytes
     struct Row { double ms = 0, bytes = 0; int groups = 0, disp = 0; };
     std::map<std::string, Row> by;
-    FILE* of = std::getenv("STRATA_METAL_STEPPROF_OUT") ? std::fopen(std::getenv("STRATA_METAL_STEPPROF_OUT"), "w") : nullptr;
+    FILE* of = strata::env("NOSTROMA_METAL_STEPPROF_OUT") ? std::fopen(strata::env("NOSTROMA_METAL_STEPPROF_OUT"), "w") : nullptr;
     size_t layer_gu = 0, layer_dn = 0;
     for (size_t j = 0; j < m; ++j) {
         const double ms = t[j + 1] - t[j];
@@ -1963,7 +1964,7 @@ Window::~Window() {
 // STRATA_METAL_PROFILE=1: the per-window time split.  Printed once: at the window's destruction, or at process exit
 // (the serve loop leaves through exit() without destroying the window)
 void Window::print_prof(bool periodic) {
-    if ((prof_printed_ && !periodic) || std::getenv("STRATA_METAL_PROFILE") == nullptr) return;
+    if ((prof_printed_ && !periodic) || strata::env("NOSTROMA_METAL_PROFILE") == nullptr) return;
     prof_printed_ = !periodic;
     auto line = [](const char* what, const Prof& x) {
         if (x.n == 0) return;
@@ -1983,7 +1984,7 @@ bool Window::finish(int Tn, const int32_t* tokens, int64_t pos0, bool head, int3
     ++win_n_[Tn];
     win_ms_[Tn] += now_ms() - t0;
     win_gpu_[Tn] += last_gpu_ms_;
-    static const bool prof = std::getenv("STRATA_METAL_PROFILE") != nullptr;
+    static const bool prof = strata::env("NOSTROMA_METAL_PROFILE") != nullptr;
     if (prof) {
         Prof& x = prof_[Tn * 2 + (head ? 1 : 0)];
         const double t1 = now_ms();
@@ -1994,7 +1995,7 @@ bool Window::finish(int Tn, const int32_t* tokens, int64_t pos0, bool head, int3
     }
     {   // STRATA_METAL_NFCHECK=1 (test tooling): every head window's logits scanned for non-finite values and the largest |logit| kept;
         // a line for the first five bad windows, and a count every 500 head windows and at the 5000th (the numeric health of STRATA_METAL_F16 and the like)
-        static const bool nfc = std::getenv("STRATA_METAL_NFCHECK") != nullptr;
+        static const bool nfc = strata::env("NOSTROMA_METAL_NFCHECK") != nullptr;
         if (nfc && head) {
             static long long nwin = 0, nbad_win = 0, nbad_val = 0;
             static float maxabs = 0.0f;
@@ -2023,7 +2024,7 @@ bool Window::finish(int Tn, const int32_t* tokens, int64_t pos0, bool head, int3
     for (int t = 0; t < Tn; ++t) out[t] = head ? tokout_.as<int32_t>()[t] : -1;
     last_T_ = Tn;
     for (int t = 0; t < Tn; ++t) last_tokens_[t] = tokens[t];
-    static const bool trace = std::getenv("STRATA_METAL_TRACE") != nullptr;
+    static const bool trace = strata::env("NOSTROMA_METAL_TRACE") != nullptr;
     if (trace && head) {
         // the pick and its margin over the runner-up (a near tie says a backend difference may flip it)
         const float* lg = lm_.as<float>();
@@ -2158,7 +2159,7 @@ void Window::activate(int set) {
 
 bool Window::run_slots(const int* rows, int S, const int32_t* tokens, const int64_t* pos, int32_t* out, std::string& err) {
     if (sets_.empty()) { err = "metal window: no batch slots"; return false; }
-    static const bool one_window = !(std::getenv("STRATA_METAL_BATCH_ROWS") && std::string(std::getenv("STRATA_METAL_BATCH_ROWS")) == "0");
+    static const bool one_window = !(strata::env("NOSTROMA_METAL_BATCH_ROWS") && std::string(strata::env("NOSTROMA_METAL_BATCH_ROWS")) == "0");
     if (one_window && bigs_ok_) {
         activate(0);
         return run_rows(rows, S, tokens, pos, out, err);
@@ -2323,7 +2324,7 @@ bool Window::commit(int n_keep, std::string& err) {
         // the GDN layers: the kept prefix folded into the state (gdn_step over n_keep tokens from the window's own
         // inputs, with commit; bitwise the window's trajectory).  K/V and indexer cells past the prefix are rewritten
         // when those positions run again, before anything reads them.
-        static const bool lazy = !(std::getenv("STRATA_METAL_LAZY_FOLD") && std::string(std::getenv("STRATA_METAL_LAZY_FOLD")) == "0");
+        static const bool lazy = !(strata::env("NOSTROMA_METAL_LAZY_FOLD") && std::string(strata::env("NOSTROMA_METAL_LAZY_FOLD")) == "0");
         int nf = n_keep;
         if (nf > 0) {
             if (lazy) {
@@ -2377,7 +2378,7 @@ bool Window::mtp_load(const std::string& gguf_path, int max_t, std::string& err)
         lmtp_ = cx_->compile(L.files, L.prelude);
     }
     {
-        const char* e = std::getenv("STRATA_METAL_MTP_Q8");
+        const char* e = strata::env("NOSTROMA_METAL_MTP_Q8");
         if (!(e && std::string(e) == "0")) {
             size_t tot = 0;
             std::vector<std::string> names;
@@ -2431,7 +2432,7 @@ bool Window::mtp_load(const std::string& gguf_path, int max_t, std::string& err)
         // the subset setup put beside the draft layer (--draft-vocab: <mtp>/rt/draft_vocab.bin, as CUDA reads it),
         // else the repository's default
         const std::string beside = gguf_path.substr(0, gguf_path.find_last_of('/') + 1) + "rt/draft_vocab.bin";
-        if (const char* e = std::getenv("STRATA_METAL_DRAFT_VOCAB")) vp = e;
+        if (const char* e = strata::env("NOSTROMA_METAL_DRAFT_VOCAB")) vp = e;
         else if (FILE* t = std::fopen(beside.c_str(), "rb")) { std::fclose(t); vp = beside; }
         else vp = strata_metal::resource(nullptr, "data", STRATA_METAL_DATA_DEFAULT) + "/draft_vocab.bin";
         FILE* f = vp == "full" ? nullptr : std::fopen(vp.c_str(), "rb");
@@ -2457,7 +2458,7 @@ bool Window::mtp_load(const std::string& gguf_path, int max_t, std::string& err)
     {
         const int ty = T("token_embd.weight").type;
         const int ok_types[] = {30, 8, 2, 6, 20, 23, 42, 21, 11, 12, 13, 14, 18};
-        const char* e = std::getenv("STRATA_METAL_MTP_CHAIN");
+        const char* e = strata::env("NOSTROMA_METAL_MTP_CHAIN");
         chain_ = !(e && std::string(e) == "0") && std::find(std::begin(ok_types), std::end(ok_types), ty) != std::end(ok_types);
         if (chain_) {
             {
@@ -2895,11 +2896,11 @@ int Window::prompt_chunk_rows() const { return pg_ ? pg_->MT : 0; }
 
 bool Window::prompt_gemm_on(int64_t n) const {
     static const bool on = [] {
-        const char* e = std::getenv("STRATA_METAL_PROMPT_GEMM");
+        const char* e = strata::env("NOSTROMA_METAL_PROMPT_GEMM");
         return e ? std::string(e) != "0" : true;
     }();
     static const int64_t mn = [] {
-        const char* e = std::getenv("STRATA_METAL_PROMPT_GEMM_MIN");
+        const char* e = strata::env("NOSTROMA_METAL_PROMPT_GEMM_MIN");
         return e ? (int64_t) std::atoll(e) : (int64_t) 64;
     }();
     return on && n >= mn && pg_ != nullptr;
@@ -2908,7 +2909,7 @@ bool Window::prompt_gemm_on(int64_t n) const {
 bool Window::prompt_gemm_init(std::string& err) {
     if (pg_) return true;
     if (stream_ && !st_->ready()) return stream_arena(err);   // it makes the prompt buffers after the arena
-    const char* ec = std::getenv("STRATA_METAL_PROMPT_CHUNK");
+    const char* ec = strata::env("NOSTROMA_METAL_PROMPT_CHUNK");
     // Streaming: every chunk makes one pass over the layer's experts that are not in the arena, so a longer chunk
     // streams each expert fewer times. M5 Max, UD-Q5, warm: 1024 -> 700 tok/s at 4K, 2048 -> 920, 4096 -> 1,100 (32K the
     // same). The longer chunk's buffers (4.3 GB) come out of the arena only while a prompt runs, so it is the default on a
@@ -2930,10 +2931,10 @@ bool Window::prompt_gemm_init(std::string& err) {
         p.lqsa = cc(lib_prompt_qsa());
     }
     p.k4 = ::coop_k4(*cx_);
-    const char* eg = std::getenv("STRATA_METAL_PROMPT_EXPERTS");   // v2 | v3 (default: v3 with the M5's layout)
+    const char* eg = strata::env("NOSTROMA_METAL_PROMPT_EXPERTS");   // v2 | v3 (default: v3 with the M5's layout)
     p.gu_v3 = p.dn_v3 = eg ? std::string(eg) == "v3" : p.k4;
     if (T("blk.0.ffn_gate_exps.weight").type >= 144) p.gu_v3 = p.dn_v3 = false;   // the trellis experts have the v2 kernels only
-    const char* eq = std::getenv("STRATA_METAL_PROMPT_QSA");       // v1 | flash (default: flash with the M5's layout)
+    const char* eq = strata::env("NOSTROMA_METAL_PROMPT_QSA");       // v1 | flash (default: flash with the M5's layout)
     p.flash = eq ? std::string(eq) == "flash" : p.k4;
     const size_t MT = (size_t) C;
     p.maxrows = C * TOPK + nexp_ * p.TM;
@@ -3320,7 +3321,7 @@ bool Window::prompt_chunk(const int32_t* tokens, int Tn, int64_t pos0, std::stri
     }
     pg_ms_ += now_ms() - t0;
     pg_tok_ += T;
-    static const bool trace = std::getenv("STRATA_METAL_TRACE") != nullptr;
+    static const bool trace = strata::env("NOSTROMA_METAL_TRACE") != nullptr;
     if (trace) std::fprintf(stderr, "strata metal: prompt chunk pos %lld, %d rows: %.0f ms\n", (long long) pos0, T, now_ms() - t0);
     // the window's state after the chunk: the conv history turned, the PLE history and token window advanced
     hp_ = 1 - hp_;
@@ -3432,7 +3433,7 @@ bool Window::sample_run(int row0, int n, const strata::kernels::SamplerParams& s
     const double t0 = now_ms();
     cx_->run_graph({d1, d2});
     ++samp_windows_;
-    static const bool st = std::getenv("STRATA_METAL_SAMPLE_STATS") != nullptr;
+    static const bool st = strata::env("NOSTROMA_METAL_SAMPLE_STATS") != nullptr;
     if (st && samp_windows_ % 200 == 0)
         std::fprintf(stderr, "strata metal: sampler %llu windows, last %d rows in %.2f ms\n", (unsigned long long) samp_windows_, Tn, now_ms() - t0);
     return true;
@@ -3450,12 +3451,12 @@ void set_batch_slots(int n) { g_slot_cap = n > 0 ? std::min(n, 8) : 0; }
 // The draft vocabulary the build ships (data/draft_vocab.bin beside the build, else the compiled-in data folder): what a DFlash2-alone start without <mtp>/draft_vocab.bin
 // uses (generate.cpp), and what Window::df2_bind falls back to.  STRATA_METAL_DRAFT_VOCAB names another file, or "full" for the whole head.
 std::string draft_vocab_default() {
-    const char* e = std::getenv("STRATA_METAL_DRAFT_VOCAB");
+    const char* e = strata::env("NOSTROMA_METAL_DRAFT_VOCAB");
     if (e != nullptr && e[0] != 0 && std::string(e) != "full") return e;
     return strata_metal::resource(nullptr, "data", STRATA_METAL_DATA_DEFAULT) + "/draft_vocab.bin";
 }
 bool draft_vocab_whole_head() {
-    const char* e = std::getenv("STRATA_METAL_DRAFT_VOCAB");
+    const char* e = strata::env("NOSTROMA_METAL_DRAFT_VOCAB");
     return e != nullptr && std::string(e) == "full";
 }
 
@@ -3466,7 +3467,7 @@ Window* g_the_window = nullptr;
 void* window_create() {
     if (g_the_window == nullptr) {
         g_the_window = new Window();
-        if (std::getenv("STRATA_METAL_PROFILE")) std::atexit([] { if (g_the_window) g_the_window->print_prof(); });
+        if (strata::env("NOSTROMA_METAL_PROFILE")) std::atexit([] { if (g_the_window) g_the_window->print_prof(); });
     }
     return g_the_window;
 }
@@ -3507,7 +3508,7 @@ void window_set_sampling(void* w, const strata::kernels::SamplerParams* sp, cons
 bool window_run(void* w, int T, const int32_t* tokens, int64_t pos0, bool head, int32_t* out, std::string& err) {
     // STRATA_LOGPOS (the quant yardstick, the KL harness): every window's head logits are read, also the prompt's
     // windows that sample nothing (head_sampling off)
-    static const bool logpos = std::getenv("STRATA_LOGPOS") != nullptr;
+    static const bool logpos = strata::env("NOSTROMA_LOGPOS") != nullptr;
     Window* win = (Window*) w;
     if (!win->run(T, tokens, pos0, head || logpos, out, err)) return false;
     return !head || win->sample_rows(T, out, err);   // a sampled / penalised / biased request: the head rows' tokens by the sampler chain (nothing to do for greedy)
@@ -3566,7 +3567,7 @@ bool mtp_load(const std::string& rt_dir, int max_t, std::string& err) {
     // the MTP model in GGUF form (tools/mtp_pack.py) beside the rt directory: STRATA_METAL_MTP_GGUF, else
     // <rt>/../mtp-q2_0.gguf
     std::string path;
-    if (const char* e = std::getenv("STRATA_METAL_MTP_GGUF")) path = e;
+    if (const char* e = strata::env("NOSTROMA_METAL_MTP_GGUF")) path = e;
     else {
         std::string d = rt_dir;
         while (!d.empty() && d.back() == '/') d.pop_back();
@@ -3599,12 +3600,12 @@ bool prompt_run(const int64_t* tokens, int64_t n, int64_t pos0, const float* con
 bool prompt_run_rows(const int64_t* tokens, int64_t n, int64_t pos0,
                      const std::function<bool(const float*, int64_t, int64_t, std::string&)>& on_chunk, std::string& err) {
     if (g_window == nullptr) { err = "metal prompt: the decode window is not up yet"; return false; }
-    static const bool windows = std::getenv("STRATA_METAL_PROMPT") && std::string(std::getenv("STRATA_METAL_PROMPT")) == "window";
-    static const int64_t min_rows = std::getenv("STRATA_METAL_PROMPT_MIN") ? std::atoll(std::getenv("STRATA_METAL_PROMPT_MIN")) : 32;
+    static const bool windows = strata::env("NOSTROMA_METAL_PROMPT") && std::string(strata::env("NOSTROMA_METAL_PROMPT")) == "window";
+    static const int64_t min_rows = strata::env("NOSTROMA_METAL_PROMPT_MIN") ? std::atoll(strata::env("NOSTROMA_METAL_PROMPT_MIN")) : 32;
     if (!windows && !g_window->streaming() && n >= min_rows) return g_window->prompt(tokens, n, pos0, on_chunk, err);
     if (!windows && g_window->streaming()) {
-        const char* e = std::getenv("STRATA_METAL_PROMPT_GEMM");
-        const char* em = std::getenv("STRATA_METAL_PROMPT_GEMM_MIN");
+        const char* e = strata::env("NOSTROMA_METAL_PROMPT_GEMM");
+        const char* em = strata::env("NOSTROMA_METAL_PROMPT_GEMM_MIN");
         const int64_t mn = em ? std::atoll(em) : 64;
         if (!(e && std::string(e) == "0") && n >= mn) {
             if (!g_window->prompt_gemm_init(err)) return false;

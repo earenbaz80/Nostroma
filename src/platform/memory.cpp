@@ -1,5 +1,6 @@
 // src/platform/memory.cpp - see include/strata/platform/memory.hpp.
 #include "strata/platform/memory.hpp"
+#include "strata/env.hpp"
 
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
@@ -204,7 +205,7 @@ constexpr uint64_t kAdviseStep = 128ull << 10;
 
 bool read_ahead_enabled() {
     static const bool on = [] {
-        const char* v = std::getenv("STRATA_READ_AHEAD");
+        const char* v = strata::env("NOSTROMA_READ_AHEAD");
         return v == nullptr || std::atoi(v) != 0;
     }();
     return on;

@@ -33,6 +33,7 @@
 #pragma once
 
 #include <algorithm>
+#include "strata/env.hpp"
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -44,7 +45,7 @@ namespace strata::core {
 /// Explicit `top` tests q's largest probability before the draw and uses the normalized-q path.
 inline bool spec_gate_pick() {
     static const bool on = [] {
-        const char* e = std::getenv("STRATA_SPEC_PROB_GATE");
+        const char* e = strata::env("NOSTROMA_SPEC_PROB_GATE");
         return e == nullptr || std::strcmp(e, "top") != 0;
     }();
     return on;
@@ -54,7 +55,7 @@ inline bool spec_gate_pick() {
 /// rejection sampling; the acceptance sum min(p, q) is what it changes.
 inline float spec_draft_temp_scale() {
     static const float s = [] {
-        const char* e = std::getenv("STRATA_SPEC_PROB_DT");
+        const char* e = strata::env("NOSTROMA_SPEC_PROB_DT");
         const float v = e != nullptr ? (float) std::atof(e) : 1.0f;
         return v > 0.0f ? v : 1.0f;
     }();
@@ -66,7 +67,7 @@ inline float spec_draft_temp_scale() {
 /// about 0.7, where the draft head's argmax is the better guess; below x the drafter keeps its argmax drafts.
 inline float spec_min_temp() {
     static const float s = [] {
-        const char* e = std::getenv("STRATA_SPEC_MIN_TEMP");
+        const char* e = strata::env("NOSTROMA_SPEC_MIN_TEMP");
         return e != nullptr ? (float) std::atof(e) : 0.0f;
     }();
     return s;

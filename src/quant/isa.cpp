@@ -1,5 +1,6 @@
 // src/quant/isa.cpp - the CPU probe of the quant layer (own-stack phase 2).  No ggml.
 #include "strata/quant/isa.hpp"
+#include "strata/env.hpp"
 
 #include <cstdio>
 #include <cstdlib>
@@ -47,7 +48,7 @@ unsigned long long xgetbv0() {
 
 // STRATA_FORCE_ISA caps the probes like the pool's own (expert_layout.cpp): avx2 = no AVX-512, avx = AVX only, sse = SSE4.2 only.
 int isa_cap() {
-    const char* f = std::getenv("STRATA_FORCE_ISA");
+    const char* f = strata::env("NOSTROMA_FORCE_ISA");
     if (f == nullptr || *f == 0) return 3;
     if (!std::strcmp(f, "avx2")) return 2;
     if (!std::strcmp(f, "avx")) return 1;

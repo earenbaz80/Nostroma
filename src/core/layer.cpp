@@ -1,6 +1,7 @@
 
 // src/core/layer.cpp - the GDN layer, composed.  See the header for the operation order and its traps.
 #include "strata/core/layer.hpp"
+#include "strata/env.hpp"
 #include "strata/core/pin_budget.hpp"
 #include "strata/core/native_dense.hpp"
 #include "strata/core/native_head.hpp"
@@ -444,7 +445,7 @@ bool moe_route_window(const WeightTable& tables, const ModelGeometry& g, int64_t
                       const float* x, float* logits, int32_t* ids, float* weights, int n, void* stream, std::string& err) {
     using namespace strata::kernels;
     const bool batched = native_bf16_projections && !(native_router_enabled() && g.n_expert == 512 && k == 10) &&
-                         !std::getenv("STRATA_ROUTE_PER_TOKEN");
+                         !strata::env("NOSTROMA_ROUTE_PER_TOKEN");
     if (!batched || n == 1) {
         for (int t = 0; t < n; ++t) {
             MoEBuffers mb = b;
@@ -456,7 +457,7 @@ bool moe_route_window(const WeightTable& tables, const ModelGeometry& g, int64_t
     const LayerView v(tables, layer);
     const WeightRef* w_router = v.get("ffn_gate_inp.weight");
     if (w_router == nullptr) { err = v.name("ffn_gate_inp.weight") + " is missing"; return false; }
-    if (std::getenv("STRATA_ROUTE_PROJ_PER_TOKEN"))
+    if (strata::env("NOSTROMA_ROUTE_PROJ_PER_TOKEN"))
         for (int t = 0; t < n; ++t)
             bf16_gemv_fp32_mmvf(x + t * g.n_embd, (const uint16_t*) w_router->data, logits + t * g.n_expert, g.n_embd,
                                 g.n_expert, stream);
@@ -593,7 +594,7 @@ uint8_t* kv_host_alloc(uint64_t bytes) {
     return host_alloc(bytes);
 #else
     static const bool register_first = [] {
-        const char* e = std::getenv("STRATA_KV_HOST_REGISTER");
+        const char* e = strata::env("NOSTROMA_KV_HOST_REGISTER");
         if (e != nullptr && (e[0] == '0' || e[0] == '1')) return e[0] == '1';
         return std::filesystem::exists("/dev/dxg");
     }();
@@ -742,8 +743,8 @@ KvPlan kv_plan(const QsaShapes& s, int64_t max_cells, int64_t ring_cells) {
     p.pooled_rows = max_cells / s.idx_block + 2;
     if (g_kv_resident <= 0 || ring_cells < 0) return p;   // ring_cells < 0: always fully resident
     // A/B only: STRATA_KV_RING_OFF keeps the drafter fully resident, STRATA_KV_MAIN_OFF the main layers
-    static const bool ring_off = std::getenv("STRATA_KV_RING_OFF") != nullptr;
-    static const bool main_off = std::getenv("STRATA_KV_MAIN_OFF") != nullptr;
+    static const bool ring_off = strata::env("NOSTROMA_KV_RING_OFF") != nullptr;
+    static const bool main_off = strata::env("NOSTROMA_KV_MAIN_OFF") != nullptr;
     if (ring_cells > 0 ? ring_off : main_off) return p;
     if (ring_cells > 0) {
         const int64_t r = (ring_cells + s.page_size - 1) / s.page_size;
@@ -773,7 +774,7 @@ int64_t qsa_kv_resident() { return g_kv_resident; }
 // selection reads at most idx_top_k + idx_block - 1 cells per row, so a window of a few thousand cells holds it; the pool must hold the blocks of every row of a verify window).
 int64_t qsa_kv_resident_min() {
     static const int64_t v = [] {
-        const char* e = std::getenv("STRATA_KV_RESIDENT_MIN");
+        const char* e = strata::env("NOSTROMA_KV_RESIDENT_MIN");
         const long long n = e != nullptr ? std::atoll(e) : 0;
         #if defined(STRATA_GPU_METAL)
         return n >= 1024 ? (int64_t) n : (int64_t) 20480;   // a Mac keeps the old floor: its pool is the host's RAM (strata/core/spill_gate.hpp)

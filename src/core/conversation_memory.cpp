@@ -1,4 +1,5 @@
 #include "strata/core/conversation_memory.hpp"
+#include "strata/env.hpp"
 
 #include <algorithm>
 #include <atomic>
@@ -354,7 +355,7 @@ std::optional<HostMemoryReading> sample_host_memory(const MemoryProbePaths& path
             own_mapped = own_evictable_mapped_bytes(text.str(), locked_own_file_bytes());
         }
     }
-    return combine(available, total, cg, explicit_limit, mem_credit_inactive_only(std::getenv("STRATA_MEM_CREDIT_INACTIVE")), own_mapped);
+    return combine(available, total, cg, explicit_limit, mem_credit_inactive_only(strata::env("NOSTROMA_MEM_CREDIT_INACTIVE")), own_mapped);
 }
 
 std::optional<HostMemoryReading> sample_host_memory() {

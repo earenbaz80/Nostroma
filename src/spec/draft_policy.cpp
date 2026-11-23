@@ -1,5 +1,6 @@
 // src/spec/draft_policy.cpp - see include/strata/spec/draft_policy.hpp.
 #include "strata/spec/draft_policy.hpp"
+#include "strata/env.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -40,9 +41,9 @@ struct FixedEnv {
 const FixedEnv& fixed_env() {
     static const FixedEnv cfg = [] {
         FixedEnv c;
-        const char* e = std::getenv("STRATA_SPEC_FIXED");
+        const char* e = strata::env("NOSTROMA_SPEC_FIXED");
         c.on = e != nullptr && e[0] == '1';
-        if (const char* tab = std::getenv("STRATA_SPEC_FIXED_TABLE"); c.on && tab != nullptr && tab[0] != '\0') {
+        if (const char* tab = strata::env("NOSTROMA_SPEC_FIXED_TABLE"); c.on && tab != nullptr && tab[0] != '\0') {
             for (const char* q = tab; *q != '\0' && c.n < DraftPolicy::kMaxT;) {
                 c.ms[c.n++] = std::atof(q);
                 while (*q != '\0' && *q != ',') ++q;

@@ -3,6 +3,7 @@
 // Arithmetic transcribed from ggml/src/ggml-quants.c at the pinned llama.cpp (MIT License, Copyright (c) 2023-2026
 // The ggml authors): dequantize_row_q2_0/q4_0/q5_0/q8_0/q3_K/q4_K/q5_K/q6_K/iq4_nl/iq4_xs.
 #include "strata/kernels/dequant_bf16.hpp"
+#include "strata/env.hpp"
 #include "strata/core/tc_sm75.hpp"
 #include "strata/kernels/iq_kernels.hpp"
 #include "strata/core/defaults_026.hpp"
@@ -284,7 +285,7 @@ __global__ void dequant_wide_kernel(const uint8_t* __restrict__ blocks, int64_t 
 bool wide_type(int type) { return type == 12 || type == 13 || type == 14 || type == 23; }
 int g_dequant_wide = -1;   // dequant_set_wide (the parity test); -1 = STRATA_DEQUANT_WIDE, else the card's default
 bool dequant_wide_on() {
-    static const int env = [] { const char* v = std::getenv("STRATA_DEQUANT_WIDE"); return v != nullptr && v[0] != '\0' ? (std::atoi(v) != 0 ? 1 : 0) : -1; }();
+    static const int env = [] { const char* v = strata::env("NOSTROMA_DEQUANT_WIDE"); return v != nullptr && v[0] != '\0' ? (std::atoi(v) != 0 ? 1 : 0) : -1; }();
     if (g_dequant_wide >= 0) return g_dequant_wide != 0;
     if (env >= 0) return env != 0;
     // 0 unknown, 1 no, 2 yes: sm_61 (measured on a Tesla P40), sm_86 (RTX 3060 / A4000, 0.1.45: short-prompt TTFT -12..-17%,

@@ -22,6 +22,7 @@
 //    value, gave wrong values / garbage pointers (the first weight read faulted the GPU); the kernels use constant-index reads
 //    (pick_expert) and 2-D grids.  gather<T, N, VS> with VS > 1 is not available on Battlemage.
 #include <sycl/sycl.hpp>
+#include "strata/env.hpp"
 #include "strata/kprof.hpp"
 #include <sycl/ext/intel/esimd.hpp>
 #include <sycl/ext/intel/experimental/grf_size_properties.hpp>
@@ -753,21 +754,21 @@ int pick_mt(const Layout& lo) {
     return 8;
 }
 int dbg_flags() {
-    static const int v = [] { const char* s = std::getenv("STRATA_I8_DBG"); return s ? std::atoi(s) : 0; }();
+    static const int v = [] { const char* s = strata::env("NOSTROMA_I8_DBG"); return s ? std::atoi(s) : 0; }();
     return v;
 }
 int mt_for(const Layout& lo) {
-    static const int mo = [] { const char* s = std::getenv("STRATA_I8_MT"); return s ? std::atoi(s) : 0; }();
+    static const int mo = [] { const char* s = strata::env("NOSTROMA_I8_MT"); return s ? std::atoi(s) : 0; }();
     return mo ? mo : pick_mt(lo);
 }
 
 // register mode per tile height: STRATA_I8_GRF=128 (more threads per EU, spills at MT 8) or 256; default 256
 int wg_for() {
-    static const int v = [] { const char* s = std::getenv("STRATA_I8_WG"); return s ? std::atoi(s) : 1; }();
+    static const int v = [] { const char* s = strata::env("NOSTROMA_I8_WG"); return s ? std::atoi(s) : 1; }();
     return v;
 }
 int grf_for(int mt) {
-    static const int g = [] { const char* s = std::getenv("STRATA_I8_GRF"); return s ? std::atoi(s) : 256; }();
+    static const int g = [] { const char* s = strata::env("NOSTROMA_I8_GRF"); return s ? std::atoi(s) : 256; }();
     (void) mt;
     return g == 128 ? 128 : 256;
 }
@@ -841,7 +842,7 @@ bool available(void* stream) {
     const sycl::device d = q.get_device();
     if (auto it = per_dev.find(d); it != per_dev.end()) return it->second;
     const bool ok = [&] {
-        const char* v = std::getenv("STRATA_I8_FORCE");
+        const char* v = strata::env("NOSTROMA_I8_FORCE");
         if (v && v[0] == '0') return false;
         if (!d.has(sycl::aspect::ext_intel_esimd)) return false;
         namespace mx = sycl::ext::oneapi::experimental::matrix;

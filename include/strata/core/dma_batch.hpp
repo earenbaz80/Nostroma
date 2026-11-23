@@ -14,6 +14,7 @@
 // runtime refuses is redone as the loop (with one warning), never dropped: readiness is signalled only for
 // uploads that were submitted.
 #include <cuda_runtime.h>
+#include "strata/env.hpp"
 
 #include <array>
 #include <cstddef>
@@ -29,7 +30,7 @@ namespace strata::core {
 /// use; 0 until a measured win makes it 1).
 inline int dma_batch_mode(int default_mode = 0) {
     static const int mode = [default_mode] {
-        const char* e = std::getenv("STRATA_DMA_BATCH");
+        const char* e = strata::env("NOSTROMA_DMA_BATCH");
         return e != nullptr && e[0] != '\0' ? std::atoi(e) : default_mode;
     }();
     return mode;

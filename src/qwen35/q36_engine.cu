@@ -17,6 +17,7 @@
 // Modes: --serve (serve/server.py's engine protocol: READY / GEN / T / DONE / STOP / PP), --tokens IDS [--n N]
 // [--force IDS] [--dump-full-logits F] (tools/qwen35/kl.py's reference interface), --bench-pp N / --bench-tg N.
 #include "strata/artifact/gguf_reader.hpp"
+#include "strata/env.hpp"
 #include "strata/core/family_layout.hpp"
 #include "strata/kernels/fused_gdn.hpp"
 #include "strata/kernels/iq_kernels.hpp"
@@ -1393,7 +1394,7 @@ struct Engine {
         k16 = dalloc_t<__half>((size_t) g.n_head_kv * ctx * g.head_dim);
         v16 = dalloc_t<__half>((size_t) g.n_head_kv * ctx * g.head_dim);
         q16 = dalloc_t<__half>(T * g.n_head * g.head_dim);
-        const bool mmq_avail = MMQ::built() && std::getenv("STRATA_Q36_NO_MMQ") == nullptr;
+        const bool mmq_avail = MMQ::built() && strata::env("NOSTROMA_Q36_NO_MMQ") == nullptr;
         auto mmq_ok = [&](const Layer& L) {
             return MMQ::supported(L.L.gu_type) && MMQ::supported(L.L.d_type) && MMQ::fits(L.L.gu_type, 2 * g.n_ff) &&
                    MMQ::fits(L.L.d_type, g.n_embd);
@@ -1413,7 +1414,7 @@ struct Engine {
         // STRATA_EXPERT_I8 as 1 (the standalone engine does not link prefill.cpp's start-up list, so it tells the kernel library itself).
         const bool mmq_free = !MMQ::built();
         if (mmq_free) K::native_expert_i8_set_mmq_free();
-        const int i8_raw = K::i8_switch_parse(std::getenv("STRATA_EXPERT_I8"));
+        const int i8_raw = K::i8_switch_parse(strata::env("NOSTROMA_EXPERT_I8"));
         i8_on.assign(n_state, 0);
         i8_few = K::native_expert_i8_few_rows_limit();
         use_pf = true;
@@ -1646,7 +1647,7 @@ struct Engine {
             k_gemv_f32<<<dim3(rows8(n_out), T), kThreads, 0, st>>>(W, xin, out, n_in, n_out);
             return;
         }
-        static const bool blas_f32 = std::getenv("STRATA_Q36_BLAS_F32") != nullptr;   // the hipBLAS / cuBLAS SGEMM (A/B)
+        static const bool blas_f32 = strata::env("NOSTROMA_Q36_BLAS_F32") != nullptr;   // the hipBLAS / cuBLAS SGEMM (A/B)
         if (!blas_f32 && n_in % 4 == 0) {
             // K split so that about 128 blocks run (the partials summed in a fixed order: deterministic); TM = 4 rows per
             // thread for the 256-wide router, 1 for the narrow ones (alpha / beta 32, the gate 1)
@@ -1684,8 +1685,8 @@ struct Engine {
     /// x [T][n] -> its q8_1 image (T contiguous columns: one vector of T * n), for every matrix that reads x.
     void quant(const float* xin, int n, int T, void* q) { K::native_quantize_q8_1(xin, q, n * T, 1, st); }
     // ---- decode kernels of this engine (q36_kernels.cuh), each the old kernel's bits (STRATA_Q36_VERIFY=1 compares)
-    bool fast_k = std::getenv("STRATA_Q36_OLD_KERNELS") == nullptr;
-    bool verify_k = std::getenv("STRATA_Q36_VERIFY") != nullptr;
+    bool fast_k = strata::env("NOSTROMA_Q36_OLD_KERNELS") == nullptr;
+    bool verify_k = strata::env("NOSTROMA_Q36_VERIFY") != nullptr;
     float* vbuf = nullptr;                       // verify scratch
     long long v_calls = 0, v_bad = 0;
     std::map<std::string, long long> v_by;   // mismatches per check
@@ -1746,7 +1747,7 @@ struct Engine {
         K::native_quantize_q8_1(hsrc, vq, N * T, 1, st);
         const long long before = v_bad;
         verify_cmp(what, (const float*) xq, (const float*) vq, qb * (size_t) T / 4, tag);
-        if (v_bad != before && std::getenv("STRATA_Q36_VDEBUG") && v_by[what] <= 2) {   // a mismatching block, on the host
+        if (v_bad != before && strata::env("NOSTROMA_Q36_VDEBUG") && v_by[what] <= 2) {   // a mismatching block, on the host
             std::vector<uint8_t> a(qb * (size_t) T), b(qb * (size_t) T);
             std::vector<float> hv((size_t) N * T);
             CK(cudaMemcpy(a.data(), xq, a.size(), cudaMemcpyDeviceToHost));
@@ -2115,7 +2116,7 @@ struct Engine {
         const bool one = T == 1;
         // a decode batch of up to 8 rows takes the router and the shared expert's gate in one product too (rows of 257) when the fused
         // router follows; the prompt chunks and the checks keep the separate products
-        const bool ext = one || (fast_k && std::getenv("STRATA_Q36_NO_EXT") == nullptr && !verify_k && T <= kGemmT && g.n_expert == 256 && Kp == 8);
+        const bool ext = one || (fast_k && strata::env("NOSTROMA_Q36_NO_EXT") == nullptr && !verify_k && T <= kGemmT && g.n_expert == 256 && Kp == 8);
         if (ext) f32mm(L.router_ext, h, logits_r, N, (int) g.n_expert + 1, T);
         else f32mm(L.router, h, logits_r, N, (int) g.n_expert, T);
         // the hybrid rows path: a batch of up to hybrid_t rows; when only the MTP block is hybrid, its every batch
@@ -2328,7 +2329,7 @@ struct Engine {
         // the experts with a VRAM slot come from it (device to device, at VRAM speed), only the others over PCIe; runs
         // of consecutive experts from the same source in one copy each.  STRATA_Q36_STREAM_ALL=1: the whole layer from
         // host memory (the first version: PCIe-bound)
-        static const bool all = std::getenv("STRATA_Q36_STREAM_ALL") != nullptr;
+        static const bool all = strata::env("NOSTROMA_Q36_STREAM_ALL") != nullptr;
         const int ne = (int) m->g.n_expert;
         const Hy& H = hy[(size_t) stream_seq[(size_t) i]];
         // fewer than half the experts resident (a 12 GB card): the one whole-layer copy is faster than many small ones
@@ -2447,7 +2448,7 @@ struct Engine {
     /// The slots to the experts the routing used most (the counts halved each time): at most max_swaps replacements
     /// over all layers, between forwards (the copies are on the engine's stream).
     void rebalance(int max_swaps) {
-        static const bool off = std::getenv("STRATA_Q36_FIXED_SLOTS") != nullptr;   // the slots as placed (tests)
+        static const bool off = strata::env("NOSTROMA_Q36_FIXED_SLOTS") != nullptr;   // the slots as placed (tests)
         if (!m->hybrid || off || warming) return;
         const int64_t ne = m->g.n_expert;
         int left = max_swaps;
@@ -2974,10 +2975,10 @@ bool place_experts(Model& m, Engine& E, double vram_gib, int threads, int hybrid
     size_t main_need = 0;   // the main layers' experts (the MTP block's can go to the CPU, see below)
     for (Layer& L : m.layers) main_need += L.stride * (size_t) ne + kMmqTail;
     const size_t slack = ((size_t) 512 << 20) + (E.kAttScoreFloats - ((size_t) 16 << 20)) * 6;   // reserve + scores
-    const bool mtp_cpu_ok = m.has_mtp && std::getenv("STRATA_Q36_NO_MTP_CPU") == nullptr;
+    const bool mtp_cpu_ok = m.has_mtp && strata::env("NOSTROMA_Q36_NO_MTP_CPU") == nullptr;
     if (slots <= 0 && vram_gib < 0 && total > budget && packed_bytes > 0 &&
         (total <= budget + packed_bytes || (mtp_cpu_ok && main_need <= budget + packed_bytes + slack)) &&
-        std::getenv("STRATA_Q36_KEEP_PACKED") == nullptr) {
+        strata::env("NOSTROMA_Q36_KEEP_PACKED") == nullptr) {
         CK(cudaDeviceSynchronize());
         for (const auto& pk : m.packed) {
             K::native_q8_0_packed_unregister(std::get<0>(pk));
@@ -2999,7 +3000,7 @@ bool place_experts(Model& m, Engine& E, double vram_gib, int threads, int hybrid
     size_t total_main = 0;
     for (Layer& L : m.layers) total_main += L.stride * (size_t) ne + kMmqTail;
     bool mtp_only = false;
-    if (slots <= 0 && vram_gib < 0 && m.has_mtp && total > budget2 && std::getenv("STRATA_Q36_NO_MTP_CPU") == nullptr) {
+    if (slots <= 0 && vram_gib < 0 && m.has_mtp && total > budget2 && strata::env("NOSTROMA_Q36_NO_MTP_CPU") == nullptr) {
         const size_t att_save = (E.kAttScoreFloats - ((size_t) 16 << 20)) * 6;   // att_s (4 B) + att_p16 (2 B)
         const size_t small_reserve = (size_t) 256 << 20;
         const size_t room = fr + att_save > small_reserve ? fr + att_save - small_reserve : 0;
@@ -3331,7 +3332,7 @@ struct Serve {
     int read_windows = 1;
 
     explicit Serve(Engine& e) : E(e), slots((size_t) e.n_sess) {
-        if (const char* v = std::getenv("STRATA_Q36_READ_WINDOWS")) read_windows = std::max(0, std::min(64, std::atoi(v)));
+        if (const char* v = strata::env("NOSTROMA_Q36_READ_WINDOWS")) read_windows = std::max(0, std::min(64, std::atoi(v)));
     }
 
     /// BSTOP / BYIELD lines among the queued ones: applied now (a window is a moment away at most).
@@ -3720,7 +3721,7 @@ struct Serve {
         std::mt19937_64 rng(smp.seed);
         // #4590: the penalties count the reply's tokens (and the fed-back last prompt token), not the prompt; STRATA_PENALTY_PROMPT=1
         // restores the old window.  `ids` is the request's full prompt whether or not the session was resumed.
-        static const bool pen_prompt = strata::kernels::penalty_counts_prompt(std::getenv("STRATA_PENALTY_PROMPT"));
+        static const bool pen_prompt = strata::kernels::penalty_counts_prompt(strata::env("NOSTROMA_PENALTY_PROMPT"));
         std::vector<int32_t> hist = strata::qwen35::penalty_history_start(ids, pen_prompt);
         const auto d0 = Clock::now();
         long long produced = 0, offered = 0, accepted = 0;
@@ -3943,8 +3944,8 @@ int strata::qwen35::run(int argc, char** argv) {
     setenv("STRATA_Q8_PACKED", "1", 0);   // the packed Q8_0 decode copy unless STRATA_Q8_PACKED is set otherwise
     setenv("STRATA_MMQ_KQ", "1", 0);      // the K-quant MMQ prompt kernels (every expert of this family is a K-quant)
 #else
-    if (std::getenv("STRATA_MMQ_KQ") == nullptr) _putenv_s("STRATA_MMQ_KQ", "1");
-    if (std::getenv("STRATA_Q8_PACKED") == nullptr) _putenv_s("STRATA_Q8_PACKED", "1");   // as on Linux (it was missing here)
+    if (strata::env("NOSTROMA_MMQ_KQ") == nullptr) _putenv_s("STRATA_MMQ_KQ", "1");
+    if (strata::env("NOSTROMA_Q8_PACKED") == nullptr) _putenv_s("STRATA_Q8_PACKED", "1");   // as on Linux (it was missing here)
     if (std::getenv("CUDA_MODULE_LOADING") == nullptr) _putenv_s("CUDA_MODULE_LOADING", "EAGER");
 #endif
     // Nostroma's fused prompt kernels for this family's formats (moe_fused_iq_q36.cu): the K-quant, Q6_K and Q8_0 gate/up
@@ -3962,7 +3963,7 @@ int strata::qwen35::run(int argc, char** argv) {
     // sm_80+ card whose kernels cover a layer's pair take them (fused_tile::q36_takes); this standalone engine does not link that code, so it does the same here: the same
     // behaviour on both entry points.  A value you set is kept (=0 keeps every layer on the grouped kernels).  A build with MMQ is unchanged.
     {
-        const int pf_now = strata::prefill::fused_tile::pf_env(std::getenv("STRATA_PF_FUSED"));
+        const int pf_now = strata::prefill::fused_tile::pf_env(strata::env("NOSTROMA_PF_FUSED"));
         if (pf_now < 0 && strata::prefill::fused_tile::q36_start_env(MMQ::built(), pf_now) == 1) {
 #if !defined(_WIN32)
             setenv("STRATA_PF_FUSED", "1", 1);
@@ -4022,8 +4023,8 @@ int strata::qwen35::run(int argc, char** argv) {
             const double fr_gib = (double) fr / GiB;
             chunk = fr_gib >= 7.5 ? 2048 : fr_gib >= 5.5 ? 1024 : 512;
         }
-        if (const char* cv = std::getenv("STRATA_Q36_CHUNK")) chunk = std::max(256, std::min(4096, std::atoi(cv)));   // force a chunk (512: the old default)
-        if (std::getenv("STRATA_Q36_PLACE_DEBUG"))
+        if (const char* cv = strata::env("NOSTROMA_Q36_CHUNK")) chunk = std::max(256, std::min(4096, std::atoi(cv)));   // force a chunk (512: the old default)
+        if (strata::env("NOSTROMA_Q36_PLACE_DEBUG"))
             std::fprintf(stderr, "strata-q36: chunk rule: free %.2f GiB (raw %.2f, with %.2f packed), main experts %.2f GiB, chunk %d\n",
                          fr / 1073741824.0, fr_raw / 1073741824.0, packed / 1073741824.0, experts / 1073741824.0, chunk);
     }
@@ -4048,9 +4049,9 @@ int strata::qwen35::run(int argc, char** argv) {
     } report{E};
     E.reset();
     E.mtp_d = m.has_mtp ? mtp_d : 0;
-    if (draft_vocab < 0 && std::getenv("STRATA_Q36_DRAFT_VOCAB") != nullptr) draft_vocab = std::atoi(std::getenv("STRATA_Q36_DRAFT_VOCAB"));
+    if (draft_vocab < 0 && strata::env("NOSTROMA_Q36_DRAFT_VOCAB") != nullptr) draft_vocab = std::atoi(strata::env("NOSTROMA_Q36_DRAFT_VOCAB"));
     E.draft_n = std::max(0, draft_vocab);
-    E.bmtp = (batch_mtp || (std::getenv("STRATA_BATCH_MTP") != nullptr && std::string(std::getenv("STRATA_BATCH_MTP")) != "0")) && E.n_sess > 1 && E.mtp_d > 0;
+    E.bmtp = (batch_mtp || (strata::env("NOSTROMA_BATCH_MTP") != nullptr && std::string(strata::env("NOSTROMA_BATCH_MTP")) != "0")) && E.n_sess > 1 && E.mtp_d > 0;
     if (batch_mtp && !E.bmtp) std::fprintf(stderr, "strata-q36: --batch-mtp needs --batch N (2 or more) and --mtp N: ignored\n");
     if (warm) E.warmup();
     if (serve_mode) return serve(E);

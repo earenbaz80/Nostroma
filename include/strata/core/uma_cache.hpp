@@ -9,13 +9,14 @@
 #pragma once
 
 #include <cstdint>
+#include "strata/env.hpp"
 #include <cstdlib>
 
 namespace strata::core {
 
 /// The RAM an integrated GPU's expert cache leaves to the OS and the desktop: STRATA_UMA_RESERVE_GIB when set (0 = none), else the larger of
 /// 8 GiB and 8% of the installed RAM (a desktop session with a browser needs ~6 GiB; 8% is ~10 GiB on 128 GB).
-inline uint64_t uma_desktop_reserve_bytes(uint64_t total_ram, const char* env_gib = std::getenv("STRATA_UMA_RESERVE_GIB")) {
+inline uint64_t uma_desktop_reserve_bytes(uint64_t total_ram, const char* env_gib = strata::env("NOSTROMA_UMA_RESERVE_GIB")) {
     constexpr uint64_t GiB = 1ull << 30;
     if (env_gib != nullptr && env_gib[0] != '\0') {
         char* end = nullptr;

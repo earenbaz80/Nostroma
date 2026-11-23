@@ -23,6 +23,7 @@
 // index with no permutation at all.
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
+#include "strata/env.hpp"
 #include "strata/kprof.hpp"
 #include <dpct/dpct.hpp>
 #include "strata/sycl_queue.hpp"
@@ -688,7 +689,7 @@ catch (sycl::exception const &exc) {
 
 static bool no_multi_gr() {
     static const bool off = [] {
-        const char* v = std::getenv("STRATA_NO_MULTI_GR");
+        const char* v = strata::env("NOSTROMA_NO_MULTI_GR");
         return v != nullptr && v[0] != '\0' && v[0] != '0';
     }();
     return off;

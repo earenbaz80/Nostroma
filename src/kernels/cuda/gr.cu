@@ -22,6 +22,7 @@
 // [320, 10240] so it holds `w_up[i][k]` with k contiguous - `ref/gr.py`'s (hc*n_embd, hc_lr) row-major.  Both
 // index with no permutation at all.
 #include "strata/kernels/gr.hpp"
+#include "strata/env.hpp"
 #include "strata/kernels/bf16_bits.hpp"
 #include "strata/kernels/bf16_gemv.hpp"
 #include "strata/kernels/native_gr_norm.hpp"
@@ -465,7 +466,7 @@ void gr_read(const float* R, const float* w_norm, const uint16_t* w_down, const 
 
 static bool no_multi_gr() {
     static const bool off = [] {
-        const char* v = std::getenv("STRATA_NO_MULTI_GR");
+        const char* v = strata::env("NOSTROMA_NO_MULTI_GR");
         return v != nullptr && v[0] != '\0' && v[0] != '0';
     }();
     return off;

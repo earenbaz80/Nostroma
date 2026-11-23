@@ -1,5 +1,6 @@
 // src/kernels/cuda/elementwise.cu - P2.S5's glue kernels.  See the header for why each exists.
 #include "strata/kernels/elementwise.hpp"
+#include "strata/env.hpp"
 #include "strata/kernels/dp4a.hpp"
 
 #include "strata/kernels/bf16_bits.hpp"
@@ -423,7 +424,7 @@ void copy_i32_from_mapped(int32_t* dst, const int32_t* src, int64_t n, void* str
 void copy_from_mapped_multi(const MappedCopy* copies, int n, void* stream) {
     if (n <= 0) return;
     if (n > 8) { std::fprintf(stderr, "copy_from_mapped_multi: at most 8 copies\n"); std::exit(1); }
-    const char* e = std::getenv("STRATA_MTP_MULTI_COPY");
+    const char* e = strata::env("NOSTROMA_MTP_MULTI_COPY");
     const bool multi_on = e == nullptr || e[0] != '0';
     if (!multi_on) {
         for (int i = 0; i < n; ++i) {

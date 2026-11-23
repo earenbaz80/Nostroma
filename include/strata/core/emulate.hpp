@@ -8,13 +8,14 @@
 #pragma once
 
 #include <cstdlib>
+#include "strata/env.hpp"
 
 namespace strata {
 
 /// the emulated compute capability as 10 * major + minor, or 0 (off)
 inline int emulated_cc() {
     static const int cc = [] {
-        const char* e = std::getenv("STRATA_EMULATE_CC");
+        const char* e = strata::env("NOSTROMA_EMULATE_CC");
         const int v = e ? std::atoi(e) : 0;
         return v >= 75 && v < 120 ? v : 0;
     }();

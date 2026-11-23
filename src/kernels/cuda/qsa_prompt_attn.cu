@@ -1,5 +1,6 @@
 // src/kernels/cuda/qsa_prompt_attn.cu - see include/strata/kernels/qsa_prompt_attn.hpp.
 #include "strata/core/emulate.hpp"
+#include "strata/env.hpp"
 #include "strata/core/sm120_series.hpp"
 #include "strata/core/defaults_026.hpp"
 #include "strata/core/sm75_series.hpp"
@@ -2241,7 +2242,7 @@ __global__ void __launch_bounds__(THREADS) prompt_attn_wmma_kernel(const float* 
 // the process (the caller then runs the FP32 kernel) instead of ending it.
 int hip_wmma_mode_env() {   // -1 unset (the arch default), 0 off, 1 forced, 2 auto
     static const int mode = [] {
-        const char* e = std::getenv("STRATA_HIP_WMMA");
+        const char* e = strata::env("NOSTROMA_HIP_WMMA");
         if (e == nullptr || e[0] == '\0') return -1;
         if (e[0] == '1') return 1;
         if (!std::strcmp(e, "auto")) return 2;
@@ -2279,8 +2280,8 @@ int hip_wmma_arch(int dev) {
 // it only when forced with =1.
 bool hip_wmma_auto_pick(int arch, int64_t n_q, int64_t cap) {
     if (arch != 2) return false;
-    static const int64_t min_q = [] { const char* e = std::getenv("STRATA_HIP_WMMA_MIN_Q"); return e ? (int64_t) std::atoll(e) : (int64_t) 64; }();
-    static const int64_t min_cap = [] { const char* e = std::getenv("STRATA_HIP_WMMA_MIN_CAP"); return e ? (int64_t) std::atoll(e) : (int64_t) 0; }();
+    static const int64_t min_q = [] { const char* e = strata::env("NOSTROMA_HIP_WMMA_MIN_Q"); return e ? (int64_t) std::atoll(e) : (int64_t) 64; }();
+    static const int64_t min_cap = [] { const char* e = strata::env("NOSTROMA_HIP_WMMA_MIN_CAP"); return e ? (int64_t) std::atoll(e) : (int64_t) 0; }();
     return n_q >= min_q && cap >= min_cap;
 }
 bool hip_wmma_usable(int64_t n_q, int64_t cap) {
@@ -2302,8 +2303,8 @@ constexpr int PA_TRIM_DEFAULT = 2;
 template <bool SPLIT, bool GATE>
 void pa_launch(dim3 grid, cudaStream_t st, const float* q, const QsaAttnPools& pools, const int32_t* ids, const int32_t* steps,
                int n_kv_heads, int page_size, float scale_log2, float* attn, int cap, const float* qf, uint16_t* o16, int64_t ld16) {
-    static const int trim = [] { const char* e = std::getenv("STRATA_PA_TRIM"); return e != nullptr && e[0] != '\0' ? std::atoi(e) : PA_TRIM_DEFAULT; }();
-    static const bool rpf = [] { const char* e = std::getenv("STRATA_PA_RPF"); return !(e != nullptr && e[0] == '0'); }();
+    static const int trim = [] { const char* e = strata::env("NOSTROMA_PA_TRIM"); return e != nullptr && e[0] != '\0' ? std::atoi(e) : PA_TRIM_DEFAULT; }();
+    static const bool rpf = [] { const char* e = strata::env("NOSTROMA_PA_RPF"); return !(e != nullptr && e[0] == '0'); }();
 #define STRATA_PA_L(R, T) prompt_attn_wmma_kernel<SPLIT, GATE, R, T><<<grid, THREADS, 0, st>>>(q, pools, ids, steps, n_kv_heads, page_size, scale_log2, attn, cap, qf, o16, ld16)
     if (trim >= 2) { if (rpf) STRATA_PA_L(true, 2); else STRATA_PA_L(false, 2); }
     else if (trim == 1) { if (rpf) STRATA_PA_L(true, 1); else STRATA_PA_L(false, 1); }
@@ -2315,7 +2316,7 @@ bool launch_wmma(const float* q, const QsaAttnPools& pools, const int32_t* ids, 
                  const QsaShapes& s, float* attn, int64_t n_q, cudaStream_t st, const float* gate_qf = nullptr,
                  uint16_t* gate_o16 = nullptr, int64_t gate_ld = 0) {
     {   // STRATA_QSA_STAT=1 (diagnostic): how much consecutive queries' selections overlap (the row-union attention's sharing factor)
-        static const bool stat_on = std::getenv("STRATA_QSA_STAT") != nullptr;
+        static const bool stat_on = strata::env("NOSTROMA_QSA_STAT") != nullptr;
         static int stat_calls = 0;
         if (stat_on && n_q >= 2048 && stat_calls < 4) {
             ++stat_calls;
@@ -2345,8 +2346,8 @@ bool launch_wmma(const float* q, const QsaAttnPools& pools, const int32_t* ids, 
     const float scale_log2 = 1.4426950408889634f / sqrtf((float) HD);
     for (int64_t q0 = 0; q0 < n_q; q0 += 65535) {
         const int64_t nb = n_q - q0 < 65535 ? n_q - q0 : 65535;
-        static const bool fast = [] { const char* e = std::getenv("STRATA_PA_FAST"); return e != nullptr && e[0] == '1'; }();
-        static const int64_t min_t = [] { const char* e = std::getenv("STRATA_PF_SWITCH_MIN_T"); return e ? (int64_t) std::atoll(e) : (int64_t) 0; }();
+        static const bool fast = [] { const char* e = strata::env("NOSTROMA_PA_FAST"); return e != nullptr && e[0] == '1'; }();
+        static const int64_t min_t = [] { const char* e = strata::env("NOSTROMA_PF_SWITCH_MIN_T"); return e ? (int64_t) std::atoll(e) : (int64_t) 0; }();
         const dim3 grid((unsigned) nb, (unsigned) s.n_head_kv);
         const float* qq = q + q0 * s.n_head * HD;
         const int32_t* idq = ids + q0 * cap;
@@ -2493,7 +2494,7 @@ bool qsa_prompt_attn_batch(const float* q, const QsaAttnPools& pools, const int3
             // and newer), as RTX 20 runs them.  A card below sm_75 has no m16n8k8: its builds hold a __trap() in those
             // kernels, so forcing them there killed the engine ("prefill copy_i32: unspecified launch failure" on a
             // Tesla P100); such a card ignores the switch and keeps the kernel it runs without it.
-            const char* w = std::getenv("STRATA_QSA_WARP");
+            const char* w = strata::env("NOSTROMA_QSA_WARP");
             const int real_cc = 10 * strata::cc_major_of(major) + strata::cc_minor_of(minor);
             cc[dev] = w && (!std::strcmp(w, "1") || !std::strcmp(w, "attn")) && real_cc >= 75 ? 75 : real_cc;
         }
@@ -2517,13 +2518,13 @@ bool qsa_prompt_attn_batch(const float* q, const QsaAttnPools& pools, const int3
     cudaStream_t st = (cudaStream_t) stream;
     if (pools.k_q4 != nullptr) {   // Q4_0 K and V (--kv q4_0): mode 4.  STRATA_PROMPT_ATTN_Q4=0: the old kernel (A/B)
         static const bool q4_off = [] {
-            const char* v = std::getenv("STRATA_PROMPT_ATTN_Q4");
+            const char* v = strata::env("NOSTROMA_PROMPT_ATTN_Q4");
             return v != nullptr && v[0] == '0';
         }();
         // Turing runs mode 4 as pairs of m16n8k8 MMAs (another summation order than the FP32 kernel it replaces): manual
         // opt-in STRATA_PROMPT_ATTN_Q4_TC=1 (#1581, c3c: qsa_prompt_attn_parity at 4096/512 and 1500/512 on an RTX 2080 Super).
         static const bool q4_tc = [] {
-            const char* v = std::getenv("STRATA_PROMPT_ATTN_Q4_TC");
+            const char* v = strata::env("NOSTROMA_PROMPT_ATTN_Q4_TC");
             return v != nullptr && v[0] == '1';
         }();
         if (q4_off || volta || (turing && !q4_tc) || pools.v_q4 == nullptr) return false;
@@ -2539,15 +2540,15 @@ bool qsa_prompt_attn_batch(const float* q, const QsaAttnPools& pools, const int3
         // STRATA_PROMPT_ATTN_V1=1 (debug): the first version, same accuracy, another summation order - the control
         // for how far the model amplifies an FP32-level change.  Turing always takes it: v2's cp.async does not
         // exist before sm_80.
-        static const bool v1 = std::getenv("STRATA_PROMPT_ATTN_V1") != nullptr;
+        static const bool v1 = strata::env("NOSTROMA_PROMPT_ATTN_V1") != nullptr;
         if (volta) return launch70<1>(q, pools, ids, steps, cap, s, attn, n_q, st);
         // Turing: v2 with register staging instead of cp.async, opt-in (STRATA_PA_V2T=1) until measured
-        static const bool v2t = [] { const char* e = std::getenv("STRATA_PA_V2T"); return e != nullptr && e[0] == '1'; }();
+        static const bool v2t = [] { const char* e = strata::env("NOSTROMA_PA_V2T"); return e != nullptr && e[0] == '1'; }();
         if (v1 || (turing && !v2t)) {
             // #1821 (xrip): v1 with the next chunk's rows prefetched in registers and K/V sharing one buffer (two blocks an
             // SM), the same bits.  STRATA_PA_V1_PREFETCH=0 / 1 forces it off / on; unset: a Turing card with
             // STRATA_SM75_PERF=1.
-            static const int pf_env = [] { const char* e = std::getenv("STRATA_PA_V1_PREFETCH"); return e ? (std::atoi(e) != 0 ? 1 : 0) : -1; }();
+            static const int pf_env = [] { const char* e = strata::env("NOSTROMA_PA_V1_PREFETCH"); return e ? (std::atoi(e) != 0 ? 1 : 0) : -1; }();
             if (pf_env == 1 || (pf_env < 0 && t75 && strata::sm75_series())) return launch<1, true>(q, pools, ids, steps, cap, s, attn, n_q, st);
             return launch<1>(q, pools, ids, steps, cap, s, attn, n_q, st);
         }
@@ -2557,7 +2558,7 @@ bool qsa_prompt_attn_batch(const float* q, const QsaAttnPools& pools, const int3
         // 5 pairs each; another summation order (~1e-7), so a near-tie can flip a prompt's first token.  Sm_80, 8.9, 9.0 and the datacentre
         // Blackwells run the same kernel unmeasured.  STRATA_PROMPT_ATTN_IMMA=0 is the off switch (the v2 i8 kernel of 0.2.6), =1 as the default.
         if (g_pa_imma < 0) {
-            const char* v = std::getenv("STRATA_PROMPT_ATTN_IMMA");
+            const char* v = strata::env("NOSTROMA_PROMPT_ATTN_IMMA");
             g_pa_imma = v == nullptr ? 2 : (v[0] == '1' ? 1 : 0);   // 2: the default (on where the kernel can run)
         }
         if (!turing && (g_pa_imma == 1 || (g_pa_imma == 2 && strata::prompt_attn_imma_default(false, 80, strata::qwen_defaults_026())))) return launch_i8v3(q, pools, ids, steps, cap, s, attn, n_q, st);

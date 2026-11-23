@@ -1,6 +1,7 @@
 // src/prefill/prefill.cpp - see include/strata/prefill/prefill.hpp.
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
+#include "strata/env.hpp"
 #include <dpct/dpct.hpp>
 #include "strata/sycl_queue.hpp"
 #include "strata/kprof.hpp"
@@ -136,7 +137,7 @@ using Clock = std::chrono::steady_clock;
 // direct copy from pageable memory.
 inline bool dma_direct(const core::ExpertSource* src, int64_t layer, int64_t expert, const void* blob) {
     if (!src->pinned(layer, expert)) return false;
-    static const bool pageable_ok = [] { const char* v = std::getenv("STRATA_PF_DMA_PAGEABLE"); return v && v[0] == '1'; }();
+    static const bool pageable_ok = [] { const char* v = strata::env("NOSTROMA_PF_DMA_PAGEABLE"); return v && v[0] == '1'; }();
     if (pageable_ok) return true;
     if (blob == nullptr) return false;
     // the answer per 2 MiB bucket (a query costs ~2 us, 10k+ experts a chunk): "host USM" only when both ends of the bucket are, so a bucket
@@ -169,7 +170,7 @@ constexpr int kIdxQHeads = (int) strata::core::kCompiledGeometry.idx_q_heads, kI
 // the prefill first differs (CLEAN-6.0).
 inline std::FILE* pf_hash_file() {
     static std::FILE* f = [] {
-        const char* p = std::getenv("STRATA_PF_HASH_FILE");
+        const char* p = strata::env("NOSTROMA_PF_HASH_FILE");
         return p != nullptr && p[0] != 0 ? std::fopen(p, "w") : nullptr;
     }();
     return f;
@@ -190,7 +191,7 @@ constexpr int kSplitHelpRing = 48;  // layer split help: the helper stage's ring
 // #828: STRATA_TEST_PAGEABLE=1 makes every pinned host allocation with a pageable fallback in Prefill::init fail, so the
 // fallbacks (what an LXC container's memlock limit forces) run on a PC that can pin - for ASan / MALLOC_CHECK_=3 runs.
 inline bool force_pageable() {
-    static const bool v = [] { const char* e = std::getenv("STRATA_TEST_PAGEABLE"); return e != nullptr && e[0] == '1'; }();
+    static const bool v = [] { const char* e = strata::env("NOSTROMA_TEST_PAGEABLE"); return e != nullptr && e[0] == '1'; }();
     return v;
 }
 constexpr int RING_MAX = 1024;          // the arrays; the ring itself is ring_slots(), at most ring_cap()
@@ -199,7 +200,7 @@ constexpr int RING_MAX = 1024;          // the arrays; the ring itself is ring_s
 // chunk) 779 -> 912 / 766 -> 844, the same output.  Below ~1,000 tokens the output changed on Q2_0 (a smaller chunk
 // takes other kernels), so 1024 is the floor.  STRATA_PREFILL_STREAM_MIN overrides (A/B).
 inline int64_t stream_all_min() {
-    static const int64_t v = [] { const char* e = std::getenv("STRATA_PREFILL_STREAM_MIN"); return e ? (int64_t) std::atoll(e) : (int64_t) 1024; }();
+    static const int64_t v = [] { const char* e = strata::env("NOSTROMA_PREFILL_STREAM_MIN"); return e ? (int64_t) std::atoll(e) : (int64_t) 1024; }();
     return v;
 }
 double g_pinned_share = 1.0;
@@ -265,7 +266,7 @@ inline uint64_t ring_bytes() {
 // prompt's experts are read through a different mix of resident and streamed groups and its bits differ from 0.1.39's
 // (RTX 5070, IQ3_XXS, 32K prompt: +14% to +26%; teacher-forced against the FP16 prompt path in the same band).
 inline bool ring_bytes_on() {
-    static const bool on = [] { const char* v = std::getenv("STRATA_RING_BYTES"); return v == nullptr || v[0] != '0'; }();
+    static const bool on = [] { const char* v = strata::env("NOSTROMA_RING_BYTES"); return v == nullptr || v[0] != '0'; }();
     return on;
 }
 inline int ring_budget_slots() {
@@ -275,12 +276,12 @@ inline int ring_budget_slots() {
     return (int) (n <= 0 ? 0 : (n > cap ? cap : n));
 }
 inline int ring_slots(size_t T) {
-    const char* v = std::getenv("STRATA_PREFILL_RING");
+    const char* v = strata::env("NOSTROMA_PREFILL_RING");
 #if defined(STRATA_USE_HIP)
     // S6: with the opt-in RDNA4 matrix-core attention (STRATA_HIP_WMMA=1) a 96-slot ring: measured with it, 9070 XT
     // 4K prompts 718 -> 1,211 tok/s (16K 1,949 -> 2,032), R9700 4K 2,426 -> 2,483 (16K the same)
     static const bool wmma = [] {
-        const char* e = std::getenv("STRATA_HIP_WMMA");
+        const char* e = strata::env("NOSTROMA_HIP_WMMA");
         return e != nullptr && e[0] == '1';
     }();
     if (!v && g_ring_override <= 0 && wmma) return (int64_t) T >= stream_all_min() ? 96 : STAGE;
@@ -302,7 +303,7 @@ inline int ring_slots(size_t T) {
     // It copies EVERY non-resident expert of a layer, routed or not: with a big host tier (the IQ2_XS: a quarter of the
     // experts in the pinned mirror) that is several times the routed ones, and a 2,184-token prompt fell from ~570 to
     // 254 tok/s. So by default only while the VRAM holds more than 90% of the pairs (the Coder, and its lent slots).
-    static const int stream_all_env = [] { const char* e = std::getenv("STRATA_PREFILL_STREAM_ALL"); return e ? (e[0] == '1' ? 1 : 0) : -1; }();
+    static const int stream_all_env = [] { const char* e = strata::env("NOSTROMA_PREFILL_STREAM_ALL"); return e ? (e[0] == '1' ? 1 : 0) : -1; }();
     const bool stream_all_ok = stream_all_env == 1 || (stream_all_env == -1 && g_nonres_share < 0.10);
     if (!stream_all_ok) return STAGE;
     const int big = r < 16 ? 16 : r > ring_cap() ? ring_cap() : r;
@@ -317,8 +318,8 @@ inline int ring_slots(size_t T) {
 // so the bits differ from the FP16 path (docs/INTEL_INT8_EXPERTS.md: KL 0.0002 nats, top-1 99.7%).
 static_assert(strata::kernels::kXmxGroupMax <= strata::prefill::i8::kMaxGroup, "the int8 path holds the grouped XMX path's experts: its Layout must be at least as big");
 inline const char* i8_env() {
-    const char* e = std::getenv("STRATA_PREFILL_MMQ");
-    if (e == nullptr || e[0] == 0) e = std::getenv("STRATA_PF_I8");
+    const char* e = strata::env("NOSTROMA_PREFILL_MMQ");
+    if (e == nullptr || e[0] == 0) e = strata::env("NOSTROMA_PF_I8");
     return (e != nullptr && e[0] != 0) ? e : nullptr;
 }
 std::atomic<bool> g_i8_failed{false};    // an int8 launch threw: the FP16 chain for the rest of the process
@@ -347,7 +348,7 @@ inline int dq_slots() { return strata::prefill::xmx::mode() == 1 ? strata::prefi
 // activations carry 11 mantissa bits, so the BF16 low part does not apply there.
 inline int bf16x2_mode(bool f16_io) {
     static const int v = [] {
-        const char* e = std::getenv("STRATA_PREFILL_BF16X2");
+        const char* e = strata::env("NOSTROMA_PREFILL_BF16X2");
         return e != nullptr ? std::atoi(e) : 0;
     }();
     return f16_io ? 0 : v;
@@ -357,11 +358,11 @@ inline bool bf16x2(bool f16_io) { return bf16x2_mode(f16_io) != 0; }
 // STRATA_HC_UPMIX_CHECK=N also runs the default pair on the first N reads and reports the difference of `mixed`
 static int64_t pf_switch_min_t() {   // S23: STRATA_PF_SWITCH_MIN_T=N - the rounding-level prompt switches only on chunks of
     // N or more tokens (shorter prompts keep the default numerics, and their outputs; the switches pay on long ones)
-    static const int64_t v = [] { const char* e = std::getenv("STRATA_PF_SWITCH_MIN_T"); return e ? (int64_t) std::atoll(e) : (int64_t) 0; }();
+    static const int64_t v = [] { const char* e = strata::env("NOSTROMA_PF_SWITCH_MIN_T"); return e ? (int64_t) std::atoll(e) : (int64_t) 0; }();
     return v;
 }
 inline bool hc_upmix() {
-    static const bool v = [] { const char* e = std::getenv("STRATA_HC_UPMIX"); return e != nullptr && e[0] == '1'; }();
+    static const bool v = [] { const char* e = strata::env("NOSTROMA_HC_UPMIX"); return e != nullptr && e[0] == '1'; }();
     return v;
 }
 inline bool bf16x2_hc(bool f16_io) { return bf16x2_mode(f16_io) == 1; }
@@ -371,7 +372,7 @@ inline bool bf16x2_hc(bool f16_io) { return bf16x2_mode(f16_io) == 1; }
 // inject projections as one WMMA GEMM over xn16 (strata_pf_hcdown_bf16), xn16 written with token stride
 // 10240 + 64.  Rounding-level (another k order than hipBLASLt): quality-gated.
 inline bool pf_hcdown() {
-    static const bool v = [] { const char* e = std::getenv("STRATA_PF_HCDOWN"); return e && e[0] == '1'; }();
+    static const bool v = [] { const char* e = strata::env("NOSTROMA_PF_HCDOWN"); return e && e[0] == '1'; }();
     return v;
 }
 constexpr int64_t XN_PAD = 64;
@@ -379,12 +380,12 @@ constexpr int64_t XN_PAD = 64;
 // hipBLASLt's own k order (bitwise: strata_pf_hcdown_exact_bf16), xn16 written with token stride 10240 + 64 (the inject
 // projection stays on hipBLASLt, reading that stride)
 inline bool hcd_exact() {
-    static const bool v = [] { const char* e = std::getenv("STRATA_HCD_EXACT"); return e && e[0] == '1'; }();
+    static const bool v = [] { const char* e = strata::env("NOSTROMA_HCD_EXACT"); return e && e[0] == '1'; }();
     return v;
 }
 inline bool hc_pad() { return pf_hcdown() || hcd_exact(); }
 inline bool cvec_fuse() {
-    static const bool v = [] { const char* e = std::getenv("STRATA_CVEC_FUSE"); return e && e[0] == '1'; }();
+    static const bool v = [] { const char* e = strata::env("NOSTROMA_CVEC_FUSE"); return e && e[0] == '1'; }();
     return v;
 }
 // S23 (opt-in STRATA_PF_PAD=1 with STRATA_PF_GEMM=1): the FP16 activations of the two K 6144 projections (ssm_out's
@@ -392,7 +393,7 @@ inline bool cvec_fuse() {
 // 4 KB-multiple stride; Gemm::native pads the weight the same way).  Same bits.
 inline bool pf_pad() {
     static const bool v = [] {
-        const char* p = std::getenv("STRATA_PF_PAD"); const char* g = std::getenv("STRATA_PF_GEMM");
+        const char* p = strata::env("NOSTROMA_PF_PAD"); const char* g = strata::env("NOSTROMA_PF_GEMM");
         return p && p[0] == '1' && g && g[0] == '1';
     }();
     return v;
@@ -401,7 +402,7 @@ constexpr int64_t ZV_PAD = 64;
 
 // F-1: STRATA_GR_UNFUSED=1 keeps the FP32 copy of the normalized rows (gr_norm + gr_mix), the A/B arm
 inline bool gr_unfused() {
-    static const bool v = [] { const char* e = std::getenv("STRATA_GR_UNFUSED"); return e && e[0] == '1'; }();
+    static const bool v = [] { const char* e = strata::env("NOSTROMA_GR_UNFUSED"); return e && e[0] == '1'; }();
     return v;
 }
 
@@ -486,7 +487,7 @@ struct Stager {
     int device = 0;
 
     bool init(size_t blob_bytes, int nthreads) {
-        if (const char* v = std::getenv("STRATA_STAGER_RING")) kRing = std::clamp(std::atoi(v), 2, 256);
+        if (const char* v = strata::env("NOSTROMA_STAGER_RING")) kRing = std::clamp(std::atoi(v), 2, 256);
         buf.assign((size_t) kRing, nullptr);
         pinned.assign((size_t) kRing, 0);
         dma_done.assign((size_t) kRing, nullptr);
@@ -748,7 +749,7 @@ struct PeerPrefill {
 // 128 reads a prompt 1.1-1.3% faster on two Arc Pro B65s with the lane-cell score phase, but its extra 1.2 GB comes out of
 // the expert cache on every card (an 8 GB A750 most), so the default stays 32.
 static int64_t attn_batch_setting() {
-    const char* v = std::getenv("STRATA_ATTN_BATCH");
+    const char* v = strata::env("NOSTROMA_ATTN_BATCH");
     const long long n = v ? std::atoll(v) : 32;
     return (n >= 1 && n <= 1024) ? (int64_t) n : 32LL;
 }
@@ -869,7 +870,7 @@ namespace {
 // STRATA_KV_STAGE_OWN (A/B only): the staging pool gets its own allocation instead of borrowed expert slots, so a
 // streamed run lends the prompt path exactly the slots a resident one does (a lent expert runs on the CPU, which
 // rounds differently: without this an A/B compares two expert placements as well as two KV placements)
-bool stage_own() { static const bool v = std::getenv("STRATA_KV_STAGE_OWN") != nullptr; return v; }
+bool stage_own() { static const bool v = strata::env("NOSTROMA_KV_STAGE_OWN") != nullptr; return v; }
 void take_stage(Alloc& o_borrowed, const core::SessionState& ss, const strata::kernels::QsaShapes& s,
                 strata::kernels::KvHostPools& st, bool& ok) {
     const core::QsaState& q0 = ss.qsa_states[ss.qsa_primary()];
@@ -917,7 +918,7 @@ namespace {
 struct I8Cross { double rows = 0; bool confident = false; bool measured = false; };
 
 std::string i8_cache_file() {
-    const char* d = std::getenv("STRATA_CACHE_DIR");
+    const char* d = strata::env("NOSTROMA_CACHE_DIR");
     std::string dir;
     if (d && d[0]) dir = d;
     else if (const char* h = std::getenv("HOME")) dir = std::string(h) + "/.cache/strata";
@@ -1201,7 +1202,7 @@ const MmqPlan& mmq_plan() {
     static const MmqPlan plan = [] {
         MmqPlan p;
         const auto& lay = strata::kernels::cpu::expert_layout();
-        const char* env = std::getenv("STRATA_PREFILL_MMQ");
+        const char* env = strata::env("NOSTROMA_PREFILL_MMQ");
         const bool on = mmq::built() && (env == nullptr || std::atoi(env) != 0);
         const int64_t layers = lay.native ? (int64_t) lay.fmt.size() : lay.n_layers;
         p.layer.assign((size_t) std::max<int64_t>(layers, 0), 0);
@@ -1347,7 +1348,7 @@ bool Prefill::init(const core::WeightTable &wt, const core::ModelGeometry &g,
     // (the Level Zero v2 adapter runs every queue on the compute engine: ~0.8 s of a 4K prompt on a B70 is the compute
     // engine waiting for its own DMA).  nullptr: the ordinary in-order queue.  STRATA_COPY_ENGINE=0 turns it off.
     m.copy = strata::make_copy_engine_queue("the prompt path's expert");
-    const char* copy_profiling = std::getenv("STRATA_SYCL_PREFILL_COPY_PROFILING");
+    const char* copy_profiling = strata::env("NOSTROMA_SYCL_PREFILL_COPY_PROFILING");
     if (m.copy == nullptr && copy_profiling && std::strcmp(copy_profiling, "0") == 0) {
         m.copy_without_profiling = strata::make_prefill_copy_queue(*m.cs);
         m.copy = m.copy_without_profiling.get();
@@ -1368,7 +1369,7 @@ bool Prefill::init(const core::WeightTable &wt, const core::ModelGeometry &g,
     if (!m.stager) {
         m.stager = std::make_unique<Stager>();
         const int hw = (int) std::thread::hardware_concurrency();
-        const char* stv = std::getenv("STRATA_STAGER_THREADS");   // D-5: the host copy threads of unpinned blobs
+        const char* stv = strata::env("NOSTROMA_STAGER_THREADS");   // D-5: the host copy threads of unpinned blobs
         // A GGUF read in place (UD-Q4_K_XL beyond its RAM budget): most of a chunk's blobs are page faults on the
         // SSD, so the copies need many reads in flight - 32 threads and a 128-deep ring read a 4K chunk in 29 s
         // instead of 71 s on an RTX 5070 / NVMe PC (4 threads, 16 deep: the defaults, kept for every other source)
@@ -1376,7 +1377,7 @@ bool Prefill::init(const core::WeightTable &wt, const core::ModelGeometry &g,
         for (int64_t l = 0; src != nullptr && !files && l < g.n_layers; ++l)
             for (int64_t e = 0; !files && e < g.n_expert; ++e) files = src->transient(l, e);
         const int threads = stv ? std::clamp(std::atoi(stv), 1, 32) : files ? 32 : std::max(2, std::min(4, hw / 4));
-        if (files && std::getenv("STRATA_STAGER_RING") == nullptr) m.stager->kRing = 4 * threads;
+        if (files && strata::env("NOSTROMA_STAGER_RING") == nullptr) m.stager->kRing = 4 * threads;
         if (!m.stager->init((size_t) MAXBLOB(), threads)) ok = false;
     }
     m.steps_host.resize(T * strata::kernels::kStepCount);
@@ -1387,7 +1388,7 @@ bool Prefill::init(const core::WeightTable &wt, const core::ModelGeometry &g,
         // mapped host memory, per layer; copying them first is measurably faster on a PCIe-attached pair and
         // token-identical - 4,106 tokens 1,303 -> 1,335 tok/s, 16,380 tokens 1,622 -> 1,665, the 10,938-token chat
         // prompt 1,576 -> 1,617, decode unchanged (round 46).  STRATA_GROUP_COPY=0 restores the mapped arm.
-        const char* gc = std::getenv("STRATA_GROUP_COPY");
+        const char* gc = strata::env("NOSTROMA_GROUP_COPY");
         const bool group_copy = gc == nullptr || gc[0] != '0';
         if (m.grp_n < need && !group_copy) {
             if (m.grp_host) sycl::free(m.grp_host, dpct::get_in_order_queue());
@@ -1670,12 +1671,12 @@ bool Prefill::draft_kv(core::MtpDrafter& mtp, const float* R_rows, const int32_t
                        std::string& err, const char** why) {
     Impl& m = *impl_;
     auto decline = [&](const char* reason) { if (why != nullptr) *why = reason; return false; };
-    static const bool off = [] { const char* v = std::getenv("STRATA_MTP_BATCH"); return v != nullptr && v[0] == '0'; }();
+    static const bool off = [] { const char* v = strata::env("NOSTROMA_MTP_BATCH"); return v != nullptr && v[0] == '0'; }();
     // A ring (KV streaming: the drafter's window, page p in slot p % n_slots over a host copy) takes the same appends
     // with its own page table and host copy, as a streamed main layer does; the cells written are those the window can
     // still reach (r0 below), which the ring holds, so no two of them share a slot.  STRATA_MTP_BATCH_RING=0: the
     // drafter's own pass for a ring (the A/B).
-    static const bool ring_ok = [] { const char* v = std::getenv("STRATA_MTP_BATCH_RING"); return v == nullptr || v[0] != '0'; }();
+    static const bool ring_ok = [] { const char* v = strata::env("NOSTROMA_MTP_BATCH_RING"); return v == nullptr || v[0] != '0'; }();
     core::QsaState& st = mtp.kv_state_rw();
     if (off) return decline("STRATA_MTP_BATCH=0");
     if (n <= 0 || m.g == nullptr || m.region == nullptr) return decline("no prompt scratch region on this path");
@@ -1711,7 +1712,7 @@ bool Prefill::draft_kv(core::MtpDrafter& mtp, const float* R_rows, const int32_t
     // mixed_h, K and V (KV each), the token id
     // E-9: the drafter's Q8_0 matrices through Q8_1 x Q8_0 MMQ - its own pass's integer dot products (mmvq), so
     // its K/V stay close to what the drafter computes itself; STRATA_MTP_BATCH_F16=1: FP16 GEMMs (the A/B)
-    static const bool f16_only = [] { const char* v = std::getenv("STRATA_MTP_BATCH_F16"); return v && v[0] == '1'; }();
+    static const bool f16_only = [] { const char* v = strata::env("NOSTROMA_MTP_BATCH_F16"); return v && v[0] == '1'; }();
     const bool q8 = !f16_only && mmq::built() && mmq::fits(kQ8_0, Nn) && mmq::fits(kQ8_0, KV);   // #420
     const uint64_t per_row = 4 * (2 * Nn + 4 * HCN + LR + HC + Nn + 2 * KV + 1) + 2 * (Nn + 2 * HCN + LR + Nn) + 64 +
                              (q8 ? (uint64_t) mmq::q8_bytes(g.hc, Nn) + 4 * g.hc : 0);
@@ -1746,7 +1747,7 @@ bool Prefill::draft_kv(core::MtpDrafter& mtp, const float* R_rows, const int32_t
     int32_t* ident = q8 ? (int32_t*) carve((size_t) B * g.hc * 4) : nullptr;
     int32_t* bnd = q8 ? (int32_t*) carve(16) : nullptr;
     if ((uint64_t) (q - m.region) > m.region_bytes) return decline("the batch buffers do not fit the scratch region");
-    static const bool timing = std::getenv("STRATA_DRAFT_TIMING") != nullptr;   // debug: where this pass's time goes
+    static const bool timing = strata::env("NOSTROMA_DRAFT_TIMING") != nullptr;   // debug: where this pass's time goes
     if (timing) m.cs->wait();
     const auto ti0 = Clock::now();
     if (!mtp.idle(err)) return false;   // the drafter's own stream (its graph uploads) before this writes its K/V
@@ -1873,7 +1874,7 @@ namespace {
 // grouping and round differently from the default, like STRATA_SPLIT_OWN). Unset or 0: every stage's prompt experts on
 // its own GPU, as before.
 bool split_help_env() {
-    static const bool v = [] { const char* e = std::getenv("STRATA_PREFILL_HELP"); return e != nullptr && std::atoi(e) != 0; }();
+    static const bool v = [] { const char* e = strata::env("NOSTROMA_PREFILL_HELP"); return e != nullptr && std::atoi(e) != 0; }();
     return v;
 }
 // The share of a stage's streamed experts the idle stage's GPU takes for a one-chunk prompt of T tokens (0: none).
@@ -1885,7 +1886,7 @@ bool split_help_env() {
 // STRATA_PREFILL_HELP_FRAC sets the share for every T.
 double split_help_frac(int64_t T) {
     static const double fixed = [] {
-        const char* e = std::getenv("STRATA_PREFILL_HELP_FRAC");
+        const char* e = strata::env("NOSTROMA_PREFILL_HELP_FRAC");
         return e ? std::clamp(std::atof(e), 0.0, 1.0) : -1.0;
     }();
     if (fixed >= 0.0) return fixed;
@@ -2083,7 +2084,7 @@ bool Prefill::set_peer(core::PeerExperts *peer, int64_t cap_rows,
                   pp->s = dpct::get_current_device().create_queue(true)) == 0 &&
               DPCT_CHECK_ERROR(pp->ev_done = new sycl::event()) == 0;
     {
-        const char* v = std::getenv("STRATA_PF_PEER_OUT_PIPE");   // =0: one copy after the last group (the A/B)
+        const char* v = strata::env("NOSTROMA_PF_PEER_OUT_PIPE");   // =0: one copy after the last group (the A/B)
         pp->out_pipe = (v == nullptr || std::atoi(v) != 0) || pp->compact;   // compact always pipes
     }
     if (ok && pp->out_pipe) {
@@ -2116,7 +2117,7 @@ bool Prefill::set_peer(core::PeerExperts *peer, int64_t cap_rows,
     };
     pp->mixed = (float*) take((size_t) m.T_max * N * 4);
     {
-        const char* v = std::getenv("STRATA_PF_PEER_COMPACT");
+        const char* v = strata::env("NOSTROMA_PF_PEER_COMPACT");
         pp->compact = v == nullptr || std::atoi(v) != 0;
     }
     if (pp->compact) {
@@ -2131,11 +2132,11 @@ bool Prefill::set_peer(core::PeerExperts *peer, int64_t cap_rows,
         pp->Dm_b[1] = (float*) take((size_t) Gr * N * 4);
         for (int b = 0; b < 2 && ok; ++b)
             ok = DPCT_CHECK_ERROR(pp->ev_dm[b] = new sycl::event()) == 0;
-        const char* fs = std::getenv("STRATA_PF_PEER_STREAM");
+        const char* fs = strata::env("NOSTROMA_PF_PEER_STREAM");
         pp->ps_frac = fs ? std::atof(fs) : 0.35;   // measured: 0.25-0.5 all ~1950-1970 at 32K, 0.35 best
         if (pp->ps_frac > 0.0 && !mp.fallback && m.T_max >= stream_all_min()) {
             pp->RP = 48;
-            if (const char* pr = std::getenv("STRATA_PF_PEER_RING"); pr != nullptr) pp->RP = std::atoi(pr);
+            if (const char* pr = strata::env("NOSTROMA_PF_PEER_RING"); pr != nullptr) pp->RP = std::atoi(pr);
             pp->pstage.assign((size_t) pp->RP, nullptr);
             pp->pcopied.assign((size_t) pp->RP, nullptr);
             pp->pused.assign((size_t) pp->RP, nullptr);
@@ -2351,14 +2352,14 @@ const char* const kPfNames[kPfCount] = {"embed+steps", "hc read", "gdn", "qsa pr
                                         "gemm gate/up", "gemm down", "combine", "ple", "kv stage", "gdn conv+gates",
                                         "gdn recurrence", "gdn out proj"};
 struct PfTimer {
-    bool on = std::getenv("STRATA_PREFILL_TIMING") != nullptr;
+    bool on = strata::env("NOSTROMA_PREFILL_TIMING") != nullptr;
     std::vector<dpct::event_ptr> ev;
     std::vector<int> ph;
     size_t used = 0;
     double ms[kPfCount] = {};
     // STRATA_PREFILL_SYNC=1 (debug): wait for the GPU at every mark and log the phase that just finished, so a hang
     // names the stage that never completes
-    bool sync = std::getenv("STRATA_PREFILL_SYNC") != nullptr;
+    bool sync = strata::env("NOSTROMA_PREFILL_SYNC") != nullptr;
     long long n_sync = 0;
     void mark(int phase, dpct::queue_ptr s) {
         workload_trace::phase(phase < kPfCount ? kPfNames[phase] : "unknown", s);
@@ -2411,7 +2412,7 @@ struct PfTimer {
 enum PePhase { kPeIdle, kPeMoeIn, kPeMoeGemm, kPeMoeOut, kPeCount };
 const char* const kPeNames[kPeCount] = {"idle", "moe in", "moe gemm", "moe out"};
 struct PeTimer {
-    bool on = std::getenv("STRATA_PREFILL_TIMING") != nullptr;
+    bool on = strata::env("NOSTROMA_PREFILL_TIMING") != nullptr;
     int dev = -1;
     std::vector<dpct::event_ptr> ev;
     std::vector<int> ph;
@@ -2487,7 +2488,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
     strata::kernels::QsaShapes s = core::qsa_shapes(g);
     // read once (STRATA_KV_PREFETCH=1/0: the next streamed layer's KV prefix is staged on its own stream)
     static const bool kv_prefetch_on = [] {
-        const char* e = std::getenv("STRATA_KV_PREFETCH");
+        const char* e = strata::env("NOSTROMA_KV_PREFETCH");
         return e ? std::atoi(e) != 0 : false;
     }();
     const bool kv_prefetch = kv_prefetch_on;
@@ -2549,7 +2550,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
     // the PLE block batched over the chunk: the pinned postops and a BF16 or GGUF-native key (else token by token);
     // STRATA_PLE_BATCH=0 keeps the per-token block (the A/B)
     static const bool ple_batch_env = [] {
-        const char* v = std::getenv("STRATA_PLE_BATCH");
+        const char* v = strata::env("NOSTROMA_PLE_BATCH");
         return v == nullptr || std::atoi(v) != 0;
     }();
     const bool ple_batch = ple_on && ple_batch_env && strata::kernels::ple_native_postops_enabled() &&
@@ -2564,7 +2565,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
     // IQ3_S: a 4,095-token prompt 784 -> 1,002 tok/s without it).  So the default is 256 only when the cache holds every
     // expert; STRATA_PREFILL_FIRST=<tokens> decides explicitly.
     const bool all_cached = m.cache != nullptr && m.g != nullptr && m.cache->slots() >= m.g->n_layers * m.g->n_expert;
-    static const char* const first_env = std::getenv("STRATA_PREFILL_FIRST");
+    static const char* const first_env = strata::env("NOSTROMA_PREFILL_FIRST");
     const int64_t first_chunk = first_env ? std::atoll(first_env) : (all_cached ? 256 : 0);
     auto chunk_len = [&](int64_t c0) {
         if (c0 == 0 && first_chunk > 0 && first_chunk < m.T && n > 2 * first_chunk) return first_chunk;
@@ -2600,7 +2601,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
     }
     for (int64_t c0 = 0; c0 < n; c0 += chunk_len(c0)) {
         if (should_stop && should_stop()) { err = "cancelled"; return false; }
-        if (std::getenv("STRATA_TRACE")) { std::fprintf(stderr, "strata trace: prompt chunk %lld of %lld\n", (long long) c0, (long long) n); std::fflush(stderr); }
+        if (strata::env("NOSTROMA_TRACE")) { std::fprintf(stderr, "strata trace: prompt chunk %lld of %lld\n", (long long) c0, (long long) n); std::fflush(stderr); }
         const int64_t T = chunk_len(c0), p0 = pos0 + c0;
         // DFlash2 prompt taps: the rows of this chunk at positions >= tap_first_ (the drafter looks back one window)
         const int64_t tap_t0 = tap_dev_ != nullptr ? std::min<int64_t>(T, std::max<int64_t>(0, tap_first_ - p0)) : T;
@@ -2902,7 +2903,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
         std::vector<StreamEntry> seq;
         std::vector<size_t> seq_start;
         size_t issued = 0, consumed = 0;
-        static const bool plan_reads = [] { const char* v = std::getenv("STRATA_GGUF_PLAN_READ"); return v && v[0] == '1'; }();
+        static const bool plan_reads = [] { const char* v = strata::env("NOSTROMA_GGUF_PLAN_READ"); return v && v[0] == '1'; }();
         const core::GgufExpertSource* gsrc = plan_reads ? nullptr : dynamic_cast<const core::GgufExpertSource*>(m.src);
         if (stream_all) {
             seq_start.assign((size_t) g.n_layers + 1, 0);
@@ -3008,7 +3009,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
         // i-quant prompts).  The same copies in the same order into the same slots, and a slot is refilled only once
         // the compute stream has recorded that it is done with it: the same results.  STRATA_PREFILL_ISSUER=0: inline.
         static const bool issuer_on = [] {
-            const char* v = std::getenv("STRATA_PREFILL_ISSUER");
+            const char* v = strata::env("NOSTROMA_PREFILL_ISSUER");
             return v == nullptr || std::atoi(v) != 0;
         }();
         std::atomic<size_t> a_issued{0}, a_consumed{0};
@@ -3098,7 +3099,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
         // #579 #613 (opt-in diagnosis, STRATA_PF_STEP_SYNC=1): the compute and copy streams are waited for after each
         // step named below, a step that took over 250 ms is logged, and a stall's report names the step it is in.
         // Slower (a sync per step); the bytes are the same.
-        static const bool step_sync = [] { const char* e = std::getenv("STRATA_PF_STEP_SYNC"); return e && e[0] == '1'; }();
+        static const bool step_sync = [] { const char* e = strata::env("NOSTROMA_PF_STEP_SYNC"); return e && e[0] == '1'; }();
         auto pf_step = [&](const char *what, int64_t layer) {
             try {
         if (!step_sync) return;
@@ -3225,7 +3226,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                 bool upmixed = false;
                 if (hc_upmix() && T >= pf_switch_min_t() && !gr_unfused() && !m.lo16_lo && !m.mixed_bf_lo &&
                     wu->kind == core::WeightKind::Bf16InF32 && wu->data && wu->ne0 == LR && wu->ne1 == D) {
-                    static int checks = [] { const char* e = std::getenv("STRATA_HC_UPMIX_CHECK"); return e ? std::atoi(e) : 0; }();
+                    static int checks = [] { const char* e = strata::env("NOSTROMA_HC_UPMIX_CHECK"); return e ? std::atoi(e) : 0; }();
                     if (checks > 0) {   // the default pair first, kept for the comparison
                         --checks;
                         if (!bf16_proj(m.gemm, wu, m.lo16, m.gated, T, su, err)) return false;
@@ -3363,7 +3364,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                     // first block is complete; past the chunk's last cell nothing is read until a later append writes
                     // it).  CUDA: never.
 #if defined(STRATA_USE_HIP)
-                    static const bool kv_host_dma = [] { const char* e = std::getenv("STRATA_KV_HOST_DMA"); return e && e[0] == '1'; }();
+                    static const bool kv_host_dma = [] { const char* e = strata::env("NOSTROMA_KV_HOST_DMA"); return e && e[0] == '1'; }();
 #else
                     constexpr bool kv_host_dma = false;
 #endif
@@ -3413,7 +3414,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                     // C-2: the chunk's appends in three launches instead of one per token (the same end state:
                     // the queries below read it only after the whole chunk is appended). STRATA_INDEXER_PER_TOKEN=1: the old
                     try {
-                        static const bool per_token = std::getenv("STRATA_INDEXER_PER_TOKEN") != nullptr;
+                        static const bool per_token = strata::env("NOSTROMA_INDEXER_PER_TOKEN") != nullptr;
                         if (!per_token) {
                             strata::kernels::native_qsa_indexer_append_batch(m.idx_raw, T, p0, 0, (const float*) wikn->data,
                                                                              EPS, ib, s, st.max_cells,
@@ -3434,7 +3435,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                         const int64_t active = (int64_t) m.steps_host[(size_t) ((t0 + nb - 1) * strata::kernels::kStepCount +
                                                                                 strata::kernels::kStepNBid)] + 1;
                         // the scores on tensor cores (3xTF32: FP32-level, not bitwise); STRATA_SELECT_OLD=1: the warp kernel
-                        static const bool old_sel = std::getenv("STRATA_SELECT_OLD") != nullptr;
+                        static const bool old_sel = strata::env("NOSTROMA_SELECT_OLD") != nullptr;
                         // SYCL port: the scores as oneMKL FP32 GEMM tiles (pooled keys x the batch's indexer queries)
                         // and a relu-sum (qsa_block_scores_reduce), FP32-level like the CUDA build's 3xTF32 path. The
                         // tile lives in the attention scratch, which is free until this layer's attention (same
@@ -3444,8 +3445,8 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                         // Unset: the default from 2,048 blocks is for a Battlemage card only. It changes the answers (first-token
                         // KL ~1e-9 on an Arc A750 up to 128K, 1e-5 to 1e-3 on 2x B65), and on the A750 it gained +0.2% to
                         // +0.6% (16K to 128K: its prompts are bound by expert streaming over PCIe), under the 5% bar.
-                        static const int sel_gemm_mode = [] { const char* v = std::getenv("STRATA_SELECT_GEMM"); return v ? std::atoi(v) : -1; }();
-                        static const int64_t sel_gemm_min = [] { const char* v = std::getenv("STRATA_SELECT_GEMM_MIN"); return v ? (int64_t) std::atoll(v) : (int64_t) 2048; }();   // blocks (4 cells each)
+                        static const int sel_gemm_mode = [] { const char* v = strata::env("NOSTROMA_SELECT_GEMM"); return v ? std::atoi(v) : -1; }();
+                        static const int64_t sel_gemm_min = [] { const char* v = strata::env("NOSTROMA_SELECT_GEMM_MIN"); return v ? (int64_t) std::atoll(v) : (int64_t) 2048; }();   // blocks (4 cells each)
                         const bool sel_gemm = sel_gemm_mode > 0 || (sel_gemm_mode < 0 && active >= sel_gemm_min &&
                                                                     strata::intel_gpu_gen(m.cs->get_device()) == strata::IntelGpuGen::Battlemage);
                         const int64_t sel_tile = std::min<int64_t>(8192, (int64_t) ((uint64_t) m.attn_batch *
@@ -3482,7 +3483,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                     }
                     // STRATA_SEL_OVERLAP (debug, D-1's question): how much do neighbouring queries' selections share?
                     // Per tile of 16 queries: the union of their selected cells against the sum of their widths.
-                    if (static const bool ovl = std::getenv("STRATA_SEL_OVERLAP") != nullptr; ovl && qsa_index == 0) {
+                    if (static const bool ovl = strata::env("NOSTROMA_SEL_OVERLAP") != nullptr; ovl && qsa_index == 0) {
                         std::vector<int32_t> ids((size_t) (T * m.cap));
                         /*
                         DPCT1124: cudaMemcpyAsync is migrated to
@@ -3511,7 +3512,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                     // design's last question). Every query is selected again from the pooled keys and `dead` rounded
                     // to fp16 (exactly what an fp16 store reads back); the agreement with the fp32 selection is
                     // printed cumulatively after each chunk's last QSA layer. Debug: syncs per layer.
-                    if (static const bool f16chk = std::getenv("STRATA_IDX_FP16_CHECK") != nullptr; f16chk) {
+                    if (static const bool f16chk = strata::env("NOSTROMA_IDX_FP16_CHECK") != nullptr; f16chk) {
                         static float *pooled16 = nullptr, *dead16 = nullptr;
                         static int32_t* ids16 = nullptr;
                         static double shared = 0, cells = 0;
@@ -3580,9 +3581,9 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                     // STRATA_QSA_DUMP=<file>: append every QSA layer's selected cells for the prompt's last
                     // STRATA_QSA_DUMP_LAST (4096) positions - records of int32 {qsa layer, pos0, T, cap} + T*cap cells,
                     // for tools/qsa_locality.py (how local the sparse attention's reads are: the KV-streaming question)
-                    if (static const char* dump = std::getenv("STRATA_QSA_DUMP"); dump != nullptr) {
-                        static const long long last = std::getenv("STRATA_QSA_DUMP_LAST")
-                                                          ? std::atoll(std::getenv("STRATA_QSA_DUMP_LAST")) : 4096;
+                    if (static const char* dump = strata::env("NOSTROMA_QSA_DUMP"); dump != nullptr) {
+                        static const long long last = strata::env("NOSTROMA_QSA_DUMP_LAST")
+                                                          ? std::atoll(strata::env("NOSTROMA_QSA_DUMP_LAST")) : 4096;
                         if (p0 + T > pos0 + n - last) {
                             std::vector<int32_t> h((size_t) (T * m.cap));
                             /*
@@ -3610,10 +3611,10 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                     // accuracy but not bitwise (qsa_prompt_attn.hpp). Q4_0 KV, or STRATA_PROMPT_ATTN_OLD=1: the
                     // decode kernel, 32 queries at a time (K8V4 runs the tensor kernel's mode 3: INT8 K,
                     // V dequantized from its q4_0 blocks to fp16 at gather)
-                    static const bool old_attn = std::getenv("STRATA_PROMPT_ATTN_OLD") != nullptr;
+                    static const bool old_attn = strata::env("NOSTROMA_PROMPT_ATTN_OLD") != nullptr;
                     // STRATA_DUMP_SEL=<file>: the selected cells of every prompt position of the first QSA layer of the
                     // last chunk (int32 T, cap, then T*cap ids and T widths) - the input to the grouped-gather study
-                    if (static const char* dsel = std::getenv("STRATA_DUMP_SEL"); dsel && c0 + T >= n && qsa_index == 0) {
+                    if (static const char* dsel = strata::env("NOSTROMA_DUMP_SEL"); dsel && c0 + T >= n && qsa_index == 0) {
                         m.cs->wait();
                         std::vector<int32_t> ids_h((size_t) T * m.cap), st_h((size_t) T * strata::kernels::kStepCount);
                         m.cs->memcpy(ids_h.data(), m.sel_ids, ids_h.size() * 4).wait();
@@ -3635,7 +3636,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                         for (int64_t t0 = 0; t0 < T; t0 += m.attn_batch) {
                             const int64_t nb = std::min(m.attn_batch, T - t0);
 #ifdef STRATA_SYCL_TLA_ATTN
-                            static const bool tla_attn = [] { const char* v=std::getenv("STRATA_SYCL_TLA_ATTN"); return v&&v[0]=='1'; }();
+                            static const bool tla_attn = [] { const char* v=strata::env("NOSTROMA_SYCL_TLA_ATTN"); return v&&v[0]=='1'; }();
                             if (tla_attn && nb == 32 && m.cap == 2051 &&
                                 strata::kernels::qsa_prompt_attn_tla_batch(m.q + t0 * kQW, pools, m.sel_ids + t0 * m.cap,
                                     m.steps_dev + t0 * strata::kernels::kStepCount, m.cap, s, m.attn_scratch,
@@ -3643,7 +3644,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
 #endif
                             // SYCL port: the scores one work-item per cell (qsa_prompt_attn_percell, 128-cell chunks;
                             // FP32, not bitwise with the warp kernel). STRATA_ATTN_PERCELL=0: the warp kernel.
-                            static const bool percell = [] { const char* v = std::getenv("STRATA_ATTN_PERCELL"); return !v || v[0] != '0'; }();
+                            static const bool percell = [] { const char* v = strata::env("NOSTROMA_ATTN_PERCELL"); return !v || v[0] != '0'; }();
                             if (percell) {
                                 strata::kernels::qsa_prompt_attn_percell(m.q + t0 * ZV, pools, m.sel_ids + t0 * m.cap,
                                                                          m.steps_dev + t0 * strata::kernels::kStepCount, m.cap,
@@ -3715,7 +3716,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                     // and fused_ring() keep the shrink and this decision in step; this is the backstop for anything that
                     // drifts: a clear error, never a hang.
                     // STRATA_DBG_FORCE_SLOW_LAYER=1 (a test of the backstop): layer 0 counts as one the fused path does not take
-                    static const bool force_slow = [] { const char* e = std::getenv("STRATA_DBG_FORCE_SLOW_LAYER"); return e && e[0] == '1'; }();
+                    static const bool force_slow = [] { const char* e = strata::env("NOSTROMA_DBG_FORCE_SLOW_LAYER"); return e && e[0] == '1'; }();
                     if ((!fused_l || (force_slow && l == 0)) && m.fused_bufs && T >= stream_all_min()) {
                         err = "prefill: the fused layout's MoE buffers are too small for layer " + std::to_string(l) +
                               "'s expert path at a chunk of " + std::to_string(T) + " tokens";
@@ -4306,7 +4307,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                             m.stager->start(std::move(js));
                         }
                         StagerDone stager_done{stream_all ? nullptr : m.stager.get()};
-                        static const bool f16_pair_env = [] { const char* v = std::getenv("STRATA_SYCL_F16_EXPERT_PAIR"); return v && v[0] == '1'; }();
+                        static const bool f16_pair_env = [] { const char* v = strata::env("NOSTROMA_SYCL_F16_EXPERT_PAIR"); return v && v[0] == '1'; }();
                         const bool f16_pairs = f16_pair_env && lay.native && !use_mmq && strata::prefill::xmx::mode() == 0;
                         strata::prefill::f16_expert_pair::Pair f16_pending{};
                         int f16_n = 0;
@@ -4404,7 +4405,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                         // (`flush`), so no more than a group's entries are ever held back from the issuer.
                         // STRATA_PREFILL_GROUP_GATHER=0: one gather, one wait and one record per expert.
                         static const bool group_env = [] {
-                            const char* v = std::getenv("STRATA_PREFILL_GROUP_GATHER");
+                            const char* v = strata::env("NOSTROMA_PREFILL_GROUP_GATHER");
                             return v == nullptr || std::atoi(v) != 0;
                         }();
                         const bool group_gather = group_env && stream_all && use_mmq && lay.native &&
@@ -4577,7 +4578,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                             // measured (xmx_group_parity, 16 experts): the fused launch wins below ~200 rows per
                             // expert, dequantize + oneMKL above (gate/up 0.67-0.76x at 320); STRATA_PF_XMX_ROWS moves it
                             static const int xg_max = [] {
-                                const char* v = std::getenv("STRATA_PF_XMX_ROWS");
+                                const char* v = strata::env("NOSTROMA_PF_XMX_ROWS");
                                 return v ? std::atoi(v) : 200;
                             }();
                             if (nr / xg_n < xg_max) {
@@ -4705,7 +4706,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                                 // plan v0.3 P6: a native pack's layer, dequantized by llama.cpp's own formulas
                                 const auto& f = lay.fmt[(size_t) l];
                                 // 0.1.43: both matrices in one launch (the same values; STRATA_PF_DQ_FUSED=0: two launches)
-                                static const bool dq_one = [] { const char* v = std::getenv("STRATA_PF_DQ_FUSED"); return !(v && v[0] == '0'); }();
+                                static const bool dq_one = [] { const char* v = strata::env("NOSTROMA_PF_DQ_FUSED"); return !(v && v[0] == '0'); }();
                                 if (dq_one && !f16_pairs) {
                                     strata::kernels::iq_dequant_expert_f16(f.gu_type, f.d_type, blob_dev, blob_dev + f.up_off,
                                                                            blob_dev + f.down_off, f.n_ff, f.n_embd, m.dq_gu[q],
@@ -4861,7 +4862,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                     }
                     moe_combine(m.Dm, m.slot_dev, m.w, m.shared, m.sg, m.bo, T, m.cs);
                     // debug: STRATA_DBG_NAN=1 reports the first layer of a chunk whose MoE produced non-finite values
-                    if (static const bool dbg = std::getenv("STRATA_DBG_NAN") != nullptr; dbg) {
+                    if (static const bool dbg = strata::env("NOSTROMA_DBG_NAN") != nullptr; dbg) {
                         m.cs->wait();
                         auto bad = [&](const float *d, int64_t n) {
                             try {
@@ -4936,7 +4937,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                 if (wnn && cv_fused) {
                     // STRATA_CVEC_FUSE_CHECK=N: on the first N fused writes, also run the three-kernel path on a copy
                     // of R and report whether R, the row scales and the BF16 image are bit-identical
-                    static int checks = [] { const char* e = std::getenv("STRATA_CVEC_FUSE_CHECK"); return e ? std::atoi(e) : 0; }();
+                    static int checks = [] { const char* e = strata::env("NOSTROMA_CVEC_FUSE_CHECK"); return e ? std::atoi(e) : 0; }();
                     if (checks > 0) {
                         --checks;
                         float *Rc = nullptr, *rc = nullptr;
@@ -5089,7 +5090,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
             hand_buf_ ^= 1;
             continue;   // the last stage reports the chunk (on_chunk)
         }
-        if (const char* dump = std::getenv("STRATA_PREFILL_DUMP_R")) {   // debug: the final residuals, every 64th
+        if (const char* dump = strata::env("NOSTROMA_PREFILL_DUMP_R")) {   // debug: the final residuals, every 64th
             m.cs->wait(); // position (A/B quality of this path)
             if (std::FILE* f = std::fopen(dump, c0 == 0 ? "wb" : "ab")) {
                 std::vector<float> row((size_t) D);
@@ -5104,7 +5105,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                 std::fclose(f);
             }
         }
-        if (const char* dump = std::getenv("STRATA_PREFILL_DUMP_R_ALL")) {
+        if (const char* dump = strata::env("NOSTROMA_PREFILL_DUMP_R_ALL")) {
             // S25 (draft-layer distillation data, opt-in): every position's final multi-stream residual as BF16
             // (round-to-nearest-even), rows in position order, appended across chunks and requests: [n][hc*n_embd]
             m.cs->wait();
@@ -5161,7 +5162,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
     // stage can return while later GPUs are still processing the previous chunk.
     ss.ple_prev[0] = prev[0];
     ss.ple_prev[1] = prev[1];
-    if (std::getenv("STRATA_DBG_NAN") != nullptr) {   // debug: the state the prompt leaves for the token path
+    if (strata::env("NOSTROMA_DBG_NAN") != nullptr) {   // debug: the state the prompt leaves for the token path
         m.cs->wait();
         auto bad = [&](const float *d, int64_t n) {
             try {
@@ -5286,7 +5287,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                              (long long) m.pp->ps_experts, m.pp->layers ? (double) m.pp->ps_experts / m.pp->layers : 0.0);
         }
     }
-    if (std::getenv("STRATA_STATE_HASH_GDN") != nullptr) {   // debug: the GDN states as the prompt path leaves them
+    if (strata::env("NOSTROMA_STATE_HASH_GDN") != nullptr) {   // debug: the GDN states as the prompt path leaves them
         m.cs->wait();
         std::vector<uint8_t> b((size_t) gdn_floats * 4);
         std::string line;
@@ -5333,7 +5334,7 @@ bool Prefill::drain_pipeline(std::string& err) {
 }
 
 bool Prefill::run(const int64_t* tokens, int64_t n, int64_t pos0, std::string& err) {
-    static strata::kernels::two_pass::RequestStatus tp_status(std::getenv("STRATA_SELECT_TWO_PASS"));
+    static strata::kernels::two_pass::RequestStatus tp_status(strata::env("NOSTROMA_SELECT_TWO_PASS"));
     (void) tp_status.on("SYCL");   // the two-pass scorer is CUDA-only: say once that a set switch is not used
     const bool body_ok = run_impl(tokens, n, pos0, err);
 
