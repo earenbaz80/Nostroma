@@ -15,6 +15,12 @@ token and image-prefix validation in charge of reuse.
 Set `STRATA_CACHE_MESSAGE_BOUNDARY=1` before starting the engine, or pass
 `nostroma launch --cache-boundary on` (it writes `cache_boundary` into the
 launch config, which the server turns into that variable; `off` removes it).
+
+`/metrics` reports what the client asked for in `cache_hints` (how many
+`cache_control` marks, on which blocks, and whether the last one sits on the
+last message) and whether this engine can honour it (`boundary`). When a client
+marks cache points and the checkpoint is off, the server says so once, with the
+flag to turn it on; the marks never change the prompt.
 It is off by default, requires prompt caching and a valid turn token, and
 only selects prefixes of at least 8,192 tokens with a tail of at most 1,024.
 Layer-split execution is excluded (`multi_gpu`); helper-expert GPUs still work.

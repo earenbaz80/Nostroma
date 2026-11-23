@@ -61,7 +61,7 @@ from urllib.parse import parse_qs, urlsplit
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 sys.path.insert(0, str(ROOT))   # run as a script (run-<model>.bat) as well as a module
-from serve.frontend import (THINK_END, ChatTemplate, Event, OutputParser, parser_for_template, anthropic_to_messages, anthropic_tools,  # noqa: E402
+from serve.frontend import (THINK_END, ChatTemplate, Event, OutputParser, parser_for_template, anthropic_to_messages, anthropic_tools, anthropic_cache_hints,  # noqa: E402
                             forced_call, images_of, literal_tags, mark_think_literals, openai_to_messages, require_messages,
                             tool_choice_of, unmark_think_literals)
 from serve.mcp import McpCancelled, hub_from_config  # noqa: E402
@@ -1005,6 +1005,29 @@ def configure_cache_boundary_env(env: dict, cfg: dict) -> None:
         env["STRATA_CACHE_MESSAGE_BOUNDARY"] = "1"
     elif choice is False or choice == "off":
         env.pop("STRATA_CACHE_MESSAGE_BOUNDARY", None)
+
+
+_CACHE_HINTS_WARNED = False
+
+
+def cache_boundary_on(svc) -> bool:
+    """Whether the engine this server started keeps a checkpoint at every message boundary
+    (`nostroma launch --cache-boundary on`, configure_cache_boundary_env); a variable inherited from the
+    environment counts too."""
+    engine = getattr(svc, "engine", None)
+    spawn = getattr(engine, "spawn", None) if engine is not None else None
+    env = spawn[4] if isinstance(spawn, tuple) and len(spawn) > 4 else None
+    return (env or os.environ).get("STRATA_CACHE_MESSAGE_BOUNDARY") == "1"
+
+
+def warn_cache_hints_once() -> None:
+    """One line per process: a client marks prompt cache points but this engine keeps no message-boundary checkpoint."""
+    global _CACHE_HINTS_WARNED
+    if _CACHE_HINTS_WARNED:
+        return
+    _CACHE_HINTS_WARNED = True
+    print("[strata] the client marks prompt cache points (cache_control) but the message-boundary checkpoint is off: "
+          "start with --cache-boundary on to reuse the history before an edited last message", flush=True)
 
 
 def parse_batch_window_sample(line: str) -> dict | None:
@@ -4936,6 +4959,10 @@ class Service:
         self.api_requests = collections.deque(maxlen=100)  # bounded I/O in memory; no headers or API keys
         self.request_trace = threading.local()
         self.history = collections.deque(maxlen=500)    # the last finished requests, newest last (GET /metrics)
+        # /metrics: the Anthropic requests that marked cache points (anthropic_cache_hints), and the newest summary
+        self.cache_hints = None
+        self.cache_hints_requests = 0
+        self.cache_hints_marks = 0
         # since the server started (the Monitor's totals, issue #35)
         self.totals = {"since": time.time(), "requests": 0, "prompt_tokens": 0, "reused": 0, "output_tokens": 0,
                        "prompt_ms": 0.0, "decode_ms": 0.0,
@@ -5743,6 +5770,22 @@ class Service:
                     | {"wallclock_s": r.get("wallclock_s", round(time.perf_counter() - r["_clock"], 3))}
                     for r in reversed(records)]
 
+    def note_cache_hints(self, hints: dict) -> None:
+        """Count one Anthropic request's `cache_control` markers and keep the newest summary for /metrics.  Says one
+        line per process when the client asks for caching and the engine has no message-boundary checkpoint."""
+        if not hints.get("marks"):
+            return
+        self.cache_hints_requests += 1
+        self.cache_hints_marks += int(hints["marks"])
+        self.cache_hints = dict(hints)
+        if not cache_boundary_on(self):
+            warn_cache_hints_once()
+
+    def cache_hints_view(self) -> dict:
+        """What Anthropic clients asked to cache (/metrics), and whether this engine can honour it."""
+        return {"requests": self.cache_hints_requests, "marks_total": self.cache_hints_marks,
+                "boundary": "on" if cache_boundary_on(self) else "off", "last": self.cache_hints}
+
     def metrics(self, all_requests=False) -> dict:
         """GET /metrics: what the Monitor tab shows - the engine's facts, what it is doing, the last requests, and
         the hardware (with a minute of history per series)."""
@@ -5798,6 +5841,7 @@ class Service:
         tel = self.telemetry.snapshot() if getattr(self, "telemetry", None) else {"now": {}, "history": {}, "static": {}}
         parked = self.conv_log.poll(getattr(self.engine, "log_path", None), getattr(self.engine, "log_start", None))
         return {"engine": engine, "live": live, "requests": hist[::-1][:None if all_requests else 12],
+                "cache_hints": self.cache_hints_view(),
                 "conversation_cache": conversation_cache_view(engine, hist, totals, parked),
                 "requests_kept": len(hist), "totals": totals, "hardware": tel["now"],
                 "hardware_static":
@@ -8930,6 +8974,7 @@ def make_handler(svc: Service):
             svc.load()
             req = svc.with_shared(req, "anthropic")
             messages, tools, kw = anthropic_to_messages(req, svc.anthropic_think_unasked)
+            svc.note_cache_hints(anthropic_cache_hints(req))    # read-only: the prompt above is unchanged
             self._no_local_images(messages)
             callable_tools, deferred = anthropic_tools(req)     # #4663: the deferred tools are callable, unlisted
             if tool_choice_of(req.get("tool_choice"))[0] == "none":   # Anthropic's {"type": "none"}: no tools offered

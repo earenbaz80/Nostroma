@@ -649,6 +649,43 @@ def anthropic_tools(req: dict) -> tuple[list[dict] | None, bool]:
     return [_anthropic_tool(t) for t in tools] or None, any(t.get("defer_loading") for t in tools)
 
 
+def anthropic_cache_hints(req: dict) -> dict:
+    """What an Anthropic client marked for caching (`cache_control` on the system blocks, on message blocks, or on a
+    tool).  Read-only: nothing here reaches `anthropic_to_messages`, so the rendered prompt does not change; the
+    server keeps the summary for /metrics and uses it to say once when the engine cannot honour it."""
+    by_block = {"system": 0, "messages": 0, "tools": 0}
+    ttl: set[str] = set()
+
+    def marked(blocks) -> int:
+        found = 0
+        if isinstance(blocks, list):
+            for block in blocks:
+                control = block.get("cache_control") if isinstance(block, dict) else None
+                if isinstance(control, dict):
+                    found += 1
+                    if control.get("ttl") in ("5m", "1h"):
+                        ttl.add(control["ttl"])
+        return found
+
+    system = req.get("system")
+    by_block["system"] = marked(system) if isinstance(system, list) else 0
+    messages = req.get("messages") if isinstance(req.get("messages"), list) else []
+    last_marked = None
+    for i, message in enumerate(messages):
+        found = marked(message.get("content")) if isinstance(message, dict) else 0
+        by_block["messages"] += found
+        if found:
+            last_marked = i
+    by_block["tools"] = marked(req.get("tools"))
+    total = sum(by_block.values())
+    if not total:
+        return {"marks": 0}
+    return {"marks": total, "by_block": {kind: n for kind, n in by_block.items() if n},
+            "last_marked_message": last_marked,
+            "at_last_message": last_marked is not None and last_marked == len(messages) - 1,
+            "ttl": sorted(ttl)}
+
+
 def _tool_references(content, deferred: dict):
     """A tool_result's tool_reference blocks (a tool search's results) -> the referenced deferred tools' definitions,
     in the form the prompt lists tools: the model sees a tool where it was loaded, and the prompt's start (its tool
