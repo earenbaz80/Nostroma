@@ -3531,5 +3531,7 @@
   "s9208": "Engine installieren",
   "s9209": "Engine-Dateien",
   "s9210": "Lädt den llama.cpp-Build herunter, der zu diesem Computer passt.",
-  "s9211": "Die Engine wird installiert…"
+  "s9211": "Die Engine wird installiert…",
+  "s9212": "Auf diesem Computer ist noch keine Engine installiert. „Aktualisieren“ unter „Über Nostroma“ lädt die passende herunter.",
+  "s9213": "Die neueste Engine lässt sich mit „Aktualisieren“ unter „Über Nostroma“ erneut herunterladen."
 }

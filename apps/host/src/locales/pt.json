@@ -3531,5 +3531,7 @@
   "s9208": "Instalar o motor",
   "s9209": "Arquivos do motor",
   "s9210": "Baixa a compilação do llama.cpp que corresponde a este computador.",
-  "s9211": "Instalando o motor…"
+  "s9211": "Instalando o motor…",
+  "s9212": "Ainda não há nenhum motor instalado neste computador. «Atualizar», em «Sobre», baixa o adequado.",
+  "s9213": "O motor mais recente pode ser baixado de novo com «Atualizar», em «Sobre»."
 }

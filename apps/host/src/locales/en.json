@@ -3531,5 +3531,7 @@
   "s9208": "Install engine",
   "s9209": "Engine files",
   "s9210": "Downloads the llama.cpp build that matches this computer.",
-  "s9211": "Installing the engine…"
+  "s9211": "Installing the engine…",
+  "s9212": "No engine is installed on this computer yet. Update in About downloads the right one.",
+  "s9213": "The newest engine can be downloaded again with Update in About."
 }
