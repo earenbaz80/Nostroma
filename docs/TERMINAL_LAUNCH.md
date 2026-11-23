@@ -94,6 +94,7 @@ nostroma launch --show-key
 | `--kv FORMAT` | Conversation memory format: `int8` (default), `q4_0` (half the memory), `k8v4`, `fp16`. |
 | `--vision off\|on\|gpu\|cpu` | Picture reading. Default: on when the model and the engine can. |
 | `--parallel N` | Requests answered at the same time, 1 to 8. Default: fit to your card. |
+| `--cache-boundary on\|off` | Keep a cache checkpoint at every message boundary of a long conversation, so a coding agent that edits its last message reuses the history before it. Off by default: nothing changes. `on` can add work to a fresh request and needs prompt caching; see `docs/MESSAGE_BOUNDARY_CACHE.md`. |
 | `--mtp on\|off` | The draft layer. `off` saves about 1 GB of graphics memory and is slower. Default: on. |
 | `--drafting auto\|mtp\|dflash2\|off` | Which drafter guesses ahead. `dflash2` is for Qwen3.8-Flash-Next only and downloads its drafter once (0.34 GB for the models that have a tuned drafter, 0.52 GB on Intel Arc, else 1.2 GB). If it cannot run, MTP is used and the start says why. |
 | `--gpu LIST`, `--gpu-roles LIST` | Which cards to use, and a role per card. |

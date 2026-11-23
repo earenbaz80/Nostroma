@@ -996,6 +996,17 @@ def configure_batch_telemetry_env(env: dict, cfg: dict, override: bool | None) -
         env.pop("STRATA_BATCH_TELEMETRY", None)
 
 
+def configure_cache_boundary_env(env: dict, cfg: dict) -> None:
+    """`cache_boundary` (`nostroma launch --cache-boundary on|off`): the engine's message-boundary checkpoint, which
+    lets an agent's next turn reuse the history before an edited last message.  Absent: the inherited environment,
+    unchanged, so a start without the choice behaves exactly as before."""
+    choice = cfg.get("cache_boundary")
+    if choice is True or choice == "on":
+        env["STRATA_CACHE_MESSAGE_BOUNDARY"] = "1"
+    elif choice is False or choice == "off":
+        env.pop("STRATA_CACHE_MESSAGE_BOUNDARY", None)
+
+
 def parse_batch_window_sample(line: str) -> dict | None:
     """Read an opt-in engine BSTAT sample; rows are verifier work, not emitted tokens."""
     if len(line) > 80:
@@ -9550,6 +9561,7 @@ def start_engine_or_fallback(cfg: dict, exe: str, effort_end: list[str] | None, 
         exe2 = cfg2["exe"] if os.path.isabs(cfg2["exe"]) else os.path.abspath(os.path.join(cfg2.get("cwd") or ".", cfg2["exe"]))
     env2 = child_env(cfg2, offline=offline)
     configure_batch_telemetry_env(env2, cfg2, batch_telemetry)
+    configure_cache_boundary_env(env2, cfg2)
     effort2 = effort_end_args(cfg2, exe2, tok)
     engine = StrataEngine(exe2, engine_args(cfg2, exe2) + (effort2 or []), cwd=cfg2.get("cwd"), log=cfg2.get("log"), env=env2, lazy=lazy,
                           retry_args=mtp_retry_args(cfg2, exe2, effort2), retry_vram_args=nodraft_retry_args(cfg2, exe2, effort2))
@@ -10187,6 +10199,10 @@ def _main(argv=None, *, lifecycle_event=None, interrupt_exit_code: int = 0) -> i
         # missing shard or a plugin would break the promise the flag makes.
         env = child_env(cfg, offline=a.offline)
         configure_batch_telemetry_env(env, cfg, a.batch_telemetry)
+        configure_cache_boundary_env(env, cfg)
+        if cfg.get("cache_boundary") in (True, "on"):
+            print("[strata] cache boundary: a checkpoint at every message boundary (an agent's edited last message "
+                  "reuses the history before it)", flush=True)
         sampling_defaults = sampling_defaults_from_config(cfg)
         if sampling_defaults:
             pretty = ", ".join(f"{k}={v}" for k, v in sampling_defaults.items())

@@ -95,6 +95,7 @@ class LaunchSettings:
     parallel: int | None = None                # None = fit to the card
     drafting: str | None = None                # None = Auto (recommended): the table in nostroma_control/drafting.py; mtp | dflash2 | off choose one. Saved in the launch config
     split_engine: str | None = None            # None = auto (the all-cards split engine runs by itself where it is supported); on | off. Saved in the preset and the launch config
+    cache_boundary: str | None = None          # None = off, as before; on keeps a checkpoint at every message boundary (serve/server.py configure_cache_boundary_env)
     mtp: str | None = None                     # None = as installed (draft layer on); "off" starts without it (less graphics memory and RAM, slower); "on" overrides an installed "off"
     tune: str = "skip"                         # quick | thorough | skip
     tune_allow_small: bool = False             # the "answer-changing" tick, off by default, as in the app

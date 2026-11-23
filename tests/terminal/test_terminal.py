@@ -17,7 +17,7 @@ from nostroma_cli.cli import main
 from nostroma_cli.client import (ClientError, Endpoint, normalize_legacy, normalize_status_only,
                                sanitize_telemetry, server_url)
 from nostroma_cli.render import display_width, field, render_view, safe
-from serve.server import (configure_batch_telemetry_env, parse_batch_window_sample,
+from serve.server import (configure_batch_telemetry_env, configure_cache_boundary_env, parse_batch_window_sample,
                           parse_stage_in_flight_sample, parse_engine_stage_line,
                           read_engine_stage_log, visible_device_order)
 
@@ -197,6 +197,17 @@ class ContractTests(unittest.TestCase):
         self.assertEqual(env["STRATA_BATCH_TELEMETRY"], "1")
         configure_batch_telemetry_env(env, {"batch_telemetry": True}, False)
         self.assertNotIn("STRATA_BATCH_TELEMETRY", env)
+
+    def test_cache_boundary_is_opt_in_and_an_explicit_off_wins(self):
+        env = {"STRATA_CACHE_MESSAGE_BOUNDARY": "1"}
+        configure_cache_boundary_env(env, {})
+        self.assertEqual(env["STRATA_CACHE_MESSAGE_BOUNDARY"], "1")      # absent: the inherited environment, unchanged
+        configure_cache_boundary_env(env, {"cache_boundary": "on"})
+        self.assertEqual(env["STRATA_CACHE_MESSAGE_BOUNDARY"], "1")
+        configure_cache_boundary_env(env, {"cache_boundary": "off"})
+        self.assertNotIn("STRATA_CACHE_MESSAGE_BOUNDARY", env)
+        configure_cache_boundary_env(env, {"cache_boundary": True})
+        self.assertEqual(env["STRATA_CACHE_MESSAGE_BOUNDARY"], "1")
 
     def test_batch_window_sample_distinguishes_processed_rows_from_active_slots(self):
         self.assertEqual(parse_batch_window_sample("BSTAT 3 18 9 1000\n"),

@@ -485,6 +485,8 @@ def derive_config(base: dict, s: S.LaunchSettings, *, bool_flags: frozenset[str]
         cfg["drafting"] = chosen
     if s.split_engine:                                       # nostroma_control/split_engine.py: read by apply_split_engine; "off" survives every update
         cfg["split_engine"] = s.split_engine
+    if s.cache_boundary:                                     # serve/server.py configure_cache_boundary_env: the engine's message-boundary checkpoint (off unless asked)
+        cfg["cache_boundary"] = s.cache_boundary
     cfg.setdefault("exe", "component:strata-engine")
     cfg["open_browser"] = False                              # nostroma launch never opens a browser by itself (only `--open` does, after the start)
     if isinstance(cfg.get("args"), list):
