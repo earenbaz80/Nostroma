@@ -1,4 +1,5 @@
 """An Anthropic client's cache_control markers are reported, and never change the prompt."""
+import http.client
 import json
 import os
 import unittest
@@ -6,9 +7,10 @@ from pathlib import Path
 from unittest import mock
 
 from serve.frontend import ChatTemplate, anthropic_cache_hints, anthropic_to_messages
-from serve.server import Service, cache_boundary_on, warn_cache_hints_once
+from serve.server import ByteTokenizer, MockEngine, Service, cache_boundary_on, serve, warn_cache_hints_once
 
 
+ROOT = Path(__file__).resolve().parents[1]
 TEMPLATE = ChatTemplate(Path(__file__).with_name("chat_template.jinja"))
 
 
@@ -95,6 +97,45 @@ class CacheHintsMetrics(unittest.TestCase):
             warn_cache_hints_once()
         self.assertEqual(printed.call_count, 1)
         self.assertIn("--cache-boundary on", printed.call_args[0][0])
+
+
+class CacheHintsInHistory(unittest.TestCase):
+    """Each /metrics record keeps the marks of its own turn, so a cached turn can be read against its cost."""
+
+    @classmethod
+    def setUpClass(cls):
+        tok = ByteTokenizer()
+        cls.svc = Service(MockEngine(tok, "hello from the mock", max_context=4096), tok,
+                          ChatTemplate(ROOT / "serve/chat_template.jinja"))
+        cls.httpd = serve(cls.svc, port=0)
+        cls.port = cls.httpd.server_address[1]
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.httpd.shutdown()
+        cls.httpd.server_close()
+
+    def _get(self, method, path, body=None):
+        connection = http.client.HTTPConnection("127.0.0.1", self.port, timeout=20)
+        try:
+            connection.request(method, path, body=json.dumps(body).encode() if body is not None else None,
+                               headers={"Content-Type": "application/json"} if body is not None else {})
+            return json.loads(connection.getresponse().read() or b"{}")
+        finally:
+            connection.close()
+
+    def test_a_record_carries_only_its_own_marks(self):
+        with mock.patch("builtins.print"):
+            self._get("POST", "/v1/messages", claude_code_request())
+            self._get("POST", "/v1/messages", without_markers(claude_code_request()))
+        records = self._get("GET", "/metrics")["requests"]
+        self.assertNotIn("cache_hints", records[0])          # the turn without marks keeps none from the one before
+        self.assertEqual(records[1]["cache_hints"]["marks"], 3)
+        self.assertEqual(records[1]["cache_hints"]["by_block"], {"system": 1, "messages": 1, "tools": 1})
+        self.assertTrue(records[1]["cache_hints"]["at_last_message"])
+        # the cost of that same turn is beside its marks
+        self.assertIn("prompt_tokens", records[1])
+        self.assertIn("output_tokens", records[1])
 
 
 if __name__ == "__main__":

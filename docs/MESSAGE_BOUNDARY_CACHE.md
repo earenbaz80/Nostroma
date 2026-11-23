@@ -20,7 +20,10 @@ launch config, which the server turns into that variable; `off` removes it).
 `cache_control` marks, on which blocks, and whether the last one sits on the
 last message) and whether this engine can honour it (`boundary`). When a client
 marks cache points and the checkpoint is off, the server says so once, with the
-flag to turn it on; the marks never change the prompt.
+flag to turn it on; the marks never change the prompt.  Each record in
+`requests` also carries the marks of its own turn (`cache_hints`), beside that
+turn's cost (`reused`, `prompt_tokens`, `decode_tok_s`), so the two can be read
+together; a turn with no marks carries no `cache_hints`.
 It is off by default, requires prompt caching and a valid turn token, and
 only selects prefixes of at least 8,192 tokens with a tail of at most 1,024.
 Layer-split execution is excluded (`multi_gpu`); helper-expert GPUs still work.

@@ -6357,6 +6357,7 @@ class Service:
         segments = []
         timed_out = False
         trace = getattr(self.request_trace, "record", None)
+        cache_hints = getattr(cancel, "_strata_cache_hints", None)   # the Anthropic marks this turn was sent with
         waiting = time.perf_counter()
         first_engine_token_s = None  # this request, from entering the engine queue; includes queue/prefill
         # #465: with "parallel" (the engine's batch slots) requests run at once: each keeps its own status and rate
@@ -6733,6 +6734,7 @@ class Service:
                             seen = 0 if admission_rejected else prompt_tokens_seen(len(ids), last)   # #471: < len(ids) when cancelled mid-read; #3040
                             self.history.append({
                                 "id": request_id,
+                                **({"cache_hints": cache_hints} if (cache_hints or {}).get("marks") else {}),
                                 "projection": (sampling or {}).get("experimental_speed_projection") is not False
                                 if loaded else None,
                                 "time": started, "duration_s": round(time.time() - started, 1), "finish": finish,
@@ -8974,7 +8976,8 @@ def make_handler(svc: Service):
             svc.load()
             req = svc.with_shared(req, "anthropic")
             messages, tools, kw = anthropic_to_messages(req, svc.anthropic_think_unasked)
-            svc.note_cache_hints(anthropic_cache_hints(req))    # read-only: the prompt above is unchanged
+            cache_hints = anthropic_cache_hints(req)          # read-only: the prompt above is unchanged
+            svc.note_cache_hints(cache_hints)
             self._no_local_images(messages)
             callable_tools, deferred = anthropic_tools(req)     # #4663: the deferred tools are callable, unlisted
             if tool_choice_of(req.get("tool_choice"))[0] == "none":   # Anthropic's {"type": "none"}: no tools offered
@@ -8985,6 +8988,7 @@ def make_handler(svc: Service):
             stop_strings(req)                                 # ... and so is a bad stop / stop_sequences
             check_request_sampling(req)                       # ... and a sampling field of the wrong type
             cancel = threading.Event()
+            setattr(cancel, "_strata_cache_hints", cache_hints)   # this turn's marks travel with its record (/metrics history)
             self._watch_client(cancel)                       # #430 #431 (#1999: before prepare, which can take long)
             try:
                 ids, thinking, max_new = svc.prepare(messages, tools, kw, max_new, force=force, req=req, cancel=cancel)
