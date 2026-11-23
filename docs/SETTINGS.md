@@ -2,12 +2,13 @@
 
 <!-- Generated from data/settings-register.json by tools/settings_register.py --docs. Do not edit by hand; change the register. -->
 
-The engine reads its settings from environment variables whose names start with `STRATA_`. The Terminal and the app choose what
-your hardware needs, so most people never set one. This page lists the ones meant for people: switches that are off until you
-turn them on, and switches that take a newer default back to the earlier behaviour. The other settings are for measuring and
-debugging and are kept in `data/settings-register.json`.
+The engine reads its settings from environment variables. The product's name is Nostroma, so the name to write is
+`NOSTROMA_<setting>`: the older `STRATA_<setting>` is still read and still works, and `NOSTROMA_` wins when both are set.
+The Terminal and the app choose what your hardware needs, so most people never set one. This page lists the ones meant for people:
+switches that are off until you turn them on, and switches that take a newer default back to the earlier behaviour. The other
+settings are for measuring and debugging and are kept in `data/settings-register.json`.
 
-A number or a word is set like any environment variable, for example `STRATA_KVA=1`. In the Terminal, `nostroma launch --set NAME=value`
+A number or a word is set like any environment variable, for example `NOSTROMA_KVA=1`. In the Terminal, `nostroma launch --set NAME=value`
 puts it in the model's run configuration.
 
 ## Switches you can turn on (272)

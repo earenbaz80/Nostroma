@@ -20,12 +20,13 @@ export function setEnvVars(target, values) {
 
 /**
  * An environment for a child process: every NOSTROMA_* value is also under STRATA_* and the other way round, so the engine
- * and the Python packages (which read the old names) and the host (which reads the new ones) see the same settings.
+ * and the Python packages (which read the old names) and the host (which reads the new ones) see the same settings. When
+ * both are set, the new name wins in both: the engine cannot read a value the host ignores.
  */
 export function childEnv(values = process.env) {
   const out = { ...values };
   for (const [name, value] of Object.entries(values)) {
-    if (name.startsWith('NOSTROMA_') && out[`STRATA_${name.slice('NOSTROMA_'.length)}`] === undefined) out[`STRATA_${name.slice('NOSTROMA_'.length)}`] = value;
+    if (name.startsWith('NOSTROMA_')) out[`STRATA_${name.slice('NOSTROMA_'.length)}`] = value;
     else if (name.startsWith('STRATA_') && out[`NOSTROMA_${name.slice('STRATA_'.length)}`] === undefined) out[`NOSTROMA_${name.slice('STRATA_'.length)}`] = value;
   }
   return out;
