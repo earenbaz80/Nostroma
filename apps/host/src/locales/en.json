@@ -3541,5 +3541,6 @@
   "s9218": "{0} marks",
   "s9219": "Cache marks",
   "s9220": "On the last message",
-  "s9221": "system {0}, messages {1}, tools {2}"
+  "s9221": "system {0}, messages {1}, tools {2}",
+  "s9222": "About {0} GB of conversation memory at this context"
 }

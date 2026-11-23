@@ -3541,5 +3541,6 @@
   "s9218": "{0} marques",
   "s9219": "Marques de cache",
   "s9220": "Sur le dernier message",
-  "s9221": "système {0}, messages {1}, outils {2}"
+  "s9221": "système {0}, messages {1}, outils {2}",
+  "s9222": "Environ {0} GB de mémoire de conversation pour ce contexte"
 }

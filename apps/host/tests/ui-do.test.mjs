@@ -264,7 +264,11 @@ test('#3723 only a first start is detected: a saved language, even English, is k
 
 test('#3723 Context memory has one line per format, from the documented memory figures', () => {
   const models = src('components/NativeModels.tsx');
-  assert.match(models, /KV_CHOICES\.map\(c => \(\{ value: c\.value, label: c\.label, title: c\.hint \}\)\)/);
+  // Each format carries the memory it takes at this context beside it (native-fit's own rule), so the choice is made on a number.
+  assert.ok(models.includes('KV_CHOICES.map(c => ({ value: c.value, label: `'));
+  assert.ok(models.includes('kvMemoryGb(context, c.value, selectedSize?.context_fit)'));
+  assert.ok(models.includes('title: c.hint }))'));
+  assert.ok(models.includes('About {0} GB of conversation memory at this context'));
   for (const text of ['INT8 is the standard: good quality and a medium amount of memory.', 'Q4 uses about half the memory of INT8, but is less precise on very long documents.', 'K8 / V4 uses about a quarter less memory than INT8 and is more precise than Q4. Prompts are 2 to 5% slower.']) assert.ok(models.includes(text), text);
   // The figures are the ones of docs/DETAILS.md and of native-fit.ts: q4_0 576 and k8v4 816 against int8 1056 bytes per token and layer.
   const fit = src('lib/native-fit.ts');
