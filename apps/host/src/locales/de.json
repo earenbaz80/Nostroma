@@ -3537,5 +3537,9 @@
   "s9214": "Verlauf zusammenfassen",
   "s9215": "Ältere Nachrichten werden zusammengefasst; die neuesten bleiben, wie sie sind.",
   "s9216": "{0} aus dem Cache",
-  "s9217": "{0} bis zum ersten Token"
+  "s9217": "{0} bis zum ersten Token",
+  "s9218": "{0} Marken",
+  "s9219": "Cache-Marken",
+  "s9220": "Auf der letzten Nachricht",
+  "s9221": "System {0}, Nachrichten {1}, Werkzeuge {2}"
 }

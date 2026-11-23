@@ -3537,5 +3537,9 @@
   "s9214": "Compactar a conversa",
   "s9215": "As mensagens mais antigas são resumidas; as mais recentes ficam como estão.",
   "s9216": "{0} em cache",
-  "s9217": "{0} até o primeiro token"
+  "s9217": "{0} até o primeiro token",
+  "s9218": "{0} marcas",
+  "s9219": "Marcas de cache",
+  "s9220": "Na última mensagem",
+  "s9221": "sistema {0}, mensagens {1}, ferramentas {2}"
 }

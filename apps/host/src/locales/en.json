@@ -3537,5 +3537,9 @@
   "s9214": "Compact conversation",
   "s9215": "Older messages are summarised; the newest ones stay as they are.",
   "s9216": "{0} cached",
-  "s9217": "{0} to first token"
+  "s9217": "{0} to first token",
+  "s9218": "{0} marks",
+  "s9219": "Cache marks",
+  "s9220": "On the last message",
+  "s9221": "system {0}, messages {1}, tools {2}"
 }

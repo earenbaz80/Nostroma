@@ -215,8 +215,18 @@ export interface RuntimeModels {
   memory:{ramGb:number;budgetGb:number;reserveGb:number;totalGb:number;fits:boolean;devices:{id:string;name:string;usedGb:number;budgetGb:number}[]};
 }
 
+/** What an Anthropic client marked for caching in one request (the engine's `cache_hints`, or the host gateway's own read). */
+export interface CacheHints {
+  marks: number;
+  byBlock?: Record<string, number>;
+  lastMarkedMessage?: number | null;
+  atLastMessage?: boolean;
+  ttl?: string[];
+}
+
 export interface ServeRequest {
   instanceId?:string;
+  cacheHints?: CacheHints;
   gpuIds?:string[];
   id: string;
   at: string;
