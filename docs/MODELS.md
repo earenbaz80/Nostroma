@@ -79,7 +79,9 @@ card makes it faster and does not lower the RAM needed, except in low-RAM mode.
 files and keeps in RAM only what the card does not hold. A 32 GB PC with a 24 GB GPU runs Q2_0, IQ2_XS and the Coder
 this way, and a 32 GB PC with a 12 to 16 GB GPU runs the Coder. With a small card most experts come from the SSD and it
 is much slower; setup says so. A source checkout can force the mode with `--low-ram on|off`
-([SOURCE_INSTALL.md](SOURCE_INSTALL.md)). `nostroma launch` has no `--low-ram` flag.
+([SOURCE_INSTALL.md](SOURCE_INSTALL.md)), and `nostroma launch --low-ram auto|on|off` passes the same choice
+to setup (`resident` and `mmap` force one of the two ways on mode uses; the app has the same choice under
+Expert settings).
 
 The download is 66 to 76 GB for the three smaller sizes ([details](DETAILS.md#which-model)). The first start also
 fetches the MTP draft layer (about 6 GB, 1 GB more with pictures).

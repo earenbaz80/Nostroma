@@ -90,6 +90,11 @@ def add_parsers(sp: argparse._SubParsersAction) -> list[argparse.ArgumentParser]
                         "where they are and stay usable, and the new folder gets the new downloads")
     g.add_argument("--context", type=_context, metavar="SIZE", help="how much text it remembers at once: 32k, 64k, 128k, 256k or a number of tokens")
     g.add_argument("--kv", type=_choice("a memory format", S.KV_MODES), metavar="FORMAT", help="conversation memory format: int8 (default), q4_0 (half the memory), k8v4, fp16")
+    g.add_argument("--low-ram", type=_choice("a low-RAM setting", S.LOW_RAM_MODES), metavar="auto|on|off",
+                   help="a PC with a big card and little RAM: auto (the default) uses low-RAM mode only when the experts would not fit, "
+                        "on reads them from the model's file instead of copying them all into RAM, off never does; resident / mmap force "
+                        "one of the two ways on mode uses")
+
     g.add_argument("--vision", type=_choice("a picture setting", S.VISION_MODES), metavar="off|on|gpu|cpu",
                    help="let the model read pictures. Default: on when the model can read pictures and the engine has the picture reader. "
                         "'on' picks the reader by your graphics memory: the CPU reader under 24 GB, the GPU reader from 24 GB (any make); "
@@ -241,6 +246,8 @@ def settings_from_args(a: argparse.Namespace, catalog=None) -> tuple[S.LaunchSet
         s.context = a.context
     if a.kv:
         s.kv = a.kv
+    if getattr(a, "low_ram", None):
+        s.low_ram = a.low_ram
     if a.vision:
         s.vision = a.vision
     if a.parallel:

@@ -91,7 +91,8 @@ nostroma launch --show-key
 | `--model-path PATH` | Use model files you already have: a folder of shards or one `.gguf`. |
 | `--data-dir DIR`, `--move-data` | Where new downloads go. `--move-data` also moves the models you already have. |
 | `--context SIZE` | `32k`, `64k`, `128k`, `256k` or a number of tokens. |
-| `--kv FORMAT` | Conversation memory format: `int8` (default), `q4_0` (half the memory), `k8v4`, `fp16`. |
+| `--kv FORMAT` | Conversation memory format: `int8` (default), `q4_0` (half the memory), `k8v4`, `fp16`. The app shows the estimated memory of each format beside it. |
+| `--low-ram auto\|on\|off` | A big card and little RAM: `auto` (the default) uses low-RAM mode only when the experts would not fit, `on` reads them from the model's file instead of copying them all into RAM, `off` never does. `resident` and `mmap` force one of the two ways on mode uses. Passed to setup as its own `--low-ram`. |
 | `--vision off\|on\|gpu\|cpu` | Picture reading. Default: on when the model and the engine can. |
 | `--parallel N` | Requests answered at the same time, 1 to 8. Default: fit to your card. |
 | `--cache-boundary on\|off` | Keep a cache checkpoint at every message boundary of a long conversation, so a coding agent that edits its last message reuses the history before it. Off by default: nothing changes. `on` can add work to a fresh request and needs prompt caching; see `docs/MESSAGE_BOUNDARY_CACHE.md`. |

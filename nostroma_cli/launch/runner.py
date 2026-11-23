@@ -941,6 +941,8 @@ class Runner:
         args += ["--vision", self.vision_word()]
         if s.kv:
             args += ["--kv", s.kv]
+        if s.low_ram:                                    # setup.py --low-ram: auto | on | off | resident | mmap (the app's own Low-RAM choice)
+            args += ["--low-ram", s.low_ram]
         if fam in ("qwen", "coder"):
             args += ["--experimental-speed-projection", "off"]
         layer_fetch = getattr(self, "_layer_fetch", False)  # the start's safety net (fetch_missing_drafter): setup fetches the draft layer

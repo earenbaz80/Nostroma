@@ -31,6 +31,7 @@ SPLIT_MODES = ("auto", "on", "off")
 #: nostroma_control/drafting.py MODES (tests/terminal/test_drafting.py keeps the two the same)
 DRAFTING_MODES = ("auto", "mtp", "dflash2", "off")
 KV_MODES = ("int8", "q4_0", "k8v4", "fp16")
+LOW_RAM_MODES = ("auto", "on", "off", "resident", "mmap")   # setup.py --low-ram: how the experts are held when RAM is short
 DEFAULT_PORT = 8080
 
 #: How many requests the card can answer at once (the spec's "fit to card" default): by graphics memory.
@@ -91,6 +92,7 @@ class LaunchSettings:
     gpu_roles: dict[str, str] | None = None    # {"1": "main", "0": "helper", "2": "off"}: a role for every card; None = the recommendation
     context: int | None = None
     kv: str | None = None                      # None = int8 above 8K, as setup
+    low_ram: str | None = None                 # None = auto, as setup; on | off | resident | mmap force one mode (--low-ram)
     vision: str | None = None                  # None = the default (on when the model can read pictures and the engine has the reader), off | on | gpu | cpu
     parallel: int | None = None                # None = fit to the card
     drafting: str | None = None                # None = Auto (recommended): the table in nostroma_control/drafting.py; mtp | dflash2 | off choose one. Saved in the launch config

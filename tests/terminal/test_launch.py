@@ -362,6 +362,12 @@ class SetupArgs(unittest.TestCase):
         args = self.args_for(model="not-a-model")
         self.assertEqual(args[args.index("--model") + 1], "not-a-model")
 
+    def test_low_ram_reaches_setup_only_when_it_was_asked_for(self):
+        """--low-ram is opt-in: a launch without it passes no flag, so setup keeps its own auto choice."""
+        self.assertNotIn("--low-ram", self.args_for())
+        args = self.args_for(low_ram="mmap")
+        self.assertEqual(args[args.index("--low-ram") + 1], "mmap")
+
     def test_a_model_list_that_cannot_be_read_leaves_the_values_alone(self):
         """The resolver is an improvement, never a new way for the launch to fail: when it cannot answer, the
         preset's own values go to setup as they did before #4209."""
