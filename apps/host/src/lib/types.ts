@@ -381,6 +381,8 @@ export interface ChatMessage {
   tps?: number;
   promptTps?: number;
   durationMs?: number;
+  /** Prompt tokens the engine reused from its cache for this reply (the host's done frame). */
+  cachedTokens?: number;
   error?: string;
   /** What went wrong, as a code the page acts on (a context error offers its own recovery buttons). */
   errorCode?: string;

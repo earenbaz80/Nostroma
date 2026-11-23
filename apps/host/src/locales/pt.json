@@ -3533,5 +3533,9 @@
   "s9210": "Baixa a compilação do llama.cpp que corresponde a este computador.",
   "s9211": "Instalando o motor…",
   "s9212": "Ainda não há nenhum motor instalado neste computador. «Atualizar», em «Sobre», baixa o adequado.",
-  "s9213": "O motor mais recente pode ser baixado de novo com «Atualizar», em «Sobre»."
+  "s9213": "O motor mais recente pode ser baixado de novo com «Atualizar», em «Sobre».",
+  "s9214": "Compactar a conversa",
+  "s9215": "As mensagens mais antigas são resumidas; as mais recentes ficam como estão.",
+  "s9216": "{0} em cache",
+  "s9217": "{0} até o primeiro token"
 }

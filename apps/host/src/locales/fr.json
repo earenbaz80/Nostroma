@@ -3533,5 +3533,9 @@
   "s9210": "Télécharge la version de llama.cpp adaptée à cet ordinateur.",
   "s9211": "Installation du moteur…",
   "s9212": "Aucun moteur n’est encore installé sur cet ordinateur. « Mettre à jour », dans « À propos », télécharge le bon.",
-  "s9213": "Le moteur le plus récent peut être retéléchargé avec « Mettre à jour », dans « À propos »."
+  "s9213": "Le moteur le plus récent peut être retéléchargé avec « Mettre à jour », dans « À propos ».",
+  "s9214": "Compacter la conversation",
+  "s9215": "Les messages plus anciens sont résumés ; les plus récents restent tels quels.",
+  "s9216": "{0} depuis le cache",
+  "s9217": "{0} jusqu’au premier jeton"
 }

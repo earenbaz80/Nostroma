@@ -3475,6 +3475,16 @@ textarea.st-input {
   gap: 8px;
   color: var(--st-ink-muted);
 }
+.telepop__action {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 10px;
+}
+.telepop__action p {
+  margin: 0;
+}
 .telepop__value {
   color: var(--st-ink);
 }

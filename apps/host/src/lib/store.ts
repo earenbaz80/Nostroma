@@ -2231,6 +2231,7 @@ export async function sendMessage(text: string, options: { fromLoop?: boolean; g
             durationMs: Number(frame.durationMs ?? performance.now() - started),
             tokens: typeof frame.tokensOut === 'number' ? frame.tokensOut : undefined,
             ttftMs: typeof frame.ttftMs === 'number' ? frame.ttftMs : undefined,
+            cachedTokens: typeof frame.cachedTokens === 'number' ? frame.cachedTokens : undefined,
             inputTokens: typeof frame.tokensIn === 'number' ? frame.tokensIn : undefined,
             contextUsed: typeof frame.contextTokens === 'number' ? frame.contextTokens : undefined,
             usageSource: frame.usageSource === 'reported' || frame.usageSource === 'demo' ? frame.usageSource : 'unavailable',

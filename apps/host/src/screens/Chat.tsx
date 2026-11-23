@@ -802,9 +802,12 @@ function MessageView({ message: m, isLast, onEditPrompt, onPreview, onClosePrevi
               {tr(isLast ? <button role="menuitem" className="menu__item" onClick={() => void continueLast()}>{tr("Continue")}</button> : null)}
               <button role="menuitem" className="menu__item" onClick={() => activeSession && addQuote(activeSession, m.content, m.id, 'assistant')}>{tr("Quote")}</button>
               <button role="menuitem" className="menu__item" onClick={() => branchFrom(m.id)}>{tr("Branch from here")}</button>
-              {tr(m.tokens || m.tps || m.durationMs ? <p className="xs muted response-stats">{tr(m.tokens ? `${tokens(m.tokens)} tokens` : '')}{tr(m.tps ? ` · ${tps(m.tps)} tok/s` : '')}{tr(m.durationMs ? ` · ${duration(m.durationMs)}` : '')}{tr(m.demo ? ' · Example' : '')}</p> : null)}
             </MessageMenu>
           </span>
+          {/* The reply's own figures, in the open: tokens, speed, time, what the prompt cache saved and how long the first token took. */}
+          {tr(m.tokens || m.tps || m.durationMs || m.cachedTokens !== undefined || m.ttftMs !== undefined ? <p className="xs muted response-stats">
+            {tr(m.tokens ? `${tokens(m.tokens)} tokens` : '')}{tr(m.tps ? ` · ${tps(m.tps)} tok/s` : '')}{tr(m.durationMs ? ` · ${duration(m.durationMs)}` : '')}{m.cachedTokens !== undefined ? <> · {tr("{0} cached", [tokens(m.cachedTokens)])}</> : null}{m.ttftMs !== undefined ? <> · {tr("{0} to first token", [duration(m.ttftMs)])}</> : null}{tr(m.demo ? ' · Example' : '')}
+          </p> : null)}
         </div>) : null)}
     </div>);
 }

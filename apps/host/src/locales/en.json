@@ -3533,5 +3533,9 @@
   "s9210": "Downloads the llama.cpp build that matches this computer.",
   "s9211": "Installing the engine…",
   "s9212": "No engine is installed on this computer yet. Update in About downloads the right one.",
-  "s9213": "The newest engine can be downloaded again with Update in About."
+  "s9213": "The newest engine can be downloaded again with Update in About.",
+  "s9214": "Compact conversation",
+  "s9215": "Older messages are summarised; the newest ones stay as they are.",
+  "s9216": "{0} cached",
+  "s9217": "{0} to first token"
 }
