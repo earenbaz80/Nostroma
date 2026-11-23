@@ -2,7 +2,7 @@
 
 `nostroma launch` (guided setup, serve and monitor) and `nostroma connect` (setup for your coding apps): see [TERMINAL_LAUNCH.md](TERMINAL_LAUNCH.md).
 
-For the shortest path, use the [terminal quick start](TERMINAL_QUICKSTART.md). The Terminal installs with one line (see [TERMINAL_LAUNCH.md](TERMINAL_LAUNCH.md#install-one-line)) and gives you the `nostroma` command; every command below is typed as `nostroma ...`. In a source checkout, run `python strata.py ...` from the repository root instead (use `python3` where there is no `python`).
+For the shortest path, use the [terminal quick start](TERMINAL_QUICKSTART.md). The Terminal installs with one line (see [TERMINAL_LAUNCH.md](TERMINAL_LAUNCH.md#install-one-line)) and gives you the `nostroma` command; every command below is typed as `nostroma ...`. In a source checkout, run `python nostroma.py ...` from the repository root instead (use `python3` where there is no `python`; `python strata.py ...` is the same program under the name it had before).
 
 Read a server, watch it and start one:
 

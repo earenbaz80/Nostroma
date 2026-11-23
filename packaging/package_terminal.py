@@ -96,6 +96,7 @@ PYTHON_PIN = {**PYTHON_PINS["darwin-arm64"], "target": "darwin-arm64"}
 #: The application, as paths relative to ROOT (copied to the same place in the archive).
 PAYLOAD = (
     "strata.py",
+    "nostroma.py",
     "nostroma_control",
     "nostroma_cli",
     "serve",
@@ -447,10 +448,13 @@ def main() -> int:
             shutil.copy2(ROOT / "bin" / launcher, bin_dir / launcher)
             if launcher == "strata":
                 (bin_dir / launcher).chmod(0o755)
-            if target.startswith("windows"):
-                # the other name of the same launcher: a Windows PATH entry lists files, and the installer puts neither
-                # name in a link of its own, so both have to be in the archive for `nostroma` to be found on the PATH
-                shutil.copy2(bin_dir / launcher, bin_dir / launcher.replace("strata", "nostroma"))
+            # the other name of the same launcher, on every system: `nostroma` is the command and `strata` the name it had.
+            # A Windows PATH entry lists files, and the installer puts neither name in a link of its own, so both have to
+            # be in the archive for `nostroma` to be found on the PATH; shipping both everywhere keeps the two archives alike.
+            twin = bin_dir / launcher.replace("strata", "nostroma")
+            shutil.copy2(bin_dir / launcher, twin)
+            if launcher == "strata":
+                twin.chmod(0o755)
 
         installed: dict[str, str] = {}
         removed: list[str] = []

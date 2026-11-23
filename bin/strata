@@ -92,16 +92,22 @@ MSG
 fi
 
 # Find the application root. Two layouts are supported so the same launcher works from a checkout
-# (`bin/strata` beside `strata.py`) and from an installed distribution (`<root>/bin/strata` with the
-# code under `<root>/`).
-if [ -f "$HERE/strata.py" ]; then
+# (`bin/nostroma` beside `nostroma.py`) and from an installed distribution (`<root>/bin/nostroma` with the
+# code under `<root>/`). `strata.py` is the name the program had before the rename and still runs it.
+if [ -f "$HERE/nostroma.py" ]; then
+  APP=$HERE
+elif [ -f "$HERE/../nostroma.py" ]; then
+  APP=$(CDPATH= cd -- "$HERE/.." && pwd -P)
+elif [ -f "$HERE/strata.py" ]; then
   APP=$HERE
 elif [ -f "$HERE/../strata.py" ]; then
   APP=$(CDPATH= cd -- "$HERE/.." && pwd -P)
 else
-  echo "$prog: cannot find strata.py next to $HERE or its parent; the installation looks incomplete" >&2
+  echo "$prog: cannot find nostroma.py next to $HERE or its parent; the installation looks incomplete" >&2
   exit 5
 fi
+
+if [ -f "$APP/nostroma.py" ]; then ENTRY=$APP/nostroma.py; else ENTRY=$APP/strata.py; fi
 
 # Only the API server needs third-party packages. `--help`, `status`, `monitor`, `timeskip` and
 # `tune plan` are deliberately stdlib-only — the CLI imports `serve.*` lazily inside the functions
@@ -134,4 +140,4 @@ case $PY in
   "$HERE"/../python/*|"$HERE"/python/*) PYTHONNOUSERSITE=1; export PYTHONNOUSERSITE; unset PYTHONHOME PYTHONPATH ;;
 esac
 
-exec "$PY" "$APP/strata.py" "$@"
+exec "$PY" "$ENTRY" "$@"

@@ -192,8 +192,8 @@ main() {
   rm -rf "$dest"
   mv "$dest.incoming" "$dest"
   ln -sfn "$dest" "$DATA_DIR/terminal/current"
-  ln -sf "$DATA_DIR/terminal/current/bin/strata" "$BIN_DIR/nostroma"
-  ln -sf "$DATA_DIR/terminal/current/bin/strata" "$BIN_DIR/strata"       # the name this command had before, the same program
+  ln -sf "$DATA_DIR/terminal/current/bin/nostroma" "$BIN_DIR/nostroma"
+  ln -sf "$DATA_DIR/terminal/current/bin/nostroma" "$BIN_DIR/strata"     # the name this command had before, the same program
   case ":$PATH:" in
     *":$BIN_DIR:"*) say "Installed. Run: nostroma launch"
                     say "  (the old name, 'strata', still works)" ;;
