@@ -1,6 +1,6 @@
-"""tools/test_strata_mcp.py - tests for tools/strata_mcp.py (Nostroma's MCP server), standard library only.
+"""tools/test_nostroma_mcp.py - tests for tools/nostroma_mcp.py (Nostroma's MCP server), standard library only.
 
-    python -m unittest tools/test_strata_mcp.py -v
+    python -m unittest tools/test_nostroma_mcp.py -v
 
 Setup and the model server are fakes (a temporary Nostroma folder with a stand-in setup.py and serve/server.py), so
 nothing is downloaded and no GPU is used: the JSON-RPC handshake, argument checks, install / start / stop with real
@@ -24,7 +24,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-import strata_mcp as M  # noqa: E402
+import nostroma_mcp as M  # noqa: E402
 
 FAKE_SETUP = r'''
 import json, sys, time
@@ -50,8 +50,8 @@ def main():
     a = sys.argv
     model = a[a.index("--model") + 1].lower()
     cfg = {"exe": sys.executable, "args": ["--max-context", a[a.index("--context") + 1]], "port": 8080,
-           "model_name": "qwen3.8-flash-next-" + model, "log": str(root / f"strata-{model}.log")}
-    (root / f"strata-{model}.json").write_text(json.dumps(cfg))
+           "model_name": "qwen3.8-flash-next-" + model, "log": str(root / f"nostroma-{model}.log")}
+    (root / f"nostroma-{model}.json").write_text(json.dumps(cfg))
     print("All set.", flush=True)
 
 
@@ -86,12 +86,12 @@ class H(BaseHTTPRequestHandler):
     def do_GET(self):
         p = self.path.split("?")[0]
         if p == "/health":
-            self.js(200, {"status": "ok", "service": "strata", "model": cfg["model_name"], "max_context": 32768,
+            self.js(200, {"status": "ok", "service": "nostroma", "model": cfg["model_name"], "max_context": 32768,
                           "images": False, "api_key": False, "loaded": state["loaded"]})
         elif p == "/status":
             self.js(200, {"busy": bool(cfg.get("busy")), "queued": 0})
         elif p == "/v1/status":
-            self.js(200, {"service": "strata", "engine": "0.1.32", "uptime_s": 5, "activity": {"requests": 0},
+            self.js(200, {"service": "nostroma", "engine": "0.1.32", "uptime_s": 5, "activity": {"requests": 0},
                           "machine": {"gpu": {"name": "Fake GPU", "used_mib": 11000, "total_mib": 12227},
                                       "ram": {"used_gib": 40.0, "total_gib": 63.1}}})
         else:
@@ -121,7 +121,7 @@ class Srv(ThreadingHTTPServer):
         self.server_name, self.server_port = self.server_address[:2]
 httpd = Srv(("127.0.0.1", port), H)
 def term(*_):
-    print("[strata] stopped (fake)", flush=True)
+    print("[nostroma] stopped (fake)", flush=True)
     os._exit(0)
 signal.signal(signal.SIGTERM, term)
 print(f"ready: http://127.0.0.1:{port}/v1", flush=True)
@@ -157,18 +157,18 @@ class FakeRoot(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         base = Path(self.tmp.name)
-        self.root = base / "Strata"
+        self.root = base / "Nostroma"
         (self.root / "serve").mkdir(parents=True)
         (self.root / "setup.py").write_text(FAKE_SETUP)
         (self.root / "serve" / "server.py").write_text(FAKE_SERVER)
         self.env_backup = {k: os.environ.get(k) for k in ("APPDATA", "XDG_CONFIG_HOME")}
         os.environ["APPDATA"] = os.environ["XDG_CONFIG_HOME"] = str(base / "config")
-        self.strata = M.Strata(self.root)
-        self.strata.python_override = sys.executable
-        self.strata.health_timeout = 1.0
-        self.strata._hardware = lambda: dict(FAKE_HW)
-        self.strata.disk_free = lambda p: 1000.0
-        self.tools = M.Tools(self.strata)
+        self.nostroma = M.Nostroma(self.root)
+        self.nostroma.python_override = sys.executable
+        self.nostroma.health_timeout = 1.0
+        self.nostroma._hardware = lambda: dict(FAKE_HW)
+        self.nostroma.disk_free = lambda p: 1000.0
+        self.tools = M.Tools(self.nostroma)
         self.extra = []
         # the tests must never see a Nostroma server that happens to run on the real default port on this PC
         self._default_port = M.DEFAULT_PORT
@@ -180,15 +180,15 @@ class FakeRoot(unittest.TestCase):
             if p.poll() is None:
                 p.kill()
                 p.wait(10)
-        srv = self.strata.state("server")
+        srv = self.nostroma.state("server")
         if srv and M.proc_alive(srv.get("pid"), srv.get("ident")):
             M.proc_kill_tree(srv["pid"], srv["ident"])
             M.wait_gone(srv["pid"], srv["ident"], 10)
-        job = self.strata.state("install")
+        job = self.nostroma.state("install")
         if job and M.proc_alive(job.get("pid"), job.get("ident")):
             M.proc_kill_tree(job["pid"], job["ident"])
             M.wait_gone(job["pid"], job["ident"], 10)
-        for p in self.strata.children:
+        for p in self.nostroma.children:
             try:
                 p.wait(5)
             except subprocess.TimeoutExpired:
@@ -207,7 +207,7 @@ class FakeRoot(unittest.TestCase):
 
     def call(self, name, args=None):
         """A tools/call through the JSON-RPC layer: (result dict, isError)."""
-        srv = M.McpServer(self.strata, io.BytesIO())
+        srv = M.McpServer(self.nostroma, io.BytesIO())
         r = srv.handle({"jsonrpc": "2.0", "id": 1, "method": "tools/call",
                         "params": {"name": name, "arguments": args or {}}})
         res = r["result"]
@@ -215,9 +215,9 @@ class FakeRoot(unittest.TestCase):
 
     def write_config(self, tag="q2_0", port=8080, **extra):
         cfg = {"exe": sys.executable, "args": ["--max-context", "32768"], "port": port,
-               "model_name": f"qwen3.8-flash-next-{tag}", "log": str(self.root / f"strata-{tag}.log"), **extra}
-        (self.root / f"strata-{tag}.json").write_text(json.dumps(cfg))
-        (self.root / f"strata-{tag}.log").write_text("engine line 1\nengine line 2\n")
+               "model_name": f"qwen3.8-flash-next-{tag}", "log": str(self.root / f"nostroma-{tag}.log"), **extra}
+        (self.root / f"nostroma-{tag}.json").write_text(json.dumps(cfg))
+        (self.root / f"nostroma-{tag}.log").write_text("engine line 1\nengine line 2\n")
         return cfg
 
 
@@ -226,7 +226,7 @@ class Protocol(FakeRoot):
     def run_lines(self, msgs):
         inp = io.BytesIO(("\n".join(m if isinstance(m, str) else json.dumps(m) for m in msgs) + "\n").encode())
         out = io.BytesIO()
-        M.McpServer(self.strata, out).serve(inp)
+        M.McpServer(self.nostroma, out).serve(inp)
         return {m.get("id"): m for m in (json.loads(x) for x in out.getvalue().decode().splitlines())}
 
     def test_handshake_list_call(self):
@@ -235,16 +235,16 @@ class Protocol(FakeRoot):
              "params": {"protocolVersion": "2025-06-18", "capabilities": {}, "clientInfo": {"name": "t", "version": "1"}}},
             {"jsonrpc": "2.0", "method": "notifications/initialized"},
             {"jsonrpc": "2.0", "id": 2, "method": "tools/list"},
-            {"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "strata_models", "arguments": {}}},
+            {"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "nostroma_models", "arguments": {}}},
             {"jsonrpc": "2.0", "id": 4, "method": "ping"},
         ])
         init = r[1]["result"]
         self.assertEqual(init["protocolVersion"], "2025-06-18")
         self.assertIn("tools", init["capabilities"])
-        self.assertEqual(init["serverInfo"]["name"], "strata")
+        self.assertEqual(init["serverInfo"]["name"], "nostroma")
         names = [t["name"] for t in r[2]["result"]["tools"]]
-        self.assertEqual(names, ["strata_status", "strata_models", "strata_remove", "strata_install", "strata_start", "strata_stop",
-                                 "strata_logs", "strata_benchmark", "strata_connect_info"])
+        self.assertEqual(names, ["nostroma_status", "nostroma_models", "nostroma_remove", "nostroma_install", "nostroma_start", "nostroma_stop",
+                                 "nostroma_logs", "nostroma_benchmark", "nostroma_connect_info"])
         for t in r[2]["result"]["tools"]:
             self.assertEqual(t["inputSchema"]["type"], "object")
             self.assertFalse(t["inputSchema"]["additionalProperties"])
@@ -262,7 +262,7 @@ class Protocol(FakeRoot):
             "{not json",
             {"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {"name": "rm_rf", "arguments": {}}},
             {"jsonrpc": "2.0", "id": 3, "method": "no/such"},
-            {"jsonrpc": "2.0", "id": 4, "method": "tools/call", "params": {"name": "strata_logs", "arguments": []}},
+            {"jsonrpc": "2.0", "id": 4, "method": "tools/call", "params": {"name": "nostroma_logs", "arguments": []}},
         ])
         self.assertEqual(r[1]["result"]["protocolVersion"], "2024-11-05")
         self.assertEqual(r[None]["error"]["code"], -32700)
@@ -276,8 +276,8 @@ class Protocol(FakeRoot):
         msgs = [{"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2025-06-18"}},
                 {"jsonrpc": "2.0", "id": 2, "method": "tools/list"},
                 {"jsonrpc": "2.0", "id": 3, "method": "tools/call",
-                 "params": {"name": "strata_logs", "arguments": {"source": "setup"}}}]
-        p = subprocess.run([sys.executable, str(HERE / "strata_mcp.py"), "--root", str(self.root)],
+                 "params": {"name": "nostroma_logs", "arguments": {"source": "setup"}}}]
+        p = subprocess.run([sys.executable, str(HERE / "nostroma_mcp.py"), "--root", str(self.root)],
                            input="\n".join(json.dumps(m) for m in msgs) + "\n", capture_output=True, text=True,
                            timeout=60, env=dict(os.environ))
         lines = [json.loads(x) for x in p.stdout.splitlines()]
@@ -285,8 +285,8 @@ class Protocol(FakeRoot):
         self.assertEqual(len(next(m for m in lines if m["id"] == 2)["result"]["tools"]), 9)
         self.assertIn("ready", p.stderr)
 
-    def test_not_a_strata_folder(self):
-        p = subprocess.run([sys.executable, str(HERE / "strata_mcp.py"), "--root", self.tmp.name], input="",
+    def test_not_a_nostroma_folder(self):
+        p = subprocess.run([sys.executable, str(HERE / "nostroma_mcp.py"), "--root", self.tmp.name], input="",
                            capture_output=True, text=True, timeout=60)
         self.assertEqual(p.returncode, 2)
 
@@ -299,35 +299,35 @@ class Validation(FakeRoot):
         self.assertIn(text, res["error"])
 
     def test_install_arguments(self):
-        self.assertRejected("strata_install", {"model": "Q9_X"}, "model must be one of")
-        self.assertRejected("strata_install", {"family": "llama"}, "family must be one of")
-        self.assertRejected("strata_install", {"context": 100}, "context must be between")
-        self.assertRejected("strata_install", {"gpus": "0;rm -rf /"}, "gpus=")
-        self.assertRejected("strata_install", {"gpus": "0 && calc"}, "gpus=")
-        self.assertRejected("strata_install", {"gpu": -1}, "between")
-        self.assertRejected("strata_install", {"gpu": "1; calc"}, "whole number")
-        self.assertRejected("strata_install", {"gpu": 0, "gpus": "0,1"}, "not both")
-        self.assertRejected("strata_install", {"port": 80}, "between")
-        self.assertRejected("strata_install", {"backend": "rocm"}, "backend must be one of")
-        self.assertRejected("strata_install", {"command": "setup.py --build"}, "unknown argument")
-        res, err = self.call("strata_install", {"family": "swift", "model": "IQ3_S"})
+        self.assertRejected("nostroma_install", {"model": "Q9_X"}, "model must be one of")
+        self.assertRejected("nostroma_install", {"family": "llama"}, "family must be one of")
+        self.assertRejected("nostroma_install", {"context": 100}, "context must be between")
+        self.assertRejected("nostroma_install", {"gpus": "0;rm -rf /"}, "gpus=")
+        self.assertRejected("nostroma_install", {"gpus": "0 && calc"}, "gpus=")
+        self.assertRejected("nostroma_install", {"gpu": -1}, "between")
+        self.assertRejected("nostroma_install", {"gpu": "1; calc"}, "whole number")
+        self.assertRejected("nostroma_install", {"gpu": 0, "gpus": "0,1"}, "not both")
+        self.assertRejected("nostroma_install", {"port": 80}, "between")
+        self.assertRejected("nostroma_install", {"backend": "rocm"}, "backend must be one of")
+        self.assertRejected("nostroma_install", {"command": "setup.py --build"}, "unknown argument")
+        res, err = self.call("nostroma_install", {"family": "swift", "model": "IQ3_S"})
         self.assertFalse(err, res)                      # Swift 1.5 got its IQ3_S (same shard layout as its IQ2_XS)
         self.assertIn("--family swift --model IQ3_S", res["plan"]["setup_command"])
-        res, err = self.call("strata_install", {"family": "unsloth", "model": "UD-Q4_K_XL", "vision": "yes"})
+        res, err = self.call("nostroma_install", {"family": "unsloth", "model": "UD-Q4_K_XL", "vision": "yes"})
         self.assertFalse(err, res)                      # #967: images are allowed with UD-Q4_K_XL (setup warns)
         self.assertEqual(res["plan"]["images"], "yes")
-        self.assertRejected("strata_install", {"vision": "yes\nrm"}, "control characters")
+        self.assertRejected("nostroma_install", {"vision": "yes\nrm"}, "control characters")
 
     def test_amd_vision_follows_the_picture_rule(self):
         """Owner rule 2026-10-18: pictures are on for AMD too, on Linux and Windows (setup picks the reader: CPU under 24 GB, GPU from 24 GB)."""
         for win in (False, True):
             with mock.patch.object(M, "WIN", win):
                 for asked in ("yes", "gpu", "cpu"):
-                    res, err = self.call("strata_install", {"backend": "hip", "vision": asked})
+                    res, err = self.call("nostroma_install", {"backend": "hip", "vision": asked})
                     self.assertFalse(err, res)
                     self.assertEqual(res["plan"]["images"], asked)
                     self.assertIn("--vision " + asked, res["plan"]["setup_command"])
-                res, err = self.call("strata_install", {"backend": "hip", "vision": "no"})
+                res, err = self.call("nostroma_install", {"backend": "hip", "vision": "no"})
                 self.assertFalse(err, res)
                 self.assertEqual(res["plan"]["images"], "no")
 
@@ -335,33 +335,33 @@ class Validation(FakeRoot):
         """Nothing asked: pictures are on where the model can read them (any backend), off for a model that cannot."""
         for backend in (None, "cuda", "hip"):
             args = {"backend": backend} if backend else {}
-            res, err = self.call("strata_install", args)
+            res, err = self.call("nostroma_install", args)
             self.assertFalse(err, res)
             self.assertEqual(res["plan"]["images"], "yes")
             self.assertIn("--vision yes", res["plan"]["setup_command"])
-        res, err = self.call("strata_install", {"vision": "no"})
+        res, err = self.call("nostroma_install", {"vision": "no"})
         self.assertFalse(err, res)
         self.assertEqual(res["plan"]["images"], "no")
 
     def test_data_dir_paths(self):
-        self.assertRejected("strata_install", {"data_dir": "models"}, "absolute")
-        self.assertRejected("strata_install", {"data_dir": str(self.root.parent / "x" / ".." / "Strata-x")}, "'..'")
-        self.assertRejected("strata_install", {"data_dir": str(self.root.parent / "Documents")}, "named Nostroma")
-        self.assertRejected("strata_install", {"data_dir": str(self.root.parent / "nope" / "Strata-data")},
+        self.assertRejected("nostroma_install", {"data_dir": "models"}, "absolute")
+        self.assertRejected("nostroma_install", {"data_dir": str(self.root.parent / "x" / ".." / "Nostroma-x")}, "'..'")
+        self.assertRejected("nostroma_install", {"data_dir": str(self.root.parent / "Documents")}, "named Nostroma")
+        self.assertRejected("nostroma_install", {"data_dir": str(self.root.parent / "nope" / "Nostroma-data")},
                             "does not exist")
-        self.assertRejected("strata_install", {"data_dir": "\\\\server\\share\\Strata-data"}, "network")
-        sysdir = (os.environ.get("SystemRoot", "C:\\Windows") + "\\Strata-data") if M.WIN else "/etc/Strata-data"
-        self.assertRejected("strata_install", {"data_dir": sysdir}, "system folder")
-        ok = [self.root.parent / "Strata-data", self.root / "models-here", self.root.parent / "Strata-big"]
+        self.assertRejected("nostroma_install", {"data_dir": "\\\\server\\share\\Nostroma-data"}, "network")
+        sysdir = (os.environ.get("SystemRoot", "C:\\Windows") + "\\Nostroma-data") if M.WIN else "/etc/Nostroma-data"
+        self.assertRejected("nostroma_install", {"data_dir": sysdir}, "system folder")
+        ok = [self.root.parent / "Nostroma-data", self.root / "models-here", self.root.parent / "Nostroma-big"]
         for d in ok:
             self.assertEqual(M.norm(self.tools.check_data_dir(str(d))), M.norm(d))
 
     @unittest.skipIf(M.WIN, "POSIX paths")
     def test_a_drive_the_desktop_mounted_is_not_a_system_folder(self):
         """/run/media/<user>/<drive> sits inside /run, but it is where an external drive is mounted."""
-        for raw in ("/run/media/ann/Backup/Strata-data", "/run/media/ann/Backup/Strata"):
+        for raw in ("/run/media/ann/Backup/Nostroma-data", "/run/media/ann/Backup/Nostroma"):
             self.assertTrue(M.mounted_drive(M.norm(raw)), raw)
-        for raw in ("/run", "/run/media", "/run/user/1000/Strata-data", "/run/systemd/Strata-data", "/etc/Strata-data"):
+        for raw in ("/run", "/run/media", "/run/user/1000/Nostroma-data", "/run/systemd/Nostroma-data", "/etc/Nostroma-data"):
             self.assertFalse(M.mounted_drive(M.norm(raw)), raw)
 
     def test_the_persons_own_data_folder_is_accepted_whatever_it_is_called(self):
@@ -369,30 +369,30 @@ class Validation(FakeRoot):
         folder still needs a Nostroma... name."""
         chosen = self.root.parent / "my-big-disk"
         chosen.mkdir()
-        self.assertRejected("strata_install", {"data_dir": str(chosen)}, "named Nostroma")
+        self.assertRejected("nostroma_install", {"data_dir": str(chosen)}, "named Nostroma")
         settings = self.tools.s.settings_path()
         settings.parent.mkdir(parents=True, exist_ok=True)
         settings.write_text(json.dumps({"data_dir": str(chosen)}))
         self.assertEqual(M.norm(self.tools.check_data_dir(str(chosen))), M.norm(chosen))
 
     def test_other_tools_arguments(self):
-        self.assertRejected("strata_start", {"model": "../../etc/passwd"}, "not valid")
-        self.assertRejected("strata_start", {"model": "q2_0"}, "no model is installed")
+        self.assertRejected("nostroma_start", {"model": "../../etc/passwd"}, "not valid")
+        self.assertRejected("nostroma_start", {"model": "q2_0"}, "no model is installed")
         self.write_config("q2_0")
-        self.assertRejected("strata_start", {"model": "iq3_s"}, "no installed model 'iq3_s'")
-        self.assertRejected("strata_start", {"wait_seconds": 100000}, "between")
-        self.assertRejected("strata_logs", {"lines": 0}, "between")
-        self.assertRejected("strata_logs", {"source": "/etc/passwd"}, "source must be one of")
-        self.assertRejected("strata_benchmark", {"max_tokens": 100000}, "between")
-        self.assertRejected("strata_stop", {"force": "yes"}, "true or false")
+        self.assertRejected("nostroma_start", {"model": "iq3_s"}, "no installed model 'iq3_s'")
+        self.assertRejected("nostroma_start", {"wait_seconds": 100000}, "between")
+        self.assertRejected("nostroma_logs", {"lines": 0}, "between")
+        self.assertRejected("nostroma_logs", {"source": "/etc/passwd"}, "source must be one of")
+        self.assertRejected("nostroma_benchmark", {"max_tokens": 100000}, "between")
+        self.assertRejected("nostroma_stop", {"force": "yes"}, "true or false")
 
     def test_engine_log_outside_is_not_read(self):
         self.write_config("q2_0", log=str(Path(self.tmp.name).parent / "elsewhere.log"))
-        res, err = self.call("strata_logs", {"source": "engine", "model": "q2_0"})
+        res, err = self.call("nostroma_logs", {"source": "engine", "model": "q2_0"})
         self.assertTrue(err)
         self.assertIn("outside the Nostroma folder", res["error"])
         self.write_config("q2_0")
-        res, err = self.call("strata_logs", {"source": "engine"})
+        res, err = self.call("nostroma_logs", {"source": "engine"})
         self.assertFalse(err)
         self.assertEqual(res["lines"], ["engine line 1", "engine line 2"])
 
@@ -400,17 +400,17 @@ class Validation(FakeRoot):
 # ------------------------------------------------------------------------------------------------ install
 class Install(FakeRoot):
     def wait_job(self):
-        self.assertTrue(wait_for(lambda: not self.strata.install_job()["running"], 60))
+        self.assertTrue(wait_for(lambda: not self.nostroma.install_job()["running"], 60))
 
     def test_plan_then_install(self):
-        res, err = self.call("strata_install", {})
+        res, err = self.call("nostroma_install", {})
         self.assertFalse(err)
         self.assertIn("Nothing was done yet", res["summary"])
         self.assertEqual((res["plan"]["family"], res["plan"]["model"], res["plan"]["context"]), ("qwen", "IQ3_S", 131072))
         self.assertFalse((self.root / "setup-args.json").exists())
-        self.assertIsNone(self.strata.install_job())
+        self.assertIsNone(self.nostroma.install_job())
 
-        res, err = self.call("strata_install", {"model": "Q2_0", "context": 65536, "vision": "no", "confirm": True})
+        res, err = self.call("nostroma_install", {"model": "Q2_0", "context": 65536, "vision": "no", "confirm": True})
         self.assertFalse(err, res)
         self.assertIn("started in the background", res["summary"])
         self.wait_job()
@@ -419,45 +419,45 @@ class Install(FakeRoot):
         for pair in (["--family", "qwen"], ["--model", "Q2_0"], ["--context", "65536"], ["--vision", "no"]):
             i = args.index(pair[0])
             self.assertEqual(args[i:i + 2], pair)
-        res, err = self.call("strata_install", {})
+        res, err = self.call("nostroma_install", {})
         self.assertEqual(res["install"]["result"], "installed")
         self.assertEqual(res["install"]["exit_code"], 0)
-        self.assertEqual(res["next"], "strata_start")
-        st, _ = self.call("strata_status", {"hardware": False})
+        self.assertEqual(res["next"], "nostroma_start")
+        st, _ = self.call("nostroma_status", {"hardware": False})
         self.assertEqual([m["model"] for m in st["installed"]["models"]], ["q2_0"])
 
     def test_progress_while_running_and_cancel(self):
         (self.root / "slow").write_text("")
-        res, err = self.call("strata_install", {"family": "coder", "confirm": True})
+        res, err = self.call("nostroma_install", {"family": "coder", "confirm": True})
         self.assertFalse(err, res)
-        self.assertTrue(wait_for(lambda: (self.strata.install_job() or {}).get("download") is not None, 30))
-        res, err = self.call("strata_install", {"model": "IQ3_S", "confirm": True})   # a second call: progress only
+        self.assertTrue(wait_for(lambda: (self.nostroma.install_job() or {}).get("download") is not None, 30))
+        res, err = self.call("nostroma_install", {"model": "IQ3_S", "confirm": True})   # a second call: progress only
         self.assertFalse(err)
         self.assertIn("an install is running", res["summary"])
         self.assertEqual(res["install"]["step"], "5/7: downloading Qwen3.8-Flash-Next Q2_0")
         self.assertEqual(res["install"]["download"]["percent"], 30)
-        res, err = self.call("strata_start", {})
+        res, err = self.call("nostroma_start", {})
         self.assertTrue(err)
         self.assertIn("install is still running", res["error"])
-        res, err = self.call("strata_install", {"cancel": True})
+        res, err = self.call("nostroma_install", {"cancel": True})
         self.assertIn("stopped", res["summary"])
-        self.assertFalse(self.strata.install_job()["running"])
+        self.assertFalse(self.nostroma.install_job()["running"])
 
     def test_failure_is_reported(self):
         (self.root / "fail").write_text("")
-        self.call("strata_install", {"model": "Q2_0", "confirm": True})
+        self.call("nostroma_install", {"model": "Q2_0", "confirm": True})
         self.wait_job()
-        res, _ = self.call("strata_install", {})
+        res, _ = self.call("nostroma_install", {})
         self.assertEqual(res["install"]["result"], "failed")
         self.assertIn("not enough free disk space - use --models-dir on a bigger drive", res["install"]["error"])
 
     def test_disk_space_is_checked(self):
-        self.strata.disk_free = lambda p: 10.0
-        res, err = self.call("strata_install", {"model": "Q2_0"})
+        self.nostroma.disk_free = lambda p: 10.0
+        res, err = self.call("nostroma_install", {"model": "Q2_0"})
         self.assertIn("not enough free disk space", res["plan"]["disk_short"])
-        res, err = self.call("strata_install", {"model": "Q2_0", "confirm": True})
+        res, err = self.call("nostroma_install", {"model": "Q2_0", "confirm": True})
         self.assertTrue(err)
-        self.assertIsNone(self.strata.install_job())
+        self.assertIsNone(self.nostroma.install_job())
 
 
 # ------------------------------------------------------------------------------------------------ start / stop / status
@@ -465,84 +465,84 @@ class StartStop(FakeRoot):
     def test_start_status_bench_stop(self):
         port = free_port()
         self.write_config("q2_0", port=port, delay=1.5)
-        res, err = self.call("strata_start", {"wait_seconds": 30})
+        res, err = self.call("nostroma_start", {"wait_seconds": 30})
         self.assertFalse(err, res)
         self.assertIn("Nostroma is running", res["summary"])
         pid = res["server"]["pid"]
 
-        st, _ = self.call("strata_status", {"hardware": False})
+        st, _ = self.call("nostroma_status", {"hardware": False})
         self.assertIn(f"running on port {port}", st["summary"])
         srv = st["running"][0]
         self.assertEqual(srv["engine_version"], "0.1.32")
         self.assertEqual(srv["gpu"]["total_mib"], 12227)
         self.assertIn("this MCP server", srv["started_by"])
 
-        res, err = self.call("strata_start", {})            # already running: nothing new
+        res, err = self.call("nostroma_start", {})            # already running: nothing new
         self.assertIn("already running", res["summary"])
 
-        b, err = self.call("strata_benchmark", {"max_tokens": 64})
+        b, err = self.call("nostroma_benchmark", {"max_tokens": 64})
         self.assertFalse(err, b)
         self.assertEqual(b["output_tok_s"], 61.5)
         sent = json.loads((self.root / "bench-request.json").read_text())
         self.assertEqual((sent["temperature"], sent["max_tokens"], sent["reasoning_effort"]), (0, 64, "none"))
 
-        c, _ = self.call("strata_connect_info", {})
+        c, _ = self.call("nostroma_connect_info", {})
         self.assertEqual(c["openai_base_url"], f"http://127.0.0.1:{port}/v1")
 
-        logs, _ = self.call("strata_logs", {"source": "server"})
+        logs, _ = self.call("nostroma_logs", {"source": "server"})
         self.assertTrue(any(line.startswith("ready:") for line in logs["lines"]))
 
-        res, err = self.call("strata_stop", {})
+        res, err = self.call("nostroma_stop", {})
         self.assertFalse(err, res)
         self.assertIn("Nostroma stopped", res["summary"])
         self.assertEqual(res["engine_unloaded"], "unloaded")
         self.assertEqual((self.root / "unloaded.txt").read_text().split(), [str(port)])
         ident = M.proc_identity(pid)
         self.assertIsNone(ident)
-        st, _ = self.call("strata_status", {"hardware": False})
+        st, _ = self.call("nostroma_status", {"hardware": False})
         self.assertEqual(st["running"], [])
-        res, _ = self.call("strata_stop", {})
+        res, _ = self.call("nostroma_stop", {})
         self.assertEqual(res["summary"], "Nostroma is not running")
 
     def test_start_reports_a_crash(self):
         self.write_config("q2_0", port=free_port(), crash=True)
-        res, err = self.call("strata_start", {"wait_seconds": 30})
+        res, err = self.call("nostroma_start", {"wait_seconds": 30})
         self.assertTrue(err)
         self.assertIn("out of memory (fake)", res["error"])
-        self.assertEqual(self.strata.state("server"), {})
+        self.assertEqual(self.nostroma.state("server"), {})
 
     def test_loading_then_ready(self):
         port = free_port()
         self.write_config("q2_0", port=port, delay=3)
-        res, err = self.call("strata_start", {"wait_seconds": 0})
+        res, err = self.call("nostroma_start", {"wait_seconds": 0})
         self.assertIn("loading", res["summary"])
-        st, _ = self.call("strata_status", {"hardware": False})
+        st, _ = self.call("nostroma_status", {"hardware": False})
         self.assertIn("loading", st["summary"])
-        self.assertTrue(wait_for(lambda: self.strata.probe(port) is not None, 30))
+        self.assertTrue(wait_for(lambda: self.nostroma.probe(port) is not None, 30))
 
     def test_stop_while_busy_needs_force(self):
         port = free_port()
         self.write_config("q2_0", port=port, busy=True)
-        self.call("strata_start", {"wait_seconds": 30})
-        res, err = self.call("strata_stop", {})
+        self.call("nostroma_start", {"wait_seconds": 30})
+        res, err = self.call("nostroma_stop", {})
         self.assertTrue(err)
         self.assertIn("force=true", res["error"])
-        res, err = self.call("strata_stop", {"force": True})
+        res, err = self.call("nostroma_stop", {"force": True})
         self.assertFalse(err, res)
 
     def test_external_server_is_only_unloaded(self):
         port = free_port()
         self.write_config("q2_0", port=port)
         p = subprocess.Popen([sys.executable, str(self.root / "serve" / "server.py"), "--config",
-                              str(self.root / "strata-q2_0.json"), "--port", str(port)],
+                              str(self.root / "nostroma-q2_0.json"), "--port", str(port)],
                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         self.extra.append(p)
-        self.assertTrue(wait_for(lambda: self.strata.probe(port) is not None, 30))
-        st, _ = self.call("strata_status", {"hardware": False})
+        self.assertTrue(wait_for(lambda: self.nostroma.probe(port) is not None, 30))
+        st, _ = self.call("nostroma_status", {"hardware": False})
         self.assertIn("outside this MCP server", st["running"][0]["started_by"])
-        res, err = self.call("strata_start", {})
+        res, err = self.call("nostroma_start", {})
         self.assertIn("started outside this MCP server", res["summary"])
-        res, err = self.call("strata_stop", {})
+        res, err = self.call("nostroma_stop", {})
         self.assertFalse(err, res)
         self.assertIn("only its model was unloaded", res["summary"])
         time.sleep(0.5)
@@ -552,9 +552,9 @@ class StartStop(FakeRoot):
         other = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
         self.extra.append(other)
         # a stale record: this process id, but another start time (a reused id)
-        self.strata.save_state("server", {"pid": other.pid, "ident": "win:1" if M.WIN else "linux:1",
+        self.nostroma.save_state("server", {"pid": other.pid, "ident": "win:1" if M.WIN else "linux:1",
                                           "port": free_port(), "model": "q2_0"})
-        res, _ = self.call("strata_stop", {})
+        res, _ = self.call("nostroma_stop", {})
         self.assertEqual(res["summary"], "Nostroma is not running")
         self.assertFalse(M.proc_terminate(other.pid, "linux:1"))
         time.sleep(0.3)
@@ -573,10 +573,10 @@ class StartStop(FakeRoot):
         threading.Thread(target=httpd.serve_forever, daemon=True).start()
         try:
             self.write_config("q2_0", port=port)
-            st, _ = self.call("strata_status", {"hardware": False})
+            st, _ = self.call("nostroma_status", {"hardware": False})
             self.assertEqual(st["running"], [])
             self.assertEqual(st["ports_used_by_other_programs"][0]["port"], port)
-            res, err = self.call("strata_start", {})
+            res, err = self.call("nostroma_start", {})
             self.assertTrue(err)
             self.assertIn("used by another program", res["error"])
         finally:
@@ -597,7 +597,7 @@ class Helpers(unittest.TestCase):
         self.assertNotIn("error", p)
 
     def test_builtin_table_matches_setup(self):
-        s = M.Strata(HERE.parent)
+        s = M.Nostroma(HERE.parent)
         S = s.setup_module()
         self.assertIsNotNone(S, "the repository's setup.py did not import")
         self.assertEqual(list(S.MODELS), list(M.FALLBACK_MODELS))
@@ -615,7 +615,7 @@ class Helpers(unittest.TestCase):
     def test_unsloth_sizes(self):
         """0.1.39: UD-IQ4_XS is a regular size, listed first; MODEL-UPDATE Phase 2: UD-Q4_K_XL is no longer experimental,
         and UD-Q5_K_XL, UD-Q6_K_XL and Q8_0 follow by size."""
-        s = M.Strata(HERE.parent)
+        s = M.Nostroma(HERE.parent)
         for models in (s.tables()[0], M.FALLBACK_MODELS):
             self.assertEqual(s.sizes_of(models, "unsloth"), ["UD-IQ4_XS", "UD-Q4_K_XL", "UD-Q5_K_XL", "UD-Q6_K_XL", "Q8_0", "UD-IQ1_M", "UD-Q2_0",
                                                              "UD-IQ2_XS", "UD-Q2_K_XL", "UD-IQ3_XXS", "UD-Q3_K_XL", "UD-IQ4_XS-v31"])
@@ -640,7 +640,7 @@ class Helpers(unittest.TestCase):
     def test_qwen36_is_listed_with_its_three_sizes(self):
         """QA 2026-10-18: the Qwen3.6-35B-A3B page of the first-run setup showed no versions, because setup.py keeps the family
         in OWN_PATH_FAMILIES (not FAMILIES) and the model list only walked FAMILIES."""
-        s = M.Strata(HERE.parent)
+        s = M.Nostroma(HERE.parent)
         self.assertIn("qwen36", s.tables()[1])
         fam = next(f for f in s.model_table({"ram_gb": 63.7, "gpus": [{"index": 0, "name": "x", "vram_gb": 12.0, "usable": True}]})
                    if f["family"] == "qwen36")
@@ -661,7 +661,7 @@ class Helpers(unittest.TestCase):
         self.assertEqual(s.sizes_of(s.tables()[0], "unsloth")[:5], ["UD-IQ4_XS", "UD-Q4_K_XL", "UD-Q5_K_XL", "UD-Q6_K_XL", "Q8_0"])      # the Unsloth Flash-Next sizes are untouched (round 0214 adds sizes after them)
 
     def test_qwen36_install_plan(self):
-        s = M.Strata(HERE.parent)
+        s = M.Nostroma(HERE.parent)
         s.hardware = lambda fresh=False: {"ram_gb": 64.0, "gpus": [{"index": 0, "name": "x", "vram_gb": 12.0, "usable": True, "vendor": "nvidia"}],
                                           "cpu": {"avx2": True}}
         s.disk_free = lambda p: 1000.0
@@ -685,7 +685,7 @@ class Helpers(unittest.TestCase):
 
     def test_the_apps_drafting_off_reaches_setup_as_mtp_off(self):
         # notes-ctrl-fix-2: the app's Off on a Mac still fetched the draft layer; the installer had no word for it (the Terminal's 1821f298d passes --mtp off)
-        s = M.Strata(HERE.parent)
+        s = M.Nostroma(HERE.parent)
         s.hardware = lambda fresh=False: {"ram_gb": 64.0, "gpus": [{"index": 0, "name": "x", "vram_gb": 16.0, "usable": True, "vendor": "nvidia"}],
                                           "cpu": {"avx2": True}}
         s.disk_free = lambda p: 1000.0
@@ -695,11 +695,11 @@ class Helpers(unittest.TestCase):
         _p, args = tools.install_plan("qwen36", "UD-Q4_K_XL", 32768, "no", None, None, None, None, None, None, None)
         self.assertNotIn("--mtp", args, "no word: setup decides as before")
         models, families, contexts, _src = s.tables()
-        schema = next(t for t in M.tool_defs(models, families, contexts) if t["name"] == "strata_install")["inputSchema"]["properties"]
+        schema = next(t for t in M.tool_defs(models, families, contexts) if t["name"] == "nostroma_install")["inputSchema"]["properties"]
         self.assertEqual(schema["mtp"]["enum"], ["on", "off"])
 
     def test_recommendation_follows_ram(self):
-        s = M.Strata(HERE.parent)
+        s = M.Nostroma(HERE.parent)
         gpu = [{"index": 0, "name": "x", "vram_gb": 24.0, "usable": True, "vendor": "nvidia"}]
         cases = {96: ("qwen", "IQ3_S", 131072), 48: ("qwen", "IQ3_S", 131072), 32: ("qwen", "IQ3_XXS", 131072), 12: ("coder", "IQ1_M", 131072)}   # the owner's tiers count RAM + VRAM (24 GB card): 120, 72, 56 GB; the Coder where the older rules stand
         for ram, want in cases.items():
@@ -714,7 +714,7 @@ class Helpers(unittest.TestCase):
 
     def test_a_pick_that_reads_from_the_ssd_says_so(self):
         # #3425: 36 GB RAM + 16 GB VRAM - 5 GB is the 48 GB tier; about 8 GB of IQ3_XXS would come from the SSD
-        s = M.Strata(HERE.parent)
+        s = M.Nostroma(HERE.parent)
         gpu = [{"index": 0, "name": "x", "vram_gb": 15.9, "usable": True, "vendor": "nvidia"}]
         r = s.recommend({"ram_gb": 36.0, "gpus": gpu, "cpu": {"avx2": True}})
         self.assertEqual((r["family"], r["model"]), ("qwen", "IQ3_XXS"))
@@ -724,7 +724,7 @@ class Helpers(unittest.TestCase):
 
     def test_3425_the_tiers_leave_5_gb_for_windows(self):
         # the reporter: RTX 5080 (16 GB) + 32 GB of RAM used to sum to 48 GB and get IQ3_XXS; now the 40 GB tier
-        s = M.Strata(HERE.parent)
+        s = M.Nostroma(HERE.parent)
         gpu = [{"index": 0, "name": "x", "vram_gb": 15.9, "usable": True, "vendor": "nvidia"}]
         self.assertEqual(M.TIER_SYSTEM_RESERVE_GB, 5.0)
         r = s.recommend({"ram_gb": 31.9, "gpus": gpu, "cpu": {"avx2": True}})
@@ -763,7 +763,7 @@ class MacCatalog(unittest.TestCase):
 
     def hw(self, ram, macos="27.2", chip="Apple M4"):
         from nostroma_control import mac_fit
-        s = M.Strata(HERE.parent)
+        s = M.Nostroma(HERE.parent)
         info = {"chip": chip, "ram_gb": float(ram), "macos": macos, "arm64": True, "clt": "", "perf_cores": 4}
         with mock.patch.object(M.sys, "platform", "darwin"), mock.patch.object(mac_fit, "mac_info", return_value=info):
             hw = s._hardware()
@@ -861,7 +861,7 @@ class MacCatalog(unittest.TestCase):
             import pwd
             real_home = pwd.getpwuid(os.getuid()).pw_dir
         with tempfile.TemporaryDirectory(dir=real_home) as t:
-            target = Path(t) / "Strata-data"
+            target = Path(t) / "Nostroma-data"
             target.mkdir()
             plan, args = M.Tools(s).install_plan("unsloth", "UD-IQ1_M", None, "no", "int8", 0, None, None, "auto", None, str(target))
             plain, _ = M.Tools(s).install_plan("qwen", "Q2_0", None, "no", "int8", 0, None, None, "auto", None, str(target))
@@ -870,13 +870,13 @@ class MacCatalog(unittest.TestCase):
         self.assertEqual(args[:6], ["--yes", "--no-start", "--family", "unsloth", "--model", "UD-IQ1_M"])
         s.disk_free = lambda p: 100.0
         with tempfile.TemporaryDirectory(dir=real_home) as t:              # (the same reason as above)
-            target = Path(t) / "Strata-data"
+            target = Path(t) / "Nostroma-data"
             target.mkdir()
             short, _ = M.Tools(s).install_plan("unsloth", "UD-IQ1_M", None, "no", "int8", 0, None, None, "auto", None, str(target))
         self.assertIn("not enough free disk space", short["disk_short"])
 
     def test_a_pc_is_unchanged(self):
-        s = M.Strata(HERE.parent)
+        s = M.Nostroma(HERE.parent)
         r = s.recommend({"ram_gb": 96, "gpus": [{"index": 0, "name": "x", "vram_gb": 24.0, "usable": True, "vendor": "nvidia"}],
                          "cpu": {"avx2": True}})
         self.assertEqual((r["family"], r["model"]), ("qwen", "IQ3_S"))
@@ -885,7 +885,7 @@ class MacCatalog(unittest.TestCase):
 
 class MixedGraphics(unittest.TestCase):
     def test_an_integrated_amd_gpu_beside_an_nvidia_card_is_not_offered(self):
-        s = M.Strata(HERE.parent)
+        s = M.Nostroma(HERE.parent)
         S = s.setup_module()
         nv = [{"index": 0, "name": "NVIDIA GeForce RTX 5090", "vram_gb": 31.8, "arch": "120", "driver": "580.95"}]
         igpu = [{"index": 0, "name": "AMD Radeon Graphics", "vram_gb": 0.5, "arch": "gfx1036", "uma": True}]
@@ -907,14 +907,14 @@ class MixedGraphics(unittest.TestCase):
     def test_two_gtx_1080_are_a_working_pc_on_the_cuda_12_engine(self):
         """#3655: Pascal cards were flagged 'not supported' and both started Off, so the app said no card was usable. When Pascal is all the PC has
         (and no AMD card), setup runs them with the CUDA 12 engine, and the hardware report now says so; a newer card keeps the old behaviour."""
-        s = M.Strata(HERE.parent)
+        s = M.Nostroma(HERE.parent)
         S = s.setup_module()
         pascal = [{"index": 0, "name": "NVIDIA GeForce GTX 1080", "vram_gb": 8.0, "arch": "61", "driver": "581.15"},
                   {"index": 1, "name": "NVIDIA GeForce GTX 1080", "vram_gb": 8.0, "arch": "61", "driver": "581.15"}]
         igpu = [{"index": 0, "name": "AMD Radeon(TM) Graphics", "vram_gb": 0.5, "arch": "gfx90c", "uma": True}]
         patches = (mock.patch.object(M.sys, "platform", "linux"), mock.patch.object(M, "WIN", False),
                    mock.patch.object(S, "amd_gpus", lambda: [dict(g) for g in igpu]), mock.patch.object(S, "amd_problem", lambda g: "integrated graphics"),
-                   mock.patch.dict(M.os.environ, {"STRATA_EXPERIMENTAL_SM60": ""}), mock.patch.object(S, "OLD_GPUS", None))
+                   mock.patch.dict(M.os.environ, {"NOSTROMA_EXPERIMENTAL_SM60": ""}), mock.patch.object(S, "OLD_GPUS", None))
         with mock.patch.object(S, "gpus", lambda: [dict(g) for g in pascal]):
             for p in patches:
                 p.start()
@@ -948,7 +948,7 @@ class MixedGraphics(unittest.TestCase):
                        {"vendor": "amd", "index": 2, "name": "AMD Radeon RX 9070 XT", "arch": "gfx1201", "usable": True, "problem": None},
                        {"vendor": "nvidia", "index": 0, "name": "NVIDIA GeForce RTX 3060", "arch": "86", "usable": True, "problem": None}]}
         with mock.patch("nostroma_control.engine_component.status", lambda: status):
-            M.Strata._engine_code(hw)
+            M.Nostroma._engine_code(hw)
         by = {g["name"]: g for g in hw["gpus"]}
         self.assertFalse(by["AMD Radeon RX 6800 XT"]["usable"])
         self.assertIn("no code for gfx1030", by["AMD Radeon RX 6800 XT"]["problem"])
@@ -959,12 +959,12 @@ class MixedGraphics(unittest.TestCase):
         for other in ({"usable": False}, {"usable": True, "engine": {"backend": "cuda", "archs": ["sm_86"]}}):
             again = {"gpus": [{"vendor": "amd", "index": 1, "name": "x", "arch": "gfx1030", "usable": True, "problem": None}]}
             with mock.patch("nostroma_control.engine_component.status", lambda other=other: other):
-                M.Strata._engine_code(again)
+                M.Nostroma._engine_code(again)
             self.assertTrue(again["gpus"][0]["usable"])
 
     @mock.patch("nostroma_control.engine_component.status", lambda: {"usable": False})   # not this PC's installed (CUDA) engine
     def test_windows_lists_an_amd_card_and_not_the_integrated_radeon(self):
-        s = M.Strata(HERE.parent)
+        s = M.Nostroma(HERE.parent)
         S = s.setup_module()
         cards = [{"index": 0, "name": "AMD Radeon RX 9070 XT", "vram_gb": 15.9, "arch": "gfx1201", "driver": "32.0.1"},
                  {"index": 1, "name": "AMD Radeon(TM) Graphics", "vram_gb": 0.5, "arch": "unknown (PCI 164E)", "driver": "32.0.1"}]
@@ -981,7 +981,7 @@ class MixedGraphics(unittest.TestCase):
         """QAGUI-STRIX 11-09 (APP-WIN item 3): the app's Load on a unified-memory chip uses the reserve setup would write (setup_config.UMA_WIN_RESERVE_MIB, G16)
         when the run config has none; the report carries it on a Windows gfx1151 only, from the same constant."""
         from nostroma_control import setup_config
-        s = M.Strata(HERE.parent)
+        s = M.Nostroma(HERE.parent)
         S = s.setup_module()
         strix = [{"index": 0, "name": "AMD Radeon(TM) 8060S Graphics", "vram_gb": 95.8, "arch": "gfx1151", "driver": "32.0.1", "uma": True,
                   "dedicated_gb": 64.0, "shared_gb": 31.8}]
@@ -1010,7 +1010,7 @@ class RemoveMissingFilesTest(unittest.TestCase):
     def test_missing_paths_are_already_removed(self):
         import importlib.util, tempfile, threading
         from pathlib import Path
-        spec = importlib.util.spec_from_file_location("strata_mcp_rm", Path(__file__).with_name("strata_mcp.py"))
+        spec = importlib.util.spec_from_file_location("nostroma_mcp_rm", Path(__file__).with_name("nostroma_mcp.py"))
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
         with tempfile.TemporaryDirectory() as d:
@@ -1034,10 +1034,10 @@ class RemoveMissingFilesTest(unittest.TestCase):
                 def model_paths(self, c): return ([], [])
                 def read_config(self, c): return {}
 
-            result = mod.Tools(S()).strata_remove(model="gyro-m", confirm=True)
+            result = mod.Tools(S()).nostroma_remove(model="gyro-m", confirm=True)
             self.assertEqual(result["failed"], [], result)
             self.assertFalse(folder.exists()); self.assertFalse(cfg.exists())
-            again = mod.Tools(S()).strata_remove(model="gyro-m", confirm=True)
+            again = mod.Tools(S()).nostroma_remove(model="gyro-m", confirm=True)
             self.assertEqual(again["failed"], [], "a second delete of the same model finds nothing left and still succeeds")
 
 
@@ -1054,7 +1054,7 @@ class DiskUsageTest(unittest.TestCase):
         for p in (self.root, self.data / "models" / "gyro-Gyro-S", self.data / "packs" / "swift-iq2_xs", self.data / "mtp" / "rt", self.own):
             p.mkdir(parents=True)
         (d / "settings.json").write_text(json.dumps({"data_dir": str(self.data)}), encoding="utf-8")
-        env = mock.patch.dict(os.environ, {"STRATA_SETTINGS_FILE": str(d / "settings.json")})
+        env = mock.patch.dict(os.environ, {"NOSTROMA_SETTINGS_FILE": str(d / "settings.json")})
         env.start()
         self.addCleanup(env.stop)
 
@@ -1066,7 +1066,7 @@ class DiskUsageTest(unittest.TestCase):
         cfg = {"exe": sys.executable, "args": args, "port": 8080}
         if vision:
             cfg["vision"] = {"mmproj": vision}
-        (self.root / f"strata-{name}.json").write_text(json.dumps(cfg), encoding="utf-8")
+        (self.root / f"nostroma-{name}.json").write_text(json.dumps(cfg), encoding="utf-8")
 
     def test_sizes_come_from_the_files_not_from_what_may_be_deleted(self):
         gyro = self.blob(self.data / "models" / "gyro-Gyro-S" / "Gyro-S.gguf", 59_000)
@@ -1077,7 +1077,7 @@ class DiskUsageTest(unittest.TestCase):
         self.write_config("gyro-gyro-s", ["--native", gyro, "--ple-gguf", gyro, "--embd-gguf", gyro, "--native-dense-gguf", gyro], reader)
         # IQ3_S: adopted from the person's own folder, the config names the first part only
         self.write_config("iq3_s", ["--native", part1], reader)
-        s = M.Strata(self.root)
+        s = M.Nostroma(self.root)
         use = s.disk_usage()
         self.assertEqual(use["models"]["gyro-gyro-s"]["bytes"], 59_000, "the Gyro file is counted once, not four times")
         self.assertEqual(use["models"]["iq3_s"]["bytes"], 84_000, "both parts of IQ3_S, although the config names the first")
@@ -1104,7 +1104,7 @@ class DiskUsageTest(unittest.TestCase):
         except OSError:
             self.skipTest("no hard links here")
         self.write_config("other", ["--native", str(link_target), "--mtp", str(mtp)])
-        use = M.Strata(self.root).disk_usage()
+        use = M.Nostroma(self.root).disk_usage()
         self.assertEqual(use["models"]["swift-iq2_xs"]["bytes"], 40_100)
         self.assertEqual(use["models"]["other"]["bytes"], 0)
         self.assertEqual(use["shared_bytes"], 10_000 + 5_000, "the hard-linked GGUF and the draft layer are shared")
@@ -1114,7 +1114,7 @@ class DiskUsageTest(unittest.TestCase):
         part1 = self.blob(self.own / "Model-00001-of-00003.gguf", 10)
         self.blob(self.own / "Model-00002-of-00003.gguf", 10)
         self.write_config("three-parts", ["--native", part1])
-        s = M.Strata(self.root)
+        s = M.Nostroma(self.root)
         desc = s.describe_config(s.configs()[0])
         self.assertFalse(desc["ready"], "one part of three is on disk: not downloaded")
         self.assertTrue(any(m.endswith("Model-00003-of-00003.gguf") for m in desc["missing_files"]), desc["missing_files"])
@@ -1127,7 +1127,7 @@ class DraftLayerAndCancel(unittest.TestCase):
     """#3257: the draft layer's download shows real progress, and a cancel ends the whole tree."""
 
     def test_step_6_shows_the_draft_layer_download_added_to_the_finished_model_files(self):
-        lines = ["=== Step 6: preparing the model for Strata ===", "  > python mtp_fetch.py fetch",
+        lines = ["=== Step 6: preparing the model for Nostroma ===", "  > python mtp_fetch.py fetch",
                  "  MTP draft layer:   2.00 / 5.00 GB (40%)"]
         with tempfile.TemporaryDirectory() as d:
             shard = Path(d) / "m-00001-of-00001.gguf"

@@ -3,12 +3,12 @@
  *
  * Preference order:
  *   1. the Nostroma engine — the C++ engine behind Nostroma's own Python API worker. This is the
- *      product's inference path and is tried first. `STRATA_SERVER_URL` names it explicitly;
+ *      product's inference path and is tried first. `NOSTROMA_SERVER_URL` names it explicitly;
  *      otherwise the Nostroma worker's default loopback address is probed.
  *   2. the engine Nostroma supervises itself (llama.cpp), when one is configured
  *   3. a *different* OpenAI-compatible server already running on localhost, but only when it
  *      identifies itself as one; a host that merely answers a port is not adopted silently
- *   4. a clearly-labelled demo engine — **development only**. A packaged or `STRATA_REAL_ENGINE=1`
+ *   4. a clearly-labelled demo engine — **development only**. A packaged or `NOSTROMA_REAL_ENGINE=1`
  *      run never reaches this branch: it raises a typed error instead, so no simulated answer can
  *      enter a production success path.
  */
@@ -18,7 +18,7 @@ import { which } from './util.mjs';
 import { envVar } from './env-compat.mjs';
 
 /** Where Nostroma's own API worker listens by default (`serve/server.py`, `--port 8095`). */
-const STRATA_DEFAULT_URL = 'http://127.0.0.1:8095/v1';
+const NOSTROMA_DEFAULT_URL = 'http://127.0.0.1:8095/v1';
 
 const CANDIDATES = [
   { name: 'llama.cpp', url: 'http://127.0.0.1:8080/v1' },
@@ -32,7 +32,7 @@ let checkedAt = 0;
 /**
  * True when this process must not simulate inference.
  *
- * Packaged builds are always real. `STRATA_REAL_ENGINE` can force it either way for development,
+ * Packaged builds are always real. `NOSTROMA_REAL_ENGINE` can force it either way for development,
  * but it can never turn a packaged build back into demo mode — that is the guarantee acceptance
  * checklist row U12 asks for ("no success path using demo responses/metrics").
  */
@@ -43,9 +43,9 @@ export function requiresRealEngine() {
 }
 
 /** Where the Nostroma API worker is, if it was named explicitly. */
-function strataUrl() {
+function nostromaUrl() {
   const raw = envVar('SERVER_URL')?.trim();
-  if (!raw) return STRATA_DEFAULT_URL;
+  if (!raw) return NOSTROMA_DEFAULT_URL;
   return raw.replace(/\/+$/, '').endsWith('/v1') ? raw.replace(/\/+$/, '') : `${raw.replace(/\/+$/, '')}/v1`;
 }
 
@@ -53,22 +53,22 @@ function strataUrl() {
  * Probe a loopback endpoint and confirm it really is a Nostroma worker.
  *
  * A bare OpenAI-compatible listener is not enough: Nostroma's worker answers `/v1/status` with its
- * own shape (it carries `service: "strata"` and the reported context). Adopting an unrelated
+ * own shape (it carries `service: "nostroma"` and the reported context). Adopting an unrelated
  * server because it happens to hold the port is exactly the silent substitution the architecture
  * forbids, so the identity check is required.
  */
-async function probeStrata(baseUrl) {
+async function probeNostroma(baseUrl) {
   try {
     const res = await fetch(`${baseUrl.replace(/\/v1$/, '')}/v1/status`, { signal: AbortSignal.timeout(900) });
     if (!res.ok) return null;
     const status = await res.json().catch(() => null);
     if (!status || typeof status !== 'object') return null;
-    if (status.service !== 'strata') return null;
+    if (status.service !== 'nostroma') return null;
     const models = await fetch(`${baseUrl}/models`, { signal: AbortSignal.timeout(900) })
       .then((r) => (r.ok ? r.json() : null))
       .catch(() => null);
     return {
-      kind: 'strata',
+      kind: 'nostroma',
       name: 'Nostroma engine',
       baseUrl,
       models: (models?.data ?? []).map((m) => m.id).filter(Boolean),
@@ -84,9 +84,9 @@ async function probeStrata(baseUrl) {
 
 export async function detectBackend({ force = false } = {}) {
   // 1. Nostroma's own engine, always first: it is the product's inference path.
-  const strata = await probeStrata(strataUrl());
-  if (strata) {
-    backend = strata;
+  const nostroma = await probeNostroma(nostromaUrl());
+  if (nostroma) {
+    backend = nostroma;
     checkedAt = Date.now();
     return backend;
   }
@@ -136,7 +136,7 @@ export async function detectBackend({ force = false } = {}) {
       baseUrl: null,
       models: [],
       error:
-        `No Nostroma engine answered at ${strataUrl()} and no supervised engine is running. ` +
+        `No Nostroma engine answered at ${nostromaUrl()} and no supervised engine is running. ` +
         'Start Nostroma (or load a model) and retry. Simulated output is disabled in this build.',
     };
     checkedAt = Date.now();
@@ -199,7 +199,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 export async function streamChat({ message, history = [], systemPrompt = '', modelLabel, onFrame, signal, engine, candidates = [] }) {
   const be = await detectBackend();
 
-  if (be.kind === 'strata') {
+  if (be.kind === 'nostroma') {
     return proxyCompletion({
       baseUrl: be.baseUrl,
       message,
@@ -209,7 +209,7 @@ export async function streamChat({ message, history = [], systemPrompt = '', mod
       signal,
       supervised: false,
       engine,
-      modelId: be.modelId || 'strata',
+      modelId: be.modelId || 'nostroma',
     });
   }
 
@@ -314,7 +314,7 @@ export async function proxyCompletion({ baseUrl, message, history = [], systemPr
           continue;
         }
         if (parsed.error) throw new Error(parsed.error.message ?? 'Inference failed.');
-        if(parsed.strata_mcp)onFrame({type:'native-tool',event:parsed.strata_mcp});
+        if(parsed.nostroma_mcp)onFrame({type:'native-tool',event:parsed.nostroma_mcp});
         if(parsed.timings)timings=parsed.timings;
         if(parsed.choices?.[0]?.finish_reason)finishReason=parsed.choices[0].finish_reason;
 

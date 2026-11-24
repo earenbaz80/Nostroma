@@ -26,27 +26,27 @@ test('the Strix case: a first-run engine failure, then Continue installed the en
 test('a failure with no later finished update of the same component is still shown, the last one', () => {
   const a = job('a', 'update-engine', 'error', '2026-11-09T14:10:00Z');
   assert.equal(currentUpdateFailure([a])?.id, 'a');
-  assert.equal(currentUpdateFailure([a, job('b', 'update-strata', 'done', '2026-11-09T14:20:00Z')])?.id, 'a', 'another component does not settle it');
+  assert.equal(currentUpdateFailure([a, job('b', 'update-nostroma', 'done', '2026-11-09T14:20:00Z')])?.id, 'a', 'another component does not settle it');
   assert.equal(currentUpdateFailure([a, job('b', 'update-engine', 'running', '2026-11-09T14:20:00Z')])?.id, 'a', 'a running retry does not');
   assert.equal(currentUpdateFailure([a, job('b', 'update-engine', 'cancelled', '2026-11-09T14:20:00Z')])?.id, 'a', 'a cancelled retry does not');
   assert.equal(currentUpdateFailure([job('b', 'update-engine', 'done', '2026-11-09T14:00:00Z'), a])?.id, 'a', 'a success before it does not');
-  assert.equal(currentUpdateFailure([a, job('c', 'update-strata', 'error', '2026-11-09T14:30:00Z')])?.id, 'c', 'the last failure');
+  assert.equal(currentUpdateFailure([a, job('c', 'update-nostroma', 'error', '2026-11-09T14:30:00Z')])?.id, 'c', 'the last failure');
   assert.equal(currentUpdateFailure([a, job('d', 'load', 'error', '2026-11-09T14:30:00Z')])?.id, 'a', 'not an update: not here');
 });
 
 test('an interrupted update with no later finished one is still shown in About, with its own words; once a later one finished it is not', async () => {
   const { INTERRUPTED, jobErrorText } = await import(`data:text/javascript;base64,${Buffer.from(out.outputFiles[0].text).toString('base64')}`);
-  const cut = { ...job('i', 'update-strata', 'error', '2026-11-09T14:10:00Z'), error: INTERRUPTED };
+  const cut = { ...job('i', 'update-nostroma', 'error', '2026-11-09T14:10:00Z'), error: INTERRUPTED };
   const shown = currentUpdateFailure([cut]);
   assert.equal(shown?.id, 'i');
   assert.equal(jobErrorText(shown, [cut]), INTERRUPTED);
-  assert.equal(currentUpdateFailure([cut, job('r', 'update-strata', 'running', '2026-11-09T14:20:00Z')])?.id, 'i', 'a retry still running: shown');
-  assert.equal(currentUpdateFailure([cut, job('d', 'update-strata', 'done', '2026-11-09T14:20:00Z')]), undefined, 'settled by a later finished update: not in About (Diagnostics keeps it)');
+  assert.equal(currentUpdateFailure([cut, job('r', 'update-nostroma', 'running', '2026-11-09T14:20:00Z')])?.id, 'i', 'a retry still running: shown');
+  assert.equal(currentUpdateFailure([cut, job('d', 'update-nostroma', 'done', '2026-11-09T14:20:00Z')]), undefined, 'settled by a later finished update: not in About (Diagnostics keeps it)');
 });
 
 test('an update that finished after the check shown asks for one new check; none before it, none without a check', () => {
   const check = '2026-11-09T14:00:00Z';
-  assert.equal(updateFinishedAfter([job('u', 'update-strata', 'done', '2026-11-09T14:05:00Z')], check), 'u');
+  assert.equal(updateFinishedAfter([job('u', 'update-nostroma', 'done', '2026-11-09T14:05:00Z')], check), 'u');
   assert.equal(updateFinishedAfter([job('u', 'update-engine', 'done', '2026-11-09T13:55:00Z', { finishedAt: '2026-11-09T14:02:00Z' })], check), 'u', 'finished after the check');
   assert.equal(updateFinishedAfter([job('u', 'update-engine', 'done', '2026-11-09T13:50:00Z')], check), undefined, 'the check is newer');
   assert.equal(updateFinishedAfter([job('u', 'update-engine', 'error', '2026-11-09T14:05:00Z')], check), undefined, 'a failed update');
@@ -57,7 +57,7 @@ test('an update that finished after the check shown asks for one new check; none
 test('Settings > About uses both: the failure line and the check again, once per finished update', () => {
   const src = readFileSync(fileURLToPath(new URL('../src/components/SettingsUpdates.tsx', import.meta.url)), 'utf8');
   assert.match(src, /currentUpdateFailure\(native\?\.jobs \?\? \[\]\)/);
-  assert.doesNotMatch(src, /j\.state === 'error' && \['update-strata', 'update-engine'\]\.includes\(j\.kind\)\)\.slice\(-1\)/);
+  assert.doesNotMatch(src, /j\.state === 'error' && \['update-nostroma', 'update-engine'\]\.includes\(j\.kind\)\)\.slice\(-1\)/);
   assert.match(src, /updateFinishedAfter\(native\?\.jobs \?\? \[\], result\?\.checkedAt\)/);
   assert.match(src, /rechecked\.current !== finished\) \{ rechecked\.current = finished; void check\(\); \}/);
 });

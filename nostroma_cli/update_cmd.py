@@ -9,7 +9,7 @@
     nostroma components use X       switch to an installed engine (a version or folder name; `newest` follows updates again)
     nostroma components remove X    delete an installed engine (never the one in use)
 
-Starting and serving never come here. A process that has forbidden acquiring (STRATA_NO_ACQUIRE) is refused with exit 5.
+Starting and serving never come here. A process that has forbidden acquiring (NOSTROMA_NO_ACQUIRE) is refused with exit 5.
 Exit codes: 0 done or nothing to do, 2 usage, 5 refused (signature, hash, downgrade, no key, acquiring forbidden),
 6 failed and the old version is still in use (network, test start), 7 a model is loaded and nothing was changed, 8 the update is done (or
 failed with the old engine in use) but a model that was stopped for it did not start again, 130 stopped.
@@ -31,22 +31,22 @@ import threading
 from pathlib import Path
 
 #: Where the feed is read when nothing else is set: the files of the latest GitHub release of earenbaz80/Nostroma (the same folder the
-#: one-line installers use). Only a feed signed with a key in update_keys.json (or STRATA_UPDATE_TRUSTED_KEYS) is accepted.
-DEFAULT_FEED = "https://github.com/earenbaz80/Nostroma/releases/latest/download/strata-feed.json"
-ENV_FEED = "STRATA_UPDATE_FEED"
+#: one-line installers use). Only a feed signed with a key in update_keys.json (or NOSTROMA_UPDATE_TRUSTED_KEYS) is accepted.
+DEFAULT_FEED = "https://github.com/earenbaz80/Nostroma/releases/latest/download/nostroma-feed.json"
+ENV_FEED = "NOSTROMA_UPDATE_FEED"
 
-ENV_APP_VERSION = "STRATA_APP_VERSION"
+ENV_APP_VERSION = "NOSTROMA_APP_VERSION"
 
 
 def default_feed() -> str:
-    """DEFAULT_FEED for this machine: a Linux ARM64 machine (the DGX Spark) reads strata-feed-linux-aarch64.json from the same release."""
+    """DEFAULT_FEED for this machine: a Linux ARM64 machine (the DGX Spark) reads nostroma-feed-linux-aarch64.json from the same release."""
     from nostroma_control import feed as feedmod
     return DEFAULT_FEED.rsplit("/", 1)[0] + "/" + feedmod.feed_name()
 
 
 def _common(p: argparse.ArgumentParser) -> None:
     p.add_argument("--feed", default=None, help=f"where the signed update feed is (URL or folder). Default: ${ENV_FEED}, the feed used last, or the project's")
-    p.add_argument("--components-dir", default=None, help="the component folder (default: the per-user one, or STRATA_COMPONENTS_DIR)")
+    p.add_argument("--components-dir", default=None, help="the component folder (default: the per-user one, or NOSTROMA_COMPONENTS_DIR)")
     p.add_argument("--backend", default=None, help="choose an engine family instead of detecting this PC's GPU")
     p.add_argument("--wait", type=float, default=None, metavar="SECONDS",
                    help="if an engine is serving, wait up to this long for it to stop instead of refusing")
@@ -150,7 +150,7 @@ def _feed_source(a, root: Path) -> str:
 def _may_be_remembered(source) -> bool:
     """Only an https address is carried over to later runs. A loopback address or a folder is what a test of an update feed uses; once
     one such run had been made on a PC, every later check (the app's Settings included) tried that dead address and said "No internet
-    connection". Those runs name their feed again each time (--feed or STRATA_UPDATE_FEED)."""
+    connection". Those runs name their feed again each time (--feed or NOSTROMA_UPDATE_FEED)."""
     return isinstance(source, str) and source.lower().startswith("https://")
 
 
@@ -259,7 +259,7 @@ def source_store(checkout: Path | None = None) -> Path | None:
 
 
 def default_components_dir(ec) -> Path:
-    """The folder `nostroma update` works in when none is named. STRATA_COMPONENTS_DIR and --components-dir win (ec.components_dir reads the first). A source
+    """The folder `nostroma update` works in when none is named. NOSTROMA_COMPONENTS_DIR and --components-dir win (ec.components_dir reads the first). A source
     checkout that has its own engine store, and whose per-user folder holds no engine package, updates the checkout's: running `nostroma update` there used
     to download into the per-user folder instead, leave a half-written state.json and a part file nobody resumed, and then download everything again
     when the right folder was named (#4463)."""
@@ -279,7 +279,7 @@ def default_components_dir(ec) -> Path:
 def requested_hardware(backend: str, environ=None) -> dict:
     """What the package choice reads when the person named the engine family (--backend amd | hip | hip-rx6000 | nvidia ...).
 
-    The cards of THAT make are read (their gfx names, driver, archs), the same way a start that was given STRATA_ENGINE_BACKEND reads them. Before,
+    The cards of THAT make are read (their gfx names, driver, archs), the same way a start that was given NOSTROMA_ENGINE_BACKEND reads them. Before,
     only the family was changed: on a PC with an NVIDIA card and an AMD card the hardware stayed the NVIDIA card's, so `--backend amd` found
     "no engine for this PC" (the word was not even turned into the hip family) and `--backend hip` could not tell which AMD build the card needs."""
     from nostroma_control import engine_component as ec, updater
@@ -304,7 +304,7 @@ def run(a) -> int:
         if machine:
             print(json.dumps({"schema_version": 1, "ok": False, "error": {"code": code, "message": message}}))
         else:
-            print(f"strata: {message}", file=sys.stderr)
+            print(f"nostroma: {message}", file=sys.stderr)
         return code
 
     root = Path(a.components_dir) if a.components_dir else default_components_dir(ec)
@@ -375,7 +375,7 @@ def run(a) -> int:
     except signing.SignatureError as exc:
         return fail(str(exc), 5)
     except acquisition.AcquisitionRefused as exc:
-        return fail(f"{exc} (the update is the one explicit step that downloads; run it from a shell where STRATA_NO_ACQUIRE is not set)", 5)
+        return fail(f"{exc} (the update is the one explicit step that downloads; run it from a shell where NOSTROMA_NO_ACQUIRE is not set)", 5)
     except KeyboardInterrupt:
         return fail("stopped; a partial download is kept and the next update resumes it", 130)
 

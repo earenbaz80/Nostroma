@@ -112,8 +112,8 @@ class Catalog(unittest.TestCase):
     def test_the_model_names_resolve_in_both_directions(self):
         self.assertEqual(setup.FAMILIES["unsloth"]["tag"] + "UD-IQ4_XS-v31", "unsloth-UD-IQ4_XS-v31")
         with tempfile.TemporaryDirectory() as t:
-            for stem, model in (("strata-unsloth-ud-iq4_xs-v31", "UD-IQ4_XS-v31"), ("strata-unsloth-ud-iq4_xs", "UD-IQ4_XS"),
-                                ("strata-unsloth-ud-iq1_m", "UD-IQ1_M"), ("strata-unsloth-ud-q3_k_xl", "UD-Q3_K_XL")):
+            for stem, model in (("nostroma-unsloth-ud-iq4_xs-v31", "UD-IQ4_XS-v31"), ("nostroma-unsloth-ud-iq4_xs", "UD-IQ4_XS"),
+                                ("nostroma-unsloth-ud-iq1_m", "UD-IQ1_M"), ("nostroma-unsloth-ud-q3_k_xl", "UD-Q3_K_XL")):
                 p = Path(t) / (stem + ".json")
                 p.write_text('{"args": ["--max-context", "8192"]}')
                 ch = setup.choices_from_config(p)
@@ -283,11 +283,11 @@ class OwnFiles(unittest.TestCase):
                 "UD-IQ4_XS-v31": "~4-bit i-quant (Unsloth Dynamic v3.1), a newer file than UD-IQ4_XS with other tensor types"}
         from nostroma_control import mac_fit
         sys.path.insert(0, str(ROOT / "tools"))
-        import strata_mcp
+        import nostroma_mcp
         for m, a in want.items():
             self.assertEqual(setup.MODELS[m]["about"], a)
             self.assertEqual(mac_fit.MAC_ABOUT[m], a)
-            self.assertEqual(strata_mcp.FALLBACK_MODELS[m]["about"], a)
+            self.assertEqual(nostroma_mcp.FALLBACK_MODELS[m]["about"], a)
         for m in ("UD-IQ1_M", "UD-Q2_0", "UD-IQ2_XS", "UD-Q2_K_XL", "UD-IQ3_XXS", "UD-Q3_K_XL", "UD-IQ4_XS", "UD-Q4_K_XL", "UD-Q5_K_XL", "UD-Q6_K_XL", "Q8_0"):
             self.assertIn(m, setup.SUPPORTED_GGUFS)
         self.assertIn("(Unsloth's UD-IQ1_S, other K-quant files) cannot be used", setup.SUPPORTED_GGUFS)

@@ -1,7 +1,7 @@
 """The model catalog, the computer's figures and the fit words for `nostroma launch`.
 
-There is ONE catalog: setup.py's MODELS / FAMILIES / CONTEXTS, which the desktop app reads through tools/strata_mcp.py
-(`Strata.model_table`, `Strata.hardware`, `Strata.recommend`; the app page's own fit arithmetic is
+There is ONE catalog: setup.py's MODELS / FAMILIES / CONTEXTS, which the desktop app reads through tools/nostroma_mcp.py
+(`Nostroma.model_table`, `Nostroma.hardware`, `Nostroma.recommend`; the app page's own fit arithmetic is
 apps/host/src/lib/native-fit.ts `fitOn`). This module loads that same file from the installer folder and ports `fitOn` line by
 line; it holds no table of its own. Without the installer files (a Terminal bundle made before launch existed) it says so in
 words instead of guessing.
@@ -21,7 +21,7 @@ from nostroma_cli.launch import settings as S
 
 
 class CatalogUnavailable(RuntimeError):
-    """The installer files (setup.py, tools/strata_mcp.py) are not there; the message is for the user."""
+    """The installer files (setup.py, tools/nostroma_mcp.py) are not there; the message is for the user."""
 
 
 # --- apps/host/src/lib/native-fit.ts, ported (same constants, same rules) ------------------------------------------------
@@ -63,7 +63,7 @@ FITS, SLOWER, TIGHT, NO = "fits", "slower", "tight", "no"
 
 
 def verdict(on_this_pc: str | None) -> tuple[str, str]:
-    """(category, plain words) from the catalog's own `on_this_pc` text (nostroma_control/fit_label.py through strata_mcp: "fits" or "may run slower").
+    """(category, plain words) from the catalog's own `on_this_pc` text (nostroma_control/fit_label.py through nostroma_mcp: "fits" or "may run slower").
 
     No card and a Mac with little memory get "may run slower" too (owner 11-08); an older Control's "does not fit..." is read the same way.  Never a block: the person can always try, and the screen says so."""
     text = (on_this_pc or "").strip()
@@ -86,7 +86,7 @@ class ModelRow:
     family: str
     family_title: str
     model: str
-    id: str                       # the run config's tag (strata-<id>.json)
+    id: str                       # the run config's tag (nostroma-<id>.json)
     about: str
     download_gb: float
     need_vram_gb: float
@@ -172,7 +172,7 @@ def installer_folder(explicit: str | os.PathLike | None = None) -> Path:
 
 def install_places(explicit: str | os.PathLike | None = None, src: str | os.PathLike | None = None) -> list:
     """Every folder with run configs, main one first: the SAME discovery `nostroma models list` and the own-files import use
-    (nostroma_control/discovery.py). An explicit folder (the argument, or STRATA_INSTALL_DIR) is the only one."""
+    (nostroma_control/discovery.py). An explicit folder (the argument, or NOSTROMA_INSTALL_DIR) is the only one."""
     from nostroma_control import discovery
     return discovery.places(here=installer_folder(src), explicit=explicit)
 
@@ -183,7 +183,7 @@ def install_root(explicit: str | os.PathLike | None = None, src: str | os.PathLi
     from nostroma_control import discovery
     if explicit:
         return Path(explicit)
-    env = os.environ.get("NOSTROMA_INSTALL_DIR", os.environ.get("STRATA_INSTALL_DIR"))
+    env = os.environ.get("NOSTROMA_INSTALL_DIR", os.environ.get("NOSTROMA_INSTALL_DIR"))
     if env:
         return Path(env)
     return discovery.find_install(here=installer_folder(src))[0]
@@ -244,20 +244,20 @@ def intel_arc_cards(root: str = "/sys/class/drm") -> list[dict]:
 
 
 class Catalog:
-    """setup.py's tables through strata_mcp's `Nostroma` object (the app's own catalog code)."""
+    """setup.py's tables through nostroma_mcp's `Nostroma` object (the app's own catalog code)."""
 
     def __init__(self, src: str | os.PathLike | None = None, root: str | os.PathLike | None = None,
                  hardware: dict | None = None):
         self.src = installer_folder(src)
         self.places = install_places(root, self.src)
         self.root = Path(root) if root else (self.places[0].path if self.places else install_root(None, self.src))
-        mcp = self.src / "tools" / "strata_mcp.py"
+        mcp = self.src / "tools" / "nostroma_mcp.py"
         if not mcp.is_file() or not (self.src / "setup.py").is_file():
             raise CatalogUnavailable(
                 "This Terminal does not carry the model list. Install it again with the one-line installer, "
                 "or run `nostroma launch` from a full Nostroma folder (the folder with setup.py).")
         self.root.mkdir(parents=True, exist_ok=True)
-        name = "strata_mcp_for_launch"
+        name = "nostroma_mcp_for_launch"
         mod = sys.modules.get(name)
         if mod is None:
             if str(self.src) not in sys.path:
@@ -272,18 +272,18 @@ class Catalog:
             finally:
                 sys.stdout = real
         self.mcp = mod
-        self.strata = mod.Strata(self.root, self.src)
-        self._mcp_data_dir = self.strata.data_dir
-        self.strata.data_dir = self.data_dir          # one answer to "where is the data folder" for every caller, the app's included
+        self.nostroma = mod.Nostroma(self.root, self.src)
+        self._mcp_data_dir = self.nostroma.data_dir
+        self.nostroma.data_dir = self.data_dir          # one answer to "where is the data folder" for every caller, the app's included
         self._hardware_override = hardware
 
     # ---- the computer
     def hardware(self, fresh: bool = False) -> dict:
         if self._hardware_override is not None:
             hw = dict(self._hardware_override)
-            hw.setdefault("disk_free_gb", self.strata.disk_free(self.strata.data_dir()))
+            hw.setdefault("disk_free_gb", self.nostroma.disk_free(self.nostroma.data_dir()))
             return hw
-        hw = dict(self.strata.hardware(fresh=fresh))
+        hw = dict(self.nostroma.hardware(fresh=fresh))
         hw["gpus"] = self._admit_old_nvidia(list(hw.get("gpus") or []))
         if not str(hw.get("os", "")).startswith("Windows"):
             arc = intel_arc_cards()
@@ -338,7 +338,7 @@ class Catalog:
         chosen = None
         try:
             backend, how = ec.detect_backend()
-            if how in ("environment", "saved choice"):          # the person's own choice (--backend, STRATA_ENGINE_BACKEND) beats the installed engine
+            if how in ("environment", "saved choice"):          # the person's own choice (--backend, NOSTROMA_ENGINE_BACKEND) beats the installed engine
                 chosen = backend
         except Exception:                                      # noqa: BLE001
             pass
@@ -346,7 +346,7 @@ class Catalog:
 
     # ---- the tables
     def tables(self):
-        models, families, contexts, source = self.strata.tables()
+        models, families, contexts, source = self.nostroma.tables()
         return models, families, list(contexts), source
 
     def contexts(self) -> list[int]:
@@ -357,7 +357,7 @@ class Catalog:
         return self.contexts()
 
     def recommendation(self, hw: dict | None = None) -> dict:
-        return self.strata.recommend(hw or self.hardware())
+        return self.nostroma.recommend(hw or self.hardware())
 
     def rows(self, hw: dict | None = None) -> list[ModelRow]:
         hw = hw or self.hardware()
@@ -365,8 +365,8 @@ class Catalog:
         vram = comp.main_vram_gb
         rec = self.recommendation(hw)
         out: list[ModelRow] = []
-        own = self.strata.own_families()                # Qwen3.6 is listed for the app; the Terminal's launch list is Flash-Next's
-        for fam in self.strata.model_table(hw):
+        own = self.nostroma.own_families()                # Qwen3.6 is listed for the app; the Terminal's launch list is Flash-Next's
+        for fam in self.nostroma.model_table(hw):
             if fam["family"] in own:
                 continue
             for size in fam["sizes"]:
@@ -386,7 +386,7 @@ class Catalog:
         """(title, the plain reason) of each model of the signed feed that this engine does not run: nothing for a feed without such a model. The model list
         shows them under the list (same sentence as setup and the app: nostroma_control/feed_models.py)."""
         try:
-            return [(f["title"], f["unavailable_reason"]) for f in self.strata.model_table(hw or self.hardware()) if f.get("available") is False]
+            return [(f["title"], f["unavailable_reason"]) for f in self.nostroma.model_table(hw or self.hardware()) if f.get("available") is False]
         except Exception:                                  # noqa: BLE001 - a line for information
             return []
 
@@ -403,11 +403,11 @@ class Catalog:
             near = S.closest(family, list(families))
             raise ValueError(f"There is no model family called '{family}'." + (f" Did you mean '{near}'?" if near else "")
                              + " Families: " + ", ".join(families) + ".")
-        offered = [f for f in families if match in self.strata.sizes_of(models, f)]
+        offered = [f for f in families if match in self.nostroma.sizes_of(models, f)]
         if family is not None:
             if family not in offered:
                 raise ValueError(f"{families[family]['title']} has no size {match}. It offers: "
-                                 + ", ".join(self.strata.sizes_of(models, family)) + ".")
+                                 + ", ".join(self.nostroma.sizes_of(models, family)) + ".")
             return family, match
         if not offered:
             raise ValueError(f"{match} is not offered by any model family here.")
@@ -445,7 +445,7 @@ class Catalog:
 
     def kv_gb(self, tokens: int, kv: str = "int8") -> float:
         """The conversation memory for this many tokens, in GB (setup.py's UD_FIT_KV_BYTES: 13 attention layers)."""
-        mod = self.strata.setup_module()
+        mod = self.nostroma.setup_module()
         table = getattr(mod, "UD_FIT_KV_BYTES", None) or {"fp16": 2112, "int8": 1056, "q4_0": 576, "k8v4": 816}
         return tokens * 13 * table.get(kv, 1056) / 1e9
 
@@ -455,7 +455,7 @@ class Catalog:
         from nostroma_control import default_context
         hw = hw or self.hardware()
         if hw.get("mac") and hw.get("ram_gb"):
-            mac = self.strata.mac()                           # a Mac: the context by unified memory (nostroma_control/mac_fit.py)
+            mac = self.nostroma.mac()                           # a Mac: the context by unified memory (nostroma_control/mac_fit.py)
             if mac is not None:
                 return int(mac.recommend_context(float(hw["ram_gb"])))
         return default_context.pick(self.contexts_for(family, model))
@@ -474,7 +474,7 @@ class Catalog:
         return None
 
     def reader_state(self) -> str:
-        """"present" when the installed engine carries the picture reader (strata-vision), "missing" when an engine is installed without it,
+        """"present" when the installed engine carries the picture reader (nostroma-vision), "missing" when an engine is installed without it,
         "unknown" before any engine is installed (the first launch fetches one that has it)."""
         try:
             from nostroma_control import engine_component as ec
@@ -508,9 +508,9 @@ class Catalog:
     # ---- installed models
     def installed_configs(self) -> list[dict]:
         out, seen = [], set()
-        for path in self.strata.configs():
+        for path in self.nostroma.configs():
             seen.add(path.name)
-            d = self.strata.describe_config(path)
+            d = self.nostroma.describe_config(path)
             d["path"] = str(path)
             out.append(d)
         for place in self.places:
@@ -521,13 +521,13 @@ class Catalog:
                 if path.name in seen:
                     continue
                 seen.add(path.name)
-                d = self.strata.describe_config(path)
+                d = self.nostroma.describe_config(path)
                 d["path"] = str(path)
                 out.append(d)
         return out
 
     def installed_config(self, tag: str) -> Path | None:
-        name = f"strata-{tag.lower()}.json"
+        name = f"nostroma-{tag.lower()}.json"
         for folder in [self.root, *[p.path for p in self.places if p.path != self.root]]:
             p = folder / name
             if p.is_file():
@@ -536,7 +536,7 @@ class Catalog:
 
     def data_dir_choice(self) -> tuple[Path, str]:
         """(the data folder, where it came from): the person's own setting, the desktop app's folder, a Documents/Nostroma that holds models
-        (or a Documents/Strata from before the rename), else the default beside the install. The same rule for every command."""
+        (or a Documents/Nostroma from before the rename), else the default beside the install. The same rule for every command."""
         from nostroma_control import discovery
         return discovery.data_dir(Path(self._mcp_data_dir()))
 
@@ -558,4 +558,4 @@ class Catalog:
         return self.data_dir()
 
     def disk_free(self, path: str | os.PathLike) -> float | None:
-        return self.strata.disk_free(Path(path))
+        return self.nostroma.disk_free(Path(path))

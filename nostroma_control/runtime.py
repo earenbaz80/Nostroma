@@ -101,13 +101,13 @@ def _name(value: str) -> str:
 
 def runtime_dir() -> Path:
     _supported()
-    override = os.environ.get("NOSTROMA_RUNTIME_DIR", os.environ.get("STRATA_RUNTIME_DIR"))
+    override = os.environ.get("NOSTROMA_RUNTIME_DIR", os.environ.get("NOSTROMA_RUNTIME_DIR"))
     if override:
         base = Path(override).expanduser()
     else:
         base = paths.state_base() / "runtime"
     if not base.is_absolute():
-        raise ProfileError("STRATA_RUNTIME_DIR must be absolute")
+        raise ProfileError("NOSTROMA_RUNTIME_DIR must be absolute")
     existed = base.exists()
     _private_mkdir(base, parents=True, exist_ok=True)
     details = base.lstat()
@@ -150,7 +150,7 @@ _NO_ACL_WARNED: set[str] = set()
 def _warn_no_acls(base: Path) -> None:
     if str(base) not in _NO_ACL_WARNED:
         _NO_ACL_WARNED.add(str(base))
-        print(f"[strata] {base} is on a drive that has no file permissions (FAT or exFAT), so other accounts on this PC could "
+        print(f"[nostroma] {base} is on a drive that has no file permissions (FAT or exFAT), so other accounts on this PC could "
               f"read what Nostroma keeps there. Use a drive formatted as NTFS if that matters.", file=sys.stderr, flush=True)
 
 
@@ -287,7 +287,7 @@ def _child_present(child: dict, written: float | None = None) -> bool:
         image = winproc.process_image(child["pid"])
         if image is not None:
             name = os.path.basename(image).lower()
-            if "python" not in name and "strata" not in name:
+            if "python" not in name and "nostroma" not in name:
                 return False
     return True
 
@@ -977,9 +977,9 @@ class Host:
         attestation_key = secrets.token_bytes(32)
         expected_attestation = launch_identity.attestation(attestation_key, source_bytes, server_args)
         child_env = quiet_crash_env(os.environ.copy())   # the server's engine and reader start no debugger on a user's machine
-        child_env["STRATA_OWNER_ATTEST_KEY"] = attestation_key.hex()
-        child_env["STRATA_NO_ACQUIRE"] = "1"      # a managed server never installs or downloads (acquisition.py)
-        child_env["STRATA_RUNTIME_PROFILE"] = self.name   # the records of its engine say which profile they belong to
+        child_env["NOSTROMA_OWNER_ATTEST_KEY"] = attestation_key.hex()
+        child_env["NOSTROMA_NO_ACQUIRE"] = "1"      # a managed server never installs or downloads (acquisition.py)
+        child_env["NOSTROMA_RUNTIME_PROFILE"] = self.name   # the records of its engine say which profile they belong to
         try:
             with os.fdopen(descriptor, "ab") as stream:
                 if WINDOWS:
@@ -1083,7 +1083,7 @@ class Host:
                                          args=(ready, key, host, self.source_bytes,
                                                self.expected_attestation,
                                                max(VERIFY_BUDGET, self.probe_deadline - time.monotonic())),
-                                         name="strata-generation-probe", daemon=True).start()
+                                         name="nostroma-generation-probe", daemon=True).start()
                     if self.probe_result is None:
                         return {**base, "state": "starting", "phase": "verifying_generation",
                                 "instance_id": ready["instance_id"]}
@@ -1397,7 +1397,7 @@ class Host:
     def _say(self, line: str) -> None:
         """One line to the host log (the host's stderr is that file), so a host that ends says why."""
         try:
-            print(f"{time.strftime('%Y-%m-%dT%H:%M:%S')} [strata runtime] profile {self.name}: {line}", file=sys.stderr, flush=True)
+            print(f"{time.strftime('%Y-%m-%dT%H:%M:%S')} [nostroma runtime] profile {self.name}: {line}", file=sys.stderr, flush=True)
         except (OSError, ValueError):
             pass
 
@@ -1471,7 +1471,7 @@ class Host:
                                                                      "socket": bound_address, "token": self.token,
                                                                      "host_pid": os.getpid()}) + "\n").encode())
             self.starting = True
-            threading.Thread(target=self._startup, name="strata-owner-startup", daemon=True).start()
+            threading.Thread(target=self._startup, name="nostroma-owner-startup", daemon=True).start()
             while self.running:
                 if self.die_with is not None and self._die_with_gone():
                     self._say(f"the process this instance lives for (pid {self.die_with[0]}) is gone: stopping the server and leaving")
@@ -1561,7 +1561,7 @@ class Host:
 
 def main(argv: list[str] | None = None) -> int:
     quiet_crash_env()                                   # the host's children inherit it (nostroma_control/childenv.py)
-    parser = argparse.ArgumentParser(prog="strata-runtime-host")
+    parser = argparse.ArgumentParser(prog="nostroma-runtime-host")
     parser.add_argument("--host", required=True)
     parser.add_argument("--shutdown-timeout", type=float, default=30)
     parser.add_argument("--startup-wait", type=float, default=300)
@@ -1581,7 +1581,7 @@ def main(argv: list[str] | None = None) -> int:
         return Host(args.host, args.shutdown_timeout, args.startup_wait,
                     args.expected_profile_revision, args.expected_source_sha256, die_with).serve()
     except (ProfileError, OSError) as exc:
-        print(f"[strata runtime] host failed: {type(exc).__name__}: {exc}", file=sys.stderr)
+        print(f"[nostroma runtime] host failed: {type(exc).__name__}: {exc}", file=sys.stderr)
         return 6
 
 

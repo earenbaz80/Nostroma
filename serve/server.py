@@ -1,7 +1,7 @@
 """serve/server.py - plan v0.3 P8: OpenAI and Anthropic endpoints over any engine that maps token ids to tokens.
 
     python -m serve.server --engine mock --port 8095            (a scripted engine, for clients and tests)
-    python -m serve.server --engine strata --config strata.json --port 8080   (the real engine, resident)
+    python -m serve.server --engine nostroma --config nostroma.json --port 8080   (the real engine, resident)
 
 Endpoints: POST /v1/chat/completions (OpenAI, stream and non-stream), POST /v1/messages (Anthropic, stream and
 non-stream), GET /v1/models, GET /models, GET /props, GET /slots, GET /health, GET /mcp. One sequence at a time behind a FIFO (plan: one resident sequence).
@@ -9,9 +9,9 @@ Image generation (optional, when the config has an "images" section): POST /v1/i
 plus seed and steps) runs stable-diffusion.cpp's sd-cli for Qwen-Image-2.1-Turbo, one job at a time on the GPU the
 text engine uses (serve/images.py).
 Tools from MCP servers (serve/mcp.py, `"mcp_servers"` in the config or --mcp-config) are offered only to requests that
-ask for them with `"strata_mcp": true` - the web app does; other clients see exactly the API they always saw.
+ask for them with `"nostroma_mcp": true` - the web app does; other clients see exactly the API they always saw.
 Images (optional, when the config has a "vision" entry): OpenAI image_url parts and Anthropic image blocks (base64
-data, http(s) URLs or local file paths) go through `strata-vision` (the model's mmproj file) and reach the engine as
+data, http(s) URLs or local file paths) go through `nostroma-vision` (the model's mmproj file) and reach the engine as
 embeddings (`GENI`).  JPEG/PNG/BMP/GIF go straight in; WebP, TIFF, AVIF, ... (agents like omp send WebP) are
 converted to PNG first with Pillow.
 A request whose prompt alone does not fit the engine's context is REJECTED with 400, never truncated.  When the prompt
@@ -21,7 +21,7 @@ brings back the strict 400 of llama.cpp.
 An unset (or 0, or -1) max tokens means "unlimited": whatever the prompt leaves of the context.
 
 The engine boundary is `Engine.generate(prompt_ids, max_new, sampling, cancel) -> iterator of token ids`.
-`StrataEngine` keeps one `strata --serve` process resident (weights, expert arena and VRAM tier load once) and
+`NostromaEngine` keeps one `nostroma --serve` process resident (weights, expert arena and VRAM tier load once) and
 talks to it over stdin/stdout; `MockEngine` is a scripted stand-in that makes every API path testable without a GPU.
 """
 from __future__ import annotations
@@ -144,7 +144,7 @@ def end_leftover_engines(exe: str) -> None:
     10 s this used to wait): a 40 GiB arena loaded beside 50 GiB the old engine had not returned put a 60 GiB PC into
     memory reclaim for good.  One still there after LEFTOVER_SETTLE_S is said in plain words, and the start goes on
     (the engine waits for the RAM itself and warns; nothing is refused)."""
-    if os.environ.get("STRATA_KEEP_LEFTOVERS") == "1":
+    if os.environ.get("NOSTROMA_KEEP_LEFTOVERS") == "1":
         return
     try:
         from nostroma_control import procs
@@ -152,12 +152,12 @@ def end_leftover_engines(exe: str) -> None:
         stuck = [r["pid"] for r in procs.end_leftovers(say=say, settle=LEFTOVER_SETTLE_S)["stuck"]]
         stuck += [r["pid"] for r in procs.end_orphans(exe, say=say, settle=LEFTOVER_SETTLE_S) if r["outcome"] == "stuck"]
         if stuck:
-            print(f"[strata] WARNING: the engine from an earlier run (process {', '.join(map(str, stuck))}) was told to stop "
+            print(f"[nostroma] WARNING: the engine from an earlier run (process {', '.join(map(str, stuck))}) was told to stop "
                   f"but still holds its memory after {LEFTOVER_SETTLE_S:.0f} s. Starting the next one now can leave this PC "
                   "short of RAM and very slow: wait until that process is gone (it is shown by `ps`/Task Manager), "
                   "or restart the PC if it does not go.", flush=True)
     except Exception as e:  # noqa: BLE001 - a failed check must not stop a start
-        print(f"[strata] could not check for engines left by an earlier run: {type(e).__name__}", flush=True)
+        print(f"[nostroma] could not check for engines left by an earlier run: {type(e).__name__}", flush=True)
 
 
 def listen_problem(host: str, port: int, e: OSError) -> str:
@@ -177,7 +177,7 @@ def listen_problem(host: str, port: int, e: OSError) -> str:
             hint = ("This system does not allow it (on Linux and macOS, ports below 1024 need administrator rights): "
                     "start this one with a different --port")
     elif code in (10049, errno.EADDRNOTAVAIL):
-        hint = f"{host} is not an address of this PC: check \"host\" in the model's strata-<model>.json or --host"
+        hint = f"{host} is not an address of this PC: check \"host\" in the model's nostroma-<model>.json or --host"
     else:
         hint = "check --host and --port"
     return f"cannot listen on {host}:{port}: {what} [{code}]. {hint}"
@@ -194,7 +194,7 @@ def combined_embeddings_path(vision_dir: Path, nbytes: int) -> Path:
     if os.name != "nt" and shm.is_dir() and os.access(shm, os.W_OK):
         try:
             if shutil.disk_usage(shm).free > 2 * nbytes + (16 << 20):
-                return shm / f"strata-vision-{os.getpid()}-{name}"
+                return shm / f"nostroma-vision-{os.getpid()}-{name}"
         except OSError:
             pass
     return Path(vision_dir) / name
@@ -234,7 +234,7 @@ REASONING_WRAP_UP = "\n\nI have thought about this long enough; time to give my 
 # token of </think>): the engine stops there with its session at exactly the tokens it sent, so the next pass (+ the wrap-up)
 # continues from the live session.  Without it the engine ran a window or two past the cut, and the next pass read the
 # whole reasoning again from the checkpoint before it.  The server's own key in `sampling`, never a client's.
-HOLD_KEY = "_strata_hold"
+HOLD_KEY = "_nostroma_hold"
 # #728: opt-in handling of reasoning that repeats whole passages (which the single-token guard above cannot see).
 # "reasoning_loop_recovery": "stop" ends the reply there; "recover" (or true) goes on from the same output with the
 # low-effort instruction in place of the xhigh one.  Both off by default.
@@ -298,7 +298,7 @@ KEEPALIVE_S = 10.0          # a held-back tool argument leaves the stream quiet:
 # Anthropic clients add /v1/messages to their base URL themselves. A base URL that already ends in /v1 (copied from an OpenAI-style
 # setup) makes them post /v1/v1/messages; these two paths mean the same as the real ones. Nothing else is aliased.
 V1_V1_ALIASES = {"/v1/v1/messages": "/v1/messages", "/v1/v1/messages/count_tokens": "/v1/messages/count_tokens"}
-CTX_SLACK = 8               # `strata --serve` rejects prompt + max_new + 8 > context: keep the same margin here
+CTX_SLACK = 8               # `nostroma --serve` rejects prompt + max_new + 8 > context: keep the same margin here
 
 
 class ContextOverflow(ValueError):
@@ -325,7 +325,7 @@ ENGINE_SILENCE_S = 300.0
 # #4271: a streaming client that stops reading (a hung process, a network that dropped) leaves the thread that writes to
 # it blocked once the socket buffers are full - and that thread holds the engine's turn.  A write that makes no progress
 # for this long ends the request as a disconnect (the engine is stopped, the turn given back).  0: no limit, as before.
-STREAM_WRITE_TIMEOUT_S = float(os.environ.get("STRATA_STREAM_WRITE_TIMEOUT_S", "60") or 0)
+STREAM_WRITE_TIMEOUT_S = float(os.environ.get("NOSTROMA_STREAM_WRITE_TIMEOUT_S", "60") or 0)
 # Disk sessions: the longest allowance an engine may announce (`SWAIT <phase> <s>`) for one step that blocks in a
 # single call (a file flush, the host->device transfer); the engine's own bound is the same (session_phase_limit_s).
 SESSION_WAIT_MAX_S = 3600
@@ -340,7 +340,7 @@ PP_SLACK = 3.0
 # fire and every later request queued behind it (the "lost step" class of #481).  Generous on purpose: a cold model
 # load, a slow disk or a slow CPU encode is not a hang.  Only a process that says nothing at all for this long is
 # ended; the next request starts it again.
-# STRATA_ENGINE_READY_S / STRATA_VISION_READY_S / STRATA_VISION_ENCODE_S override them (0 = wait for ever, as before).
+# NOSTROMA_ENGINE_READY_S / NOSTROMA_VISION_READY_S / NOSTROMA_VISION_ENCODE_S override them (0 = wait for ever, as before).
 
 
 def _timeout_env(name: str, default: float) -> float | None:
@@ -356,31 +356,31 @@ def _timeout_env(name: str, default: float) -> float | None:
 # moves no bytes of I/O in that time is not slow, it is idle or frozen (a deadlock in a CUDA call, a driver stall, a lost
 # step), and waiting longer cannot help: it is ended, and the next request starts it again.  An engine that is silent but
 # still working is never ended by this, only reported once (the recommendation: engine_silence_s, or this variable).
-# STRATA_ENGINE_STALL_S overrides it (0 = off).  Needs psutil (setup installs it); without it nothing is ended.
-ENGINE_STALL_S = _timeout_env("STRATA_ENGINE_STALL_S", 90.0)
-PAR_COUNTERS = os.environ.get("STRATA_PAR_COUNTERS") == "1"   # research counters (queue wait for a slot), shown in /v1/status
+# NOSTROMA_ENGINE_STALL_S overrides it (0 = off).  Needs psutil (setup installs it); without it nothing is ended.
+ENGINE_STALL_S = _timeout_env("NOSTROMA_ENGINE_STALL_S", 90.0)
+PAR_COUNTERS = os.environ.get("NOSTROMA_PAR_COUNTERS") == "1"   # research counters (queue wait for a slot), shown in /v1/status
 # --batch: new requests take the control lines (one prompt read at a time) short prompts first: a prompt of at most
-# STRATA_ADMIT_SHORT_FIRST tokens goes before longer ones (opt-in; unset or 0: whoever gets the lock first), and a
-# longer one that waited STRATA_ADMIT_MAX_WAIT_S (default 30) counts as short.  A chat question then waits for the one
+# NOSTROMA_ADMIT_SHORT_FIRST tokens goes before longer ones (opt-in; unset or 0: whoever gets the lock first), and a
+# longer one that waited NOSTROMA_ADMIT_MAX_WAIT_S (default 30) counts as short.  A chat question then waits for the one
 # read in progress, not for every agent read that came before it.
 try:
-    ADMIT_SHORT_FIRST = max(0, int(os.environ.get("STRATA_ADMIT_SHORT_FIRST") or 0))
+    ADMIT_SHORT_FIRST = max(0, int(os.environ.get("NOSTROMA_ADMIT_SHORT_FIRST") or 0))
 except ValueError:
     ADMIT_SHORT_FIRST = 0
-ADMIT_MAX_WAIT_S = _timeout_env("STRATA_ADMIT_MAX_WAIT_S", 30.0) or 0.0
-# STRATA_COALESCE_PREFILL=N (research, PAR-H; needs the engine's BCO / BCOK lines): a request that takes the control lines
+ADMIT_MAX_WAIT_S = _timeout_env("NOSTROMA_ADMIT_MAX_WAIT_S", 30.0) or 0.0
+# NOSTROMA_COALESCE_PREFILL=N (research, PAR-H; needs the engine's BCO / BCOK lines): a request that takes the control lines
 # for its admission also sends the prompts of up to N-1 requests still waiting for them (BCO <slot> <ids>, into free slots
 # it reserves for them); the engine reads all the prompts in ONE layer-major pass, so the experts a layer streams are
 # read once for all of them, and each waiting request then finds its prompt in its slot.  0 / unset: off.
-COALESCE_PREFILL = max(0, int(os.environ.get("STRATA_COALESCE_PREFILL") or 0))
-COALESCE_TOKENS = max(256, int(os.environ.get("STRATA_COALESCE_TOKENS") or 16384))   # prompt tokens read together at most
-COALESCE_WAIT_MS = max(0, int(os.environ.get("STRATA_COALESCE_WAIT_MS") or 0))       # a burst's later requests register within this long
+COALESCE_PREFILL = max(0, int(os.environ.get("NOSTROMA_COALESCE_PREFILL") or 0))
+COALESCE_TOKENS = max(256, int(os.environ.get("NOSTROMA_COALESCE_TOKENS") or 16384))   # prompt tokens read together at most
+COALESCE_WAIT_MS = max(0, int(os.environ.get("NOSTROMA_COALESCE_WAIT_MS") or 0))       # a burst's later requests register within this long
 # Adaptive: a read is shared (and the leader waits for its followers) only when this engine has seen at least
 # COALESCE_MIN_REQS requests arrive within COALESCE_BURST_MS (the leader's own included).  Fewer than that - one or two
 # requests per engine, as 8 requests on 4 replicas - read plainly, with no wait: nothing to share, and the wait and the
 # longer pass only cost (measured 4 x 1 replicas at 8 requests: 168 against 196 tok/s with an unconditional wait).
-COALESCE_MIN_REQS = max(2, int(os.environ.get("STRATA_COALESCE_MIN_REQS") or 3))
-COALESCE_BURST_MS = max(10, int(os.environ.get("STRATA_COALESCE_BURST_MS") or 250))
+COALESCE_MIN_REQS = max(2, int(os.environ.get("NOSTROMA_COALESCE_MIN_REQS") or 3))
+COALESCE_BURST_MS = max(10, int(os.environ.get("NOSTROMA_COALESCE_BURST_MS") or 250))
 STALL_CPU_EPS_S = 0.5       # CPU seconds the engine may use in the whole stall window and still count as frozen
 STALL_IO_EPS_B = 1 << 20    # bytes read or written in that window
 
@@ -390,9 +390,9 @@ def engine_frozen(base: tuple[float, int], now: tuple[float, int]) -> bool:
     return (now[0] - base[0]) <= STALL_CPU_EPS_S and (now[1] - base[1]) <= STALL_IO_EPS_B
 
 
-VISION_READY_S = _timeout_env("STRATA_VISION_READY_S", 300.0)
-VISION_ENCODE_S = _timeout_env("STRATA_VISION_ENCODE_S", 300.0)
-ENGINE_READY_S = _timeout_env("STRATA_ENGINE_READY_S", 900.0)
+VISION_READY_S = _timeout_env("NOSTROMA_VISION_READY_S", 300.0)
+VISION_ENCODE_S = _timeout_env("NOSTROMA_VISION_ENCODE_S", 300.0)
+ENGINE_READY_S = _timeout_env("NOSTROMA_ENGINE_READY_S", 900.0)
 
 
 # ------------------------------------------------------------------------------------------------ engines
@@ -541,7 +541,7 @@ ENGINE_REQUEST = re.compile(
     r"(?P<gen>\d+) generated in (?P<gen_ms>[\d.]+) ms \((?P<tg>[\d.]+) tok/s\)")
 
 
-_echoing: set[str] = set()      # the logs echo_requests already follows (restart() runs StrataEngine.__init__ again)
+_echoing: set[str] = set()      # the logs echo_requests already follows (restart() runs NostromaEngine.__init__ again)
 
 DRAFT_HEAD_FAIL = "the draft head does not fit"
 DRAFT_HEAD_HINT = ("a smaller draft vocabulary needs less VRAM: --draft-vocab cyrillic (English, code and the Cyrillic "
@@ -552,7 +552,7 @@ DRAFT_HEAD_HINT = ("a smaller draft vocabulary needs less VRAM: --draft-vocab cy
 
 def start_failure_hint(log: str | None, offset: int) -> str:
     """#474: what to change when the engine stopped at the start because the MTP draft head did not fit the VRAM
-    left: the engine's own `strata mtp:` lines after that failure (0.1.36+: what it needs, what is free, the smaller
+    left: the engine's own `nostroma mtp:` lines after that failure (0.1.36+: what it needs, what is free, the smaller
     subsets), else the same advice in words for an older engine.  "" for any other failure: the log says why."""
     if not log:
         return ""
@@ -564,8 +564,8 @@ def start_failure_hint(log: str | None, offset: int) -> str:
         return ""
     if DRAFT_HEAD_FAIL not in text:
         return ""
-    said = [x.strip()[len("strata mtp: "):] for x in text.splitlines()
-            if x.strip().startswith("strata mtp: ") and ("draft head over" in x or "hint:" in x)]
+    said = [x.strip()[len("nostroma mtp: "):] for x in text.splitlines()
+            if x.strip().startswith("nostroma mtp: ") and ("draft head over" in x or "hint:" in x)]
     return ". mtp: " + DRAFT_HEAD_FAIL + ". " + (" ".join(said) if said else "Hint: " + DRAFT_HEAD_HINT)
 
 
@@ -695,9 +695,9 @@ def start_log_marks(log: str | None, offset: int) -> list:
 # A start that ends at once with the GPU runtime's own failure and none of the engine's lines: on ROCm, a start right
 # after the previous engine exited can fail inside the runtime's device/queue set-up while the old process's queues are
 # still being torn down ("terminate called after throwing an instance of 'rocr::AMD::hsa_exception'", or an exit with
-# nothing in the log).  Such a start is tried again after a short wait (STRATA_START_RETRIES, default 3; 0: never).
+# nothing in the log).  Such a start is tried again after a short wait (NOSTROMA_START_RETRIES, default 3; 0: never).
 TRANSIENT_START_MARKS = ("hsa_exception", "HSA_STATUS_ERROR", "hsaKmt")
-START_RETRIES = max(0, int(os.environ.get("STRATA_START_RETRIES", "3") or 0))
+START_RETRIES = max(0, int(os.environ.get("NOSTROMA_START_RETRIES", "3") or 0))
 
 
 def transient_start_failure(log: str | None, offset: int, elapsed_s: float, rc: int | None = None) -> bool:
@@ -713,7 +713,7 @@ def transient_start_failure(log: str | None, offset: int, elapsed_s: float, rc: 
     except (OSError, ValueError):
         return False
     lines = [x.strip() for x in text.splitlines() if x.strip()]
-    engine_lines = [x for x in lines if not x.startswith("[strata]")]
+    engine_lines = [x for x in lines if not x.startswith("[nostroma]")]
     if any(m in text for m in TRANSIENT_START_MARKS):
         return all(x.startswith("terminate called") or x.startswith("what()") or
                    any(m in x for m in TRANSIENT_START_MARKS) for x in engine_lines)
@@ -725,7 +725,7 @@ def transient_start_failure(log: str | None, offset: int, elapsed_s: float, rc: 
 
 
 def echo_requests(log_path: str, offset: int) -> None:
-    """STRATA_REQUEST_LINES=1: one stdout line per finished request, from the engine's own summary in its log.
+    """NOSTROMA_REQUEST_LINES=1: one stdout line per finished request, from the engine's own summary in its log.
 
     The engine's stderr goes to the log file (the start narrator reads it), so a supervisor that only sees this
     process's output - a tray, llama-swap - has no per-request numbers. This re-states the engine's line with the
@@ -742,7 +742,7 @@ def echo_requests(log_path: str, offset: int) -> None:
             m = ENGINE_REQUEST.search(line)
             if m:
                 read_ms, gen_ms = float(m["read"]), float(m["gen_ms"])
-                print("[strata] request prompt %s cached %s output %s prompt_read %.0f ms total %.0f ms prefill %s "
+                print("[nostroma] request prompt %s cached %s output %s prompt_read %.0f ms total %.0f ms prefill %s "
                       "tok/s decode %s tok/s" % (m["prompt"], m["reused"], m["gen"], read_ms, read_ms + gen_ms, m["pp"],
                                                  m["tg"]), flush=True)
 
@@ -793,7 +793,7 @@ def narrate_start(log_path: str, offset: int, args: list, done: threading.Event,
             last = time.time()
             print(text, flush=True)
 
-    say("weights", "[strata] starting the engine: reading the model's weights ...")
+    say("weights", "[nostroma] starting the engine: reading the model's weights ...")
     pos = offset
     while not done.wait(0.5):
         try:
@@ -807,25 +807,25 @@ def narrate_start(log_path: str, offset: int, args: list, done: threading.Event,
             pos += cut
             for line in chunk[:cut].decode("utf-8", "replace").splitlines():
                 if "PLE on" in line or "expert arena:" in line or "experts via mmap" in line:   # #505: mapped
-                    say("arena", f"[strata] {loading}\n"
+                    say("arena", f"[nostroma] {loading}\n"
                                  "         YOUR PC CAN BE SLOW OR STOP RESPONDING FOR 1-3 MINUTES NOW - this is normal.\n"
                                  "         Please wait and don't close this window"
                                  + ("; the browser opens when it is ready." if OPENS_BROWSER else "; the server says when it is ready."))
                 elif " loaded " in line and "GiB at" in line:
-                    say("loaded", "[strata] experts loaded: " + line.split(" loaded ", 1)[1].strip() +
+                    say("loaded", "[nostroma] experts loaded: " + line.split(" loaded ", 1)[1].strip() +
                         f" ({time.time() - t0:.0f} s so far)")
                 elif "expert cache " in line and " slots, " in line and "auto" not in line:
                     n = line.split("expert cache ", 1)[1].split(";")[0].replace(" slots,", " experts,").strip()
-                    say("cache", f"[strata] filling the GPU's expert cache ({n}) ...")
+                    say("cache", f"[nostroma] filling the GPU's expert cache ({n}) ...")
                 elif "session is up" in line:
-                    say("up", "[strata] almost ready ...")
+                    say("up", "[nostroma] almost ready ...")
         if time.time() - last > heartbeat:
             last = time.time()
-            print(f"[strata] still starting ({time.time() - t0:.0f} s) - please wait ...", flush=True)
+            print(f"[nostroma] still starting ({time.time() - t0:.0f} s) - please wait ...", flush=True)
 
 
 class ConvCacheLog:
-    """#596: the engine's conversation cache as its log tells it (the engine writes "strata serve: conversation
+    """#596: the engine's conversation cache as its log tells it (the engine writes "nostroma serve: conversation
     cache: parked N tokens ...; parked=P bytes=B evictions=E" and "restored N tokens ...; parked=P bytes=B" to stderr,
     which is the log): read on from where it was last read, from the start of the engine's current run."""
     EVENT = re.compile(r"conversation cache: (parked|skipped|restored) (\d+) tokens.*?parked=(\d+) bytes=(\d+)"
@@ -913,7 +913,7 @@ def conversation_cache_view(info: dict, hist: list, totals: dict, parked: dict) 
             "last_prompt": last.get("prompt_tokens") if last else None}
 
 
-_BTRACE = bool(os.environ.get("STRATA_BATCH_TRACE"))
+_BTRACE = bool(os.environ.get("NOSTROMA_BATCH_TRACE"))
 
 
 def btrace(*a):
@@ -932,7 +932,7 @@ FATAL_PREFIXES = ("ERR verify: timed out at layer ", "ERR verify batch: timed ou
 
 def parse_engine_stage_line(line: str) -> list[dict] | None:
     """Accept only the engine's final, contiguous stage plan (inclusive layer ends)."""
-    prefix = "strata serve: layer split: layers "
+    prefix = "nostroma serve: layer split: layers "
     suffix = ", one hand-off per window"
     if not line.startswith(prefix) or not line.rstrip("\r\n").endswith(suffix):
         return None
@@ -991,9 +991,9 @@ def configure_batch_telemetry_env(env: dict, cfg: dict, override: bool | None) -
     """Only an explicit setting changes the inherited opt-in engine environment."""
     choice = override if override is not None else cfg.get("batch_telemetry")
     if choice is True:
-        env["STRATA_BATCH_TELEMETRY"] = "1"
+        env["NOSTROMA_BATCH_TELEMETRY"] = "1"
     elif choice is False:
-        env.pop("STRATA_BATCH_TELEMETRY", None)
+        env.pop("NOSTROMA_BATCH_TELEMETRY", None)
 
 
 def configure_cache_boundary_env(env: dict, cfg: dict) -> None:
@@ -1002,9 +1002,9 @@ def configure_cache_boundary_env(env: dict, cfg: dict) -> None:
     unchanged, so a start without the choice behaves exactly as before."""
     choice = cfg.get("cache_boundary")
     if choice is True or choice == "on":
-        env["STRATA_CACHE_MESSAGE_BOUNDARY"] = "1"
+        env["NOSTROMA_CACHE_MESSAGE_BOUNDARY"] = "1"
     elif choice is False or choice == "off":
-        env.pop("STRATA_CACHE_MESSAGE_BOUNDARY", None)
+        env.pop("NOSTROMA_CACHE_MESSAGE_BOUNDARY", None)
 
 
 _CACHE_HINTS_WARNED = False
@@ -1017,7 +1017,7 @@ def cache_boundary_on(svc) -> bool:
     engine = getattr(svc, "engine", None)
     spawn = getattr(engine, "spawn", None) if engine is not None else None
     env = spawn[4] if isinstance(spawn, tuple) and len(spawn) > 4 else None
-    return (env or os.environ).get("STRATA_CACHE_MESSAGE_BOUNDARY") == "1"
+    return (env or os.environ).get("NOSTROMA_CACHE_MESSAGE_BOUNDARY") == "1"
 
 
 def warn_cache_hints_once() -> None:
@@ -1026,7 +1026,7 @@ def warn_cache_hints_once() -> None:
     if _CACHE_HINTS_WARNED:
         return
     _CACHE_HINTS_WARNED = True
-    print("[strata] the client marks prompt cache points (cache_control) but the message-boundary checkpoint is off: "
+    print("[nostroma] the client marks prompt cache points (cache_control) but the message-boundary checkpoint is off: "
           "start with --cache-boundary on to reuse the history before an edited last message", flush=True)
 
 
@@ -1086,8 +1086,8 @@ class _RequestOwned:
         self._store(obj)[self.name] = value
 
 
-class StrataEngine:
-    """The resident engine: `strata --serve` reads `GEN <max_new> <ids>` lines and streams `T <id>` lines, then
+class NostromaEngine:
+    """The resident engine: `nostroma --serve` reads `GEN <max_new> <ids>` lines and streams `T <id>` lines, then
     `DONE ...`.  Requests are serialized by the service's FIFO, so one pipe is enough.
 
     Per-request sampling rides the same line as engine-side keys between max_new and the ids
@@ -1134,8 +1134,8 @@ class StrataEngine:
         # retry_vram_args: the same start with no drafter (nodraft_retry_args), used instead when the engine ended because a card ran out of memory: swapping DFlash2 for
         # the MTP takes MORE memory from a card that is already short, so that direction is never taken then
         self.spawn = (exe, list(args), cwd, log, env, False, cpus)   # to start it again after it died (issue #27)
-        # the all-cards split engine (sFNX, strata-split-N[-arch]): its GEN parser accepts fewer keys than Nostroma's engine (tests/split/test_split_gen_keys.py pins them)
-        self.split_engine = os.path.basename(str(exe)).startswith("strata-split")
+        # the all-cards split engine (sFNX, nostroma-split-N[-arch]): its GEN parser accepts fewer keys than Nostroma's engine (tests/split/test_split_gen_keys.py pins them)
+        self.split_engine = os.path.basename(str(exe)).startswith("nostroma-split")
         self.session_save_reclaim = '--session-save-reclaim' in args
         paths = {k: v for k, v in zip(args, args[1:]) if k in ("--native", "--pack")}
         self.model_path = paths.get("--native") or paths.get("--pack", "pack/full")
@@ -1172,12 +1172,12 @@ class StrataEngine:
             threading.Thread(target=narrate_start, args=(log, os.path.getsize(log), args, loading),
                              daemon=True).start()
             # once per log: the follower keeps reading the same (appended) log across restarts and reloads
-            if os.environ.get("STRATA_REQUEST_LINES") and os.path.abspath(log) not in _echoing:
+            if os.environ.get("NOSTROMA_REQUEST_LINES") and os.path.abspath(log) not in _echoing:
                 _echoing.add(os.path.abspath(log))
                 threading.Thread(target=echo_requests, args=(log, os.path.getsize(log)), daemon=True).start()
         if log:                                          # #779: when an engine started (a crash report has the time)
             try:
-                self.log.write(f"[strata] {time.strftime('%Y-%m-%d %H:%M:%S')} engine started: {exe} --serve "
+                self.log.write(f"[nostroma] {time.strftime('%Y-%m-%d %H:%M:%S')} engine started: {exe} --serve "
                                f"{' '.join(args)}\n")
                 self.log.flush()
             except OSError:
@@ -1190,8 +1190,8 @@ class StrataEngine:
         if nice:
             say_nice = pin.get("preexec_fn")
             pin["preexec_fn"] = lambda: (say_nice() if say_nice else None, os.nice(nice))[0]
-            print(f"[strata] engine priority: nice +{nice} (this PC has built-in Radeon graphics that usually draw the desktop; "
-                  "STRATA_ENGINE_NICE=0 turns it off)", flush=True)
+            print(f"[nostroma] engine priority: nice +{nice} (this PC has built-in Radeon graphics that usually draw the desktop; "
+                  "NOSTROMA_ENGINE_NICE=0 turns it off)", flush=True)
         end_leftover_engines(exe)                        # one an earlier run lost still holds the GPU and the memory
         spawned_at = time.monotonic()
         try:
@@ -1252,43 +1252,43 @@ class StrataEngine:
                 wait_s = 2.0 * (2 ** _attempt)              # 2, 4, 8 s: the previous process's GPU queues go away
                 exit_words = engine_exit_words(proc.returncode)
                 if start_log_marks(log, log_start):         # the runtime said so itself (hsa_exception ...)
-                    print(f"[strata] the engine stopped while the GPU runtime was starting (most often right after "
+                    print(f"[nostroma] the engine stopped while the GPU runtime was starting (most often right after "
                           f"another engine exited, whose GPU queues were still being released"
                           f"{'; ' + exit_words if exit_words else ''}): starting it again in {wait_s:.0f} s "
                           f"(try {_attempt + 2} of {START_RETRIES + 1})", flush=True)
                 else:                                       # an exit with nothing in the log: say only what is known
-                    print(f"[strata] the engine exited before it wrote anything to its log"
+                    print(f"[nostroma] the engine exited before it wrote anything to its log"
                           f"{' (' + exit_words + ')' if exit_words else ''}; it may be a GPU runtime that was not "
                           f"ready yet: starting it again in {wait_s:.0f} s (try {_attempt + 2} of {START_RETRIES + 1})",
                           flush=True)
                 time.sleep(wait_s)
-                StrataEngine.__init__(self, exe, args, cwd, log, env, lazy, cpus, _attempt + 1, retry_args, retry_vram_args)
+                NostromaEngine.__init__(self, exe, args, cwd, log, env, lazy, cpus, _attempt + 1, retry_args, retry_vram_args)
                 return
             short_reason = None if timed_out else vram_fit.engine_stop_reason(start_log_text(log, log_start).splitlines())
             if short_reason and retry_vram_args and retry_vram_args != list(args):
                 # a card ran out of memory (the engine's own reason is in its log): one more start with no drafter, in one quiet line
-                print(f"[strata] {drafting.line('off', drafting.SHORT_OF_VRAM)}: starting again without a drafter ({short_reason})", flush=True)
+                print(f"[nostroma] {drafting.line('off', drafting.SHORT_OF_VRAM)}: starting again without a drafter ({short_reason})", flush=True)
                 try:
                     with open(log, "a", encoding="utf-8") as handle:
-                        handle.write(f"[strata] {time.strftime('%Y-%m-%d %H:%M:%S')} the engine ended before it was ready because a card was short of memory "
+                        handle.write(f"[nostroma] {time.strftime('%Y-%m-%d %H:%M:%S')} the engine ended before it was ready because a card was short of memory "
                                      f"(exit code {proc.returncode}); starting it again without a drafter\n")
                 except (OSError, TypeError):
                     pass
                 drafting.remember_note(drafting.SHORT_OF_VRAM)
-                StrataEngine.__init__(self, exe, retry_vram_args, cwd, log, env, lazy, cpus, 0, None, None)
+                NostromaEngine.__init__(self, exe, retry_vram_args, cwd, log, env, lazy, cpus, 0, None, None)
                 return
             if not timed_out and not short_reason and retry_args and retry_args != list(args):
                 # Auto picked DFlash2 and the engine ended before it was ready (an engine that does not take one of its flags, a drafter file it cannot read...):
                 # one more start with the MTP, said in one quiet line. The person named DFlash2 themselves: no retry, the start fails with its reason below.
-                print(f"[strata] {drafting.line('mtp', drafting.DIDNT_START)}: starting again with the MTP", flush=True)
+                print(f"[nostroma] {drafting.line('mtp', drafting.DIDNT_START)}: starting again with the MTP", flush=True)
                 try:
                     with open(log, "a", encoding="utf-8") as handle:
-                        handle.write(f"[strata] {time.strftime('%Y-%m-%d %H:%M:%S')} the engine ended before it was ready with the DFlash2 drafter "
+                        handle.write(f"[nostroma] {time.strftime('%Y-%m-%d %H:%M:%S')} the engine ended before it was ready with the DFlash2 drafter "
                                      f"(exit code {proc.returncode}); starting it again with the MTP\n")
                 except (OSError, TypeError):
                     pass
                 drafting.remember_note(drafting.DIDNT_START)
-                StrataEngine.__init__(self, exe, retry_args, cwd, log, env, lazy, cpus, 0, None, None)
+                NostromaEngine.__init__(self, exe, retry_args, cwd, log, env, lazy, cpus, 0, None, None)
                 return
             why = (f"the engine did not report READY within {ENGINE_READY_S:.0f} s" if timed_out else
                    "the engine exited before it was ready")
@@ -1297,7 +1297,7 @@ class StrataEngine:
             note = "" if timed_out else start_exit_note(proc.returncode, exe)
             tail = start_log_tail(log, log_start)
             lines = [x for x in tail.split("\n")[2:] if x.strip()]
-            if tail and lines and all(x.strip().startswith("[strata]") for x in lines):
+            if tail and lines and all(x.strip().startswith("[nostroma]") for x in lines):
                 tail += "\n  (those are the launcher's own lines: the engine itself wrote nothing)"
             raise EngineDied(why + (f" (see {log})" if log else "") + note +
                              start_failure_hint(log, log_start) + tail)
@@ -1321,7 +1321,7 @@ class StrataEngine:
         asked = next((int(args[args.index(k) + 1]) for k in ("--batch", "--slots", "--parallel") if k in args), 0)
         self.batch = int(self.info.get("batch_slots") or 0)
         if asked and self.batch != asked:
-            print(f"[strata] parallel requests: {asked} asked, the engine runs {self.batch or 'one at a time'} "
+            print(f"[nostroma] parallel requests: {asked} asked, the engine runs {self.batch or 'one at a time'} "
                   "(its log says why)", flush=True)
         _bg = args[args.index("--batch-groups") + 1] if "--batch-groups" in args else "default"
         # no `--batch-groups` (the default on a layer split) or `auto`: the engine picks the groups and says so
@@ -1361,7 +1361,7 @@ class StrataEngine:
             self.admitting = 0                          # #1603: ... and those that gave the lines back to wait for a slot
             self.par_counters = {"queued": 0, "queue_wait_s": 0.0}
             self.wait_lens: list[list[int]] = []        # ... their prompt lengths (a long read gives way to short ones)
-            self.arrivals = collections.deque(maxlen=64)   # monotonic times of the last requests that came for the control lines (STRATA_COALESCE_*)
+            self.arrivals = collections.deque(maxlen=64)   # monotonic times of the last requests that came for the control lines (NOSTROMA_COALESCE_*)
             self.ctl_epoch = 0                          # how often the control lines were taken
             self.ctl = threading.Lock()                 # one admission or solo request on the control lines at a time
         self._ctl_erred = False                         # #1059: the control lines ended on an ERR
@@ -1433,7 +1433,7 @@ class StrataEngine:
             tail = wide[-4096:]
         except (OSError, TypeError):
             pass
-        # #1705: STRATA_VERIFY_TRACE dumps are ~30 KB and push the watchdog's line out of a 4 KB tail
+        # #1705: NOSTROMA_VERIFY_TRACE dumps are ~30 KB and push the watchdog's line out of a 4 KB tail
         for line in reversed(wide.splitlines()):
             if "issue #29" in line:
                 return ("The engine stopped itself because it had stopped making progress - a hang it caught. Its log "
@@ -1447,7 +1447,7 @@ class StrataEngine:
         if rc is not None and rc >= 0 and self.last_err:  # its own last words on stdout: they say why
             return (f"The engine exited (code {rc}) after it reported: {self.last_err} - please report it at "
                     "github.com/earenbaz80/Nostroma/issues with the log.")
-        last = next((x.strip() for x in reversed(tail.splitlines()) if x.strip().startswith(("strata", "ERR"))), "")
+        last = next((x.strip() for x in reversed(tail.splitlines()) if x.strip().startswith(("nostroma", "ERR"))), "")
         if rc is not None and rc >= 0 and last:          # it ended by itself: its own last words say why (#215)
             return (f"The engine exited (code {rc}). Its last log line: {last} - if that does not explain it, please "
                     "report it at github.com/earenbaz80/Nostroma/issues with the log.")
@@ -1519,7 +1519,7 @@ class StrataEngine:
                         pass
                     if i == tries - 1:
                         raise
-                    print(f"[strata] the engine did not start (try {i + 1} of {tries}); again in "
+                    print(f"[nostroma] the engine did not start (try {i + 1} of {tries}); again in "
                           f"{self.RESTART_RETRY_S:g} s", flush=True)
                     time.sleep(self.RESTART_RETRY_S)
         finally:
@@ -1651,7 +1651,7 @@ class StrataEngine:
         if isinstance(seed, int) and seed > 0:
             keys += f" seed={seed}"
         # setup's calibration (tools/calibrate.py): engine settings for this request only, measured without a restart
-        tune = sampling.get("strata_tune")
+        tune = sampling.get("nostroma_tune")
         if isinstance(tune, dict):
             for k in ("pcie_frac", "spec_min_p"):
                 v = tune.get(k)
@@ -1672,18 +1672,18 @@ class StrataEngine:
         if (isinstance(hold, tuple) and len(hold) == 2 and all(isinstance(x, int) and not isinstance(x, bool) for x in hold)
                 and hold[0] > 0 and hold[1] >= 0):
             keys += f" hold={hold[0]}:{hold[1]}"
-        # "strata_checkpoint": false - a one-shot call (a classification, a probe) whose turn no later request
+        # "nostroma_checkpoint": false - a one-shot call (a classification, a probe) whose turn no later request
         # extends: no conversation checkpoint for it (#830).  It still reuses a cached prefix.  Absent = as before.
-        if sampling.get("strata_checkpoint") is False:
+        if sampling.get("nostroma_checkpoint") is False:
             keys += " ckpt=0"
         # #2228: the pictures' keys (hex, in prompt order): the engine matches a picture by them, not by its embeddings
-        ik = sampling.get("strata_img_keys")
+        ik = sampling.get("nostroma_img_keys")
         if isinstance(ik, list) and ik and all(isinstance(k, str) and k and all(c in "0123456789abcdef" for c in k)
                                                for k in ik):
             keys += " img_keys=" + ",".join(ik)
-        # "strata_prefix" (resolved by Service.resolve_prefix to {"tokens": N}): the first N prompt tokens are a shared
+        # "nostroma_prefix" (resolved by Service.resolve_prefix to {"tokens": N}): the first N prompt tokens are a shared
         # prefix - the engine pins the checkpoint there.  Absent or unresolved = as before.
-        prefix = sampling.get("strata_prefix")
+        prefix = sampling.get("nostroma_prefix")
         if isinstance(prefix, dict):
             pn = prefix.get("tokens")
             if isinstance(pn, int) and not isinstance(pn, bool) and pn > 0:
@@ -1697,7 +1697,7 @@ class StrataEngine:
             if ids:
                 # only these ids are printed; the engine's comma-separated list, renormalised below
                 keys += " allowed=" + ",".join(str(i) for i in ids)
-        return keys + StrataEngine.projection_key(sampling) + bias_api.engine_key(sampling.get("logit_bias"))
+        return keys + NostromaEngine.projection_key(sampling) + bias_api.engine_key(sampling.get("logit_bias"))
 
     @staticmethod
     def projection_key(sampling: dict) -> str:
@@ -1804,7 +1804,7 @@ class StrataEngine:
                     except queue.Empty:
                         held = NO_LINE
                     if isinstance(held, str) and held.startswith("LP "):
-                        own = getattr(cancel, "_strata_lp_lines", None)
+                        own = getattr(cancel, "_nostroma_lp_lines", None)
                         if own is not None:
                             own.append((t, held))
                         held = NO_LINE
@@ -1832,7 +1832,7 @@ class StrataEngine:
                 f = line.split()
                 self._ctl_result = ("badm", len(f) >= 3 and f[2] == "1")
                 return
-            elif line.startswith("BCOK "):               # STRATA_COALESCE_PREFILL: <slot> <tokens>: the slot holds a waiting prompt
+            elif line.startswith("BCOK "):               # NOSTROMA_COALESCE_PREFILL: <slot> <tokens>: the slot holds a waiting prompt
                 pass
             elif line.startswith("YIELDED "):            # the read gave way (BYIELD): <slot> <tokens read>
                 f = line.split()
@@ -2019,7 +2019,7 @@ class StrataEngine:
             else:
                 self._orphan_seen.pop(b, None)
         if freed:
-            print(f"[strata] parallel: slot(s) {', '.join(map(str, freed))} were marked busy with no request using them "
+            print(f"[nostroma] parallel: slot(s) {', '.join(map(str, freed))} were marked busy with no request using them "
                   "(issue #1603); freed, the waiting request goes on", flush=True)
             self.slot_cv.notify_all()
         return freed
@@ -2029,8 +2029,8 @@ class StrataEngine:
     def _take_control(self, cancel, plen: int, after_epoch: int | None = None, new: bool = False, prompt=None):
         """Waits for the control lines (one prompt read at a time), yielding None heartbeats; False when cancelled.
         `after_epoch`: a request whose read gave way lets the requests waiting then go first.
-        `new`: the request's first admission (STRATA_ADMIT_SHORT_FIRST orders only these)."""
-        entry = [plen, time.monotonic(), new, prompt, cancel]           # (length, arrival, ordered: STRATA_ADMIT_SHORT_FIRST; the prompt and request, for STRATA_COALESCE_PREFILL)
+        `new`: the request's first admission (NOSTROMA_ADMIT_SHORT_FIRST orders only these)."""
+        entry = [plen, time.monotonic(), new, prompt, cancel]           # (length, arrival, ordered: NOSTROMA_ADMIT_SHORT_FIRST; the prompt and request, for NOSTROMA_COALESCE_PREFILL)
         with self.slot_cv:
             self.waiting += 1
             self.wait_lens.append(entry)
@@ -2038,7 +2038,7 @@ class StrataEngine:
         beat = time.monotonic()
         try:
             while True:
-                deadline = getattr(cancel, "_strata_queue_deadline", None)
+                deadline = getattr(cancel, "_nostroma_queue_deadline", None)
                 if deadline is not None and time.monotonic() >= deadline:
                     raise QueueWaitExpired("the inference queue wait deadline expired; retry later")
                 if not self.alive() and not getattr(self, "starting", False):
@@ -2097,20 +2097,20 @@ class StrataEngine:
         return True
 
     def _release_preslot(self, cancel):
-        """STRATA_COALESCE_PREFILL: the request that was given a slot ahead of its turn left before using it."""
-        slot = getattr(cancel, "_strata_preslot", None)
+        """NOSTROMA_COALESCE_PREFILL: the request that was given a slot ahead of its turn left before using it."""
+        slot = getattr(cancel, "_nostroma_preslot", None)
         if slot is None:
             return
-        cancel._strata_preslot = None
+        cancel._nostroma_preslot = None
         with self.slot_cv:
             self.slot_busy[slot] = False
             self.slot_claims.discard(slot)
             self.slot_cv.notify_all()
 
     def _coalesce(self, cancel, lead_prompt):
-        """STRATA_COALESCE_PREFILL (the caller holds the control lines and sends its BGEN right after): reserve free slots
+        """NOSTROMA_COALESCE_PREFILL (the caller holds the control lines and sends its BGEN right after): reserve free slots
         for requests still waiting for the control lines and send their prompts as BCO lines; the engine reads them in the
-        same layer-major pass as the BGEN's prompt.  Each follower finds its slot in cancel._strata_preslot."""
+        same layer-major pass as the BGEN's prompt.  Each follower finds its slot in cancel._nostroma_preslot."""
         picked = []
         total = len(lead_prompt)
         def seen() -> int:
@@ -2131,9 +2131,9 @@ class StrataEngine:
                     break
                 prompt = e[3] if len(e) > 4 else None
                 rq = e[4] if len(e) > 4 else None
-                if prompt is None or rq is None or rq is cancel or getattr(rq, "_strata_preslot", None) is not None:
+                if prompt is None or rq is None or rq is cancel or getattr(rq, "_nostroma_preslot", None) is not None:
                     continue
-                if getattr(rq, "_strata_co", False) or len(prompt) < 32 or total + len(prompt) > COALESCE_TOKENS:
+                if getattr(rq, "_nostroma_co", False) or len(prompt) < 32 or total + len(prompt) > COALESCE_TOKENS:
                     continue
                 slot = self.pick_slot(prompt)
                 if slot is None:
@@ -2141,20 +2141,20 @@ class StrataEngine:
                 self.slot_busy[slot] = True
                 self.slot_claims.add(slot)
                 self.slot_held[slot] = []
-                rq._strata_preslot = slot
-                rq._strata_co = True
+                rq._nostroma_preslot = slot
+                rq._nostroma_co = True
                 total += len(prompt)
                 picked.append((slot, prompt))
         for slot, prompt in picked:
             self._send(f"BCO {slot} {','.join(str(int(t)) for t in prompt)}")
         if picked:
-            print(f"[strata] coalesce: {len(picked)} waiting prompt(s) ({total - len(lead_prompt)} tokens) read with this "
+            print(f"[nostroma] coalesce: {len(picked)} waiting prompt(s) ({total - len(lead_prompt)} tokens) read with this "
                   f"request's {len(lead_prompt)}", flush=True)
 
     def _admit_next(self):
-        """STRATA_ADMIT_SHORT_FIRST=<tokens> (the caller holds slot_cv): the new request that takes the control lines
+        """NOSTROMA_ADMIT_SHORT_FIRST=<tokens> (the caller holds slot_cv): the new request that takes the control lines
         next - one whose prompt is at most that long (it reads little) before a longer one, in arrival order within
-        each; a longer one that has waited STRATA_ADMIT_MAX_WAIT_S counts as short (it is never held back for good).
+        each; a longer one that has waited NOSTROMA_ADMIT_MAX_WAIT_S counts as short (it is never held back for good).
         Off (unset or 0): whoever gets the lock first, as before.  Only the order changes, never what is read."""
         now = time.monotonic()
         ordered = [e for e in self.wait_lens if len(e) > 2 and e[2]]
@@ -2169,9 +2169,9 @@ class StrataEngine:
     def _may_go_solo(self, left: int, times: int, embeddings) -> bool:
         """A request decoding in a slot that is alone now (no other slot busy, nobody waiting) goes back to the solo
         path with its MTP drafts: the engine continues it from the slot's sessions (its slot cache; INFO
-        slot_cache=1).  STRATA_PARALLEL_SOLO=0 keeps it in the slot."""
+        slot_cache=1).  NOSTROMA_PARALLEL_SOLO=0 keeps it in the slot."""
         if (embeddings or times >= self.SOLO_AGAIN_MAX or left < self.SOLO_AGAIN_MIN_LEFT or
-                not (self.info or {}).get("slot_cache") or os.environ.get("STRATA_PARALLEL_SOLO") == "0"):
+                not (self.info or {}).get("slot_cache") or os.environ.get("NOSTROMA_PARALLEL_SOLO") == "0"):
             return False
         with self.slot_cv:
             return sum(1 for b in self.slot_busy if b) == 1 and self.waiting == 0
@@ -2201,7 +2201,7 @@ class StrataEngine:
         # cancel Event: several requests read control lines at once, and the engine's lp_lines is one attribute.
         want_lp = top_logprobs(sampling or {}) is not None
         if want_lp:
-            cancel._strata_lp_lines = LPLines(cancel)
+            cancel._nostroma_lp_lines = LPLines(cancel)
         out: list[int] = []
         pending: list[int] = []
         prompt, left = list(ids), int(max_new)
@@ -2226,9 +2226,9 @@ class StrataEngine:
         #                                                 of the old process must never read (or answer on) the new ones
         btrace("ctl acquired")
         slot, gen0, reserved = None, None, None
-        pre = getattr(cancel, "_strata_preslot", None)
-        if pre is not None:                             # STRATA_COALESCE_PREFILL: a request before this one read the prompt into this slot
-            slot, cancel._strata_preslot = pre, None
+        pre = getattr(cancel, "_nostroma_preslot", None)
+        if pre is not None:                             # NOSTROMA_COALESCE_PREFILL: a request before this one read the prompt into this slot
+            slot, cancel._nostroma_preslot = pre, None
         phase = "none"            # solo -> (admit -> slot) ; "done" once the engine has finished with this request
         stop_sent = False
         admission_pending, admission_before = False, None   # the admission's DONE is partial until BADM 0 or BDONE
@@ -2248,13 +2248,13 @@ class StrataEngine:
                     pf = self.pen_from_key(orig_len, len(prompt))
                     head = f"GENI {left}{leg_keys()}{pf} {embeddings}" if embeddings else f"GEN {left}{leg_keys()}{pf}"
                     self._last_done = None                  # (#879: this request's DONE decides below)
-                    deadline = getattr(cancel, "_strata_queue_deadline", None)
+                    deadline = getattr(cancel, "_nostroma_queue_deadline", None)
                     if deadline is not None and time.monotonic() >= deadline:
                         raise QueueWaitExpired("the inference queue wait deadline expired; retry later")
                     self._send(f"{head} {','.join(str(int(t)) for t in prompt)}")
                     if deadline is not None:
-                        cancel._strata_queue_deadline = None
-                    started = getattr(cancel, "_strata_queue_started", None)
+                        cancel._nostroma_queue_deadline = None
+                    started = getattr(cancel, "_nostroma_queue_started", None)
                     if started is not None:
                         started()
                     phase = "solo"
@@ -2318,7 +2318,7 @@ class StrataEngine:
                         # that gave way (BYIELD) and needs them to go on, so waiting with them is a deadlock - long,
                         # long, short at 0.25 s steps under parallel: 2 (ENGINE_REVIEW finding 1, reproduced in 0.1.41).
                         while True:
-                            deadline = getattr(cancel, "_strata_queue_deadline", None)
+                            deadline = getattr(cancel, "_nostroma_queue_deadline", None)
                             if deadline is not None and time.monotonic() >= deadline:
                                 raise QueueWaitExpired("the inference queue wait deadline expired; retry later")
                             with self.slot_cv:
@@ -2329,7 +2329,7 @@ class StrataEngine:
                                     if admit_wait:
                                         admit_wait = False
                                         self.admitting = max(0, self.admitting - 1)
-                                        if PAR_COUNTERS:                # STRATA_PAR_COUNTERS=1: time spent waiting for a free slot
+                                        if PAR_COUNTERS:                # NOSTROMA_PAR_COUNTERS=1: time spent waiting for a free slot
                                             self.par_counters["queued"] += 1
                                             self.par_counters["queue_wait_s"] += time.monotonic() - admit_since
                                     break
@@ -2347,7 +2347,7 @@ class StrataEngine:
                                         if not admit_said:
                                             admit_said = True
                                             busy = [b for b, v in enumerate(self.slot_busy) if v]
-                                            print(f"[strata] parallel: a request has waited {time.monotonic() - admit_since:.0f} s "
+                                            print(f"[nostroma] parallel: a request has waited {time.monotonic() - admit_since:.0f} s "
                                                   f"for a free slot (busy: {busy}, in use: {sorted(self.slot_claims)}, "
                                                   f"ending: {sorted(self.slot_releasing)}) (issue #1603)", flush=True)
                                     self._reap_orphan_slots()
@@ -2381,10 +2381,10 @@ class StrataEngine:
                         sq[slot].get_nowait()
                     pf = self.pen_from_key(orig_len, len(prompt))
                     head = f"BGENI {slot} {left}{leg_keys()}{pf} {embeddings}" if embeddings else f"BGEN {slot} {left}{leg_keys()}{pf}"
-                    live = {"slot": slot, "request_id": getattr(cancel, "_strata_request_id", None),
+                    live = {"slot": slot, "request_id": getattr(cancel, "_nostroma_request_id", None),
                             "state": "reading", "prompt_tokens": len(prompt), "prompt_read": 0, "generated": 0,
                             "started": time.time(), "first_token": None}
-                    deadline = getattr(cancel, "_strata_queue_deadline", None)
+                    deadline = getattr(cancel, "_nostroma_queue_deadline", None)
                     if deadline is not None and time.monotonic() >= deadline:
                         raise QueueWaitExpired("the inference queue wait deadline expired; retry later")
                     self.slot_live[slot] = live
@@ -2393,8 +2393,8 @@ class StrataEngine:
                         self._coalesce(cancel, prompt)
                     self._send(f"{head} {','.join(str(int(t)) for t in prompt)}")
                     if deadline is not None:
-                        cancel._strata_queue_deadline = None
-                    started = getattr(cancel, "_strata_queue_started", None)
+                        cancel._nostroma_queue_deadline = None
+                    started = getattr(cancel, "_nostroma_queue_started", None)
                     if started is not None:
                         started()
                     self.slot_held[slot] = []               # the admission overwrites what the slot held
@@ -2433,7 +2433,7 @@ class StrataEngine:
                         if not (self._ctl_erred and str(e).startswith("BGEN:") and left >= 1 and not cancel.is_set()):
                             raise
                         refused += 1
-                        print(f"[strata] parallel: the engine refused slot {slot} ({e}); trying another slot "
+                        print(f"[nostroma] parallel: the engine refused slot {slot} ({e}); trying another slot "
                               f"({refused}/{self.BGEN_REFUSALS_MAX}) (issue #1994)", flush=True)
                         if refused > self.BGEN_REFUSALS_MAX:
                             raise GpuBusy("the engine's batch slots are not free right now; try again in a moment",
@@ -2605,7 +2605,7 @@ class StrataEngine:
 
     slot_groups = 1         # --batch-groups (set when the engine starts)
     SLOT_PREFIX_MIN = 512   # a held prefix shorter than this is not worth unbalancing the pipeline's groups
-    BRANCH_BOUNDARY_MIN = 8192   # the engine's message-boundary checkpoint (STRATA_CACHE_MESSAGE_BOUNDARY) starts at this many tokens
+    BRANCH_BOUNDARY_MIN = 8192   # the engine's message-boundary checkpoint (NOSTROMA_CACHE_MESSAGE_BOUNDARY) starts at this many tokens
     TURN_ID = 248045        # <|im_start|>: the engine's default --turn-token (its turn checkpoint sits at the last one)
 
     def pick_slot(self, prompt: list[int]) -> int | None:
@@ -2660,7 +2660,7 @@ class StrataEngine:
                 return last
             # a branch: the same history with the last question replaced agrees with the held stream only up to an
             # EARLIER message boundary, where the engine may hold a checkpoint of this chat
-            # (STRATA_CACHE_MESSAGE_BOUNDARY, prefixes of at least BRANCH_BOUNDARY_MIN tokens).  The engine finds that
+            # (NOSTROMA_CACHE_MESSAGE_BOUNDARY, prefixes of at least BRANCH_BOUNDARY_MIN tokens).  The engine finds that
             # source itself but copies it into the slot chosen here, so another chat's slot would be overwritten (#2518).
             i = min(lo, len(prompt) - 1, last - 1)
             if i < self.BRANCH_BOUNDARY_MIN:
@@ -2905,12 +2905,12 @@ class StrataEngine:
             gpu_working = False
         if now is not None and not gpu_working and engine_frozen(state["base"], now):
             raise self._silent(f"the engine said nothing for {age:.0f} s and used no CPU or disk in that time (frozen; "
-                               "STRATA_ENGINE_STALL_S sets this, 0 = off)")
+                               "NOSTROMA_ENGINE_STALL_S sets this, 0 = off)")
         if now is not None:   # working: look again after another window from here, and say so once
             state["base"], state["next"] = now, age + stall_s
             if not state.get("warned"):
                 state["warned"] = True
-                print(f"[strata] the engine has said nothing for {age:.0f} s but is still working; it is not ended (the "
+                print(f"[nostroma] the engine has said nothing for {age:.0f} s but is still working; it is not ended (the "
                       "limit is engine_silence_s). If it is stuck, \"engine_silence_s\" can be set lower.", flush=True)
         else:
             state["next"] = float("inf")   # no reading (psutil missing): nothing to decide on
@@ -3204,7 +3204,7 @@ class VisionNoRoom(RuntimeError):
 
 
 class Vision:
-    """The resident image encoder: `strata-vision` (llama.cpp mtmd + the mmproj file) reads `ENC <image> <out>`
+    """The resident image encoder: `nostroma-vision` (llama.cpp mtmd + the mmproj file) reads `ENC <image> <out>`
     lines and writes each image's embeddings; results are cached by the image's hash, so a conversation that
     sends the same picture again (every turn, with most clients) encodes it once."""
 
@@ -3217,7 +3217,7 @@ class Vision:
         resort (the encoder's own files are then named relative to it, see `_start`)."""
         for parent in (None, Path.cwd(), Path(os.environ.get("SystemDrive", "C:") + os.sep)):
             try:
-                d = Path(tempfile.mkdtemp(prefix="strata-vision-", dir=parent))
+                d = Path(tempfile.mkdtemp(prefix="nostroma-vision-", dir=parent))
             except OSError:
                 continue                                       # not writable, or no such drive
             if " " not in str(d):
@@ -3226,15 +3226,15 @@ class Vision:
                 d.rmdir()                                      # just created, so still empty
             except OSError:
                 pass
-        return Path(tempfile.mkdtemp(prefix="strata-vision-"))
+        return Path(tempfile.mkdtemp(prefix="nostroma-vision-"))
 
     def __init__(self, cfg: dict, log=None, env: dict | None = None, lazy: bool = False):
         args = self.reader_args(cfg)
         self.dir = self.work_dir()
         self.spawn = (args, log, env)                   # to start it again after an unload
-        # AMD: the GPU reader (strata-vision-hip) has the CPU reader (strata-vision, same program, no GPU runtime) to
+        # AMD: the GPU reader (nostroma-vision-hip) has the CPU reader (nostroma-vision, same program, no GPU runtime) to
         # fall back on when it does not start; _start switches to it by itself
-        # the NVIDIA reader (strata-vision) is the CPU reader too, without --gpu: a GPU reader that does not start, resident or on demand, reads on the
+        # the NVIDIA reader (nostroma-vision) is the CPU reader too, without --gpu: a GPU reader that does not start, resident or on demand, reads on the
         # processor instead of ending the launch (owner, 2026-11-10); the person's image limit stays
         cpu = vision_reader.cpu_fallback(cfg, same_program=True)
         self.fallback = (self.reader_args(cpu), log, env) if cpu else None
@@ -3315,7 +3315,7 @@ class Vision:
             why = " ".join(str(e).split())[:240]
             again = " until it is idle" if getattr(self, "elastic", False) else ""
             self.cpu_note = self.no_room_note(e.room) if isinstance(e, VisionNoRoom) else self.not_started_note()
-            print(f"[strata] the GPU picture reader did not start ({why}); pictures are read on the CPU{again}", flush=True)
+            print(f"[nostroma] the GPU picture reader did not start ({why}); pictures are read on the CPU{again}", flush=True)
             self.spawn, self.fallback, self.on_cpu = fallback, None, True
             self._start_reader()
 
@@ -3323,11 +3323,11 @@ class Vision:
         """`_start_reader`, tried again when the start failed in the GPU context itself on a Linux Arm machine with shared memory (DGX Spark; see
         vision_reader.retry_gpu_start): a new spawn may start while less than CONTEXT_RETRY_BUDGET_S have passed since the first one started, at most CONTEXT_RETRIES
         times, CONTEXT_RETRY_WAIT_S apart.  Every other start, and the last failure, are `_start_reader`'s as before (the CPU reader follows in `_start`).
-        STRATA_VIT_PROF=1 (the reader's diagnostic switch) prints the retry count and the time of a start that needed one."""
+        NOSTROMA_VIT_PROF=1 (the reader's diagnostic switch) prints the retry count and the time of a start that needed one."""
         args, log, _env = self.spawn
         retries = 0
         first = time.monotonic()                      # the first spawn's start: a new spawn may start only within vision_reader.CONTEXT_RETRY_BUDGET_S of it
-        prof = bool(os.environ.get("STRATA_VIT_PROF"))
+        prof = bool(os.environ.get("NOSTROMA_VIT_PROF"))
         while True:
             since = vision_log_size(log)
             try:
@@ -3405,12 +3405,12 @@ class Vision:
             room = reader_room.find((line + chr(10) + chr(10).join(strays) + chr(10) + vision_log_tail(log, since=since)).splitlines())
             raise (VisionNoRoom(message, room) if room else RuntimeError(message))
         self.stopped = False
-        # "READY <n_embd> <reader> [fallback]": the reader that runs (own: Nostroma's, mtmd: llama.cpp's; an older strata-vision says only "READY <n_embd>"),
-        # and "fallback" when Nostroma's reader did not start and llama.cpp's took its place (strata-vision wrote the reason to the log)
+        # "READY <n_embd> <reader> [fallback]": the reader that runs (own: Nostroma's, mtmd: llama.cpp's; an older nostroma-vision says only "READY <n_embd>"),
+        # and "fallback" when Nostroma's reader did not start and llama.cpp's took its place (nostroma-vision wrote the reason to the log)
         words = line.split()
         self.reader = words[2] if len(words) > 2 else None
         if "fallback" in words[3:]:
-            print("[strata] Nostroma's picture reader did not start; pictures are read with llama.cpp's reader. Details are in the log.", flush=True)
+            print("[nostroma] Nostroma's picture reader did not start; pictures are read with llama.cpp's reader. Details are in the log.", flush=True)
 
     #: how long a reader that has already ended may still hold its output pipe open (a debugger attached to it, a child it started) before the start is
     #: judged: the pipe's end does not come, the process's end is what counts.
@@ -3419,7 +3419,7 @@ class Vision:
     STRAY_KEEP = 20
 
     def _await_ready(self, timeout: float | None, strays: list) -> str:
-        """The reader's answer to its start: "READY ..." or "ERR ..." (what strata-vision prints on stdout; everything else it says goes to stderr),
+        """The reader's answer to its start: "READY ..." or "ERR ..." (what nostroma-vision prints on stdout; everything else it says goes to stderr),
         or "" when it has ended.  Any other line on stdout is a stray line - a debugger a crashing reader started, a library's banner - and is not an
         answer: it is kept in `strays` (the last STRAY_KEEP), written to the log, and the wait goes on.  A reader that is only printing is never killed.
         The wait has ONE deadline of `timeout` s (None: for ever); on it the reader is killed and the read raises RuntimeError, as `_readline` does.  A
@@ -3467,7 +3467,7 @@ class Vision:
                 del strays[:-self.STRAY_KEEP]
                 said += 1
                 if said <= self.STRAY_KEEP:
-                    print(f"[strata] the image encoder printed on its output, not an answer: {stray[:200]}", flush=True)
+                    print(f"[nostroma] the image encoder printed on its output, not an answer: {stray[:200]}", flush=True)
 
     def _readline(self, timeout: float, what: str) -> str:
         """One line from the encoder, waiting at most `timeout` s (#1317).  On a timeout the encoder is killed, so the
@@ -3552,7 +3552,7 @@ class Vision:
         filled the memory.  One that cannot be read is a ValueError (a 400 that says so), not a dropped connection."""
         too_big = f"the image URL's file is over {IMAGE_URL_MAX >> 20} MiB"
         try:
-            with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "strata"}), timeout=60) as r:
+            with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "nostroma"}), timeout=60) as r:
                 size = r.headers.get("Content-Length") or ""
                 if size.isdigit() and int(size) > IMAGE_URL_MAX:
                     raise ValueError(too_big)
@@ -3577,7 +3577,7 @@ class Vision:
 
     @staticmethod
     def normalize(data: bytes) -> bytes:
-        """The formats strata-vision's decoder (stb_image) reads pass through; anything else is converted to PNG.
+        """The formats nostroma-vision's decoder (stb_image) reads pass through; anything else is converted to PNG.
         A JPEG with an EXIF Orientation other than 1 is turned upright first (needs Pillow)."""
         jpeg = data[:3] == b"\xff\xd8\xff"
         if (jpeg and not Vision._exif_rotated(data)) or data[:8] == b"\x89PNG\r\n\x1a\n" or data[:2] == b"BM" or \
@@ -3657,11 +3657,11 @@ class Vision:
 
     def warn_if_over_limit(self, tokens: int) -> None:
         """I7: one picture that became more than 4 times the limit is logged with the numbers, so the next report has them (the reader's own
-        stderr has the warm-up line).  A reader built before the limit was enforced inside it (strata-vision refuses these now) still lets them by."""
+        stderr has the warm-up line).  A reader built before the limit was enforced inside it (nostroma-vision refuses these now) still lets them by."""
         limit = getattr(self, "max_tokens", 0)
         if limit and tokens > 4 * limit:
-            print(f"[strata] images: one picture became {tokens} image tokens, more than 4 times the limit of {limit} (vision.max_tokens); "
-                  "the picture reader is not applying its limit. Update the engine, and send the line 'strata-vision: warmed up at N image "
+            print(f"[nostroma] images: one picture became {tokens} image tokens, more than 4 times the limit of {limit} (vision.max_tokens); "
+                  "the picture reader is not applying its limit. Update the engine, and send the line 'nostroma-vision: warmed up at N image "
                   "tokens' from the reader's log with the report", flush=True)
 
     def close(self):
@@ -3723,29 +3723,29 @@ def card_roles_lines(cfg: dict) -> list[str]:
     """The plain lines printed at start: the roles (cards numbered as nvidia-smi numbers them), a hand-edited "gpu" that beat them, and the
     all-Off case.  SystemExit when every card is Off and the engine cannot start without one (the CUDA, HIP and SYCL engines)."""
     roles, problem = gpu_roles.saved_roles(cfg)
-    out = [f"[strata] {problem}"] if problem else []
+    out = [f"[nostroma] {problem}"] if problem else []
     if roles is None:
         return out
     if gpu_all_off(cfg):
         if cfg.get("backend") in ("cpu", "metal") or sys.platform == "darwin":
-            out.append("[strata] every graphics card is Off: " + gpu_roles.CPU_ONLY_LINE)
+            out.append("[nostroma] every graphics card is Off: " + gpu_roles.CPU_ONLY_LINE)
             return out
-        raise SystemExit("[strata] every graphics card is set to Off, and this engine cannot start without one. Turn a card on "
+        raise SystemExit("[nostroma] every graphics card is set to Off, and this engine cannot start without one. Turn a card on "
                          "(Main or Helper) in the app or with nostroma launch --gpu-roles.")
     word = {"main": "Main", "helper": "Helper", "off": "Off"}
-    out.append("[strata] card roles: " + ", ".join(f"{word[r]} GPU {i}" for r in ("main", "helper", "off")
+    out.append("[nostroma] card roles: " + ", ".join(f"{word[r]} GPU {i}" for r in ("main", "helper", "off")
                                                     for i in sorted(roles) if roles[i] == r) + " (numbers as nvidia-smi gives them)")
     return out
 
 
 def engine_binary(exe: str, cfg: dict | None = None) -> str:
     """The file that holds the engine's own option strings, for a feature check that reads it.  The Intel launcher
-    (sycl/serve/strata-sycl.sh) is a shell script that runs its repo's STRATA_SYCL_BIN (default build-sycl-aot/strata)
+    (sycl/serve/nostroma-sycl.sh) is a shell script that runs its repo's NOSTROMA_SYCL_BIN (default build-sycl-aot/nostroma)
     in a container, so the check reads that binary, not the script.  Any other `exe` is the engine itself."""
     p = Path(exe)
-    if p.name == "strata-sycl.sh":
-        rel = ((cfg or {}).get("env") or {}).get("STRATA_SYCL_BIN") or os.environ.get("STRATA_SYCL_BIN") \
-            or "build-sycl-aot/strata"
+    if p.name == "nostroma-sycl.sh":
+        rel = ((cfg or {}).get("env") or {}).get("NOSTROMA_SYCL_BIN") or os.environ.get("NOSTROMA_SYCL_BIN") \
+            or "build-sycl-aot/nostroma"
         b = p.resolve().parents[2] / rel
         if b.is_file():
             return str(b)
@@ -3769,10 +3769,10 @@ def effort_end_args(cfg: dict, exe: str, tok) -> list[str] | None:
         known = False
     role = tok.encode("system", parse_special=True)
     if not known or len(role) != 1:
-        print("[strata] effort_position \"end\" needs engine 0.1.39 or newer (--tail-role-token): the reasoning "
+        print("[nostroma] effort_position \"end\" needs engine 0.1.39 or newer (--tail-role-token): the reasoning "
               "effort stays at the top of the prompt", flush=True)
         return None
-    print("[strata] effort_position end: a request's non-default reasoning effort goes right before the answer, so "
+    print("[nostroma] effort_position end: a request's non-default reasoning effort goes right before the answer, so "
           "changing it keeps the cached conversation", flush=True)
     return ["--tail-role-token", str(role[0])]
 
@@ -3919,7 +3919,7 @@ def engine_args(cfg: dict, exe: str | None = None, *, announce: bool = True) -> 
     """The engine's arguments: the config's, and with several GPUs the layer split across them ("layer_split" in the
     config: "auto" by default, or the first layer of each later GPU's share, e.g. "18" or "16,32"; see
     layer_split_value). `exe` is the engine program that will start: the drafter's flags follow what that program takes
-    (nostroma_control/drafting.py engine_form). `announce=False` builds the arguments without the "[strata] drafting" lines
+    (nostroma_control/drafting.py engine_form). `announce=False` builds the arguments without the "[nostroma] drafting" lines
     and without leaving a note for the next engine start (the retry arguments of mtp_retry_args)."""
     args = list(cfg["args"])
     # "user_args" (nostroma_control/user_args.py): the options the person set by hand, over the generated ones at every start,
@@ -3940,17 +3940,17 @@ def engine_args(cfg: dict, exe: str | None = None, *, announce: bool = True) -> 
     if announce:
         drafting.remember_note(decision.note)
         if decision.note:
-            print(f"[strata] {drafting.line(decision.drafter, decision.note)}", flush=True)
+            print(f"[nostroma] {drafting.line(decision.drafter, decision.note)}", flush=True)
             hint = drafting.fetch_hint(decision, model_name=cfg.get("model_name"), backend=backend, archs=archs, data_dir=drafting.data_dir_of(args), args=args,
                                        vram_mib=drafting_vram_mib(cfg, backend, archs))
             if hint:
-                print(f"[strata] {hint}", flush=True)
+                print(f"[nostroma] {hint}", flush=True)
         elif decision.flags and drafting.slot_drafts_run(args, parallel_n, layer_split_of(cfg)):
-            print(f"[strata] {drafting.SLOT_DRAFTS_LINE}", flush=True)
+            print(f"[nostroma] {drafting.SLOT_DRAFTS_LINE}", flush=True)
         elif decision.flags:
-            print(f"[strata] drafting: DFlash2 alone ({' '.join(decision.flags[:2])}, --draft-conf {args[args.index('--draft-conf') + 1] if '--draft-conf' in args else '-'})", flush=True)
+            print(f"[nostroma] drafting: DFlash2 alone ({' '.join(decision.flags[:2])}, --draft-conf {args[args.index('--draft-conf') + 1] if '--draft-conf' in args else '-'})", flush=True)
         if decision.vocab:                                   # log only (a support log shows which draft vocabulary was used and why)
-            print(f"[strata] drafting: {decision.vocab}", flush=True)
+            print(f"[nostroma] drafting: {decision.vocab}", flush=True)
     # A card that is short of VRAM for this start (a single request on a small card, or "parallel" 2 or more, every request slot a session of its own) gets work moved off
     # the GPU, never a smaller context and never fewer requests (owner, 2026-11-02): a smaller KV window on CUDA, a smaller prompt chunk and reserve on Arc, and the
     # engine sizes the rest; one plain note says it is slower (nostroma_control/vram_fit.py fit_start).  The person's own values are kept.  Nothing changes without one
@@ -3960,11 +3960,11 @@ def engine_args(cfg: dict, exe: str | None = None, *, announce: bool = True) -> 
     except Exception:                                        # noqa: BLE001 - an estimate that fails decides nothing; the engine still refuses what does not fit
         fit_parallel, fit_note = None, ""
     if fit_note and announce:                                # (announce=False builds the arguments without any line)
-        print(f"[strata] {fit_note}", flush=True)
+        print(f"[nostroma] {fit_note}", flush=True)
     if announce:                                             # #5715: Qwen3.6 with a context its card cannot hold: said before the start, nothing changed
         too_big = own_path_context_warning(cfg, args, drafting_vram_mib(cfg, backend, archs))
         if too_big:
-            print(f"[strata] {too_big}", flush=True)
+            print(f"[nostroma] {too_big}", flush=True)
     if fit_parallel is not None:
         cfg = {**cfg, "parallel": fit_parallel}
     # "mtp": false (the Models settings, `nostroma launch --mtp off`, or by hand): no draft layer, whatever the args say.  A setup run
@@ -3973,7 +3973,7 @@ def engine_args(cfg: dict, exe: str | None = None, *, announce: bool = True) -> 
     if draft_layer.is_off(cfg) and not decision.flags:
         args, removed = draft_layer.strip(args)
         if removed:
-            print(f'[strata] "mtp": false - starting without the draft layer ({" ".join(removed)} left out)', flush=True)
+            print(f'[nostroma] "mtp": false - starting without the draft layer ({" ".join(removed)} left out)', flush=True)
     # #1322: a config with a "vision" section but without --vision in its args (written by an older setup run, or edited by
     # hand) advertised images and then refused every picture ("this engine was started without --vision").  The section
     # says images are wanted: start the engine with them, and keep the encoder's VRAM free as setup does for a GPU encoder
@@ -3984,7 +3984,7 @@ def engine_args(cfg: dict, exe: str | None = None, *, announce: bool = True) -> 
         if cfg["vision"].get("gpu") and "--vram-reserve-mib" not in args:
             args += ["--vram-reserve-mib", "700"]
             note += " and --vram-reserve-mib 700"
-        print(f'[strata] the config has a "vision" section but no --vision in its args: {note} (run nostroma install '
+        print(f'[nostroma] the config has a "vision" section but no --vision in its args: {note} (run nostroma install '
               "with --vision to write them; source checkout: ./setup.sh --setup --vision, or "
               "START-HERE.bat --setup --vision)", flush=True)
     if layer_split_of(cfg) and "--layer-split" not in args:
@@ -4033,16 +4033,16 @@ def parallel_args(cfg: dict, args: list[str]) -> list[str]:
     if n is None or n is False:
         return []
     if isinstance(n, bool) or not isinstance(n, int):
-        print(f'[strata] "parallel" must be a whole number of requests (2..{PARALLEL_MAX}), not {n!r}: ignored',
+        print(f'[nostroma] "parallel" must be a whole number of requests (2..{PARALLEL_MAX}), not {n!r}: ignored',
               flush=True)
         return []
     if n <= 1:
         return []
     # (on a layer split the pipelined groups each hold up to 8 slots - 16 in a HIP engine with wide windows - so more than 8 is
     # not a limit there: the engine says how many slots it runs, INFO batch_slots)
-    if (n > PARALLEL_MAX and "--batch-mtp" not in args and os.environ.get("STRATA_BATCH_MTP", "0") in ("", "0")
+    if (n > PARALLEL_MAX and "--batch-mtp" not in args and os.environ.get("NOSTROMA_BATCH_MTP", "0") in ("", "0")
             and not layer_split_of(cfg)):
-        print(f'[strata] "parallel": {n} - the engine runs at most {PARALLEL_MAX} requests together; it will use '
+        print(f'[nostroma] "parallel": {n} - the engine runs at most {PARALLEL_MAX} requests together; it will use '
               f"{PARALLEL_MAX}", flush=True)
     return ["--batch", str(n)]
 
@@ -4067,7 +4067,7 @@ def pool_cores_args(cfg: dict, args: list[str]) -> list[str]:
     else:
         text = ""
     if not _POOL_CORES_OK.match(text):
-        print(f'[strata] "pool_cores" must be logical processor numbers like "0,2,4,6" or "2-14:2", not {value!r}: ignored '
+        print(f'[nostroma] "pool_cores" must be logical processor numbers like "0,2,4,6" or "2-14:2", not {value!r}: ignored '
               "(the CPU workers keep their default placement)", flush=True)
         return []
     return ["--pool-cores", text]
@@ -4144,9 +4144,9 @@ def engine_has_text(exe: str, needle: bytes) -> bool | None:
 
 def draft_costs_dir() -> Path:
     """Where the learned draft cost tables live: beside the saved tunings (nostroma_control/presets.py), in the user's Nostroma settings folder
-    (%APPDATA%\\Strata\\draft-costs, ~/.config/strata/draft-costs), which the Windows uninstaller's "remove my data" deletes with them.
-    STRATA_DRAFT_COSTS_DIR: another folder (tests and test jobs, which never write into a real settings folder)."""
-    explicit = os.environ.get("STRATA_DRAFT_COSTS_DIR")
+    (%APPDATA%\\Nostroma\\draft-costs, ~/.config/nostroma/draft-costs), which the Windows uninstaller's "remove my data" deletes with them.
+    NOSTROMA_DRAFT_COSTS_DIR: another folder (tests and test jobs, which never write into a real settings folder)."""
+    explicit = os.environ.get("NOSTROMA_DRAFT_COSTS_DIR")
     if explicit:
         return Path(explicit).expanduser()
     from nostroma_control import profiles
@@ -4184,7 +4184,7 @@ def hip_visible(cfg: dict) -> list[int]:
 
     On Linux setup's KFD order is HIP's order, so the config's "gpu" is it.  On Windows setup finds the cards in the
     display-adapter order, and an integrated Radeon that HIP also enumerates takes ordinal 0 and pushes the discrete
-    card to 1 (#325): setup records the ordinal `strata-device --list-devices` gave the card as "hip_ordinal", which
+    card to 1 (#325): setup records the ordinal `nostroma-device --list-devices` gave the card as "hip_ordinal", which
     wins for a one-card config.  Without it (a config from before), the config's "gpu"."""
     ordinal = cfg.get("hip_ordinal")
     if ordinal is not None and str(ordinal).strip() != "" and len(gpu_list(cfg)) <= 1:
@@ -4251,10 +4251,10 @@ def engine_nice(env: dict | None = None, archs: dict[int, str] | None = None, pl
     """Linux only: the nice value the engine starts with.  The engine's CPU pool spins at 100% on every physical core but one and its host
     thread on another; with the desktop drawn by a built-in Radeon (HIP_IGPU_ARCHS: Strix Halo and the other APUs) the compositor then
     competes with them for the CPU, which reads as a frozen screen.  +5 gives the desktop its share and costs nothing when nothing else
-    runs.  STRATA_ENGINE_NICE=N sets it (0 = off, also for any PC without such a chip).  Not on Windows / macOS."""
+    runs.  NOSTROMA_ENGINE_NICE=N sets it (0 = off, also for any PC without such a chip).  Not on Windows / macOS."""
     if not (platform or sys.platform).startswith("linux"):
         return 0
-    asked = (env or os.environ).get("STRATA_ENGINE_NICE")
+    asked = (env or os.environ).get("NOSTROMA_ENGINE_NICE")
     if asked is not None and str(asked).strip() != "":
         try:
             return max(0, min(19, int(str(asked).strip())))
@@ -4338,7 +4338,7 @@ def ordered_gpus(cfg: dict, scores=None, vrams=None, archs=None) -> list[int]:
                 rest = sorted(rest, key=lambda i: sc0[i]) if max(sc0[i] for i in rest) >= 1.05 * min(sc0[i] for i in rest) else rest
             out = [i for i in gl if i in ig] + rest
             if out != gl:
-                print(f"[strata] layer split: card order {','.join(map(str, out))} (GPU {','.join(str(i) for i in sorted(ig))} is built-in "
+                print(f"[nostroma] layer split: card order {','.join(map(str, out))} (GPU {','.join(str(i) for i in sorted(ig))} is built-in "
                       f"graphics: it takes the first layers, never the last stage; \"gpu_order\": \"as_given\" keeps {','.join(map(str, gl))})",
                       flush=True)
             return out
@@ -4350,11 +4350,11 @@ def ordered_gpus(cfg: dict, scores=None, vrams=None, archs=None) -> list[int]:
     out, why, seen = gpu_roles.speed_stage_order(
         gl, sc, vrams if vrams is not None else (None if scores is not None else (lambda: gpu_vram_mib(gl, hip))))
     if why == "kept-vram":
-        print(f"[strata] layer split: keeping card order {','.join(map(str, gl))} - the faster card has "
+        print(f"[nostroma] layer split: keeping card order {','.join(map(str, gl))} - the faster card has "
               f"less VRAM than the one the split ends on ({seen[0]} vs {seen[1]} MiB, #1576)",
               flush=True)
     elif why == "faster-last":
-        print(f"[strata] layer split: card order {','.join(map(str, out))} (the faster card last; "
+        print(f"[nostroma] layer split: card order {','.join(map(str, out))} (the faster card last; "
               f'"gpu_order": "as_given" keeps {",".join(map(str, gl))}, #1352)', flush=True)
     return out
 
@@ -4364,7 +4364,7 @@ HIP_IGPU_ARCHS = ("gfx1035", "gfx1036", "gfx1037", "gfx1103", "gfx1150", "gfx115
 
 
 def parse_hip_devices(text: str) -> list[dict]:
-    """`strata-device --list-devices`: [{"index", "name", "arch", "vram_gb", "integrated", "cannot_run"}], numbered as the HIP runtime numbers them."""
+    """`nostroma-device --list-devices`: [{"index", "name", "arch", "vram_gb", "integrated", "cannot_run"}], numbered as the HIP runtime numbers them."""
     found: list[dict] = []
     for line in text.splitlines():
         s = line.strip()
@@ -4389,7 +4389,7 @@ def hip_no_card_message(devices: list[dict]) -> str:
     """The plain line when the engine has code for none of the computer's cards."""
     cards = ", ".join(f"{d['name'] or 'graphics card'} ({d['arch'] or 'unknown'}{', integrated' if d['integrated'] else ''})" for d in devices)
     built = next((m.group(1) for d in devices for m in [re.search(r"compiled for \(([^)]*)\)", d["cannot_run"] or "")] if m), "")
-    text = f"[strata] none of this computer's graphics cards has code in this Nostroma engine{f' (it is built for {built})' if built else ''}. Cards found: {cards}."
+    text = f"[nostroma] none of this computer's graphics cards has code in this Nostroma engine{f' (it is built for {built})' if built else ''}. Cards found: {cards}."
     note = engine_component.no_package_note([d["arch"] for d in devices])
     return text + (f" {note}" if note else "")
 
@@ -4412,7 +4412,7 @@ def pick_hip_devices(devices: list[dict]) -> tuple[list[int] | None, str | None]
 
 
 def hip_auto_devices(cfg: dict, env: dict) -> list[int] | None:
-    """HIP_VISIBLE_DEVICES for a start that names no card (see pick_hip_devices), asked of the engine package's own `strata-device`.
+    """HIP_VISIBLE_DEVICES for a start that names no card (see pick_hip_devices), asked of the engine package's own `nostroma-device`.
     None leaves everything as it was: a card the config or the environment names, no probe next to the engine, or a probe that fails.
     SystemExit with the plain line when no card of this computer can run."""
     if cfg.get("backend") != "hip" or gpu_list(cfg) or gpu_all_off(cfg) or str(cfg.get("hip_ordinal") if cfg.get("hip_ordinal") is not None else "").strip() \
@@ -4421,7 +4421,7 @@ def hip_auto_devices(cfg: dict, env: dict) -> list[int] | None:
     exe = cfg.get("exe")
     if not isinstance(exe, str) or not exe or engine_component.is_reference(exe):
         return None
-    probe = Path(exe).with_name("strata-device.exe" if os.name == "nt" else "strata-device")
+    probe = Path(exe).with_name("nostroma-device.exe" if os.name == "nt" else "nostroma-device")
     if not probe.is_file():
         return None
     try:
@@ -4437,14 +4437,14 @@ def hip_auto_devices(cfg: dict, env: dict) -> list[int] | None:
         raise SystemExit(problem)
     if visible:
         d = next(x for x in devices if x["index"] == visible[0])
-        print(f"[strata] automatic GPU choice: GPU {d['index']} ({d['name']}, {d['arch']}); the engine skips cards it has no code for and "
+        print(f"[nostroma] automatic GPU choice: GPU {d['index']} ({d['name']}, {d['arch']}); the engine skips cards it has no code for and "
               f"integrated chips while a card of its own can run", flush=True)
     return visible
 
 
 # 0.2.10: the two parts that need the card's free VRAM are the ENGINE's own, never an environment variable of ours: the FP16 weight
 # cache (bit-exact; takes only VRAM beyond 3 GiB kept free) and no loan of cache slots (only when every expert is resident and the
-# prompt path's own buffers fit beside 3 GiB; KL 0.006, QUAL-PAR2).  STRATA_PF_W16_CACHE_MIB=0 and STRATA_AUTO_NOBORROW=0 turn them off.
+# prompt path's own buffers fit beside 3 GiB; KL 0.006, QUAL-PAR2).  NOSTROMA_PF_W16_CACHE_MIB=0 and NOSTROMA_AUTO_NOBORROW=0 turn them off.
 # (The parallel-request stack, the GDN prompt speedups, the Q8_0 hyper-connection read and the fp16 decode windows are the engine's own defaults now:
 # src/core/arch_defaults.cpp, generate.cpp, metal window.cpp.  Nothing here sets them.)
 
@@ -4486,7 +4486,7 @@ def child_env(cfg: dict, *, offline: bool = False) -> dict:
         except ImportError:
             # The policy module is part of the application; without it, refuse rather than silently
             # running a child with network access under a flag that promised otherwise.
-            env["STRATA_OFFLINE"] = "1"
+            env["NOSTROMA_OFFLINE"] = "1"
             env["HF_HUB_OFFLINE"] = "1"
             env["TRANSFORMERS_OFFLINE"] = "1"
     dirs = [d for d in cfg.get("lib_dirs") or [] if Path(d).is_dir()]
@@ -4513,16 +4513,16 @@ def _dir_writable(p: str) -> bool:
 
 
 def sh_stream_warning(env: dict, cfg: dict) -> str | None:
-    """#3895: the shared-expert fork (STRATA_SH_STREAM=1) together with KV streaming (--kv-resident) made one Windows RX 6900 XT fail on the first
+    """#3895: the shared-expert fork (NOSTROMA_SH_STREAM=1) together with KV streaming (--kv-resident) made one Windows RX 6900 XT fail on the first
     request ("verify: unspecified launch failure"); each alone, or Linux, did not. A warning, not a refusal: the person set the variable, the
     engine runs as asked, and the line says what to take out."""
-    if os.name != "nt" or str(env.get("STRATA_SH_STREAM", "")).strip() in ("", "0"):
+    if os.name != "nt" or str(env.get("NOSTROMA_SH_STREAM", "")).strip() in ("", "0"):
         return None
     args = [str(a) for a in cfg.get("args") or []]
     if "--kv-resident" not in args:
         return None
-    return ("[strata] WARNING: STRATA_SH_STREAM=1 with --kv-resident (KV streaming) failed on the first request on one Windows RX 6000 PC "
-            "(\"verify: unspecified launch failure\", #3895). If the engine stops that way, take STRATA_SH_STREAM out of the config's env "
+    return ("[nostroma] WARNING: NOSTROMA_SH_STREAM=1 with --kv-resident (KV streaming) failed on the first request on one Windows RX 6000 PC "
+            "(\"verify: unspecified launch failure\", #3895). If the engine stops that way, take NOSTROMA_SH_STREAM out of the config's env "
             "(AMD runs without it by default) or run without --kv-resident, and tell us the card and the driver.")
 
 
@@ -4555,7 +4555,7 @@ def hip_env_guard(env: dict, cfg: dict) -> list[str]:
         else:
             said.append(f"{', '.join(bad)} not writable (AMD's runtime needs a writable temporary folder)")
     for line in said:
-        print(f"strata serve: AMD: {line}", file=sys.stderr, flush=True)
+        print(f"nostroma serve: AMD: {line}", file=sys.stderr, flush=True)
     return said
 
 
@@ -4571,7 +4571,7 @@ def igpu_split_warning(cfg: dict, archs: dict[int, str] | None = None) -> str | 
     ig = igpu_cards(gl, ar)
     if not ig or len(ig) == len(gl):
         return None
-    return ("[strata] note: GPU " + ", ".join(str(i) for i in sorted(ig)) + " is built-in graphics (its memory is the system RAM, and it "
+    return ("[nostroma] note: GPU " + ", ".join(str(i) for i in sorted(ig)) + " is built-in graphics (its memory is the system RAM, and it "
             "usually draws the desktop). Running part of the model on it can freeze the screen and uses RAM twice; the cards with memory of "
             "their own are faster alone (docs/STRIX_HALO.md). Turn it Off in the card roles, or name only the other card, to leave it out")
 
@@ -4587,8 +4587,8 @@ def card_note(cfg: dict, env: dict) -> str | None:
         return None
     names = [f"CUDA{i}" for i in range(len(mine))]
     if len(mine) == 1:
-        return f"[strata] running on GPU {mine[0]} (as nvidia-smi numbers it); the engine's log calls it GPU 0 / CUDA0"
-    return (f"[strata] cards in stage order: GPU {', then GPU '.join(mine)} (as nvidia-smi numbers them); the engine's log calls them "
+        return f"[nostroma] running on GPU {mine[0]} (as nvidia-smi numbers it); the engine's log calls it GPU 0 / CUDA0"
+    return (f"[nostroma] cards in stage order: GPU {', then GPU '.join(mine)} (as nvidia-smi numbers them); the engine's log calls them "
             f"{', '.join(names)} - the first runs the first layers and the picture reader, the last runs the head and the draft layer")
 
 
@@ -4617,7 +4617,7 @@ def engine_arch_note(cfg: dict, cards: dict[int, int] | None = None, built: dict
         if not miss:
             return None
         names = ", ".join(f"sm_{m}" for m in miss)
-        return (f"[strata] this engine was built for {', '.join(f'sm_{a}' for a in archs)}, but a graphics card in use is {names}: long prompts "
+        return (f"[nostroma] this engine was built for {', '.join(f'sm_{a}' for a in archs)}, but a graphics card in use is {names}: long prompts "
                 "can stop with \"unspecified launch failure\". Update the engine (./update.sh, or `nostroma update`) so it is built for every card in this PC.")
     except Exception:
         return None
@@ -4637,7 +4637,7 @@ def vision_card_off_igpu(env: dict, archs: dict[int, str] | None = None) -> int 
     own = [i for i in idx if i not in ig and ar and i in ar]
     if not ig or not own:
         return None
-    print(f"[strata] the picture reader runs on GPU {own[-1]}, not on the built-in graphics (GPU {','.join(str(i) for i in sorted(ig))}) "
+    print(f"[nostroma] the picture reader runs on GPU {own[-1]}, not on the built-in graphics (GPU {','.join(str(i) for i in sorted(ig))}) "
           "that draws the desktop; \"vision\": {\"cuda_device\": N} chooses another card", flush=True)
     return own[-1]
 
@@ -4678,7 +4678,7 @@ class ByteTokenizer:
         return self.encode_marked(text, parse_special, plain)[0]
 
     def encode_marked(self, text, parse_special=False, plain=()):
-        """encode() and its resume points (after each special), as strata_tokenizer's for PromptEncoder."""
+        """encode() and its resume points (after each special), as nostroma_tokenizer's for PromptEncoder."""
         out, marks, i = [], [], 0
         while i < len(text):
             for k, s in enumerate(self.SPECIALS):
@@ -4795,7 +4795,7 @@ def batch_slots_on(engine) -> bool:
     return any(int(getattr(e, "batch", 0) or 0) for e in (getattr(engine, "engines", None) or [engine]))
 
 
-NO_LINE = object()                                   # StrataEngine.generate: no line held after a token
+NO_LINE = object()                                   # NostromaEngine.generate: no line held after a token
 
 
 def stop_strings(req: dict) -> list[str]:
@@ -4928,9 +4928,9 @@ class Service:
         # matters); empty = no CORS headers at all, as before
         self.cors_origins: list[str] = []
         # #321: origins that count as Nostroma's own page for /settings and MCP tools, e.g. the web app reached through a
-        # reverse proxy or tunnel whose Host differs ("https://strata.example.com"); never a wildcard
+        # reverse proxy or tunnel whose Host differs ("https://nostroma.example.com"); never a wildcard
         self.trusted_origins: list[str] = []
-        # DNS rebinding: extra Host names this server answers to (the config's allowed_hosts, $STRATA_ALLOWED_HOSTS;
+        # DNS rebinding: extra Host names this server answers to (the config's allowed_hosts, $NOSTROMA_ALLOWED_HOSTS;
         # "*" = any), and every name it answers to, which serve() works out from the address it listens on
         self.allowed_hosts: list[str] = []
         self.host_names: set[str] = set(LOOPBACK_NAMES)
@@ -5010,11 +5010,11 @@ class Service:
         self.family = None                              # the model family: set_family() below (None: the Qwen form)
         self.parser_cls = parser_for_template(getattr(template, "source", None))   # reads the model's output (reasoning, content, tool calls): by the template's tool-call form
         # #567: a prompt re-encodes only what follows the last special token it shares with a recent prompt (the
-        # same ids as a full encode: tools/strata_tokenizer.py PromptEncoder).  Tokenizers without resume points
+        # same ids as a full encode: tools/nostroma_tokenizer.py PromptEncoder).  Tokenizers without resume points
         # encode in full.
         self.prompts = None
         if hasattr(tokenizer, "encode_marked") and hasattr(tokenizer, "max_special_len"):
-            from strata_tokenizer import PromptEncoder
+            from nostroma_tokenizer import PromptEncoder
             # one kept prompt per conversation the engine's cache can hold (--conversation-cache-slots); the
             # encoder's own default without that setting
             slots = conversation_slots(engine)
@@ -5076,7 +5076,7 @@ class Service:
         """Cancel once; count only work that was still queued or active when the client left."""
         with self.status_lock:
             if not cancel.is_set():
-                request_id = getattr(cancel, "_strata_request_id", None)
+                request_id = getattr(cancel, "_nostroma_request_id", None)
                 active = request_id in self.terminal_requests
                 cancel.set()
                 if active:
@@ -5255,12 +5255,12 @@ class Service:
         try:
             if not vision.alive():
                 return False
-            print("[strata] the engine is not running but its picture encoder is: stopping the encoder to give its memory back", flush=True)
+            print("[nostroma] the engine is not running but its picture encoder is: stopping the encoder to give its memory back", flush=True)
             vision.unload()
             self.vision_held = False
             return True
         except Exception as e:                              # noqa: BLE001 - freeing memory never turns a request into a crash
-            print(f"[strata] the picture encoder could not be stopped: {e}", flush=True)
+            print(f"[nostroma] the picture encoder could not be stopped: {e}", flush=True)
             return False
 
     def _vision_down(self) -> bool:
@@ -5287,7 +5287,7 @@ class Service:
             try:
                 out = self.engine.vram((self._engine_reserve() or 0) + v.elastic_mib)
                 self.vision_held = True
-                print(f"[strata] images: the expert cache keeps {v.elastic_mib} MiB free for the image encoder "
+                print(f"[nostroma] images: the expert cache keeps {v.elastic_mib} MiB free for the image encoder "
                       f"({out.get('expert_cache_mib')} of {out.get('expert_cache_full_mib')} MiB left)", flush=True)
             except ValueError as e:
                 self.vision_no_shrink = "--vram-elastic" in str(e)     # an engine that never shrinks: not asked again
@@ -5306,13 +5306,13 @@ class Service:
         free1 = self.free_vram_mib()
         took = f", {free0 - free1} MiB of VRAM" if free0 is not None and free1 is not None else ""
         on_cpu = getattr(v, "on_cpu", False)
-        print(f"[strata] images: the image encoder started in {time.time() - t0:.1f} s{', on the CPU' if on_cpu else took}", flush=True)
+        print(f"[nostroma] images: the image encoder started in {time.time() - t0:.1f} s{', on the CPU' if on_cpu else took}", flush=True)
         if on_cpu and self.vision_held and hasattr(self.engine, "vram") and self.loaded():
             # the CPU reader needs no VRAM: the cache takes back what it made room for
             try:
                 self.engine.vram(self._engine_reserve())
             except ValueError as e:
-                print(f"[strata] images: the expert cache did not grow back ({e})", flush=True)
+                print(f"[nostroma] images: the expert cache did not grow back ({e})", flush=True)
             self.vision_held = False
 
     def _vision_room_check(self, v, note: str):
@@ -5321,10 +5321,10 @@ class Service:
         free = self.free_vram_mib()
         need = min(v.elastic_mib, READER_NEEDS_MIB)
         if free is not None and free < need and getattr(v, "use_cpu", lambda: False)():
-            print(f"[strata] images: only {free} MiB of VRAM is free and the GPU reader needs about {need}{note}: this picture is "
+            print(f"[nostroma] images: only {free} MiB of VRAM is free and the GPU reader needs about {need}{note}: this picture is "
                   "read on the CPU", flush=True)
         elif note:
-            print(f"[strata] images: the expert cache did not make room for the image encoder{note}; starting it anyway", flush=True)
+            print(f"[nostroma] images: the expert cache did not make room for the image encoder{note}; starting it anyway", flush=True)
 
     def _vision_idle_down(self, force: bool = False) -> str:
         """An elastic encoder idle for elastic_idle_s (or force) stops, and the expert cache takes its VRAM back:
@@ -5345,7 +5345,7 @@ class Service:
                 back = (f"; the expert cache took its VRAM back ({out.get('expert_cache_mib')} of "
                         f"{out.get('expert_cache_full_mib')} MiB)")
             # also when the cache never made room (a layer split, an engine without --vram-elastic): the stop happened
-            print(f"[strata] images: the image encoder stopped after {v.elastic_idle_s:g} s without a picture{back}",
+            print(f"[nostroma] images: the image encoder stopped after {v.elastic_idle_s:g} s without a picture{back}",
                   flush=True)
             self.vision_held = False
             return "down"
@@ -5356,7 +5356,7 @@ class Service:
         v = self.vision
         if not getattr(v, "elastic", False):
             return
-        print(f"[strata] images: the image encoder starts with the first picture and stops after {v.elastic_idle_s:g} s "
+        print(f"[nostroma] images: the image encoder starts with the first picture and stops after {v.elastic_idle_s:g} s "
               f"without one", flush=True)
 
         def loop():
@@ -5365,7 +5365,7 @@ class Service:
                 try:
                     self._vision_idle_down()
                 except Exception as e:                 # tried again at the next turn; the thread keeps running
-                    print(f"[strata] images: stopping the idle image encoder: {e}", flush=True)
+                    print(f"[nostroma] images: stopping the idle image encoder: {e}", flush=True)
         threading.Thread(target=loop, daemon=True).start()
 
     def free_vram_mib(self) -> int | None:
@@ -5402,7 +5402,7 @@ class Service:
             seen.add(pid)
             times.append(now)
         times[:] = [t for t in times if now - t < self.FATAL_GPU_WINDOW_S]
-        print(f"[strata] the GPU reported a fatal error ({why[len('fatal GPU error:'):].strip()[:160]}); the engine ended "
+        print(f"[nostroma] the GPU reported a fatal error ({why[len('fatal GPU error:'):].strip()[:160]}); the engine ended "
               f"(exit code {code}) and is started again; the request that was running failed and can be sent again "
               f"({len(times)} of {self.FATAL_GPU_MAX} allowed in {self.FATAL_GPU_WINDOW_S / 60:g} minutes)", flush=True)
         if len(times) >= self.FATAL_GPU_MAX:
@@ -5419,7 +5419,7 @@ class Service:
         hook_failed = None
         if self.before_load:
             cmd = self.before_load
-            print(f"[strata] before loading: {cmd if isinstance(cmd, str) else ' '.join(map(str, cmd))}", flush=True)
+            print(f"[nostroma] before loading: {cmd if isinstance(cmd, str) else ' '.join(map(str, cmd))}", flush=True)
             why = None
             try:
                 r = subprocess.run(cmd, shell=isinstance(cmd, str), timeout=self.before_load_timeout_s,
@@ -5436,18 +5436,18 @@ class Service:
                 # does not refuse: the card's free VRAM decides (min_free_vram_mib, checked just below); "strict" always
                 # refuses, "ignore" always loads.
                 if self.before_load_strict and not self.before_load_ignore_failure:
-                    print(f"[strata] the before_load command failed ({why}); the model stays unloaded and this "
+                    print(f"[nostroma] the before_load command failed ({why}); the model stays unloaded and this "
                           "request is answered 503 - try again (before_load_strict)", flush=True)
                     raise GpuBusy(f"the before_load command failed ({why}): the GPU was not given back, so the "
                                   "model was not loaded; try again in a moment", retry_after=15)
                 hook_failed = why
                 if self.before_load_ignore_failure or not self.min_free_vram_mib:
-                    print(f"[strata] the before_load command failed ({why}); loading anyway"
+                    print(f"[nostroma] the before_load command failed ({why}); loading anyway"
                           + ("" if self.before_load_ignore_failure else
                              " (set min_free_vram_mib to have the free VRAM checked, or before_load_strict to refuse)"),
                           flush=True)
                 else:
-                    print(f"[strata] the before_load command failed ({why}); checking the free VRAM", flush=True)
+                    print(f"[nostroma] the before_load command failed ({why}); checking the free VRAM", flush=True)
         if self.min_free_vram_mib and not (hook_failed and self.before_load_ignore_failure):
             free = self.free_vram_mib()
             if free is not None and free < self.min_free_vram_mib and self._release_orphan_encoder():
@@ -5458,18 +5458,18 @@ class Service:
                 free = self.free_vram_mib()
             if free is not None and free < self.min_free_vram_mib:
                 if hook_failed and not self.before_load_ignore_failure:
-                    print(f"[strata] the before_load command failed ({hook_failed}) and only {free} MiB of VRAM is "
+                    print(f"[nostroma] the before_load command failed ({hook_failed}) and only {free} MiB of VRAM is "
                           f"free (the model needs {self.min_free_vram_mib}): not loading; 503", flush=True)
                 raise GpuBusy(f"the GPU is in use by another program: {free} MiB of VRAM free, the model needs "
                               f"{self.min_free_vram_mib} (min_free_vram_mib) - it stays unloaded until that is free"
                               + (f"; the before_load command failed ({hook_failed})" if hook_failed else ""),
                               retry_after=15)
             if hook_failed and not self.before_load_ignore_failure:
-                print(f"[strata] the before_load command failed ({hook_failed}), but {free} MiB of VRAM is free: "
+                print(f"[nostroma] the before_load command failed ({hook_failed}), but {free} MiB of VRAM is free: "
                       "loading", flush=True)
         vision_started = False
         if self._vision_down():                         # first, as at a start: a GPU encoder takes its VRAM before
-            print("[strata] starting the vision encoder ...", flush=True)   # the engine sizes its cache
+            print("[nostroma] starting the vision encoder ...", flush=True)   # the engine sizes its cache
             try:
                 self.vision.restart()
             except Exception as e:
@@ -5478,11 +5478,11 @@ class Service:
         if self.loaded():
             return
         if getattr(self.engine, "unloaded", False):
-            print("[strata] loading the model again (it was unloaded) ...", flush=True)
+            print("[nostroma] loading the model again (it was unloaded) ...", flush=True)
         else:
             code = self.engine.exit_code() if hasattr(self.engine, "exit_code") else None
             self._note_fatal_gpu_exit(code)
-            print(f"[strata] the engine had stopped (exit code {code}); starting it again "
+            print(f"[nostroma] the engine had stopped (exit code {code}); starting it again "
                   "(a minute or two) ...", flush=True)
         try:
             self.engine.restart()
@@ -5494,14 +5494,14 @@ class Service:
             if isinstance(e, OSError):
                 raise EngineDied(f"the engine could not be started: {e}") from e
             raise
-        print("[strata] the engine is running again", flush=True)
+        print("[nostroma] the engine is running again", flush=True)
         if self.restore_after_load:                      # an image job unloaded it: its conversation comes back
             images_api.restore_session(self)
         if self.vram_reserve is not None and hasattr(self.engine, "vram"):   # #533: the reserve asked for last
             try:
                 self.engine.vram(self.vram_reserve)
             except (ValueError, EngineDied) as e:
-                print(f"[strata] the VRAM reserve ({self.vram_reserve} MiB) was not applied: {e}", flush=True)
+                print(f"[nostroma] the VRAM reserve ({self.vram_reserve} MiB) was not applied: {e}", flush=True)
 
     vram_wait_s = 300.0                                  # #533: how long POST /v1/vram waits for a running request
 
@@ -5530,7 +5530,7 @@ class Service:
             # an elastic encoder that runs keeps its VRAM on top of the asked reserve
             out = self.engine.vram((reserve_mib or 0) + self.vision.elastic_mib if self.vision_held else reserve_mib)
             self.vram_reserve, self.vram_reserve_asked = reserve_mib, True
-            print(f"[strata] VRAM: {out.get('vram_free_mib')} MiB free, expert cache {out.get('expert_cache_mib')} of "
+            print(f"[nostroma] VRAM: {out.get('vram_free_mib')} MiB free, expert cache {out.get('expert_cache_mib')} of "
                   f"{out.get('expert_cache_full_mib')} MiB ({out.get('expert_slots')} experts)", flush=True)
             return {"status": "ok", **out}
         finally:
@@ -5543,7 +5543,7 @@ class Service:
         """The server window's line for an engine that died (or was ended, #481) in the middle of a request."""
         note = self.engine.death_note() if hasattr(self.engine, "death_note") else ""
         log = getattr(self.engine, "log_path", None)
-        print(f"[strata] {e}. {note} The next request starts the engine again."
+        print(f"[nostroma] {e}. {note} The next request starts the engine again."
               f"{' Its log: ' + log if log else ''}", flush=True)
 
     def load(self):
@@ -5629,7 +5629,7 @@ class Service:
             if self.vision is not None and hasattr(self.vision, "unload"):
                 self.vision.unload()
             self.vision_held = False
-            print(f"[strata] model unloaded{f' after {idle_for:.0f} s idle' if idle_for else ''}; "
+            print(f"[nostroma] model unloaded{f' after {idle_for:.0f} s idle' if idle_for else ''}; "
                   "the next request loads it again", flush=True)
             return "unloaded"
         finally:
@@ -5638,7 +5638,7 @@ class Service:
     def start_idle_unload(self):
         if not self.idle_unload_s or not hasattr(self.engine, "unload"):
             return
-        print(f"[strata] the model unloads after {self.idle_unload_s} s without requests", flush=True)
+        print(f"[nostroma] the model unloads after {self.idle_unload_s} s without requests", flush=True)
 
         def loop():
             while True:
@@ -5646,7 +5646,7 @@ class Service:
                 try:
                     self.unload(idle_for=self.idle_unload_s)
                 except EngineStuck as e:                # tried again at the next turn; the thread keeps running
-                    print(f"[strata] idle unload: {e}", flush=True)
+                    print(f"[nostroma] idle unload: {e}", flush=True)
         threading.Thread(target=loop, daemon=True).start()
 
     def set_shared(self, defaults) -> dict:
@@ -5659,7 +5659,7 @@ class Service:
                 else:
                     Path(self.shared_path).unlink(missing_ok=True)
             except OSError as e:
-                print(f"[strata] could not save the shared settings: {e}", flush=True)
+                print(f"[nostroma] could not save the shared settings: {e}", flush=True)
         return self.shared
 
     def effort_default(self) -> str | None:
@@ -5849,7 +5849,7 @@ class Service:
 
     def prometheus(self) -> str:
         """GET /metrics/prometheus: the totals and what is running in Prometheus' text format, under llama-server's
-        metric names (llamacpp:*) so its dashboards work unchanged; the drafts and requests as strata:*."""
+        metric names (llamacpp:*) so its dashboards work unchanged; the drafts and requests as nostroma:*."""
         with self.status_lock:
             s, t = dict(self.status), dict(self.totals)
             running = len(self.live_reqs) or int(bool(s.get("busy")))
@@ -5875,14 +5875,14 @@ class Service:
              d_predicted_n / d_decode_s if d_decode_s > 0 else 0),
             ("llamacpp:requests_processing", "gauge", "Requests running", running),
             ("llamacpp:requests_deferred", "gauge", "Requests waiting their turn", s.get("queued") or 0),
-            ("strata:requests_total", "counter", "Requests finished", t["requests"]),
-            ("strata:drafts_offered_total", "counter", "Speculative draft tokens offered", t["drafts_offered"]),
-            ("strata:drafts_accepted_total", "counter", "Speculative draft tokens accepted", t["drafts_accepted"]),
-            ("strata:tool_calls_unread_total", "counter", "<tool_call> blocks returned as text (an undeclared name or a form the template does not use)",
+            ("nostroma:requests_total", "counter", "Requests finished", t["requests"]),
+            ("nostroma:drafts_offered_total", "counter", "Speculative draft tokens offered", t["drafts_offered"]),
+            ("nostroma:drafts_accepted_total", "counter", "Speculative draft tokens accepted", t["drafts_accepted"]),
+            ("nostroma:tool_calls_unread_total", "counter", "<tool_call> blocks returned as text (an undeclared name or a form the template does not use)",
              t.get("tool_calls_unread", 0)),
-            ("strata:tool_args_repaired_total", "counter", "Tool call arguments (a JSON array or object) that were damaged and read as written",
+            ("nostroma:tool_args_repaired_total", "counter", "Tool call arguments (a JSON array or object) that were damaged and read as written",
              t.get("tool_args_repaired", 0)),
-            ("strata:model_loaded", "gauge", "1 while the model is loaded", int(self.loaded())),
+            ("nostroma:model_loaded", "gauge", "1 while the model is loaded", int(self.loaded())),
         ]
         return "".join(f"# HELP {name} {help_}\n# TYPE {name} {kind}\n{name} {value}\n"
                        for name, kind, help_, value in rows)
@@ -5904,7 +5904,7 @@ class Service:
         busy, ctx = bool(s.get("busy")), self.reported_ctx()
         images = self.vision is not None
         return {
-            "service": "strata", "model": self.model,
+            "service": "nostroma", "model": self.model,
             "loaded": self.loaded(), "auto_load": hasattr(self.engine, "restart"),
             "structured_output": {"formats": ["json_object", "json_schema"], "method": "prompt_and_validate",
                                   "constrained_decoding": False, "stream_buffered": True},
@@ -6011,7 +6011,7 @@ class Service:
                     except (ValueError, OSError, RuntimeError) as e:    # RuntimeError: the encoder did not start
                         why = str(e)
                 if why is not None:
-                    print(f"[strata] a picture a tool returned was left out of the prompt: {why}", flush=True)
+                    print(f"[nostroma] a picture a tool returned was left out of the prompt: {why}", flush=True)
                     content[n] = {"type": "text", "text": f"[image omitted: {why}]"}
         return fetched
 
@@ -6030,8 +6030,8 @@ class Service:
         for message in messages:
             for part in message.get("content", []) if isinstance(message.get("content"), list) else []:
                 source = part.get("source", "") if isinstance(part, dict) else ""
-                if isinstance(part, dict) and part.get("type") == "image" and isinstance(source, str) and source.startswith("strata-tool-media:"):
-                    name = source[len("strata-tool-media:"):]
+                if isinstance(part, dict) and part.get("type") == "image" and isinstance(source, str) and source.startswith("nostroma-tool-media:"):
+                    name = source[len("nostroma-tool-media:"):]
                     if not re.fullmatch(r"[0-9a-f]{64}\.(png|jpg|webp)", name):
                         raise ValueError("invalid tool image reference")
                     # Clients resend old tool results. A removed cache or disabled feature must not poison
@@ -6126,9 +6126,9 @@ class Service:
                                       f"prompt ({len(ids)} tokens) + max tokens ({max_new}) exceeds the context "
                                       f"({ctx}); requests are never truncated. Send a smaller "
                                       f"max_tokens (at most {max(0, room)} here), or add \"fit_max_tokens\": true to the "
-                                      "model's strata-<model>.json to shorten it to the room left (#545)",
+                                      "model's nostroma-<model>.json to shorten it to the room left (#545)",
                                       prompt=len(ids), context=ctx, max_new=max_new)
-            print(f"[strata] max_tokens {max_new} shortened to {max(1, room)}: the prompt ({len(ids)} tokens) leaves that much "
+            print(f"[nostroma] max_tokens {max_new} shortened to {max(1, room)}: the prompt ({len(ids)} tokens) leaves that much "
                   f"of the context ({ctx}); \"fit_max_tokens\": false answers 400 instead", flush=True)
             max_new = max(1, room)          # a shorter completion beats a 400 (the default)
         if images:
@@ -6142,14 +6142,14 @@ class Service:
             # (an encoder restart, the cache's eviction) with other bits still matches its checkpoints
             self.embeddings.keys = [Path(p).stem[:16] for p, _ in encoded]
             write_temporary(combined, [p for p, _ in encoded])
-        if req is not None and req.get("strata_prefix") is not None:
-            req["strata_prefix"] = self.resolve_prefix(req["strata_prefix"], messages, tools, kwargs, ids, bool(images))
+        if req is not None and req.get("nostroma_prefix") is not None:
+            req["nostroma_prefix"] = self.resolve_prefix(req["nostroma_prefix"], messages, tools, kwargs, ids, bool(images))
         return ids, kwargs.get("enable_thinking", True) is not False, max_new
 
-    PREFIX_END = "\u0001strata-prefix-end\u0001"          # marks where a message's shared part ends in the rendered prompt
+    PREFIX_END = "\u0001nostroma-prefix-end\u0001"          # marks where a message's shared part ends in the rendered prompt
 
     def resolve_prefix(self, spec, messages, tools, kwargs, ids, has_images=False) -> dict:
-        """R1: `"strata_prefix"` marks the start of the prompt as a shared read-only prefix: a long document that many
+        """R1: `"nostroma_prefix"` marks the start of the prompt as a shared read-only prefix: a long document that many
         short questions follow.  Three ways to say where it ends: `{"messages": K}` (the first K messages), `{"message":
         I, "chars": N}` (the first N characters of message I's text: a document and its question in one message) or
         `{"tokens": N}`.  The engine reads the prompt in two parts there, keeps the checkpoint at the boundary pinned
@@ -6160,13 +6160,13 @@ class Service:
         keys = ("messages", "message", "chars", "tokens")
         if (not isinstance(spec, dict) or not spec or any(k not in keys for k in spec) or
                 set(spec) not in ({"messages"}, {"tokens"}, {"message", "chars"})):
-            raise ValueError('strata_prefix: {"messages": K} (the first K messages), {"message": I, "chars": N} (the first '
+            raise ValueError('nostroma_prefix: {"messages": K} (the first K messages), {"message": I, "chars": N} (the first '
                              'N characters of message I) or {"tokens": N}')
         for k, v in spec.items():
             if not isinstance(v, int) or isinstance(v, bool) or v < (0 if k == "message" else 1):
-                raise ValueError(f"strata_prefix.{k}: a whole number ({'0' if k == 'message' else '1'} or more)")
+                raise ValueError(f"nostroma_prefix.{k}: a whole number ({'0' if k == 'message' else '1'} or more)")
         if has_images:
-            print("[strata] strata_prefix ignored: the request has images", flush=True)
+            print("[nostroma] nostroma_prefix ignored: the request has images", flush=True)
             return {}
         what = ",".join(f"{k}={v}" for k, v in spec.items())
 
@@ -6200,7 +6200,7 @@ class Service:
         elif "messages" in spec:
             k = spec["messages"]
             if k >= len(messages):
-                print(f"[strata] strata_prefix.messages={k} ignored: the request has {len(messages)} message(s) and the "
+                print(f"[nostroma] nostroma_prefix.messages={k} ignored: the request has {len(messages)} message(s) and the "
                       "prefix must leave at least the last one", flush=True)
                 return {}
             head = head_ids(messages[:k])
@@ -6209,13 +6209,13 @@ class Service:
             i, chars = spec["message"], spec["chars"]
             text = messages[i].get("content") if 0 <= i < len(messages) else None
             if not isinstance(text, str) or chars > len(text):
-                print(f"[strata] strata_prefix ignored: message {i} has no text of {chars} characters", flush=True)
+                print(f"[nostroma] nostroma_prefix ignored: message {i} has no text of {chars} characters", flush=True)
                 return {}
             cut = messages[:i] + [{**messages[i], "content": text[:chars] + self.PREFIX_END}]
             head = head_ids(cut)
             n = lcp(head, ids)
         if n < 1 or n >= len(ids) - 1:
-            print(f"[strata] strata_prefix {what} ignored: it leaves no usable prefix of the {len(ids)}-token prompt "
+            print(f"[nostroma] nostroma_prefix {what} ignored: it leaves no usable prefix of the {len(ids)}-token prompt "
                   f"(common start {n})", flush=True)
             return {}
         return {"tokens": n}
@@ -6257,13 +6257,13 @@ class Service:
         if s.get("first_token") is None:
             pr = getattr(self.engine, "progress", None)   # (position reached, prompt tokens): a reused prefix counts
             done = f"{pr[0]:,} of {pr[1]:,}" if pr and pr[1] else f"{s.get('prompt_tokens', 0):,}"   # as read (#29)
-            print(f"[strata] reading the prompt: {done} tokens, {el:.0f} s so far", flush=True)
+            print(f"[nostroma] reading the prompt: {done} tokens, {el:.0f} s so far", flush=True)
         else:
             rate = s["generated"] / max(RATE_MIN_SPAN_S, now - s["first_token"])
             # #984: while a thinking budget applies, the thinking line shows it, not the request's max_tokens
             limit = (f"budget {s['thinking_budget']} (max {s.get('max_tokens')})"
                      if s["phase"] == "thinking" and s.get("thinking_budget") else f"max {s.get('max_tokens')}")
-            print(f"[strata] {s['phase']}: {s['generated']} of {limit} tokens, {rate:.1f} tok/s, "
+            print(f"[nostroma] {s['phase']}: {s['generated']} of {limit} tokens, {rate:.1f} tok/s, "
                   f"{el:.0f} s", flush=True)
         return now
 
@@ -6298,14 +6298,14 @@ class Service:
             # the answer its quarter of the cap (the budget's wrap-up: a short closing sentence, </think>, the answer).
             # A request with a budget of its own, or max_tokens below ANSWER_ROOM_MIN_CAP, is left as it was.
             budget = max_new - min(max(ANSWER_RESERVE_MIN, max_new // 4), max_new // 2)
-            if max_new <= 32768: print(f"[strata] thinking limited to {budget} of max_tokens {max_new} so the answer has room "
+            if max_new <= 32768: print(f"[nostroma] thinking limited to {budget} of max_tokens {max_new} so the answer has room "
                   "(\"answer_room\": false in the config turns this off)", flush=True)
         if budget and max_new and max_new > 0:
             # #984: a budget at or near max_tokens never fires before the reply is cut off while still thinking, so
             # it has no answer.  Close the thinking early enough to leave room for one.
             reserve = min(max(ANSWER_RESERVE_MIN, max_new // 4), max_new // 2)
             if budget > max_new - reserve:
-                print(f"[strata] thinking capped at {max_new - reserve} of max_tokens {max_new} to leave room for "
+                print(f"[nostroma] thinking capped at {max_new - reserve} of max_tokens {max_new} to leave room for "
                       f"the answer (budget {budget})", flush=True)
                 budget = max(1, max_new - reserve)
         parser = self.parser_cls(thinking=thinking, tools=with_history_tools(tools, sampling), stream_tools=True,
@@ -6344,12 +6344,12 @@ class Service:
         timings, before = None, None                    # this request's timings; the engine's `last` before it
         recovery_count, reasoning_text, repeat_coverage = 0, "", 0.0
         looped, next_loop_check = False, LOOP_CHECK_EVERY       # #728: reasoning that repeats whole passages
-        raw_ids = []                                    # every generated id (STRATA_DEBUG: dump raw model text)
+        raw_ids = []                                    # every generated id (NOSTROMA_DEBUG: dump raw model text)
         admission_rejected = False                      # #3040: the engine's batch slots refused it before it read anything
         emb, self.embeddings.path = getattr(self.embeddings, "path", None), None   # this run's to delete now
         img_keys, self.embeddings.keys = getattr(self.embeddings, "keys", None), None
         if emb and img_keys:
-            sampling = {**(sampling or {}), "strata_img_keys": img_keys}   # #2228: sent beside the embeddings file
+            sampling = {**(sampling or {}), "nostroma_img_keys": img_keys}   # #2228: sent beside the embeddings file
         # Only a DONE line replaces engine.last, so a request that died, errored or was disconnected must not have
         # the PREVIOUS request's decode figures recorded as its own: each pass keeps its own DONE (a segment) if
         # one arrived.  A reasoning-budget continuation is another native generation, not another API request,
@@ -6357,7 +6357,7 @@ class Service:
         segments = []
         timed_out = False
         trace = getattr(self.request_trace, "record", None)
-        cache_hints = getattr(cancel, "_strata_cache_hints", None)   # the Anthropic marks this turn was sent with
+        cache_hints = getattr(cancel, "_nostroma_cache_hints", None)   # the Anthropic marks this turn was sent with
         waiting = time.perf_counter()
         first_engine_token_s = None  # this request, from entering the engine queue; includes queue/prefill
         # #465: with "parallel" (the engine's batch slots) requests run at once: each keeps its own status and rate
@@ -6366,23 +6366,23 @@ class Service:
         st = {} if par else self.status
         rate = collections.deque(maxlen=32) if par else self.rate
         request_id = uuid.uuid4().hex[:12]
-        setattr(cancel, "_strata_request_id", request_id)
+        setattr(cancel, "_nostroma_request_id", request_id)
         deadline = time.monotonic() + self.queue_timeout_s if self.queue_timeout_s is not None else None
         if deadline is not None:
-            setattr(cancel, "_strata_queue_deadline", deadline)
+            setattr(cancel, "_nostroma_queue_deadline", deadline)
         def queue_started():
             with self.status_lock:
                 row = self.terminal_requests.get(request_id)
                 if row is not None and row["state"] != "reading":
                     row["state"] = "reading"
                     self._terminal_event_locked(request_id, "reading")
-        setattr(cancel, "_strata_queue_started", queue_started)
+        setattr(cancel, "_nostroma_queue_started", queue_started)
         def replica_selected(index: int) -> None:
             with self.status_lock:
                 row = self.terminal_requests.get(request_id)
                 if row is not None:
                     row["replica"] = index
-        setattr(cancel, "_strata_replica_selected", replica_selected)
+        setattr(cancel, "_nostroma_replica_selected", replica_selected)
         with self.status_lock:
             self.status["queued"] += 1
             self.terminal_requests[request_id] = {"id": request_id, "state": "queued",
@@ -6391,7 +6391,7 @@ class Service:
             self._terminal_event_locked(request_id, "queued")
         queued_counted = True
         try:
-            # --batch: the engine runs several requests at once (StrataEngine.generate_batched orders them)
+            # --batch: the engine runs several requests at once (NostromaEngine.generate_batched orders them)
             turn = contextlib.ExitStack()
             if not par:
                 # #1619: a request waiting for the single turn sends a keep-alive every QUEUE_BEAT_S, so a client with
@@ -6574,7 +6574,7 @@ class Service:
                             raise
                         except ValueError as e:             # the engine's ERR line (it may have ended after it)
                             finish = "error"
-                            print(f"[strata] the engine reported an error: {e}", flush=True)
+                            print(f"[nostroma] the engine reported an error: {e}", flush=True)
                             raise
                         except GeneratorExit:               # the client went away: an engine that never acknowledges
                             leaving = True                  # the STOP below is ended, but no error replaces this
@@ -6599,17 +6599,17 @@ class Service:
                                 nf_retried = True
                                 # the retry reads from token 0: its DONE, not this one's, says what was reused
                                 del segments[segments_before:]
-                                print("[strata] the engine's logits became non-finite before the first token (#879); it "
+                                print("[nostroma] the engine's logits became non-finite before the first token (#879); it "
                                       "dropped its cached state: sending the request again once", flush=True)
                                 continue
                             if n == 0:
                                 finish = "error"
-                                print("[strata] the engine's logits became non-finite again on the retry (#879): the "
+                                print("[nostroma] the engine's logits became non-finite again on the retry (#879): the "
                                       "request ends with an error", flush=True)
                                 raise EngineNonFinite("the model's output became non-finite (NaN) twice in a row "
                                                       "(#879); the engine has dropped its cached state - send the "
                                                       "request again")
-                            print(f"[strata] the engine's logits became non-finite after {n} tokens (#879): the reply "
+                            print(f"[nostroma] the engine's logits became non-finite after {n} tokens (#879): the reply "
                                   "ends here as \"length\"; the engine dropped its cached state, so the next request "
                                   "reads its prompt from the start", flush=True)
                             finish = "length"
@@ -6630,7 +6630,7 @@ class Service:
                             if trace is not None:
                                 trace["reasoning_recoveries"] = recovery_count
                                 trace["reasoning_repeat_coverage"] = round(repeat_coverage, 3)
-                            print(f"[strata] repeated reasoning detected at {n} tokens "
+                            print(f"[nostroma] repeated reasoning detected at {n} tokens "
                                   f"(coverage={repeat_coverage:.3f}); resuming the same output with the low-effort "
                                   "instruction (reasoning_loop_recovery)", flush=True)
                             continue
@@ -6643,7 +6643,7 @@ class Service:
                             close_retried = True
                             extra = self.tok.encode(REASONING_CLOSE, parse_special=True)
                             if max_new - n - len(extra) >= 1:
-                                print("[strata] the reply ended inside its thinking with no answer: closing the "
+                                print("[nostroma] the reply ended inside its thinking with no answer: closing the "
                                       "thinking once and continuing (reasoning_close_retry)", flush=True)
                                 for t in extra:
                                     n += 1
@@ -6680,7 +6680,7 @@ class Service:
                         if max_new - n - len(extra) < 1:
                             break                       # no room left to answer: "length", as without a budget
                         if wrap:
-                            print(f"[strata] thinking budget reached ({thought} tokens): wrapping up the thinking",
+                            print(f"[nostroma] thinking budget reached ({thought} tokens): wrapping up the thinking",
                                   flush=True)
                         for t in extra:
                             n += 1
@@ -6697,13 +6697,13 @@ class Service:
                     if cancel.is_set():
                         finish = "cancel"
                     elif looped:
-                        print(f"[strata] the thinking repeated the same passages (coverage={repeat_coverage:.3f}) at "
+                        print(f"[nostroma] the thinking repeated the same passages (coverage={repeat_coverage:.3f}) at "
                               f"{n} tokens: ended as \"length\" (reasoning_loop_recovery: \"stop\" in "
-                              "strata-<model>.json; remove it to turn this off)", flush=True)
+                              "nostroma-<model>.json; remove it to turn this off)", flush=True)
                     elif repeated:
-                        print(f"[strata] the reply repeated one token ({self.tok.decode([run_tok])!r}) "
+                        print(f"[nostroma] the reply repeated one token ({self.tok.decode([run_tok])!r}) "
                               f"{run_len} times in a row: ended as \"length\" (repeat_stop_tokens in "
-                              "strata-<model>.json; 0 turns this off). If a new request with a short prompt does the "
+                              "nostroma-<model>.json; 0 turns this off). If a new request with a short prompt does the "
                               "same, restart the server and report it (#606)", flush=True)
                 except GpuBusy:
                     # #3040 (PR #5044's approach): a batch engine can use up its BGEN retries before it has admitted this
@@ -6779,15 +6779,15 @@ class Service:
                             if hit_msg and pcie_share:
                                 hit_msg += f" (+{pcie_share*100:.1f}% of the routed experts over PCIe)"
                             rate_txt = f"{rate:.1f} tok/s" if rate is not None else "no speed"
-                            print(f"[strata] done: {n} tokens in {el:.0f} s ({rate_txt}) "
+                            print(f"[nostroma] done: {n} tokens in {el:.0f} s ({rate_txt}) "
                                   f"({finish}, cancel={cancel.is_set()}){hit_msg}", flush=True)
                             if finish == "length" and parser.state in ("reasoning", "rcall"):   # #530
-                                print("[strata] the reply reached max tokens while still thinking, so it has no "
+                                print("[nostroma] the reply reached max tokens while still thinking, so it has no "
                                       "answer: a thinking budget (reasoning_budget_tokens, in the request or in "
-                                      "strata-<model>.json for every request) leaves room to answer", flush=True)
-                            if os.environ.get("STRATA_DEBUG") and raw_ids:
-                                print(f"[strata] raw: {self.tok.decode(raw_ids)!r}", flush=True)
-                                print(f"[strata] raw ids: {list(raw_ids)}", flush=True)
+                                      "nostroma-<model>.json for every request) leaves room to answer", flush=True)
+                            if os.environ.get("NOSTROMA_DEBUG") and raw_ids:
+                                print(f"[nostroma] raw: {self.tok.decode(raw_ids)!r}", flush=True)
+                                print(f"[nostroma] raw ids: {list(raw_ids)}", flush=True)
                         st["busy"] = False
                         st.pop("tail", None)                     # #212: the answer's end is not kept once it is done
                         st.pop("tool", None)
@@ -6826,23 +6826,23 @@ class Service:
             yield "event", ev
         if parser.rescued or parser.refused:
             self.totals["tool_calls_from_reasoning"] = self.totals.get("tool_calls_from_reasoning", 0) + parser.rescued
-            print(f"[strata] tool calls inside the thinking: {parser.rescued} read as calls, {parser.refused} kept as "
+            print(f"[nostroma] tool calls inside the thinking: {parser.rescued} read as calls, {parser.refused} kept as "
                   f"reasoning (quoted, or the turn did not end on a stop)", flush=True)
         if getattr(parser, "stray_think", 0):
             # #4077: the model wrote a closing think tag while thinking; the reasoning after it was sent as the answer
             self.totals["stray_think_closers"] = self.totals.get("stray_think_closers", 0) + parser.stray_think
-            print(f"[strata] {parser.stray_think} extra closing think tag(s) in the answer were dropped (the model wrote one "
+            print(f"[nostroma] {parser.stray_think} extra closing think tag(s) in the answer were dropped (the model wrote one "
                   "while thinking, so the rest of its reasoning went out as the answer; a call after it still counts)", flush=True)
         if getattr(parser, "notes", None):
             self.totals["tool_args_repaired"] = self.totals.get("tool_args_repaired", 0) + len(parser.notes)
-            print(f"[strata] {len(parser.notes)} tool call argument(s) repaired: {'; '.join(sorted(set(parser.notes)))}", flush=True)
+            print(f"[nostroma] {len(parser.notes)} tool call argument(s) repaired: {'; '.join(sorted(set(parser.notes)))}", flush=True)
         rejected = []
         if parser.unread:
             named = getattr(parser, "unread_names", None)
-            print(f"[strata] {parser.unread} <tool_call> block(s) in the answer did not read as a call of a declared "
+            print(f"[nostroma] {parser.unread} <tool_call> block(s) in the answer did not read as a call of a declared "
                   "tool and went back as text (a name the request did not declare, or a form the template does "
                   "not use)" + (f"; the names the model wrote: {', '.join(named)}" if named else "")
-                  + "; the response carries them as strata_rejected_tool_calls, /metrics counts them", flush=True)
+                  + "; the response carries them as nostroma_rejected_tool_calls, /metrics counts them", flush=True)
             with self.status_lock:
                 self.totals["tool_calls_unread"] = self.totals.get("tool_calls_unread", 0) + parser.unread
             # #3796: the same names for the client (a machine-readable marker next to the text, which stays as the model wrote it)
@@ -6909,7 +6909,7 @@ def answer_speed(last: dict, generated: int, wall_s: float | None = None) -> flo
 
 def request_timings(prompt_tokens: int, generated: int, last: dict) -> dict | None:
     """One request's `timings` in llama.cpp's names (what its clients show as speed), from the engine's own clock
-    (StrataEngine.last): prompt_n is what was read, cache_n what the conversation cache already held.  None when the
+    (NostromaEngine.last): prompt_n is what was read, cache_n what the conversation cache already held.  None when the
     engine keeps no clock (MockEngine)."""
     if last.get("prompt_ms") is None:
         return None
@@ -6961,15 +6961,15 @@ def prefill_leg_stats(earlier: list[dict], last: dict, prompt_tokens: int) -> di
 
 
 def _debug_req(api, req, messages, tools, max_new, thinking, prompt_tokens):
-    """One compact line per request while diagnosing blank/empty turns. Set STRATA_DEBUG=1 to enable."""
-    if not os.environ.get("STRATA_DEBUG"):
+    """One compact line per request while diagnosing blank/empty turns. Set NOSTROMA_DEBUG=1 to enable."""
+    if not os.environ.get("NOSTROMA_DEBUG"):
         return
     last = messages[-1] if messages else {}
     body = last.get("content")
     if isinstance(body, list):
         body = " ".join(p.get("text", "") for p in body if isinstance(p, dict))
     preview = (str(body or "")[:80]).replace("\n", " ")
-    print(f"[strata] req {api}: msgs={len(messages)} tools={len(tools or [])} "
+    print(f"[nostroma] req {api}: msgs={len(messages)} tools={len(tools or [])} "
           f"max_tokens_raw={req.get('max_tokens')!r}/{req.get('max_completion_tokens')!r} "
           f"max_new={max_new} thinking={thinking} stream={bool(req.get('stream'))} "
           f"prompt_tokens={prompt_tokens} last={last.get('role')!r}:{preview!r}", flush=True)
@@ -7047,7 +7047,7 @@ def run_with_mcp(svc: Service, hub, messages, tools, kw, ids, thinking, max_new,
             if "r" not in box:
                 break
             r = box["r"]
-            print(f"[strata] tool {c.name}: {'ok' if r['ok'] else 'error'}, {r['chars']:,} characters in "
+            print(f"[nostroma] tool {c.name}: {'ok' if r['ok'] else 'error'}, {r['chars']:,} characters in "
                   f"{r['ms'] / 1000:.1f} s{' (truncated for the model)' if r['truncated'] else ''}", flush=True)
             results.append(r.get("model_content", r["text"]) if svc.vision is not None else r["text"])
             yield "mcp", {"event": "result", "id": c.id,
@@ -7157,7 +7157,7 @@ class LogprobEntries:
         # of the same request makes new ones: the old ones are read to the end first); another request's never are.
         # A batch admission keeps its own lines on the request's cancel Event: the engine's is one attribute, and
         # the next request to read control lines may already have replaced it.
-        own = getattr(self.owner, "_strata_lp_lines", None)
+        own = getattr(self.owner, "_nostroma_lp_lines", None)
         cur, old = (own if own is not None else getattr(eng, "lp_lines", None)), None
         if cur is not self.lines and getattr(cur, "owner", None) is self.owner:
             old, self.lines = self.lines, cur
@@ -7243,7 +7243,7 @@ def prompt_progress(svc: Service):
 
 def openai_chunks(svc: Service, req: dict, ids, thinking, tools, max_new, cancel, run=None, force=None):
     """`run`: the events to send instead of Service.run's (run_with_mcp); its ("mcp", {...}) items become chunks with
-    an empty delta and a `strata_mcp` field, which only the web app reads.  `force`: see Service.run."""
+    an empty delta and a `nostroma_mcp` field, which only the web app reads.  `force`: see Service.run."""
     cid, created = "chatcmpl-" + uuid.uuid4().hex[:24], int(time.time())
     model = svc.model_for(req)
     # llama.cpp's flag, and its default: a client that wants prompt progress asks for it, and nothing changes for one
@@ -7276,7 +7276,7 @@ def openai_chunks(svc: Service, req: dict, ids, thinking, tools, max_new, cancel
             yield None if pp is None else {**chunk({}), "prompt_progress": pp}
         elif kind == "mcp":
             c = chunk({})
-            c["strata_mcp"] = x
+            c["nostroma_mcp"] = x
             yield c
         elif kind == "event":
             ev: Event = x
@@ -7312,13 +7312,13 @@ def openai_chunks(svc: Service, req: dict, ids, thinking, tools, max_new, cancel
             if x.get("timings"):
                 last["timings"] = x["timings"]          # llama.cpp's field: the speed its clients show
             if x.get("rejected_tool_calls"):
-                last["strata_rejected_tool_calls"] = x["rejected_tool_calls"]     # #3796: only when a call was refused as undeclared
+                last["nostroma_rejected_tool_calls"] = x["rejected_tool_calls"]     # #3796: only when a call was refused as undeclared
             yield last
     if not answered_done and not cancel.is_set():
         # Every admitted request ends with a "done" event that carries its finish reason. A run that simply stopped (a 200 with one chunk and no
         # finish_reason, in 0.2 s, while the engine never logged the request: #3961) used to read to the client as an empty answer that worked, and
         # /health stayed ok. It is an error now, counted in the log, so a client's retry can tell it from an answer.
-        print("[strata] a request ended without an answer and without a finish reason; it is answered as an error", flush=True)
+        print("[nostroma] a request ended without an answer and without a finish reason; it is answered as an error", flush=True)
         # the engine is ended so "the next request restarts it" is true - but only that engine process, and only while nobody is on it (the turn is taken
         # without waiting): this runs after the run released its turn, and a request admitted since must not be killed by it
         ended = svc.end_engine_if_unchanged(born)
@@ -7341,8 +7341,8 @@ def openai_collect(chunks) -> dict:
     for c in chunks:
         if c is None:                              # a heartbeat
             continue
-        if c.get("strata_mcp"):
-            mcp.append(c["strata_mcp"])
+        if c.get("nostroma_mcp"):
+            mcp.append(c["nostroma_mcp"])
         for k, v in (c["choices"][0].get("logprobs") or {}).items():
             lps.setdefault(k, []).extend(v)
         d = c["choices"][0]["delta"]
@@ -7367,7 +7367,7 @@ def openai_collect(chunks) -> dict:
     if calls:
         msg["tool_calls"] = calls
     if mcp:
-        msg["strata_mcp"] = mcp
+        msg["nostroma_mcp"] = mcp
     out = {"id": last["id"], "object": "chat.completion", "created": last["created"], "model": last["model"],
            "choices": [{"index": 0, "message": msg, "finish_reason": last["choices"][0]["finish_reason"]}],
            "usage": last["usage"]}
@@ -7376,8 +7376,8 @@ def openai_collect(chunks) -> dict:
             {"reasoning_content": lps["reasoning_content"]} if lps.get("reasoning_content") else {})}
     if last.get("timings"):
         out["timings"] = last["timings"]
-    if last.get("strata_rejected_tool_calls"):
-        out["strata_rejected_tool_calls"] = last["strata_rejected_tool_calls"]
+    if last.get("nostroma_rejected_tool_calls"):
+        out["nostroma_rejected_tool_calls"] = last["nostroma_rejected_tool_calls"]
     return out
 
 
@@ -7551,7 +7551,7 @@ def anthropic_events(svc: Service, req: dict, ids, thinking, tools, max_new, can
                            "usage": {"input_tokens": 1, "cache_creation_input_tokens": read_now - 1,
                                      "cache_read_input_tokens": reused, "output_tokens": x["completion_tokens"]}}
             if x.get("rejected_tool_calls"):
-                delta_event["strata_rejected_tool_calls"] = x["rejected_tool_calls"]     # #3796
+                delta_event["nostroma_rejected_tool_calls"] = x["rejected_tool_calls"]     # #3796
             yield "message_delta", delta_event
             yield "message_stop", {"type": "message_stop"}
 
@@ -7584,8 +7584,8 @@ def anthropic_collect(events) -> dict:
             msg["stop_reason"] = e["delta"]["stop_reason"]
             msg["stop_sequence"] = e["delta"].get("stop_sequence")
             msg["usage"].update(e["usage"])
-            if e.get("strata_rejected_tool_calls"):
-                msg["strata_rejected_tool_calls"] = e["strata_rejected_tool_calls"]
+            if e.get("nostroma_rejected_tool_calls"):
+                msg["nostroma_rejected_tool_calls"] = e["nostroma_rejected_tool_calls"]
     for i in range(len(blocks) - 1):    # a turn with no </think>: the text is the answer; it is not also a thinking block
         a, b = blocks[i], blocks[i + 1]
         if a.get("type") == "thinking" and b.get("type") == "text" and a.get("thinking", "").strip() == b.get("text", "").strip():
@@ -7601,10 +7601,10 @@ CHUNKED_BODY_MAX = 256 << 20                # #893: the most a Transfer-Encoding
 
 def body_limit() -> int:
     """The most a request body may hold, in bytes (read into memory): 256 MiB, which is a million-token conversation
-    with room to spare; STRATA_MAX_BODY_MIB changes it (0 or an unreadable value: the default).  A larger one is
+    with room to spare; NOSTROMA_MAX_BODY_MIB changes it (0 or an unreadable value: the default).  A larger one is
     answered 413 before it is read (a Content-Length of 10 TB used to be read until the client gave up)."""
     try:
-        mib = int(os.environ.get("STRATA_MAX_BODY_MIB", "0"))
+        mib = int(os.environ.get("NOSTROMA_MAX_BODY_MIB", "0"))
     except ValueError:
         mib = 0
     return mib << 20 if mib > 0 else CHUNKED_BODY_MAX
@@ -7703,7 +7703,7 @@ def make_handler(svc: Service):
             if length > limit:
                 self.close_connection = True               # the body is not read: the connection ends with the answer
                 raise BadBody(413, f"the request body is larger than {limit >> 20} MiB "
-                                   "(STRATA_MAX_BODY_MIB raises the limit)")
+                                   "(NOSTROMA_MAX_BODY_MIB raises the limit)")
             return self.rfile.read(length)
 
         def _drain_body(self):
@@ -7748,13 +7748,13 @@ def make_handler(svc: Service):
             host = self.headers.get("Host")
             if svc.api_key or host_allowed(host, svc.host_names, "*" in svc.allowed_hosts):
                 return True
-            print(f"[strata] refused a request for Host {host!r} from {self.client_address[0]}: not a name this server "
-                  f"answers to (add it to \"allowed_hosts\" in the config or STRATA_ALLOWED_HOSTS, or set an API key)",
+            print(f"[nostroma] refused a request for Host {host!r} from {self.client_address[0]}: not a name this server "
+                  f"answers to (add it to \"allowed_hosts\" in the config or NOSTROMA_ALLOWED_HOSTS, or set an API key)",
                   flush=True)
             self._json(403, {"error": {"type": "forbidden", "message":
                              f"Host {host!r} is not allowed (DNS rebinding protection). Reaching Nostroma under this "
-                             f"name on purpose? Add it to \"allowed_hosts\" in the config (strata-<model>.json) or to "
-                             f"the STRATA_ALLOWED_HOSTS environment variable, or set an API key (\"api_key\"), which "
+                             f"name on purpose? Add it to \"allowed_hosts\" in the config (nostroma-<model>.json) or to "
+                             f"the NOSTROMA_ALLOWED_HOSTS environment variable, or set an API key (\"api_key\"), which "
                              f"turns this check off"}})
             return False
 
@@ -7767,7 +7767,7 @@ def make_handler(svc: Service):
                 return False
             if not origin_allowed(origin, self.headers.get("Host"), svc.host_names,
                                   [*svc.trusted_origins, *svc.cors_origins]):
-                print(f"[strata] refused an API request from the web page {origin!r} (no API key; add its host to "
+                print(f"[nostroma] refused an API request from the web page {origin!r} (no API key; add its host to "
                       f"\"allowed_hosts\" or its origin to \"cors_origins\" in the config)", flush=True)
                 self._json(403, {"error": {"type": "forbidden", "message":
                                  f"web pages of {origin} may not use this server without an API key; set \"api_key\", "
@@ -7813,7 +7813,7 @@ def make_handler(svc: Service):
                         svc.note_client_disconnect(cancel)
                         return
 
-            threading.Thread(target=watch, daemon=True, name="strata-client-watch").start()
+            threading.Thread(target=watch, daemon=True, name="nostroma-client-watch").start()
 
         def _note(self, **values):
             """#332: what the monitor shows about this request (nothing when the monitor is off)."""
@@ -8199,7 +8199,7 @@ def make_handler(svc: Service):
                 self._json(200, {"status": "ok", "max_context": svc.reported_ctx(), "model": svc.model,
                                  "images": svc.vision is not None, "api_key": bool(svc.api_key),
                                  "image_generation": svc.images is not None,
-                                 "loaded": svc.loaded(), "service": "strata"})
+                                 "loaded": svc.loaded(), "service": "nostroma"})
             elif path.startswith("/v1/images/files/"):
                 # response_format url: the name (32 random hex digits) is the access, as an OpenAI image URL is
                 f = svc.images.file(path[len("/v1/images/files/"):]) if svc.images is not None else None
@@ -8405,11 +8405,11 @@ def make_handler(svc: Service):
                 else:
                     self._json(404, {"error": {"message": "not found"}})
             except EngineNonFinite as e:                    # #879, twice: not the request's fault
-                print(f"[strata] 503: {e}", flush=True)
+                print(f"[nostroma] 503: {e}", flush=True)
                 self._json(503, responses_error_body(str(e), "server_error") if path == "/v1/responses"
                            else {"error": {"type": "server_error", "message": str(e)}})
             except ValueError as e:
-                print(f"[strata] 400 invalid request: {e}", flush=True)
+                print(f"[nostroma] 400 invalid request: {e}", flush=True)
                 if path == "/v1/responses":
                     self._json(400, responses_error_body(str(e)))
                 else:
@@ -8435,7 +8435,7 @@ def make_handler(svc: Service):
                 if getattr(self, "answer_started", False):
                     raise
                 import traceback
-                print(f"[strata] 400 malformed request ({type(e).__name__}: {e}):\n" + traceback.format_exc(),
+                print(f"[nostroma] 400 malformed request ({type(e).__name__}: {e}):\n" + traceback.format_exc(),
                       flush=True)
                 body = {"error": {"type": "invalid_request_error",
                                   "message": f"the request is malformed ({type(e).__name__}: {e})"}}
@@ -8479,7 +8479,7 @@ def make_handler(svc: Service):
             svc.last_request_at = time.time()
             cancel = threading.Event()
             self._watch_client(cancel)
-            print(f"[strata] image: {job['width']}x{job['height']}, n={job['n']}, {job['steps']} steps, "
+            print(f"[nostroma] image: {job['width']}x{job['height']}, n={job['n']}, {job['steps']} steps, "
                   f"seed {job['seed']}", flush=True)
             try:
                 with images_api.gpu_turn(svc, gen, job, cancel) as policy:
@@ -8489,7 +8489,7 @@ def make_handler(svc: Service):
                                            "message": str(e)}})
                 return
             figures["gpu_policy"] = policy
-            print(f"[strata] image done in {figures['seconds']:.1f} s ({policy})", flush=True)
+            print(f"[nostroma] image done in {figures['seconds']:.1f} s ({policy})", flush=True)
             host = self.headers.get("Host") or f"{self.server.server_address[0]}:{self.server.server_address[1]}"
             scheme = "https" if (self.headers.get("X-Forwarded-Proto") or "").lower() == "https" else "http"
             self._json(200, gen.response(images, job, figures, f"{scheme}://{host}"))
@@ -8602,7 +8602,7 @@ def make_handler(svc: Service):
                 self._json(500, {"error": {"type": "server_error", "message": f"the run config cannot be written: {e}"}})
                 return
             if changed:
-                print(f"[strata] the Settings view changed {', '.join(changed)} in {Path(svc.config_path).name} "
+                print(f"[nostroma] the Settings view changed {', '.join(changed)} in {Path(svc.config_path).name} "
                       f"(the earlier file: {bak.name}); used from the next start", flush=True)
             self._json(200, {**runconfig.view(new, svc.config_path), "changed": changed})
         def _foreign_origin(self) -> bool:
@@ -8642,8 +8642,8 @@ def make_handler(svc: Service):
             except ValueError as e:
                 self._json(400, {"error": {"type": "invalid_request_error", "message": str(e)}})
                 return
-            print("[strata] other apps now use the Chat settings: " + ", ".join(f"{k}={v}" for k, v in shared.items())
-                  if shared else "[strata] other apps use their own settings again", flush=True)
+            print("[nostroma] other apps now use the Chat settings: " + ", ".join(f"{k}={v}" for k, v in shared.items())
+                  if shared else "[nostroma] other apps use their own settings again", flush=True)
             self._json(200, {"shared": bool(shared), "defaults": shared})
 
         def _sse(self):
@@ -8709,7 +8709,7 @@ def make_handler(svc: Service):
                 tools = None
             force = svc.force_text(forced_call(req.get("tool_choice"), tools))      # a bad value is a 400 before anything is sent
             messages, validator = prepare_format(req.get("response_format"), messages)
-            if validator is not None and (tools or req.get("strata_mcp")):
+            if validator is not None and (tools or req.get("nostroma_mcp")):
                 raise ValueError("structured response_format with tools/MCP is not supported")
             svc.load()
             max_req = max_new = int(req.get("max_completion_tokens") or req.get("max_tokens") or 0)   # 0/-1: the rest
@@ -8734,7 +8734,7 @@ def make_handler(svc: Service):
                     raise ValueError(f"allowed_token_ids: {bad[0]} is outside the vocabulary "
                                      f"(0..{n_vocab - 1})")
             bias_api.validate_request(req, svc.engine, len(getattr(svc.tok, "tokens", ())) or None)
-            use_mcp = req.get("strata_mcp") is True and svc.mcp is not None      # the web app's opt-in (serve/mcp.py)
+            use_mcp = req.get("nostroma_mcp") is True and svc.mcp is not None      # the web app's opt-in (serve/mcp.py)
             own = {t.get("name") for t in tools or [] if isinstance(t, dict)}   # #592: a second line of defence
             if use_mcp:
                 if not self._own_page("MCP tools can be used"):   # tools run with the user's rights on this PC
@@ -8918,7 +8918,7 @@ def make_handler(svc: Service):
                 raise ResponsesError(str(e).replace("response_format", "text.format"), "text.format") from None
             noted = svc.__dict__.setdefault("hosted_tools_noted", set())   # said once per tool, not per request
             if set(skipped) - noted:
-                print(f"[strata] /v1/responses: left out the hosted tools {', '.join(sorted(set(skipped) - noted))} "
+                print(f"[nostroma] /v1/responses: left out the hosted tools {', '.join(sorted(set(skipped) - noted))} "
                       f"(this server cannot run them)", flush=True)
                 noted.update(skipped)
             if req.get("max_output_tokens") is None and "max_tokens" in svc.shared:   # the shared Chat settings
@@ -8988,7 +8988,7 @@ def make_handler(svc: Service):
             stop_strings(req)                                 # ... and so is a bad stop / stop_sequences
             check_request_sampling(req)                       # ... and a sampling field of the wrong type
             cancel = threading.Event()
-            setattr(cancel, "_strata_cache_hints", cache_hints)   # this turn's marks travel with its record (/metrics history)
+            setattr(cancel, "_nostroma_cache_hints", cache_hints)   # this turn's marks travel with its record (/metrics history)
             self._watch_client(cancel)                       # #430 #431 (#1999: before prepare, which can take long)
             try:
                 ids, thinking, max_new = svc.prepare(messages, tools, kw, max_new, force=force, req=req, cancel=cancel)
@@ -9037,8 +9037,8 @@ class Server(ThreadingHTTPServer):
     allow_reuse_address = os.name != "nt"
     # socketserver listens with a backlog of 5: a burst of 30-40 clients at once got "connection reset by peer" on the
     # first ones (measured on 4 x R9700, also with one request at a time); the requests wait in the server, not the kernel
-    # (STRATA_HTTP_BACKLOG overrides it)
-    request_queue_size = max(5, int(os.environ.get("STRATA_HTTP_BACKLOG") or 256))
+    # (NOSTROMA_HTTP_BACKLOG overrides it)
+    request_queue_size = max(5, int(os.environ.get("NOSTROMA_HTTP_BACKLOG") or 256))
 
     def __init__(self, server_address, RequestHandlerClass, bind_and_activate=True):
         if ":" in server_address[0]:
@@ -9077,7 +9077,7 @@ def warn_tight_ram(arena_mib) -> None:
         return
     left = total / 2**30 - arena_mib / 1024
     if left < 6:
-        print(f"[strata] WARNING: RAM is tight - the model's experts take {arena_mib / 1024:.1f} GB of this PC's "
+        print(f"[nostroma] WARNING: RAM is tight - the model's experts take {arena_mib / 1024:.1f} GB of this PC's "
               f"{total / 2**30:.0f} GB, leaving {left:.1f} GB for everything else. "
               + ("Linux may stop the engine in the middle of an answer. " if os.name != "nt" else
                  "Windows will slow down (paging to disk). ")
@@ -9104,7 +9104,7 @@ def warn_budget_over_ram(args) -> str | None:
     msg = (f"WARNING: the RAM budget for experts is {budget:g} GiB (--resident-budget-gib), but this PC has "
            f"{free:.0f} GiB free of {total:.0f} GiB: what does not fit goes to swap or is read from disk, which can make "
            "decoding very slow. Lower it (setup sizes it for this PC) or remove the argument to let the engine choose.")
-    print("[strata] " + msg, flush=True)
+    print("[nostroma] " + msg, flush=True)
     return msg
 
 
@@ -9131,7 +9131,7 @@ def desktop_vram_note(backend, vram_free_mib, args: list, desktop: bool) -> str:
         reserve = 700
     if reserve >= DESKTOP_RESERVE_MIB:
         return ""
-    return (f"[strata] note: {vram_free_mib} MiB of VRAM free with the model loaded. If this AMD card also drives your "
+    return (f"[nostroma] note: {vram_free_mib} MiB of VRAM free with the model loaded. If this AMD card also drives your "
             "desktop and the desktop or apps crash after the start (the driver moves the expert cache to RAM and "
             "the OOM killer ends the session), keep more VRAM free: ./setup.sh --vram-reserve-mib "
             f"{DESKTOP_RESERVE_MIB} (remembered; the expert cache gets "
@@ -9189,7 +9189,7 @@ def _name_in(name: str, names) -> bool:
 
 
 def allowed_hosts_of(value, env: str = "") -> list[str]:
-    """The config's allowed_hosts (a name or a list) plus $STRATA_ALLOWED_HOSTS (comma-separated): host names, "*" or
+    """The config's allowed_hosts (a name or a list) plus $NOSTROMA_ALLOWED_HOSTS (comma-separated): host names, "*" or
     ".example.com" (it and every name below it).  A scheme, port or path is dropped ("https://a.example.com:8443/"
     -> "a.example.com"); a wrong entry stops the start (ValueError)."""
     items = [] if value in (None, "") else [value] if isinstance(value, str) else value
@@ -9205,7 +9205,7 @@ def allowed_hosts_of(value, env: str = "") -> list[str]:
         dot = x.startswith(".")
         name = host_name(x[1:] if dot else x)
         if not name:
-            raise ValueError(f"allowed_hosts: {raw!r} is not a host name like strata.example.com")
+            raise ValueError(f"allowed_hosts: {raw!r} is not a host name like nostroma.example.com")
         out.append("." + name if dot else name)
     return list(dict.fromkeys(out))
 
@@ -9244,7 +9244,7 @@ def host_allowed(host, names, any_host=False) -> bool:
 
 
 def key_list(value) -> list[str]:
-    """#1344: the keys a server accepts.  --api-key / STRATA_API_KEY / "api_key" take llama.cpp's form, several keys
+    """#1344: the keys a server accepts.  --api-key / NOSTROMA_API_KEY / "api_key" take llama.cpp's form, several keys
     separated by commas ("k1,k2"; spaces around each are dropped), or a list in the config ("api_key": ["k1", "k2"],
     the way to give a key that contains a comma).  A list is taken as it is."""
     if value is None or value == "":
@@ -9255,7 +9255,7 @@ def key_list(value) -> list[str]:
 
 
 def explicit_no_key(value) -> bool:
-    """The owner chose to serve without a key: "api_key": "none" in the config, STRATA_API_KEY=none or --api-key none
+    """The owner chose to serve without a key: "api_key": "none" in the config, NOSTROMA_API_KEY=none or --api-key none
     (or --no-api-key, handled by the caller).  Never a key called "none"."""
     return isinstance(value, str) and value.strip().lower() == "none"
 
@@ -9339,7 +9339,7 @@ def origins_of(value, key: str, wildcard: bool) -> list[str]:
         return []
     items = [value] if isinstance(value, str) else value
     if not isinstance(items, list) or not all(isinstance(x, str) for x in items):
-        raise SystemExit(f"[strata] {key}: expected an origin or a list of origins")
+        raise SystemExit(f"[nostroma] {key}: expected an origin or a list of origins")
     out = []
     for x in items:
         x = x.strip().rstrip("/")
@@ -9348,7 +9348,7 @@ def origins_of(value, key: str, wildcard: bool) -> list[str]:
             continue
         scheme, sep, rest = x.partition("://")
         if scheme not in ("http", "https") or not sep or not rest or "/" in rest or "*" in rest:
-            raise SystemExit(f"[strata] {key}: {x!r} is not an origin like https://chat.example.com"
+            raise SystemExit(f"[nostroma] {key}: {x!r} is not an origin like https://chat.example.com"
                              + ("" if wildcard else " (no wildcards here)"))
         out.append(x)
     return out
@@ -9420,7 +9420,7 @@ def split_joined_args(cfg: dict) -> None:
         changed.append(a)
     if changed:
         cfg["args"] = out
-        print("[strata] the config's args hold " + ", ".join(repr(c) for c in changed) + " as one element each: split into the "
+        print("[nostroma] the config's args hold " + ", ".join(repr(c) for c in changed) + " as one element each: split into the "
               'flag and its value (write them as two elements, e.g. "--ple-io", "mmap")', flush=True)
 
 
@@ -9435,7 +9435,7 @@ def parse_config_text(text: str, path) -> dict:
     try:
         return json.loads(text)
     except json.JSONDecodeError as e:
-        raise SystemExit(f"[strata] {path} is not valid JSON: {e.msg} at line {e.lineno}, column {e.colno}. Check the commas "
+        raise SystemExit(f"[nostroma] {path} is not valid JSON: {e.msg} at line {e.lineno}, column {e.colno}. Check the commas "
                          'between the entries of "args" (each option and each value is its own quoted entry, e.g. '
                          '"--ple-io", "mmap",) and that no entry is followed by a comma at the end of a list.') from None
 
@@ -9463,7 +9463,7 @@ def lift_reasoning_effort_arg(cfg: dict) -> None:
     cfg["args"] = out
     if cfg.get("reasoning_effort") is None:
         cfg["reasoning_effort"] = value
-    print("[strata] '--reasoning-effort' in the config's args is not an engine option: taken out of them. The thinking "
+    print("[nostroma] '--reasoning-effort' in the config's args is not an engine option: taken out of them. The thinking "
           "level is the config's 'reasoning_effort' key (outside 'args'); it is used as " +
           f"{cfg['reasoning_effort']!r}", flush=True)
 
@@ -9476,9 +9476,9 @@ SAMPLING_ALIASES = {"repeat_penalty": "repetition_penalty", "repeat_last_n": "pe
 def apply_saved_tuning(cfg: dict, *, say=None) -> dict:
     """The run config with the active saved tuning for its choices put on top (nostroma_control/presets.py), with no measurement.
     Every start path runs this (the Terminal, `runtime start`, the app's load, a restart of the app, an unload and a load), so the
-    tuning is applied every time and never re-measured. A tune's own worker sets STRATA_NO_PRESET so that it measures the
+    tuning is applied every time and never re-measured. A tune's own worker sets NOSTROMA_NO_PRESET so that it measures the
     configuration it was given. Never fails a start: a store that cannot be read means the configuration as it is."""
-    if os.environ.get("STRATA_NO_PRESET"):
+    if os.environ.get("NOSTROMA_NO_PRESET"):
         return cfg
     say = say or (lambda line: print(line, flush=True))
     try:
@@ -9487,19 +9487,19 @@ def apply_saved_tuning(cfg: dict, *, say=None) -> dict:
         if applied.get("applied"):
             changes = {**(applied.get("args") or {}), **(applied.get("env") or {})}
             note = applied.get("notice") or ""
-            say(f"[strata] saved tuning '{applied['preset']['name']}' applied: "
+            say(f"[nostroma] saved tuning '{applied['preset']['name']}' applied: "
                 f"{' '.join(f'{k} {v}' for k, v in changes.items()) or 'the standard settings (nothing to change)'}"
                 f"{'; ' + note if note and 'identical' not in note else ''}")
             for warning in applied.get("warnings") or []:   # #3844: outside the range the tuner tries, kept
-                say(f"[strata] warning: {warning}")
+                say(f"[nostroma] warning: {warning}")
             if applied.get("state") == "soft":
-                say("[strata] this PC or engine changed since it was saved (" + "; ".join(applied["reasons"]) +
+                say("[nostroma] this PC or engine changed since it was saved (" + "; ".join(applied["reasons"]) +
                     "): a short re-check is available (nostroma presets recheck)")
         elif applied.get("why_not"):
-            say(f"[strata] saved tuning '{applied['preset']['name']}' {applied['why_not']}; re-tune with nostroma tune auto")
+            say(f"[nostroma] saved tuning '{applied['preset']['name']}' {applied['why_not']}; re-tune with nostroma tune auto")
         return out
     except Exception as e:  # noqa: BLE001
-        say(f"[strata] saved tuning could not be read ({type(e).__name__}); starting with the configuration as it is")
+        say(f"[nostroma] saved tuning could not be read ({type(e).__name__}); starting with the configuration as it is")
         return cfg
 
 
@@ -9516,7 +9516,7 @@ def sampling_defaults_from_config(cfg: dict) -> dict:
     for alias, canon in SAMPLING_ALIASES.items():      # #1819: llama.cpp's names for the same two fields
         if block.get(alias) is not None:
             if block.get(canon) is not None:
-                raise SystemExit(f"[strata] config sampling: both {alias!r} and {canon!r} are set; they are the same "
+                raise SystemExit(f"[nostroma] config sampling: both {alias!r} and {canon!r} are set; they are the same "
                                  f"setting, keep one")
             block[canon] = block.pop(alias)
     for key, value in block.items():
@@ -9525,51 +9525,51 @@ def sampling_defaults_from_config(cfg: dict) -> dict:
         number = isinstance(value, (int, float)) and not isinstance(value, bool)
         if key == "temperature":
             if not number or value < 0:
-                raise SystemExit(f"[strata] config sampling.temperature={value!r}: expected a number >= 0 (0 = greedy)")
+                raise SystemExit(f"[nostroma] config sampling.temperature={value!r}: expected a number >= 0 (0 = greedy)")
             out[key] = float(value)
         elif key == "top_p":
             if not number or not 0 < value <= 1:
-                raise SystemExit(f"[strata] config sampling.top_p={value!r}: expected 0 < top_p <= 1")
+                raise SystemExit(f"[nostroma] config sampling.top_p={value!r}: expected 0 < top_p <= 1")
             out[key] = float(value)
         elif key == "min_p":
             if not number or not 0 <= value <= 1:
-                raise SystemExit(f"[strata] config sampling.min_p={value!r}: expected 0 <= min_p <= 1")
+                raise SystemExit(f"[nostroma] config sampling.min_p={value!r}: expected 0 <= min_p <= 1")
             out[key] = float(value)
         elif key == "top_k":
             if not number or value != int(value) or not 1 <= value <= 64:
-                raise SystemExit(f"[strata] config sampling.top_k={value!r}: the sampled path takes an integer 1..64")
+                raise SystemExit(f"[nostroma] config sampling.top_k={value!r}: the sampled path takes an integer 1..64")
             out[key] = int(value)
         elif key == "presence_penalty":
             if not number or value < 0:
-                raise SystemExit(f"[strata] config sampling.presence_penalty={value!r}: expected a number >= 0")
+                raise SystemExit(f"[nostroma] config sampling.presence_penalty={value!r}: expected a number >= 0")
             out[key] = float(value)
         elif key == "frequency_penalty":
             if not number or value < 0:
-                raise SystemExit(f"[strata] config sampling.frequency_penalty={value!r}: expected a number >= 0")
+                raise SystemExit(f"[nostroma] config sampling.frequency_penalty={value!r}: expected a number >= 0")
             out[key] = float(value)
         elif key == "repetition_penalty":
             if not number or value <= 0:
-                raise SystemExit(f"[strata] config sampling.repetition_penalty={value!r}: expected a number > 0 (1 = off)")
+                raise SystemExit(f"[nostroma] config sampling.repetition_penalty={value!r}: expected a number > 0 (1 = off)")
             out[key] = float(value)
         elif key == "penalty_last_n":
             if not number or value != int(value) or value < 0:
-                raise SystemExit(f"[strata] config sampling.penalty_last_n={value!r}: expected a non-negative integer")
+                raise SystemExit(f"[nostroma] config sampling.penalty_last_n={value!r}: expected a non-negative integer")
             out[key] = int(value)
         elif key == "seed":
             if not number or value != int(value) or value <= 0:
-                raise SystemExit(f"[strata] config sampling.seed={value!r}: expected a positive integer")
+                raise SystemExit(f"[nostroma] config sampling.seed={value!r}: expected a positive integer")
             out[key] = int(value)
-        elif key == "strata_tune":           # a saved tuning's per-request settings (nostroma_control/presets.py)
+        elif key == "nostroma_tune":           # a saved tuning's per-request settings (nostroma_control/presets.py)
             if not isinstance(value, dict):
-                raise SystemExit(f"[strata] config sampling.strata_tune={value!r}: expected an object")
+                raise SystemExit(f"[nostroma] config sampling.nostroma_tune={value!r}: expected an object")
             out[key] = {k: v for k, v in value.items() if k in ("pcie_frac", "spec_min_p", "aux_cpus")}
         elif key == "experimental_speed_projection":
             if not isinstance(value, bool):
-                raise SystemExit(f"[strata] config sampling.experimental_speed_projection={value!r}: expected true or "
+                raise SystemExit(f"[nostroma] config sampling.experimental_speed_projection={value!r}: expected true or "
                                  "false (the default for requests that leave it out, when the engine has the vector)")
             out[key] = value
         else:
-            print(f"[strata] config sampling.{key}={value!r}: unknown key, ignored", flush=True)
+            print(f"[nostroma] config sampling.{key}={value!r}: unknown key, ignored", flush=True)
     return out
 
 
@@ -9583,7 +9583,7 @@ def start_engine_or_fallback(cfg: dict, exe: str, effort_end: list[str] | None, 
     normal one instead, so a start never fails because of the option. Any other config starts exactly as before."""
     fb = cfg.get("split_fallback")
     try:
-        return StrataEngine(exe, engine_args(cfg, exe) + (effort_end or []), cwd=cfg.get("cwd"), log=cfg.get("log"), env=env, lazy=lazy,
+        return NostromaEngine(exe, engine_args(cfg, exe) + (effort_end or []), cwd=cfg.get("cwd"), log=cfg.get("log"), env=env, lazy=lazy,
                             retry_args=mtp_retry_args(cfg, exe, effort_end), retry_vram_args=nodraft_retry_args(cfg, exe, effort_end))
     except Exception as e:
         if not isinstance(fb, dict) or not fb.get("exe"):
@@ -9600,7 +9600,7 @@ def start_engine_or_fallback(cfg: dict, exe: str, effort_end: list[str] | None, 
                 os.replace(log, str(log) + ".split-engine")
             except OSError:
                 pass
-        print(f"[strata] The all-cards split engine could not start ({why}). Starting the normal layer split instead.", flush=True)
+        print(f"[nostroma] The all-cards split engine could not start ({why}). Starting the normal layer split instead.", flush=True)
     cfg2 = {k: v for k, v in cfg.items() if k not in SPLIT_KEYS + ("exe", "args", "env", "layer_split", "replicas", "user_args", "drafting")}
     cfg2.update(fb)
     cfg2 = with_component_engine(cfg2)
@@ -9612,7 +9612,7 @@ def start_engine_or_fallback(cfg: dict, exe: str, effort_end: list[str] | None, 
     configure_batch_telemetry_env(env2, cfg2, batch_telemetry)
     configure_cache_boundary_env(env2, cfg2)
     effort2 = effort_end_args(cfg2, exe2, tok)
-    engine = StrataEngine(exe2, engine_args(cfg2, exe2) + (effort2 or []), cwd=cfg2.get("cwd"), log=cfg2.get("log"), env=env2, lazy=lazy,
+    engine = NostromaEngine(exe2, engine_args(cfg2, exe2) + (effort2 or []), cwd=cfg2.get("cwd"), log=cfg2.get("log"), env=env2, lazy=lazy,
                           retry_args=mtp_retry_args(cfg2, exe2, effort2), retry_vram_args=nodraft_retry_args(cfg2, exe2, effort2))
     engine.info["split_fallback"] = True
     return engine
@@ -9620,33 +9620,33 @@ def start_engine_or_fallback(cfg: dict, exe: str, effort_end: list[str] | None, 
 
 def start_replicas(cfg: dict, groups: list[list[int]], exe: str, effort_end: list[str], lazy: bool,
                    *, offline: bool = False):
-    """Opt-in data-parallel replicas (serve/replicas.py): one StrataEngine per card group, each with its own cards, log
+    """Opt-in data-parallel replicas (serve/replicas.py): one NostromaEngine per card group, each with its own cards, log
     and CPU cores, started together; the ReplicaEngine in front spreads the requests."""
     from serve import replicas as rp
     n = len(groups)
     cpus = rp.cpu_sets(n, cfg.get("replica_cpus") is not False)
-    print(f"[strata] {n} replicas on the cards {' | '.join(','.join(map(str, g)) for g in groups)}"
+    print(f"[nostroma] {n} replicas on the cards {' | '.join(','.join(map(str, g)) for g in groups)}"
           f"{' (own CPU cores each)' if cpus else ''}: requests go to the least busy one, a conversation back to its own",
           flush=True)
     engines: list = [None] * n
     errors: list = []
     arena, arena_note = rp.shared_arena_plan(cfg, n)         # opt-in: one copy of the experts in RAM for all replicas
     if arena_note:
-        print(f"[strata] {arena_note}", flush=True)
+        print(f"[nostroma] {arena_note}", flush=True)
 
     def one(i: int):
         rc = rp.replica_cfg(cfg, i, groups[i])
         if arena:
             rc["args"] = list(rc["args"]) + ["--shared-expert-arena", arena]
         try:
-            engines[i] = StrataEngine(exe, engine_args(rc, exe) + effort_end, cwd=rc.get("cwd"), log=rc.get("log"),
+            engines[i] = NostromaEngine(exe, engine_args(rc, exe) + effort_end, cwd=rc.get("cwd"), log=rc.get("log"),
                                       env=child_env(rc, offline=offline), lazy=lazy, cpus=cpus[i] if cpus else None,
                                       retry_args=mtp_retry_args(rc, exe, effort_end), retry_vram_args=nodraft_retry_args(rc, exe, effort_end))
         except BaseException as e:        # noqa: BLE001
             errors.append((i, e))
     rc0 = rp.replica_cfg(cfg, 0, groups[0])
     warn_budget_over_ram(engine_args(rc0, announce=False) if "args" in rc0 else [])
-    if os.environ.get("STRATA_REPLICA_START", "") == "serial":
+    if os.environ.get("NOSTROMA_REPLICA_START", "") == "serial":
         for i in range(n):
             one(i)
     else:
@@ -9661,7 +9661,7 @@ def start_replicas(cfg: dict, groups: list[list[int]], exe: str, effort_end: lis
         # once more on the same arena instead of giving up the sharing
         failed = sorted(i for i, _ in errors)
         errors.clear()
-        print(f"[strata] replica(s) {', '.join(map(str, failed))} did not start; starting again on the shared expert arena",
+        print(f"[nostroma] replica(s) {', '.join(map(str, failed))} did not start; starting again on the shared expert arena",
               flush=True)
         for i in failed:
             one(i)
@@ -9675,10 +9675,10 @@ def start_replicas(cfg: dict, groups: list[list[int]], exe: str, effort_end: lis
         rp.remove_arena(arena)
         i, e = errors[0]
         if arena:       # a shared arena that could not be made (no room in /dev/shm, a file of another pack): as before
-            print(f"[strata] replica {i} did not start with the shared expert arena ({e}); starting every replica with "
+            print(f"[nostroma] replica {i} did not start with the shared expert arena ({e}); starting every replica with "
                   "its own copy of the experts instead", flush=True)
             return start_replicas({**cfg, "replica_shared_arena": False}, groups, exe, effort_end, lazy, offline=offline)
-        raise SystemExit(f"[strata] replica {i} did not start: {e}")
+        raise SystemExit(f"[nostroma] replica {i} did not start: {e}")
     load = int(cfg.get("replica_load_tokens") or rp.LOAD_TOKENS)
     eng = rp.ReplicaEngine(engines, load_tokens=load)
     if arena:
@@ -9696,7 +9696,7 @@ def start_split(cfg: dict, spec: dict, exe: str, effort_end: list[str], lazy: bo
     sp.check_cfg(cfg, spec)
     arena, arena_note = sp.arena_path(cfg, spec)
     work = sp.session_dir(spec)
-    print(f"[strata] split serving: the prompt is read on card {spec['prefill_gpu']}, the answer is made on card "
+    print(f"[nostroma] split serving: the prompt is read on card {spec['prefill_gpu']}, the answer is made on card "
           f"{spec['decode_gpu']} (prompts with {spec['min_prompt_tokens']}+ new tokens are handed over); {arena_note}",
           flush=True)
     engines = {}
@@ -9707,7 +9707,7 @@ def start_split(cfg: dict, spec: dict, exe: str, effort_end: list[str], lazy: bo
                 rc["args"] = list(rc["args"]) + ["--shared-expert-arena", arena]
             if role == "prefill":
                 warn_budget_over_ram(engine_args(rc, announce=False) if "args" in rc else [])
-            engines[role] = StrataEngine(exe, engine_args(rc, exe) + effort_end, cwd=rc.get("cwd"), log=rc.get("log"),
+            engines[role] = NostromaEngine(exe, engine_args(rc, exe) + effort_end, cwd=rc.get("cwd"), log=rc.get("log"),
                                          env=child_env(rc, offline=offline), lazy=lazy, retry_args=mtp_retry_args(rc, exe, effort_end), retry_vram_args=nodraft_retry_args(rc, exe, effort_end))
     except BaseException:
         for e in engines.values():
@@ -9803,7 +9803,7 @@ def with_current_reader(cfg: dict, package: Path) -> dict:
             older = (not gone and Path(old).parent != package and Path(old).parent.parent == package.parent
                      and package.parent.name.lower() == "engine")
             if (gone or older) and new.is_file():
-                print(f"[strata] the picture reader {old} " + ("is not there any more" if gone else "belongs to an older engine")
+                print(f"[nostroma] the picture reader {old} " + ("is not there any more" if gone else "belongs to an older engine")
                       + f"; using {new} from the engine package in use", flush=True)
                 fixed[key] = str(new)
     if fixed == vision:
@@ -9828,7 +9828,7 @@ VISION_ON_DEMAND_AMD_BY_DEFAULT = False
 VISION_RESERVE_MIB = 2048
 #: Owner 11-11: on NVIDIA the on-demand reader holds no room back before the first picture (apply_vision_defaults); the shrinking expert cache
 #: makes it.  In the resident RAM mode, where the cache cannot resize, the engine keeps the reader's room in its reserve itself
-#: (include/strata/core/reader_room.hpp).
+#: (include/nostroma/core/reader_room.hpp).
 VISION_NO_RESERVE_BY_DEFAULT = True
 _ON_DEMAND_NOT_WITH = ("--kv-grow", "--batch", "--slots", "--peer-device", "--expert-cache-device1", "--expert-cache-device2",
                        "--expert-cache-device3")
@@ -9881,7 +9881,7 @@ def apply_vision_defaults(cfg: dict) -> dict:
 
 
 def with_component_engine(cfg: dict) -> dict:
-    """A run config that names "component:strata-engine" gets the engine package for this PC: the path in `exe`, and
+    """A run config that names "component:nostroma-engine" gets the engine package for this PC: the path in `exe`, and
     the package's own folder first on the library path (the GPU runtime libraries ship beside the binary)."""
     if not engine_component.is_reference(cfg.get("exe")):
         return cfg
@@ -9939,24 +9939,24 @@ def with_history_tools(tools, req) -> list:
 
 
 def _component_exe(reference: str, cfg: dict) -> str:
-    """The engine a run config names as "component:strata-engine". No engine for this PC is a clear notice and exit 5;
+    """The engine a run config names as "component:nostroma-engine". No engine for this PC is a clear notice and exit 5;
     the server never goes looking on the internet for one (nostroma_control/engine_component.py)."""
     try:
         return engine_component.expand(reference, cfg)
     except engine_component.EngineMissing as e:
-        print(f"[strata] {e}", file=sys.stderr, flush=True)
+        print(f"[nostroma] {e}", file=sys.stderr, flush=True)
         raise SystemExit(e.exit_code) from None
 
 
 def undeclared_tool_calls_setting(cfg: dict) -> str:
     """#4622: the config's "undeclared_tool_calls": "text" (the default, when the config does not name it) keeps a well-formed call of a tool the request
-    did not declare as the text the model wrote, with strata_rejected_tool_calls beside it; "call" returns it as a tool call, for a client that has
+    did not declare as the text the model wrote, with nostroma_rejected_tool_calls beside it; "call" returns it as a tool call, for a client that has
     its own policy for unknown names (it answers the model with the tool names it has).  Anything else stops the start."""
     mode = cfg.get("undeclared_tool_calls")
-    if mode is None:                                  # the environment names it too (STRATA_UNDECLARED_TOOL_CALLS); the config wins
-        mode = os.environ.get("STRATA_UNDECLARED_TOOL_CALLS") or "text"
+    if mode is None:                                  # the environment names it too (NOSTROMA_UNDECLARED_TOOL_CALLS); the config wins
+        mode = os.environ.get("NOSTROMA_UNDECLARED_TOOL_CALLS") or "text"
     if mode not in ("text", "call"):
-        raise SystemExit(f"[strata] config \"undeclared_tool_calls\" must be \"text\" or \"call\", not {mode!r}")
+        raise SystemExit(f"[nostroma] config \"undeclared_tool_calls\" must be \"text\" or \"call\", not {mode!r}")
     return mode
 
 
@@ -9965,7 +9965,7 @@ def tool_call_recovery_setting(cfg: dict) -> bool:
     "tool_call_recovery": false turns it off. Anything but true or false stops the start."""
     recovery = cfg.get("tool_call_recovery", True)
     if not isinstance(recovery, bool):
-        raise SystemExit(f"[strata] config \"tool_call_recovery\" must be true or false, not {recovery!r}")
+        raise SystemExit(f"[nostroma] config \"tool_call_recovery\" must be true or false, not {recovery!r}")
     return recovery
 
 
@@ -9976,7 +9976,7 @@ def main(argv=None, *, lifecycle_event=None, interrupt_exit_code: int = 0) -> in
     taken (an exclusive holder, a runtime folder that is not usable) never stops the server.
 
     Its console output goes through a bounded queue (serve/nonblocking_out.py, #4479 / #2481): a console that stops taking output must not hold a
-    request's turn, a cancel or an admission.  STRATA_BLOCKING_CONSOLE=1 turns it off (testers)."""
+    request's turn, a cancel or an admission.  NOSTROMA_BLOCKING_CONSOLE=1 turns it off (testers)."""
     quiet_crash_env()                                  # every child inherits it: no gdb on a user's machine (nostroma_control/childenv.py)
     lease = None
     try:
@@ -9985,7 +9985,7 @@ def main(argv=None, *, lifecycle_event=None, interrupt_exit_code: int = 0) -> in
     except Exception:                                  # noqa: BLE001 - serving never depends on the lease
         lease = None
     try:
-        if os.environ.get("STRATA_BLOCKING_CONSOLE") == "1":
+        if os.environ.get("NOSTROMA_BLOCKING_CONSOLE") == "1":
             return _main(argv, lifecycle_event=lifecycle_event, interrupt_exit_code=interrupt_exit_code)
         from serve.nonblocking_out import decoupled_console
         with decoupled_console():
@@ -10017,8 +10017,8 @@ def _main(argv=None, *, lifecycle_event=None, interrupt_exit_code: int = 0) -> i
             event_sink = None
 
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--engine", choices=["mock", "strata"], default="mock")
-    ap.add_argument("--config", help="strata engine config (JSON: exe, args, cwd, tokenizer, model_name), "
+    ap.add_argument("--engine", choices=["mock", "nostroma"], default="mock")
+    ap.add_argument("--config", help="nostroma engine config (JSON: exe, args, cwd, tokenizer, model_name), "
                                      "written by setup.py")
     ap.add_argument("--host", default=None,
                     help="the address to listen on: 127.0.0.1 = this PC only (the default), 0.0.0.0 = also other devices "
@@ -10061,8 +10061,8 @@ def _main(argv=None, *, lifecycle_event=None, interrupt_exit_code: int = 0) -> i
     ap.add_argument("--no-fit-max-tokens", action="store_true",
                     help="answer 400 when prompt + max_tokens does not fit the context, like llama.cpp "
                          "(also \"fit_max_tokens\": false in the config). A prompt that alone does not fit is always 400")
-    ap.add_argument("--api-key", default=os.environ.get("STRATA_API_KEY", ""),
-                    help="require this key on /v1/* (Authorization: Bearer ... or x-api-key); also $STRATA_API_KEY. "
+    ap.add_argument("--api-key", default=os.environ.get("NOSTROMA_API_KEY", ""),
+                    help="require this key on /v1/* (Authorization: Bearer ... or x-api-key); also $NOSTROMA_API_KEY. "
                          "Several keys: separate them with commas (key1,key2), as llama.cpp does")
     ap.add_argument("--no-api-key", action="store_true",
                     help="serve on the network without an API key (anyone who can reach the port can use the model; "
@@ -10096,8 +10096,8 @@ def _main(argv=None, *, lifecycle_event=None, interrupt_exit_code: int = 0) -> i
                          "{\"prefill_gpu\": 0, \"decode_gpu\": 1}; docs/SPLIT_SERVE.md)")
     launch_args = list(sys.argv[1:] if argv is None else argv)
     a = ap.parse_args(launch_args)
-    if a.engine == "strata" and (_rt := rttime_limit_note()):   # #3238: say it before the first unexplained -9
-        print("[strata] WARNING: " + _rt, flush=True)
+    if a.engine == "nostroma" and (_rt := rttime_limit_note()):   # #3238: say it before the first unexplained -9
+        print("[nostroma] WARNING: " + _rt, flush=True)
     global OPENS_BROWSER
     OPENS_BROWSER = bool(a.open)
     # Every ordinary way of being asked to stop takes Ctrl+C's path (QUIT to the engine, then exit): SIGTERM (#96 docker
@@ -10130,9 +10130,9 @@ def _main(argv=None, *, lifecycle_event=None, interrupt_exit_code: int = 0) -> i
     if _ds:                                             # DeepSeek: this Nostroma no longer runs it; stop before the engine starts (retired.py)
         print(retired.server_line(_ds), flush=True)
         return 2
-    if a.config and a.engine == "strata":
+    if a.config and a.engine == "nostroma":
         cfg = apply_saved_tuning(cfg)
-    attestation_key = os.environ.pop("STRATA_OWNER_ATTEST_KEY", None)
+    attestation_key = os.environ.pop("NOSTROMA_OWNER_ATTEST_KEY", None)
     launch_attestation = None
     if a.owner_fd is not None:
         if attestation_key is None or not re.fullmatch(r"[0-9a-f]{64}", attestation_key):
@@ -10182,10 +10182,10 @@ def _main(argv=None, *, lifecycle_event=None, interrupt_exit_code: int = 0) -> i
         cfg["gpu"] = int(a.gpu) if a.gpu.strip().isdigit() else a.gpu
     a.host = a.host or cfg.get("host") or "127.0.0.1"   # issue #26: the run scripts pass no --host, the config can
     supplied_args = argv if argv is not None else sys.argv[1:]
-    if ("STRATA_API_KEY" in os.environ and not os.environ["STRATA_API_KEY"].strip()) or \
+    if ("NOSTROMA_API_KEY" in os.environ and not os.environ["NOSTROMA_API_KEY"].strip()) or \
             any((x == "--api-key" and i + 1 < len(supplied_args) and not supplied_args[i + 1].strip()) or
                 x.strip() == "--api-key=" for i, x in enumerate(supplied_args)):
-        print("[strata] an API key was given but it is empty: set a key, or leave it out", file=sys.stderr)
+        print("[nostroma] an API key was given but it is empty: set a key, or leave it out", file=sys.stderr)
         return 2
     raw_key = a.api_key or cfg.get("api_key", "")
     no_key_chosen = bool(getattr(a, "no_api_key", False)) or explicit_no_key(raw_key)
@@ -10194,7 +10194,7 @@ def _main(argv=None, *, lifecycle_event=None, interrupt_exit_code: int = 0) -> i
     try:
         preflight_api_key = api_key_of(raw_key)
     except ValueError as e:
-        print(f"[strata] {e}: set a key, or leave it out", file=sys.stderr)
+        print(f"[nostroma] {e}: set a key, or leave it out", file=sys.stderr)
         return 2
     # A key is recommended on a network, never required (owner decision 2026-10-20): the banner below warns once.
     try:                                                # before the minutes of loading: is the port free?
@@ -10206,11 +10206,11 @@ def _main(argv=None, *, lifecycle_event=None, interrupt_exit_code: int = 0) -> i
     tok = ByteTokenizer()
     tcfg = {}
     tpath = Path(a.tokenizer)
-    if a.engine == "strata" and not (tpath / "vocab.json").exists():
+    if a.engine == "nostroma" and not (tpath / "vocab.json").exists():
         ap.error(f"the model's tokenizer is missing ({tpath / 'vocab.json'}); run nostroma install (source checkout: "
                  "./setup.sh --setup, or START-HERE.bat --setup)")
     if (tpath / "vocab.json").exists():
-        import strata_tokenizer as ST
+        import nostroma_tokenizer as ST
         vocab = json.loads((tpath / "vocab.json").read_text(encoding="utf-8"))
         tokens = [None] * len(vocab)
         for t, i in vocab.items():
@@ -10239,9 +10239,9 @@ def _main(argv=None, *, lifecycle_event=None, interrupt_exit_code: int = 0) -> i
         if blocked:
             ap.error("--offline cannot be strict for this profile: " + "; ".join(blocked))
     lazy = False
-    if a.engine == "strata":
+    if a.engine == "nostroma":
         if not cfg:
-            ap.error("--engine strata needs --config")
+            ap.error("--engine nostroma needs --config")
         cfg = apply_vision_defaults(with_component_engine(cfg))
         vision = None
         # The engine's own environment. It carries the offline policy too: an engine that fetched a
@@ -10250,12 +10250,12 @@ def _main(argv=None, *, lifecycle_event=None, interrupt_exit_code: int = 0) -> i
         configure_batch_telemetry_env(env, cfg, a.batch_telemetry)
         configure_cache_boundary_env(env, cfg)
         if cfg.get("cache_boundary") in (True, "on"):
-            print("[strata] cache boundary: a checkpoint at every message boundary (an agent's edited last message "
+            print("[nostroma] cache boundary: a checkpoint at every message boundary (an agent's edited last message "
                   "reuses the history before it)", flush=True)
         sampling_defaults = sampling_defaults_from_config(cfg)
         if sampling_defaults:
             pretty = ", ".join(f"{k}={v}" for k, v in sampling_defaults.items())
-            print(f"[strata] sampling defaults from the config: {pretty}", flush=True)
+            print(f"[nostroma] sampling defaults from the config: {pretty}", flush=True)
         lazy = a.lazy or cfg.get("lazy_load") is True
         for line in card_roles_lines(cfg):             # the card roles: said first; every card Off stops here, before anything touches a card
             print(line, flush=True)
@@ -10273,7 +10273,7 @@ def _main(argv=None, *, lifecycle_event=None, interrupt_exit_code: int = 0) -> i
             if vcfg.get("elastic") is True and layer_split_of(cfg):
                 # the engine turns --vram-elastic off on a layer split (a cache per GPU): the encoder still starts
                 # with the first picture and stops when idle, but its VRAM has to be free already
-                print('[strata] images: on a layer split the expert cache cannot make room for the image encoder (the '
+                print('[nostroma] images: on a layer split the expert cache cannot make room for the image encoder (the '
                       'engine turns --vram-elastic off); keep its VRAM free with "--vram-reserve-mib" on the '
                       "encoder's GPU, or the first picture may not get it", flush=True)
             vision = Vision(vcfg, log=open(cfg["log"], "a", encoding="utf-8") if cfg.get("log") else None,
@@ -10294,14 +10294,14 @@ def _main(argv=None, *, lifecycle_event=None, interrupt_exit_code: int = 0) -> i
             try:
                 split = layer_split_value(cfg)          # #644: before the (minutes-long) start
             except ValueError as e:
-                raise SystemExit(f"[strata] config {e}")
-            print(f"[strata] layer split across GPUs {gpu_list(cfg)} ({split})", flush=True)
+                raise SystemExit(f"[nostroma] config {e}")
+            print(f"[nostroma] layer split across GPUs {gpu_list(cfg)} ({split})", flush=True)
         elif len(gpu_list(cfg)) > 1:
-            print(f"[strata] GPUs {gpu_list(cfg)}: the later card(s) serve as the peer expert tier (--peer-device)",
+            print(f"[nostroma] GPUs {gpu_list(cfg)}: the later card(s) serve as the peer expert tier (--peer-device)",
                   flush=True)
-        # a relative "exe" is the config's cwd's: Windows' CreateProcess resolves "engine/strata.exe" against nothing
+        # a relative "exe" is the config's cwd's: Windows' CreateProcess resolves "engine/nostroma.exe" against nothing
         # it is told about (WinError 2), so it is made absolute here
-        if engine_component.is_reference(cfg["exe"]):      # "component:strata-engine": the engine package for this PC
+        if engine_component.is_reference(cfg["exe"]):      # "component:nostroma-engine": the engine package for this PC
             exe = _component_exe(cfg["exe"], cfg)
         else:
             exe = cfg["exe"] if os.path.isabs(cfg["exe"]) else os.path.abspath(os.path.join(cfg.get("cwd") or ".", cfg["exe"]))
@@ -10309,23 +10309,23 @@ def _main(argv=None, *, lifecycle_event=None, interrupt_exit_code: int = 0) -> i
             silence = engine_silence_s(cfg)             # #481: checked before the (minutes-long) start
             apply_ready_timeout(cfg)
         except ValueError as e:
-            raise SystemExit(f"[strata] config {e}")
+            raise SystemExit(f"[nostroma] config {e}")
         try:
             effort_end = effort_end_args(cfg, exe, tok)  # #458
         except ValueError as e:
-            raise SystemExit(f"[strata] config {e}")
+            raise SystemExit(f"[nostroma] config {e}")
         from serve import replicas as rp
         try:
             groups = rp.gpu_groups(cfg)
         except rp.ReplicaConfigError as e:
-            raise SystemExit(f"[strata] config {e}")
+            raise SystemExit(f"[nostroma] config {e}")
         from serve import split as split_mod
         try:
             split = split_mod.split_spec(cfg)
             if split:
                 split_mod.check_cfg(cfg, split)
         except split_mod.SplitConfigError as e:
-            raise SystemExit(f"[strata] config {e}")
+            raise SystemExit(f"[nostroma] config {e}")
         if groups:
             engine = start_replicas(cfg, groups, exe, effort_end or [], lazy, offline=a.offline)
         elif split:
@@ -10354,7 +10354,7 @@ def _main(argv=None, *, lifecycle_event=None, interrupt_exit_code: int = 0) -> i
     svc.offline = a.offline
     svc.max_queue = max_queue
     svc.queue_timeout_s = float(queue_timeout) if queue_timeout is not None else None
-    if a.engine == "strata":                            # the model card's sampling when nothing else is said (see MODEL_CARD_SAMPLING)
+    if a.engine == "nostroma":                            # the model card's sampling when nothing else is said (see MODEL_CARD_SAMPLING)
         svc.model_arch = cfg.get("arch") or "qwen4exp"
         svc.set_family(None)
         requested = cfg.get("parallel")
@@ -10378,67 +10378,67 @@ def _main(argv=None, *, lifecycle_event=None, interrupt_exit_code: int = 0) -> i
         try:
             svc.images = images_api.ImageGen(icfg, log=open(cfg["log"], "a", encoding="utf-8") if cfg.get("log") else None)
         except ValueError as e:
-            raise SystemExit(f"[strata] config: {e}")
+            raise SystemExit(f"[nostroma] config: {e}")
         gone = svc.images.missing()
         if gone:
-            print(f"[strata] image generation: missing {', '.join(gone)} - requests fail until setup --images has run "
+            print(f"[nostroma] image generation: missing {', '.join(gone)} - requests fail until setup --images has run "
                   "again", flush=True)
         noise_problem = svc.images.noise_problem()
         if noise_problem:
-            print(f"[strata] image generation: {noise_problem}", flush=True)
+            print(f"[nostroma] image generation: {noise_problem}", flush=True)
         vae_problem = svc.images.vae_problem()
         if vae_problem:
-            print(f"[strata] image generation: {vae_problem}", flush=True)
-        print(f"[strata] image generation: {svc.images.model} {icfg.get('quant') or ''} on "
+            print(f"[nostroma] image generation: {vae_problem}", flush=True)
+        print(f"[nostroma] image generation: {svc.images.model} {icfg.get('quant') or ''} on "
               f"{icfg.get('backend') or '?'} (POST /v1/images/generations; GPU policy {svc.images.policy})", flush=True)
     if cfg.get("prevent_sleep") is not None and not isinstance(cfg["prevent_sleep"], bool):
-        raise SystemExit(f"[strata] config \"prevent_sleep\" must be true or false, not {cfg['prevent_sleep']!r}")
+        raise SystemExit(f"[nostroma] config \"prevent_sleep\" must be true or false, not {cfg['prevent_sleep']!r}")
     from serve.keepawake import KeepAwake
     svc.keep_awake = KeepAwake.create(cfg.get("prevent_sleep") is True)      # #1727: opt-in, Windows only
     if cfg.get("reasoning_effort") is not None:         # #1641: the thinking level of requests that name none
         try:
             svc.config_effort = clean_shared_defaults({"reasoning_effort": cfg["reasoning_effort"]}).get("reasoning_effort")
         except ValueError as e:
-            raise SystemExit(f"[strata] config {e}")
+            raise SystemExit(f"[nostroma] config {e}")
         if svc.config_effort:
-            print(f"[strata] thinking level: {svc.config_effort} (reasoning_effort in the config; a request, or the "
+            print(f"[nostroma] thinking level: {svc.config_effort} (reasoning_effort in the config; a request, or the "
                   "Chat settings shared with other apps, can set its own)", flush=True)
     svc.codex_thread_titles = cfg.get("codex_thread_titles") is True    # #923: opt-in, off by default
     svc.codex_compaction_cache = cfg.get("codex_compaction_cache") is True   # #924: opt-in, off by default
     try:
         svc.set_aliases(cfg.get("aliases"))             # #297: other names the model answers to
     except ValueError as e:
-        raise SystemExit(f"[strata] config {e}")
+        raise SystemExit(f"[nostroma] config {e}")
     if svc.aliases:
-        print(f"[strata] model aliases: {', '.join(svc.aliases)}", flush=True)
+        print(f"[nostroma] model aliases: {', '.join(svc.aliases)}", flush=True)
     svc.api_key = preflight_api_key
     try:
-        svc.telemetry_key = api_key_of(os.environ.get("STRATA_TELEMETRY_KEY") or cfg.get("telemetry_read_key", ""))
+        svc.telemetry_key = api_key_of(os.environ.get("NOSTROMA_TELEMETRY_KEY") or cfg.get("telemetry_read_key", ""))
     except ValueError as e:
-        print(f"[strata] invalid telemetry_read_key: {e}", file=sys.stderr)
+        print(f"[nostroma] invalid telemetry_read_key: {e}", file=sys.stderr)
         return 2
     if set(key_list(svc.api_key)) & set(key_list(svc.telemetry_key)):
-        print("[strata] telemetry_read_key must differ from every inference API key", file=sys.stderr)
+        print("[nostroma] telemetry_read_key must differ from every inference API key", file=sys.stderr)
         return 2
     if not svc.api_key and "api_key" in cfg and not no_key_chosen:             # #569: written, but empty: the server has none (a warning, not a stop)
-        print("[strata] the api_key in the config is empty: this server has no API key (anyone who can reach it can "
+        print("[nostroma] the api_key in the config is empty: this server has no API key (anyone who can reach it can "
               "use it); set one, or leave api_key out", file=sys.stderr, flush=True)
     svc.cors_origins = origins_of(cfg.get("cors_origins"), "cors_origins", wildcard=True)
     svc.trusted_origins = origins_of(cfg.get("trusted_origins"), "trusted_origins", wildcard=False)
     try:
-        svc.allowed_hosts = allowed_hosts_of(cfg.get("allowed_hosts"), os.environ.get("STRATA_ALLOWED_HOSTS", ""))
+        svc.allowed_hosts = allowed_hosts_of(cfg.get("allowed_hosts"), os.environ.get("NOSTROMA_ALLOWED_HOSTS", ""))
     except ValueError as e:
-        raise SystemExit(f"[strata] config {e}")
+        raise SystemExit(f"[nostroma] config {e}")
     if svc.allowed_hosts:
-        print("[strata] Host check off: any name reaches this server (allowed_hosts \"*\")" if "*" in svc.allowed_hosts
-              else f"[strata] also answers to the host names {', '.join(svc.allowed_hosts)} (allowed_hosts)", flush=True)
+        print("[nostroma] Host check off: any name reaches this server (allowed_hosts \"*\")" if "*" in svc.allowed_hosts
+              else f"[nostroma] also answers to the host names {', '.join(svc.allowed_hosts)} (allowed_hosts)", flush=True)
     svc.api_monitor = a.api_monitor or cfg.get("api_monitor") is True
     if svc.api_monitor:
-        print("[strata] API request monitor on (/api-monitor): the last 100 requests' prompts and answers are kept in "
+        print("[nostroma] API request monitor on (/api-monitor): the last 100 requests' prompts and answers are kept in "
               "memory" + ("" if svc.api_key else "; anyone who can reach this server can read them (no API key)"),
               flush=True)
     if svc.cors_origins:
-        print(f"[strata] CORS on /v1/* for {', '.join(svc.cors_origins)}"
+        print(f"[nostroma] CORS on /v1/* for {', '.join(svc.cors_origins)}"
               + ("" if svc.api_key or "*" not in svc.cors_origins else
                  " - WARNING: any web page may use the model (no API key)"), flush=True)
     svc.idle_unload_s = a.idle_unload if a.idle_unload is not None else float(cfg.get("idle_unload_s") or 0)
@@ -10448,7 +10448,7 @@ def _main(argv=None, *, lifecycle_event=None, interrupt_exit_code: int = 0) -> i
     try:
         svc.before_load_timeout_s = float(cfg.get("before_load_timeout_s") or svc.before_load_timeout_s)
     except (TypeError, ValueError):
-        print("[strata] \"before_load_timeout_s\" in the config is not a number; using "
+        print("[nostroma] \"before_load_timeout_s\" in the config is not a number; using "
               f"{svc.before_load_timeout_s:g} s", flush=True)
     svc.before_load_ignore_failure = cfg.get("before_load_ignore_failure") is True
     svc.before_load_strict = cfg.get("before_load_strict") is True
@@ -10459,23 +10459,23 @@ def _main(argv=None, *, lifecycle_event=None, interrupt_exit_code: int = 0) -> i
             svc.slot_save_path = slot_save_dir(a.slot_save_path) if a.slot_save_path else \
                 slot_save_dir(cfg["slot_save_path"], cfg.get("cwd"))
         except (ValueError, OSError) as e:
-            raise SystemExit(f"[strata] {e}")
-        print(f"[strata] slot save/restore on: {svc.slot_save_path} (session files are kept until deleted: "
+            raise SystemExit(f"[nostroma] {e}")
+        print(f"[nostroma] slot save/restore on: {svc.slot_save_path} (session files are kept until deleted: "
               "about 1.2 GB per 63K-token conversation; restore only files this server wrote)", flush=True)
     mode = str(cfg.get("anthropic_thinking") or "model")   # #278: "on_request" = only when the request asks
     if mode not in ("model", "on_request"):
-        raise SystemExit(f"[strata] config anthropic_thinking must be \"model\" or \"on_request\", not {mode!r}")
+        raise SystemExit(f"[nostroma] config anthropic_thinking must be \"model\" or \"on_request\", not {mode!r}")
     svc.anthropic_think_unasked = mode == "model"
     svc.tool_call_recovery = tool_call_recovery_setting(cfg)
     svc.undeclared_tool_calls = undeclared_tool_calls_setting(cfg)
     etu = cfg.get("env_to_user", False)                # opt-in: see frontend._env_to_user
     if not isinstance(etu, bool):
-        raise SystemExit(f"[strata] config \"env_to_user\" must be true or false, not {etu!r}")
+        raise SystemExit(f"[nostroma] config \"env_to_user\" must be true or false, not {etu!r}")
     import serve.frontend as _frontend
     _frontend.ENV_TO_USER = etu
     rs = cfg.get("repeat_stop_tokens", REPEAT_STOP_TOKENS)   # #606: opt-out with 0
     if isinstance(rs, bool) or not isinstance(rs, int) or rs < 0:
-        raise SystemExit(f"[strata] config \"repeat_stop_tokens\" must be a whole number >= 0 (0 = off), not {rs!r}")
+        raise SystemExit(f"[nostroma] config \"repeat_stop_tokens\" must be a whole number >= 0 (0 = off), not {rs!r}")
     svc.repeat_stop_tokens = rs
     svc.effort_end = bool(effort_end)                   # #458: "effort_position": "end" with an engine that has it
     if cfg.get("reasoning_budget_tokens") is not None:  # #123: a default thinking budget for every request
@@ -10484,32 +10484,32 @@ def _main(argv=None, *, lifecycle_event=None, interrupt_exit_code: int = 0) -> i
             svc.reasoning_budget_tokens = cfg["reasoning_budget_tokens"]
             budget = svc.reasoning_budget({})
         except ValueError as e:
-            raise SystemExit(f"[strata] config {e}")
+            raise SystemExit(f"[nostroma] config {e}")
         if budget:
-            print(f"[strata] thinking budget: {budget} tokens (reasoning_budget_tokens; a request can set its own)",
+            print(f"[nostroma] thinking budget: {budget} tokens (reasoning_budget_tokens; a request can set its own)",
                   flush=True)
     recovery = cfg.get("reasoning_loop_recovery", False)   # #728: false (default) | "stop" | "recover" (true)
     if recovery is True:
         recovery = "recover"
     if recovery is not False and recovery not in ("stop", "recover"):
-        raise SystemExit("[strata] config \"reasoning_loop_recovery\" must be false, \"stop\" or \"recover\", "
+        raise SystemExit("[nostroma] config \"reasoning_loop_recovery\" must be false, \"stop\" or \"recover\", "
                          f"not {recovery!r}")
     svc.reasoning_loop_recovery = recovery
     svc.gpu_index = (gpu_list(cfg) or [0])[0]           # the Monitor reads the card the engine runs on (issue #51)
     svc.gpu_indices = gpu_list(cfg)                     # ... or every card of a layer split (issue #112)
-    if a.engine == "strata" and groups:                 # replicas: every card of every group
+    if a.engine == "nostroma" and groups:                 # replicas: every card of every group
         svc.gpu_indices = [c for g in groups for c in g]
         svc.gpu_index = svc.gpu_indices[0]
         svc.replica_gpu_groups = groups
-    if a.engine == "strata" and split:                  # split serving: the two cards (the prefill card first)
+    if a.engine == "nostroma" and split:                  # split serving: the two cards (the prefill card first)
         svc.gpu_indices = [split["prefill_gpu"], split["decode_gpu"]]
         svc.gpu_index = split["decode_gpu"]
-    svc.terminal_visibility_order = visible_device_order(env, cfg.get("backend")) if a.engine == "strata" else []
-    svc.terminal_topology_mode = ("replicas (configured)" if a.engine == "strata" and groups
-                                  else "split serve (configured)" if a.engine == "strata" and split
-                                  else "layer split (configured)" if a.engine == "strata" and layer_split_of(cfg)
-                                  else "single GPU or CPU" if a.engine == "strata" else "mock")
-    svc.terminal_configured_split = (layer_split_value(cfg) if a.engine == "strata" and layer_split_of(cfg)
+    svc.terminal_visibility_order = visible_device_order(env, cfg.get("backend")) if a.engine == "nostroma" else []
+    svc.terminal_topology_mode = ("replicas (configured)" if a.engine == "nostroma" and groups
+                                  else "split serve (configured)" if a.engine == "nostroma" and split
+                                  else "layer split (configured)" if a.engine == "nostroma" and layer_split_of(cfg)
+                                  else "single GPU or CPU" if a.engine == "nostroma" else "mock")
+    svc.terminal_configured_split = (layer_split_value(cfg) if a.engine == "nostroma" and layer_split_of(cfg)
                                      else None)
     svc.backend = cfg.get("backend")                    # "hip": the AMD cards' readings come from sysfs (#301)
     if a.config:
@@ -10519,7 +10519,7 @@ def _main(argv=None, *, lifecycle_event=None, interrupt_exit_code: int = 0) -> i
         try:
             svc.shared = clean_shared_defaults(json.loads(Path(svc.shared_path).read_text(encoding="utf-8")))
             if svc.shared:
-                print("[strata] other apps use the Chat settings: " +
+                print("[nostroma] other apps use the Chat settings: " +
                       ", ".join(f"{k}={v}" for k, v in svc.shared.items()), flush=True)
         except (OSError, ValueError):
             svc.shared = {}
@@ -10528,7 +10528,7 @@ def _main(argv=None, *, lifecycle_event=None, interrupt_exit_code: int = 0) -> i
         svc.mcp = hub
         if hub.settings["image_results"]:
             hub.media_dir = Path(a.config).with_suffix(".tool-media") if a.config else Path.cwd() / ".tool-media"
-        print(f"[strata] starting {len(hub.servers)} MCP server{'s' * (len(hub.servers) != 1)} for the web app's "
+        print(f"[nostroma] starting {len(hub.servers)} MCP server{'s' * (len(hub.servers) != 1)} for the web app's "
               f"chat: {', '.join(hub.servers)}", flush=True)
         hub.start()
         atexit.register(hub.close)                      # the servers Nostroma started end with it
@@ -10561,7 +10561,7 @@ def _main(argv=None, *, lifecycle_event=None, interrupt_exit_code: int = 0) -> i
         import webbrowser                                  # run-<model>.bat still passes --open)
         # on its own thread: webbrowser.open waits for the browser launcher, which on Linux can run for as long as
         # the browser does, and the main thread must be free to take Ctrl+C and SIGTERM (#1872)
-        threading.Thread(target=webbrowser.open, daemon=True, name="strata-open-browser",
+        threading.Thread(target=webbrowser.open, daemon=True, name="nostroma-open-browser",
                          args=(f"http://{here}:{bound_port}/",)).start()
     if ready_path is not None or event_sink is not None:
         ready_host = f"[{here}]" if ":" in here and not here.startswith("[") else here
@@ -10578,7 +10578,7 @@ def _main(argv=None, *, lifecycle_event=None, interrupt_exit_code: int = 0) -> i
             try:
                 ready_file.publish(ready_path, record)
             except OSError as e:
-                print(f"[strata] could not write ready file ({type(e).__name__})", file=sys.stderr)
+                print(f"[nostroma] could not write ready file ({type(e).__name__})", file=sys.stderr)
                 return 6                                # the finally below closes everything once
         if event_sink is not None:
             notify_lifecycle("ready", record)
@@ -10587,7 +10587,7 @@ def _main(argv=None, *, lifecycle_event=None, interrupt_exit_code: int = 0) -> i
     except KeyboardInterrupt:
         interrupted = True
         notify_lifecycle("stopping", {"reason": termination, "instance_id": svc.instance_id})
-        print("\n[strata] stopping (Ctrl+C again to end the engine at once) ...", flush=True)
+        print("\n[nostroma] stopping (Ctrl+C again to end the engine at once) ...", flush=True)
     finally:
         cancelled = 0
         if a.shutdown_timeout is not None:
@@ -10596,12 +10596,12 @@ def _main(argv=None, *, lifecycle_event=None, interrupt_exit_code: int = 0) -> i
                                           "pending_requests": pending,
                                           "deadline_s": a.shutdown_timeout})
             if pending:
-                print(f"[strata] draining {pending} inference call(s) for up to {a.shutdown_timeout:g} s ...",
+                print(f"[nostroma] draining {pending} inference call(s) for up to {a.shutdown_timeout:g} s ...",
                       flush=True)
             pending = svc.wait_for_drain(a.shutdown_timeout)
             if pending:
                 cancelled = svc.cancel_owned_requests()
-                print(f"[strata] drain deadline expired; cancelling {cancelled} owned request(s) ...", flush=True)
+                print(f"[nostroma] drain deadline expired; cancelling {cancelled} owned request(s) ...", flush=True)
                 svc.wait_for_drain(5)
                 drained = False
         else:
@@ -10619,15 +10619,15 @@ def _main(argv=None, *, lifecycle_event=None, interrupt_exit_code: int = 0) -> i
                         engine.proc.kill()
                         try:
                             from serve import cache_drop
-                            cache_drop.drop_after_exit(engine)       # opt-in (STRATA_DROP_CACHE_ON_EXIT=1), default unchanged
+                            cache_drop.drop_after_exit(engine)       # opt-in (NOSTROMA_DROP_CACHE_ON_EXIT=1), default unchanged
                         except Exception as e:  # noqa: BLE001 - never block the exit
-                            print(f"[strata] could not release the model files' cache: {e}", flush=True)
+                            print(f"[nostroma] could not release the model files' cache: {e}", flush=True)
         finally:
             if ready_path is not None:
                 ready_file.remove_if_owned(ready_path, svc.instance_id)
             finished.set()
         if interrupted:
-            print("[strata] stopped", flush=True)
+            print("[nostroma] stopped", flush=True)
     exit_code = (8 if not drained else
                  interrupt_exit_code if interrupted and termination == "sigint" else 0)
     notify_lifecycle("stopped", {"instance_id": svc.instance_id, "reason": termination if interrupted else "normal",

@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""tools/strata_mcp.py - an MCP server that lets an AI assistant install, start, check and stop Nostroma.
+"""tools/nostroma_mcp.py - an MCP server that lets an AI assistant install, start, check and stop Nostroma.
 
-    claude mcp add strata -- python /path/to/Strata/tools/strata_mcp.py
+    claude mcp add nostroma -- python /path/to/Nostroma/tools/nostroma_mcp.py
 
 Add it to Claude Code, Claude Desktop, Cursor, VS Code, Codex ... (docs/MCP_SERVER.md has every client's snippet) and
 ask your AI "install Nostroma for this PC", "start Nostroma", "is Nostroma running?".  It speaks MCP (JSON-RPC 2.0, one
 message per line) over stdin/stdout, uses the Python standard library only (it runs before setup made .venv; Python
-3.10 or newer), and offers a fixed set of tools: strata_status, strata_models, strata_install, strata_start,
-strata_stop, strata_logs, strata_benchmark, strata_connect_info.
+3.10 or newer), and offers a fixed set of tools: nostroma_status, nostroma_models, nostroma_install, nostroma_start,
+nostroma_stop, nostroma_logs, nostroma_benchmark, nostroma_connect_info.
 
 Safety: no tool takes a shell command or a free path.  Every argument is checked against setup.py's own choices
 (models, families, contexts ...); the only path argument (install's data_dir) must be the Nostroma data folder, a folder
 inside the Nostroma folder, or a new folder named Nostroma* outside the system folders.  Setup and the model run as
-background processes this server starts itself; it keeps their process id and start time in .strata-mcp/ and only
+background processes this server starts itself; it keeps their process id and start time in .nostroma-mcp/ and only
 ever stops a process it started (a Nostroma started elsewhere, e.g. from its own window, is only asked over its API to
 unload the model).
 
@@ -43,14 +43,14 @@ PROTOCOLS = ("2025-06-18", "2025-03-26", "2024-11-05")   # the revisions this se
 VERSION = "0.1.0"
 WIN = os.name == "nt"
 DEFAULT_ROOT = Path(__file__).resolve().parent.parent
-# The desktop app runs this under Nostroma Control's Python (STRATA_CONTROL_INSTALL=1): the install runs on that Python, makes no
+# The desktop app runs this under Nostroma Control's Python (NOSTROMA_CONTROL_INSTALL=1): the install runs on that Python, makes no
 # .venv and installs no package (setup.py's own CONTROL mode).
-CONTROL = os.environ.get("STRATA_CONTROL_INSTALL") == "1"
+CONTROL = os.environ.get("NOSTROMA_CONTROL_INSTALL") == "1"
 DEFAULT_PORT = 8080
-STATE_DIR = ".strata-mcp"                             # in the Nostroma folder (git-ignored)
+STATE_DIR = ".nostroma-mcp"                             # in the Nostroma folder (git-ignored)
 
 # What setup.py offers, used only when setup.py cannot be imported (the numbers are setup's MODELS / FAMILIES /
-# CONTEXTS; tools/test_strata_mcp.py checks they still match).
+# CONTEXTS; tools/test_nostroma_mcp.py checks they still match).
 FALLBACK_MODELS = {
     "Q2_0": {"about": "2-bit, the fastest", "download_gb": 66.4, "ram_gb": 48, "arena_gb": 34.0, "families": ("qwen",)},
     "IQ2_XS": {"about": "2-bit i-quant, a little better quality, close in speed", "download_gb": 68.0, "ram_gb": 48,
@@ -102,7 +102,7 @@ FALLBACK_MODELS = {
                "engine": (0, 1, 45, 1),
                "download_gb": 92.0, "ram_gb": 35.0, "arena_gb": 32.1, "families": ("gyro",), "mem_total": True,
                "vision": True},
-    "NVFP4": {"about": "4-bit NVFP4 experts, GPTQ (sergqwer's strata-nvfp4 pack); RTX 50 has FP4 tensor cores, other "
+    "NVFP4": {"about": "4-bit NVFP4 experts, GPTQ (sergqwer's nostroma-nvfp4 pack); RTX 50 has FP4 tensor cores, other "
                        "NVIDIA cards run it at 8-bit precision", "download_gb": 128.0, "ram_gb": 80, "arena_gb": 68.0,
               "families": ("nvfp4",), "vision": True},
     "NVFP4-NVIDIA": {"about": "NVIDIA's own NVFP4 checkpoint (plain rounding), converted by sergqwer; the same size "
@@ -169,7 +169,7 @@ if WIN:
 def log(msg: str) -> None:
     """Diagnostics go to stderr: stdout carries only the protocol."""
     try:
-        sys.stderr.write(f"[strata-mcp] {msg}\n")
+        sys.stderr.write(f"[nostroma-mcp] {msg}\n")
         sys.stderr.flush()
     except (OSError, ValueError):
         pass
@@ -529,7 +529,7 @@ def system_folders() -> list[Path]:
 
 
 # ------------------------------------------------------------------------------------------------ Nostroma
-class Strata:
+class Nostroma:
     """One Nostroma folder: what is installed there, the PC, and the processes this server started."""
 
     def __init__(self, root: Path | str = DEFAULT_ROOT, src: Path | str | None = None):
@@ -555,7 +555,7 @@ class Strata:
             try:
                 if str(self.src) not in sys.path:
                     sys.path.insert(0, str(self.src))   # setup.py imports nostroma_control
-                spec = importlib.util.spec_from_file_location("strata_setup_for_mcp", self.src / "setup.py")
+                spec = importlib.util.spec_from_file_location("nostroma_setup_for_mcp", self.src / "setup.py")
                 mod = importlib.util.module_from_spec(spec)
                 real = sys.stdout
                 sys.stdout = sys.stderr                 # nothing it prints may reach the protocol stream
@@ -632,11 +632,11 @@ class Strata:
 
     # ---- paths
     def settings_path(self) -> Path:
-        if os.environ.get("STRATA_SETTINGS_FILE"):
-            return Path(os.environ["STRATA_SETTINGS_FILE"])
+        if os.environ.get("NOSTROMA_SETTINGS_FILE"):
+            return Path(os.environ["NOSTROMA_SETTINGS_FILE"])
         if WIN:
-            return Path(os.environ.get("APPDATA") or Path.home() / "AppData" / "Roaming") / "Strata" / "settings.json"
-        return Path(os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config") / "strata" / "settings.json"
+            return Path(os.environ.get("APPDATA") or Path.home() / "AppData" / "Roaming") / "Nostroma" / "settings.json"
+        return Path(os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config") / "nostroma" / "settings.json"
 
     def data_dir(self) -> Path:
         try:
@@ -644,7 +644,7 @@ class Strata:
         except (OSError, ValueError):
             s = {}
         d = s.get("data_dir") if isinstance(s, dict) else None
-        return Path(d) if d else self.root.parent / "Strata-data"
+        return Path(d) if d else self.root.parent / "Nostroma-data"
 
     def allowed_roots(self) -> list[Path]:
         return [norm(self.root), norm(self.data_dir())]
@@ -681,7 +681,7 @@ class Strata:
 
     # ---- what is installed
     def configs(self) -> list[Path]:
-        return sorted((p for p in self.root.glob("strata-*.json") if not p.name.endswith(".shared-settings.json")),
+        return sorted((p for p in self.root.glob("nostroma-*.json") if not p.name.endswith(".shared-settings.json")),
                       key=lambda p: p.stat().st_mtime, reverse=True)   # #346: the Chat settings file is no config
 
     @staticmethod
@@ -698,7 +698,7 @@ class Strata:
 
         def val(k):
             return a[a.index(k) + 1] if k in a and a.index(k) + 1 < len(a) else None
-        tag = path.stem[len("strata-"):]
+        tag = path.stem[len("nostroma-"):]
         missing = [p for p in [cfg.get("exe"), *[x for x in a if isinstance(x, str) and x.endswith(".gguf")]]
                    if not p or not Path(p).exists()]
         gaps = shard_gaps([x for x in a if isinstance(x, str) and x.endswith(".gguf")])   # a model in parts is whole only with every part
@@ -816,7 +816,7 @@ class Strata:
         """What the installed models take on disk, from the real files: each model's own files, the files shared between models
         (the picture reader, the draft layer) counted ONCE, and the total.  A model's own figure leaves out the shared files and
         every other model's; rows plus 'shared' add up to the total."""
-        per = {c.stem[len("strata-"):]: self.used_files(self.read_config(c)) for c in self.configs()}
+        per = {c.stem[len("nostroma-"):]: self.used_files(self.read_config(c)) for c in self.configs()}
         owners: dict = {}
         for files in per.values():
             for k in files:
@@ -833,7 +833,7 @@ class Strata:
                 "total_bytes": total, "total_gb": round(total / 1e9, 2)}
 
     @staticmethod
-    def made_by_strata(p: Path, is_dir: bool) -> bool:
+    def made_by_nostroma(p: Path, is_dir: bool) -> bool:
         """A download or pack Nostroma wrote itself, even in a models folder the person picked or the app chose: a finished GGUF has its
         .done mark beside it, a prepared pack has its conversion record. The person's own GGUF files have neither (#3716)."""
         try:
@@ -868,7 +868,7 @@ class Strata:
         for p, is_dir in [(x, False) for x in files] + [(x, True) for x in dirs]:
             if not p.exists():
                 continue
-            if not self.allowed(p) and not self.made_by_strata(p, is_dir):
+            if not self.allowed(p) and not self.made_by_nostroma(p, is_dir):
                 keep.append({"path": str(p), "reason": "outside Nostroma's folders"})
             elif shared(p, is_dir):
                 keep.append({"path": str(p), "reason": "another installed model still uses it"})
@@ -879,8 +879,8 @@ class Strata:
                                   p.with_name(p.name + ".part.chunks")):
                         if extra.exists():
                             remove.append({"path": str(extra), "kind": "file", "bytes": self.tree_bytes(extra)})
-        tag = config.stem[len("strata-"):]
-        for extra in (config, config.with_name(config.name + ".bak"), config.with_name(f"strata-{tag}.log"),
+        tag = config.stem[len("nostroma-"):]
+        for extra in (config, config.with_name(config.name + ".bak"), config.with_name(f"nostroma-{tag}.log"),
                       self.root / f"run-{tag}.bat", self.root / f"run-{tag}.sh"):
             if extra.exists():
                 remove.append({"path": str(extra), "kind": "file", "bytes": self.tree_bytes(extra)})
@@ -890,11 +890,11 @@ class Strata:
     def find_config(self, model: str | None) -> Path:
         have = self.configs()
         if not have:
-            raise ToolError("no model is installed in " + str(self.root) + " yet: install one first (strata_install)")
+            raise ToolError("no model is installed in " + str(self.root) + " yet: install one first (nostroma_install)")
         if not model:
             return have[0]                              # the most recently used, as setup starts it
         m = model.strip().lower()
-        exact = [c for c in have if c.stem[len("strata-"):] == m]
+        exact = [c for c in have if c.stem[len("nostroma-"):] == m]
         if exact:
             return exact[0]
         by_name = [c for c in have if str(self.read_config(c).get("model_name", "")).lower() == m]
@@ -904,7 +904,7 @@ class Strata:
         if len(ends) == 1:
             return ends[0]
         raise ToolError(f"no installed model {model!r}; installed: " +
-                        ", ".join(c.stem[len("strata-"):] for c in have))
+                        ", ".join(c.stem[len("nostroma-"):] for c in have))
 
     def engine_info(self) -> dict:
         for d in ("engine",):
@@ -934,7 +934,7 @@ class Strata:
                             items.setdefault(sub, []).append(entry)
         mtp = data / "mtp" / "rt" / "experts.bin"
         usage = self.disk_usage()
-        return {"strata_folder": str(self.root), "data_folder": str(data), "data_folder_exists": data.is_dir(),
+        return {"nostroma_folder": str(self.root), "data_folder": str(data), "data_folder_exists": data.is_dir(),
                 "python_env": self.venv_python().exists(), "engine": self.engine_info(),
                 "models": [self.describe_config(c, usage) for c in self.configs()],
                 "usage": usage,
@@ -1194,7 +1194,7 @@ class Strata:
         models, families, _ctx, _src = self.tables()
         from nostroma_control import fit_label
         ram = float(hw.get("ram_gb") or 0)
-        have = {c.stem[len("strata-"):] for c in self.configs()}
+        have = {c.stem[len("nostroma-"):] for c in self.configs()}
         out = []
         for family in (self.mac().all_families() if self.mac() else ("qwen", "gyro")):      # Qwen, Unsloth's sets, then Gyro: never the default
             fd = families.get(family)
@@ -1315,7 +1315,7 @@ class Strata:
         vram = max((g["vram_gb"] for g in usable), default=0.0)
         from nostroma_control import fit_label
         card_room = fit_label.card_room_gb(usable)
-        have = {c.stem[len("strata-"):] for c in self.configs()}
+        have = {c.stem[len("nostroma-"):] for c in self.configs()}
         out = []
         for f, fd in sorted(families.items(), key=lambda kv: bool(kv[1].get("feed"))):      # the signed feed's models after the built-in ones (False sorts first, the order is kept)
             sizes = []
@@ -1423,7 +1423,7 @@ class Strata:
         st, health = http_json(base + "/health", timeout=self.health_timeout)
         if st == 0:
             return None
-        if st != 200 or not isinstance(health, dict) or health.get("service") != "strata":
+        if st != 200 or not isinstance(health, dict) or health.get("service") != "nostroma":
             return {"port": port, "other": True, "note": "something else answers on this port (not a Nostroma server)"}
         info = {"port": port, "url": base, "model": health.get("model"), "context": health.get("max_context"),
                 "images": health.get("images"), "loaded": health.get("loaded"),
@@ -1877,11 +1877,11 @@ def tool_defs(models: dict, families: dict, contexts: list) -> list:
     port = {"type": "integer", "minimum": 1024, "maximum": 65535,
             "description": "the server's port (default: the installed model's port, usually 8080)"}
     installed_model = {"type": "string", "pattern": MODEL_ID_PATTERN, "maxLength": 49,
-                       "description": "an installed model's id as strata_status lists it (e.g. 'q2_0', "
+                       "description": "an installed model's id as nostroma_status lists it (e.g. 'q2_0', "
                                       "'coder-iq1_m', 'swift-iq3_xxs'); default: the most recently used one"}
     ro = {"readOnlyHint": True, "destructiveHint": False, "openWorldHint": False}
     return [
-        {"name": "strata_status", "title": "Nostroma status",
+        {"name": "nostroma_status", "title": "Nostroma status",
          "description": "Is Nostroma (the local AI model server) running, and what is installed? Reports the running "
                         "server (model, engine version, context, busy or idle, VRAM/RAM in use), the installed models "
                         "and data folder, an install in progress, this PC's hardware (OS, CPU, RAM, GPUs, free disk) "
@@ -1891,28 +1891,28 @@ def tool_defs(models: dict, families: dict, contexts: list) -> list:
              "hardware": {"type": "boolean", "description": "include the hardware check and the recommendation "
                                                             "(default true; takes a second or two)"}}},
          "annotations": ro},
-        {"name": "strata_models", "title": "Nostroma models",
+        {"name": "nostroma_models", "title": "Nostroma models",
          "description": "The models and sizes Nostroma's setup offers (families: qwen = Qwen3.8-Flash-Next, swift = "
                         "Swift 1.5, coder = the Coder, unsloth = Unsloth's ~4-bit), with download size, RAM needed, "
                         "whether each fits this PC, which are installed, the context lengths, and the recommendation. "
                         "Read-only.",
          "inputSchema": {"type": "object", "additionalProperties": False, "properties": {}},
          "annotations": ro},
-        {"name": "strata_remove", "title": "Delete an installed model",
+        {"name": "nostroma_remove", "title": "Delete an installed model",
          "description": "Delete an installed model's own files (its model GGUFs, its pack folder, its run config) and nothing "
                         "another installed model still uses (a shared MTP draft or PLE file). Without confirm=true it only "
                         "returns the plan (what would be removed and how big, what is kept). Stop the model first.",
          "inputSchema": {"type": "object", "additionalProperties": False, "required": ["model"],
                          "properties": {"model": installed_model, "confirm": {"type": "boolean"}}},
          "annotations": {"readOnlyHint": False, "destructiveHint": True}},
-        {"name": "strata_install", "title": "Install Nostroma",
+        {"name": "nostroma_install", "title": "Install Nostroma",
          "description": "Install a Nostroma model on this PC by running Nostroma's setup non-interactively in the "
                         "background (Python packages, the engine, a 58-111 GB model download, preparation, start "
                         "script). Without confirm=true it only returns the plan (what would be downloaded, disk "
                         "space): show it to the user and call again with confirm=true once they agree. Returns at "
                         "once; call it again (no arguments needed) to see the progress, or with cancel=true to stop "
                         "it (it resumes later). Defaults: the recommended model and context for this PC, pictures on where the model can read them. "
-                        "After it finishes, start the model with strata_start.",
+                        "After it finishes, start the model with nostroma_start.",
          "inputSchema": {"type": "object", "additionalProperties": False, "properties": {
              "family": {"type": "string", "enum": list(families),
                         "description": "qwen = Qwen3.8-Flash-Next (the original), swift = Swift 1.5 (thinks "
@@ -1921,7 +1921,7 @@ def tool_defs(models: dict, families: dict, contexts: list) -> list:
                                        "UD-Q6_K_XL, Q8_0): every expert in RAM where they fit, else part of them read "
                                        "from the SSD"},
              "model": {"type": "string", "enum": list(models),
-                       "description": "the size (quantization): see strata_models"},
+                       "description": "the size (quantization): see nostroma_models"},
              "context": {"type": "integer", "minimum": 1024, "maximum": 2097152, "examples": contexts,
                          "description": "context length in tokens (more needs more VRAM). Any whole number works, "
                                         "for example one typed into a model's run config by hand; the usual sizes are "
@@ -1944,10 +1944,10 @@ def tool_defs(models: dict, families: dict, contexts: list) -> list:
                          "description": "setup's low-RAM mode (default auto)"},
              "port": {**port, "description": "the port the model will listen on (default 8080)"},
              "data_dir": {"type": "string", "maxLength": 260,
-                          "description": "where the model files go (default: the Strata-data folder next to the "
+                          "description": "where the model files go (default: the Nostroma-data folder next to the "
                                          "Nostroma folder). Only the current data folder, a folder inside the Nostroma "
                                          "folder, or a new absolute path whose last folder is named Nostroma... "
-                                         "(e.g. D:\\Strata-data) outside system folders"},
+                                         "(e.g. D:\\Nostroma-data) outside system folders"},
              "drafter": {"type": "string", "enum": ["mtp", "dflash2"],
                          "description": "which drafter this model will use: dflash2 downloads only DFlash2's drafter (a separate step), not the MTP draft layer's ~5 GB; "
                                         "mtp (the default) downloads the draft layer"},
@@ -1961,11 +1961,11 @@ def tool_defs(models: dict, families: dict, contexts: list) -> list:
              "cancel": {"type": "boolean", "description": "true = stop the install in progress"}}},
          "annotations": {"readOnlyHint": False, "destructiveHint": False, "idempotentHint": True,
                          "openWorldHint": True}},
-        {"name": "strata_start", "title": "Start Nostroma",
+        {"name": "nostroma_start", "title": "Start Nostroma",
          "description": "Start an installed Nostroma model in the background (as its start script does, without "
                         "opening a browser) and wait until it answers. Loading takes 1-3 minutes and the PC can be "
                         "slow meanwhile; if it is not ready within wait_seconds this returns 'loading' - check again "
-                        "with strata_status. The model keeps running until strata_stop.",
+                        "with nostroma_status. The model keeps running until nostroma_stop.",
          "inputSchema": {"type": "object", "additionalProperties": False, "properties": {
              "model": installed_model, "port": port,
              "gpu": {"type": "integer", "minimum": 0, "maximum": 63,
@@ -1975,7 +1975,7 @@ def tool_defs(models: dict, families: dict, contexts: list) -> list:
                                              "a tool call after 60 s)"}}},
          "annotations": {"readOnlyHint": False, "destructiveHint": False, "idempotentHint": True,
                          "openWorldHint": False}},
-        {"name": "strata_stop", "title": "Stop Nostroma",
+        {"name": "nostroma_stop", "title": "Stop Nostroma",
          "description": "Stop the Nostroma model: the engine is unloaded through the server's own API (it frees its "
                         "VRAM and RAM itself), then the server this tool started is ended. A Nostroma started "
                         "elsewhere (e.g. its own window) is only unloaded - close its window to end it. Refuses while "
@@ -1985,7 +1985,7 @@ def tool_defs(models: dict, families: dict, contexts: list) -> list:
              "force": {"type": "boolean", "description": "stop even while a request is running"}}},
          "annotations": {"readOnlyHint": False, "destructiveHint": True, "idempotentHint": True,
                          "openWorldHint": False}},
-        {"name": "strata_logs", "title": "Nostroma logs",
+        {"name": "nostroma_logs", "title": "Nostroma logs",
          "description": "The last lines of a Nostroma log: 'server' (the model server this tool started: loading, "
                         "requests, errors), 'engine' (the engine's own log for a model), 'setup' (the install). "
                         "Default: the setup log while an install runs, else the server log. Read-only.",
@@ -1994,7 +1994,7 @@ def tool_defs(models: dict, families: dict, contexts: list) -> list:
              "model": installed_model,
              "lines": {"type": "integer", "minimum": 1, "maximum": 500, "description": "default 80"}}},
          "annotations": ro},
-        {"name": "strata_benchmark", "title": "Nostroma speed test",
+        {"name": "nostroma_benchmark", "title": "Nostroma speed test",
          "description": "A short fixed request (greedy, thinking off) through the running Nostroma server; reports "
                         "the output speed (tokens/s) and prompt speed. Takes 10-60 s. Refuses while the model is "
                         "busy.",
@@ -2002,7 +2002,7 @@ def tool_defs(models: dict, families: dict, contexts: list) -> list:
              "port": port,
              "max_tokens": {"type": "integer", "minimum": 16, "maximum": 512, "description": "default 200"}}},
          "annotations": {"readOnlyHint": True, "destructiveHint": False, "openWorldHint": False}},
-        {"name": "strata_connect_info", "title": "Connect to Nostroma",
+        {"name": "nostroma_connect_info", "title": "Connect to Nostroma",
          "description": "How to point other apps at the local Nostroma server: the OpenAI and Anthropic base URLs, "
                         "the model id, whether an API key is needed, and ready-to-paste settings for Claude Code, "
                         "Codex CLI, the OpenAI SDK, curl, Cursor/Continue/Open WebUI. Read-only.",
@@ -2012,8 +2012,8 @@ def tool_defs(models: dict, families: dict, contexts: list) -> list:
 
 
 class Tools:
-    def __init__(self, strata: Strata):
-        self.s = strata
+    def __init__(self, nostroma: Nostroma):
+        self.s = nostroma
 
     def defs(self) -> list:
         models, families, contexts = self.s.tables()[:3]
@@ -2026,8 +2026,8 @@ class Tools:
         args = check_schema(defs[name]["inputSchema"], args)
         return getattr(self, name)(**args)
 
-    # ---- strata_status
-    def strata_status(self, port=None, hardware=True) -> dict:
+    # ---- nostroma_status
+    def nostroma_status(self, port=None, hardware=True) -> dict:
         s = self.s
         s.reap()
         servers = []
@@ -2081,8 +2081,8 @@ class Tools:
             out["recommendation"] = s.recommend(hw)
         return {"summary": summary, **out}
 
-    # ---- strata_models
-    def strata_models(self) -> dict:
+    # ---- nostroma_models
+    def nostroma_models(self) -> dict:
         s = self.s
         hw = s.hardware()
         _m, _f, contexts, src = s.tables()
@@ -2100,8 +2100,8 @@ class Tools:
                             **({"engine_vendor": hw["engine_vendor"]} if hw.get("engine_vendor") else {}),
                             **({"gpu_note": hw["gpu_note"]} if hw.get("gpu_note") else {})}}
 
-    # ---- strata_remove
-    def strata_remove(self, model=None, confirm=False) -> dict:
+    # ---- nostroma_remove
+    def nostroma_remove(self, model=None, confirm=False) -> dict:
         s = self.s
         config = s.find_config(model)
         plan = s.removal_plan(config)
@@ -2138,24 +2138,24 @@ class Tools:
         return {"summary": f"Deleted {plan['model']} ({plan['gb']:.1f} GB)" + (f"; could not remove {len(failed)} item(s)" if failed else ""),
                 "plan": plan, "failed": failed}
 
-    # ---- strata_install
+    # ---- nostroma_install
     def check_data_dir(self, raw: str) -> Path:
         s = self.s
         if raw.startswith("\\\\") or raw.startswith("//"):
             raise ToolError("data_dir: network (UNC) paths are not allowed; use a local drive")
         p = Path(os.path.expandvars(raw)).expanduser()
         if not p.is_absolute():
-            raise ToolError("data_dir must be an absolute path (e.g. D:\\Strata-data or /mnt/big/Strata-data)")
+            raise ToolError("data_dir must be an absolute path (e.g. D:\\Nostroma-data or /mnt/big/Nostroma-data)")
         if ".." in p.parts:
             raise ToolError("data_dir must not contain '..'")
         n = norm(p)
         current = norm(s.data_dir())
-        if n == current or is_inside(n, norm(s.root)) or n == norm(s.root.parent / "Strata-data"):
+        if n == current or is_inside(n, norm(s.root)) or n == norm(s.root.parent / "Nostroma-data"):
             pass
         else:
-            if not p.name.lower().startswith("strata"):
+            if not p.name.lower().startswith("nostroma"):
                 raise ToolError(f"data_dir {raw!r}: a new data folder must be named Nostroma... (e.g. "
-                                f"{Path(p.anchor or '/') / 'Strata-data'}), so that no other folder is filled with "
+                                f"{Path(p.anchor or '/') / 'Nostroma-data'}), so that no other folder is filled with "
                                 "model files")
             if not p.parent.is_dir():
                 raise ToolError(f"data_dir {raw!r}: its parent folder {p.parent} does not exist")
@@ -2165,7 +2165,7 @@ class Tools:
                 raise ToolError(f"data_dir {raw!r} is a file")
         return p
 
-    def strata_install(self, family=None, model=None, context=None, vision=None, kv=None, gpu=None, gpus=None,
+    def nostroma_install(self, family=None, model=None, context=None, vision=None, kv=None, gpu=None, gpus=None,
                        backend=None, low_ram=None, port=None, data_dir=None, confirm=False, cancel=False,
                        gguf_dir=None, drafter=None, mtp=None) -> dict:
         s = self.s
@@ -2183,32 +2183,32 @@ class Tools:
                 proc_kill_tree(j["pid"], j["ident"])
                 kill_snapshot(tree)
                 wait_gone(j["pid"], j["ident"], 15)
-                return {"summary": "the install was stopped; calling strata_install again resumes it (downloads "
+                return {"summary": "the install was stopped; calling nostroma_install again resumes it (downloads "
                                    "continue where they stopped)", "install": s.install_job()}
             if job and job["running"]:
                 return {"summary": f"an install is running: {job.get('step') or 'starting'}"
                                    + (f", downloading {job['download']['file']} {job['download']['percent']}%"
                                       if job.get("download") else ""),
-                        "install": job, "follow": "call strata_install again for progress, or strata_logs "
+                        "install": job, "follow": "call nostroma_install again for progress, or nostroma_logs "
                                                   "source=setup for the full output"}
             given = [x for x in (family, model, context, vision, kv, gpu, gpus, backend, low_ram, port, data_dir)
                      if x is not None]
             if job and not given and not confirm:
                 return {"summary": f"the last install {job['result']}" + (f": {job['error']}" if job.get("error") else ""),
                         "install": job,
-                        "next": "strata_start" if job.get("exit_code") == 0 else
-                                "fix the problem above and call strata_install again with confirm=true (finished "
+                        "next": "nostroma_start" if job.get("exit_code") == 0 else
+                                "fix the problem above and call nostroma_install again with confirm=true (finished "
                                 "steps are skipped)"}
             plan, args = self.install_plan(family, model, context, vision, kv, gpu, gpus, backend, low_ram, port,
                                            data_dir, gguf_dir, drafter, mtp)
             tracked = s.tracked_server()
             if tracked and not tracked.get("ended"):
-                raise ToolError("Nostroma is running (started by strata_start): stop it first with strata_stop - setup "
+                raise ToolError("Nostroma is running (started by nostroma_start): stop it first with nostroma_stop - setup "
                                 "may update the engine files it uses")
             if not confirm:
                 return {"summary": f"Plan: install {plan['title']} ({plan['download_gb']:.0f} GB download"
                                    f"{' at most; part of it is already here' if plan['partly_downloaded'] else ''}). "
-                                   "Nothing was done yet: ask the user, then call strata_install again with the "
+                                   "Nothing was done yet: ask the user, then call nostroma_install again with the "
                                    "same arguments and confirm=true.", "plan": plan}
             if plan["disk_short"]:
                 raise ToolError(plan["disk_short"])
@@ -2284,7 +2284,7 @@ class Tools:
         short = None
         if free is not None and free < need:
             short = (f"not enough free disk space for {model}: about {need:.0f} GB needed at {target}, "
-                     f"{free:.0f} GB free; free some space or choose data_dir on a bigger drive (e.g. D:\\Strata-data)")
+                     f"{free:.0f} GB free; free some space or choose data_dir on a bigger drive (e.g. D:\\Nostroma-data)")
         args = ["--yes", "--no-start", "--family", family, "--model", model, "--context", str(context),
                 "--vision", vision or "no"]
         if family in ("qwen", "coder"):
@@ -2312,7 +2312,7 @@ class Tools:
         if ram is not None:
             from nostroma_control import fit_label
             fit = fit_label.label(fit_label.files_gb(family, model, md), ram, fit_label.card_room_gb(s.engine_gpus(hw)))
-        installed = (s.root / f"strata-{tag.lower()}.json").exists()
+        installed = (s.root / f"nostroma-{tag.lower()}.json").exists()
         plan = {"title": f"{families[family]['title']} {model}", "family": family, "model": model,
                 "context": context, "images": vision or "no", "download_gb": md["download_gb"],
                 "partly_downloaded": partly, "ram": fit, "data_folder": str(target), "model_folder": str(have_dir),
@@ -2336,7 +2336,7 @@ class Tools:
         job_id = f"{int(time.time())}-{os.getpid()}"
         log_path = s.state_dir / "setup.log"
         with open(log_path, "a", encoding="utf-8") as f:
-            f.write(f"\n===== strata-mcp: install {plan['title']} at {time.strftime('%Y-%m-%d %H:%M:%S')} =====\n")
+            f.write(f"\n===== nostroma-mcp: install {plan['title']} at {time.strftime('%Y-%m-%d %H:%M:%S')} =====\n")
         spec = {"job": job_id, "root": str(s.root), "src": str(s.src), "control": CONTROL,
                 "python": s.run_python(), "base_python": sys.executable,
                 "create_venv": s.python_override is None and not s.venv_python().exists(),
@@ -2362,23 +2362,23 @@ class Tools:
                                  "total_gb": plan.get("download_gb"),
                                  "started": time.strftime("%Y-%m-%d %H:%M:%S"), "args": args})
         return {"summary": f"Install of {plan['title']} started in the background (about 20-90 minutes, mostly the "
-                           f"{plan['download_gb']:.0f} GB download). Call strata_install again to see the progress; "
-                           "when it is done, start it with strata_start.",
+                           f"{plan['download_gb']:.0f} GB download). Call nostroma_install again to see the progress; "
+                           "when it is done, start it with nostroma_start.",
                 "plan": plan, "log": str(log_path), "pid": p.pid}
 
-    # ---- strata_start
-    def strata_start(self, model=None, port=None, gpu=None, wait_seconds=50) -> dict:
+    # ---- nostroma_start
+    def nostroma_start(self, model=None, port=None, gpu=None, wait_seconds=50) -> dict:
         s = self.s
         with s.lock:
             job = s.install_job()
             if job and job["running"]:
-                raise ToolError("an install is still running (strata_install shows its progress); start the model "
+                raise ToolError("an install is still running (nostroma_install shows its progress); start the model "
                                 "when it is done")
             cfg_path = s.find_config(model)
             desc = s.describe_config(cfg_path)
             if not desc["ready"]:
                 raise ToolError(f"{cfg_path.name} refers to missing files ({', '.join(desc['missing_files'])}): run "
-                                "the install again (strata_install with confirm=true) to repair it")
+                                "the install again (nostroma_install with confirm=true) to repair it")
             port = port or desc["port"] or DEFAULT_PORT
             tracked = s.tracked_server()
             if tracked and not tracked.get("ended"):
@@ -2386,7 +2386,7 @@ class Tools:
                 return {"summary": f"Nostroma is already {'running' if info else 'loading'} ({tracked.get('model')}, "
                                    f"port {tracked['port']}, started by this MCP server)"
                                    + ("" if tracked.get("model") == desc["model"] else
-                                      ": stop it first (strata_stop) to start another model"),
+                                      ": stop it first (nostroma_stop) to start another model"),
                         "server": info}
             info = s.probe(port, deep=False)
             if info and not info.get("other"):
@@ -2398,14 +2398,14 @@ class Tools:
             py = s.run_python()
             if not Path(py).exists():
                 raise ToolError("Nostroma's Python environment (.venv) is missing: run the install again")
-            cmd = [py, str(s.root / "serve" / "server.py"), "--engine", "strata", "--config", str(cfg_path),
+            cmd = [py, str(s.root / "serve" / "server.py"), "--engine", "nostroma", "--config", str(cfg_path),
                    "--port", str(port)]
             if gpu is not None:
                 cmd += ["--gpu", str(gpu)]
             log_path = s.state_dir / "server.log"
             s.state_dir.mkdir(parents=True, exist_ok=True)
             with open(log_path, "a", encoding="utf-8") as f:
-                f.write(f"\n===== strata-mcp: start {desc['model']} on port {port} at "
+                f.write(f"\n===== nostroma-mcp: start {desc['model']} on port {port} at "
                         f"{time.strftime('%Y-%m-%d %H:%M:%S')} =====\n")
             env = dict(os.environ, PYTHONUNBUFFERED="1", PYTHONIOENCODING="utf-8")
             try:
@@ -2438,13 +2438,13 @@ class Tools:
                         "server": {**info, "pid": p.pid}}
             if time.time() >= end:
                 return {"summary": f"Nostroma is loading {desc['model']} (this takes 1-3 minutes; the PC may be slow "
-                                   "meanwhile). Check with strata_status in a minute.",
+                                   "meanwhile). Check with nostroma_status in a minute.",
                         "loading": {"pid": p.pid, "port": port,
                                     "last_log_line": (read_tail(log_path, 1) or [None])[-1]}}
             time.sleep(1.0)
 
-    # ---- strata_stop
-    def strata_stop(self, port=None, force=False) -> dict:
+    # ---- nostroma_stop
+    def nostroma_stop(self, port=None, force=False) -> dict:
         s = self.s
         with s.lock:
             tracked = s.tracked_server()
@@ -2456,7 +2456,7 @@ class Tools:
                 key = s.api_key_for(port)
                 st, body = http_json(f"http://127.0.0.1:{port}/status", api_key=key, timeout=3)
                 if st == 200 and isinstance(body, dict) and body.get("busy") and not force:
-                    raise ToolError("a request is running on Nostroma right now; wait for it, or call strata_stop "
+                    raise ToolError("a request is running on Nostroma right now; wait for it, or call nostroma_stop "
                                     "with force=true to stop anyway")
                 st, body = http_json(f"http://127.0.0.1:{port}/unload", "POST", api_key=key, timeout=120)
                 unloaded = (body or {}).get("status") if isinstance(body, dict) else None
@@ -2473,7 +2473,7 @@ class Tools:
                 if gone:
                     end_group_leftovers(tracked["pid"])
                     s.save_state("server", None)
-                return {"summary": "Nostroma stopped" + ("" if gone else " - but its process still runs; see strata_logs")
+                return {"summary": "Nostroma stopped" + ("" if gone else " - but its process still runs; see nostroma_logs")
                                    + (" (the engine unloaded itself first)" if unloaded == "unloaded" else ""),
                         "model": tracked.get("model"), "port": port, "engine_unloaded": unloaded,
                         "ended_cleanly": clean}
@@ -2495,8 +2495,8 @@ class Tools:
                             "port": p, "engine_unloaded": r}
             return {"summary": "Nostroma is not running"}
 
-    # ---- strata_logs
-    def strata_logs(self, source=None, model=None, lines=80) -> dict:
+    # ---- nostroma_logs
+    def nostroma_logs(self, source=None, model=None, lines=80) -> dict:
         s = self.s
         if source is None:
             job = s.install_job()
@@ -2518,8 +2518,8 @@ class Tools:
         tail = read_tail(path, lines)
         return {"summary": f"last {len(tail)} lines of the {source} log", "log": str(path), "lines": tail}
 
-    # ---- strata_benchmark
-    def strata_benchmark(self, port=None, max_tokens=200) -> dict:
+    # ---- nostroma_benchmark
+    def nostroma_benchmark(self, port=None, max_tokens=200) -> dict:
         s = self.s
         target = None
         for p in s.ports(port):
@@ -2528,13 +2528,13 @@ class Tools:
                 target = info
                 break
         if target is None:
-            raise ToolError("Nostroma is not running: start it first (strata_start)")
+            raise ToolError("Nostroma is not running: start it first (nostroma_start)")
         p = target["port"]
         key = s.api_key_for(p)
         st, stat = http_json(f"http://127.0.0.1:{p}/status", api_key=key, timeout=3)
         if st == 200 and isinstance(stat, dict) and (stat.get("busy") or stat.get("queued")):
             raise ToolError("Nostroma is busy with a request; run the speed test when it is idle")
-        body = {"model": target.get("model") or "strata", "max_tokens": max_tokens, "temperature": 0,
+        body = {"model": target.get("model") or "nostroma", "max_tokens": max_tokens, "temperature": 0,
                 "reasoning_effort": "none", "stream": False,
                 "messages": [{"role": "user", "content": BENCH_PROMPT}]}
         t0 = time.time()
@@ -2560,8 +2560,8 @@ class Tools:
                        "the first request after a start is slower")
         return out
 
-    # ---- strata_connect_info
-    def strata_connect_info(self, port=None) -> dict:
+    # ---- nostroma_connect_info
+    def nostroma_connect_info(self, port=None) -> dict:
         s = self.s
         target = None
         for p in s.ports(port):
@@ -2572,26 +2572,26 @@ class Tools:
         if port is None:
             cfgs = s.configs()
             port = target["port"] if target else (s.describe_config(cfgs[0])["port"] if cfgs else DEFAULT_PORT)
-        model = (target or {}).get("model") or "strata"
+        model = (target or {}).get("model") or "nostroma"
         key_needed = (target or {}).get("api_key_required")
         if key_needed is None:
             key_needed = any(s.describe_config(c)["api_key_set"] for c in s.configs())
-        key = "<your api_key from strata-<model>.json>" if key_needed else "none"
+        key = "<your api_key from nostroma-<model>.json>" if key_needed else "none"
         base = f"http://127.0.0.1:{port}"
         return {
             "summary": (f"Nostroma {'runs' if target else 'will run'} at {base}: OpenAI base URL {base}/v1, Anthropic "
                         f"base URL {base}" + (" (an API key is required)" if key_needed else " (any API key works)")),
             "running": bool(target), "openai_base_url": f"{base}/v1", "anthropic_base_url": base,
             "anthropic_messages_endpoint": f"{base}/v1/messages", "chat_page": base + "/", "model": model,
-            "api_key": ("required: the \"api_key\" value in the Nostroma folder's strata-<model>.json"
+            "api_key": ("required: the \"api_key\" value in the Nostroma folder's nostroma-<model>.json"
                         if key_needed else "not required (send any value)"),
             "examples": {
                 "claude_code": {"env": {"ANTHROPIC_BASE_URL": base, "ANTHROPIC_AUTH_TOKEN": key,
                                         "ANTHROPIC_MODEL": "claude-sonnet-4-5"},
                                 "note": "Claude Code needs a Claude model name it knows; Nostroma ignores the name"},
                 "codex_cli": {"file": "~/.codex/config.toml",
-                              "toml": f'model = "{model}"\nmodel_provider = "strata"\n\n[model_providers.strata]\n'
-                                      f'name = "Strata"\nbase_url = "{base}/v1"\nwire_api = "chat"'},
+                              "toml": f'model = "{model}"\nmodel_provider = "nostroma"\n\n[model_providers.nostroma]\n'
+                                      f'name = "Nostroma"\nbase_url = "{base}/v1"\nwire_api = "chat"'},
                 "openai_python": (f'from openai import OpenAI\nclient = OpenAI(base_url="{base}/v1", api_key="{key}")\n'
                                   f'r = client.chat.completions.create(model="{model}", messages=[{{"role": "user", '
                                   f'"content": "Hello!"}}])\nprint(r.choices[0].message.content)'),
@@ -2609,16 +2609,16 @@ class Tools:
 
 # ------------------------------------------------------------------------------------------------ MCP over stdio
 INSTRUCTIONS = ("Nostroma runs a large AI model (Qwen3.8-Flash-Next, a mixture of experts) locally on this PC's GPU and "
-                "RAM, with an OpenAI- and Anthropic-compatible server on http://127.0.0.1:8080. Call strata_status "
-                "first. To install: strata_install (it returns a plan; get the user's OK for the 58-111 GB download, "
+                "RAM, with an OpenAI- and Anthropic-compatible server on http://127.0.0.1:8080. Call nostroma_status "
+                "first. To install: nostroma_install (it returns a plan; get the user's OK for the 58-111 GB download, "
                 "then call it with confirm=true; it runs in the background - call it again for progress). Then "
-                "strata_start, strata_stop, strata_logs for problems, strata_connect_info to point other apps at it.")
+                "nostroma_start, nostroma_stop, nostroma_logs for problems, nostroma_connect_info to point other apps at it.")
 
 
 class McpServer:
-    def __init__(self, strata: Strata, out=None):
-        self.strata = strata
-        self.tools = Tools(strata)
+    def __init__(self, nostroma: Nostroma, out=None):
+        self.nostroma = nostroma
+        self.tools = Tools(nostroma)
         self.out = out
         self.write_lock = threading.Lock()
         self.protocol = PROTOCOL
@@ -2653,7 +2653,7 @@ class McpServer:
             self.protocol = asked if asked in PROTOCOLS else PROTOCOL
             return self.result(rid, {"protocolVersion": self.protocol,
                                      "capabilities": {"tools": {"listChanged": False}},
-                                     "serverInfo": {"name": "strata", "title": "Strata", "version": VERSION},
+                                     "serverInfo": {"name": "nostroma", "title": "Nostroma", "version": VERSION},
                                      "instructions": INSTRUCTIONS})
         if method == "ping":
             return self.result(rid, {})
@@ -2722,7 +2722,7 @@ class McpServer:
 
 # ------------------------------------------------------------------------------------------------ the install job
 def install_job(spec_path: str) -> int:
-    """The background half of strata_install (this file started again with --install-job): make .venv like
+    """The background half of nostroma_install (this file started again with --install-job): make .venv like
     START-HERE.bat / setup.sh do when it is missing, run setup, record its exit code."""
     spec = json.loads(Path(spec_path).read_text(encoding="utf-8"))
     root = Path(spec["root"])
@@ -2743,10 +2743,10 @@ def install_job(spec_path: str) -> int:
         if spec.get("create_venv"):
             venv = root / ".venv"
             if py.exists() and subprocess.run([str(py), "-m", "pip", "--version"], capture_output=True).returncode:
-                print("strata-mcp: .venv has no pip (an earlier run stopped half-way): making it again", flush=True)
+                print("nostroma-mcp: .venv has no pip (an earlier run stopped half-way): making it again", flush=True)
                 shutil.rmtree(venv, ignore_errors=True)
             if not py.exists():
-                print(f"strata-mcp: creating Nostroma's Python environment in {venv} ...", flush=True)
+                print(f"nostroma-mcp: creating Nostroma's Python environment in {venv} ...", flush=True)
                 r = subprocess.run([spec["base_python"], "-m", "venv", str(venv)])
                 if r.returncode or not py.exists():
                     print("\n  [X]  could not create the Python environment (.venv)", flush=True)
@@ -2755,23 +2755,23 @@ def install_job(spec_path: str) -> int:
                     record(exit_code=1, ended=time.strftime("%Y-%m-%d %H:%M:%S"))
                     return 1
         cmd = [str(py), str(src / "setup.py"), *spec["args"]]
-        print("strata-mcp: running " + " ".join(cmd), flush=True)
+        print("nostroma-mcp: running " + " ".join(cmd), flush=True)
         env = dict(os.environ, PYTHONUNBUFFERED="1", PYTHONIOENCODING="utf-8")
         if spec.get("control"):                         # the app: the installer's own mode, writing to `root`
-            env.update(STRATA_CONTROL_INSTALL="1", STRATA_INSTALL_DIR=str(root), PYTHONNOUSERSITE="1")
+            env.update(NOSTROMA_CONTROL_INSTALL="1", NOSTROMA_INSTALL_DIR=str(root), PYTHONNOUSERSITE="1")
             for key in ("PYTHONHOME", "PYTHONPATH", "VIRTUAL_ENV"):
                 env.pop(key, None)
             # This job is the explicit install the user asked for (it downloads model files and the preparation sources). The
-            # server that started it, and every start or serve, keep STRATA_NO_ACQUIRE; setup.py's CONTROL mode still runs
+            # server that started it, and every start or serve, keep NOSTROMA_NO_ACQUIRE; setup.py's CONTROL mode still runs
             # no pip, git, compiler or engine fetch.
-            env.pop("STRATA_NO_ACQUIRE", None)
+            env.pop("NOSTROMA_NO_ACQUIRE", None)
         p = subprocess.Popen(cmd, cwd=str(src if spec.get("control") else root), stdin=subprocess.DEVNULL, env=env)
         record(child_pid=p.pid, child_ident=proc_identity(p.pid))
         rc = p.wait()
     except Exception as e:                              # noqa: BLE001
-        print(f"\n  [X]  strata-mcp could not run setup: {e}", flush=True)
+        print(f"\n  [X]  nostroma-mcp could not run setup: {e}", flush=True)
         rc = 1
-    print(f"strata-mcp: setup ended with exit code {rc}", flush=True)
+    print(f"nostroma-mcp: setup ended with exit code {rc}", flush=True)
     record(exit_code=rc, ended=time.strftime("%Y-%m-%d %H:%M:%S"))
     return rc
 
@@ -2795,7 +2795,7 @@ def main(argv=None) -> int:
         return 2
     out = sys.stdout.buffer
     sys.stdout = sys.stderr                             # stray prints must never corrupt the protocol stream
-    server = McpServer(Strata(root, src), out)
+    server = McpServer(Nostroma(root, src), out)
     log(f"ready (Nostroma folder {root})")
     try:
         server.serve(sys.stdin.buffer)

@@ -10,7 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tools"))
-import strata_mcp as M  # noqa: E402
+import nostroma_mcp as M  # noqa: E402
 
 
 def node(root: Path, i: int, ver: int, simd: int, minor: int, vram: int = 0, name: str | None = None):

@@ -1,11 +1,11 @@
 /**
  * Where the person's models go: what a picked folder means (0.2.2).
  *
- * - A drive on its own (D:\ or /) is never filled with model files: it becomes D:\Strata (the data folder) and D:\Strata\Models (the
+ * - A drive on its own (D:\ or /) is never filled with model files: it becomes D:\Nostroma (the data folder) and D:\Nostroma\Models (the
  *   model library), which the person is told.
  * - The data folder is the person's own choice, so it is written into the settings file Nostroma Control reads (`data_dir`). Control's
  *   installer accepts a data folder that is that setting, whatever the folder is called; for a folder it has not been told about it wants a
- *   name starting with "Strata" (a rule against an AI tool filling an arbitrary folder, tools/strata_mcp.py check_data_dir).
+ *   name starting with "Nostroma" (a rule against an AI tool filling an arbitrary folder, tools/nostroma_mcp.py check_data_dir).
  * - The link that makes `<data>/models` and `<data>/Models` one folder is only needed where the file system tells them apart; where it cannot be
  *   made (exFAT, FAT, a network share) the models simply go in `<data>/models`.
  */
@@ -20,15 +20,15 @@ export const isDriveRoot = path => { const p = resolve(path); return p === parse
 export function dataFolderFromPick(picked) {
   const path = resolve(picked);
   if (!isDriveRoot(path)) return { path, note: null };
-  const target = join(path, 'Strata');
+  const target = join(path, 'Nostroma');
   return { path: target, note: `${path} is a whole drive, so the models go in ${target}.` };
 }
 
-/** The model library folder for a picked folder: a drive root gets `Strata/Models`. `{ path, note }`. */
+/** The model library folder for a picked folder: a drive root gets `Nostroma/Models`. `{ path, note }`. */
 export function libraryFolderFromPick(picked) {
   const path = resolve(picked);
   if (!isDriveRoot(path)) return { path, note: null };
-  const target = join(path, 'Strata', 'Models');
+  const target = join(path, 'Nostroma', 'Models');
   return { path: target, note: `${path} is a whole drive, so the models go in ${target}.` };
 }
 
@@ -66,9 +66,9 @@ export function readDataFolder(file) {
 
 /** The settings file the Terminal (command-line Nostroma) keeps: the same place setup.py and nostroma_control/discovery.py use. */
 export function terminalSettingsFile(env = process.env, platform = process.platform) {
-  if ((env.NOSTROMA_TERMINAL_SETTINGS_FILE ?? env.STRATA_TERMINAL_SETTINGS_FILE)) return (env.NOSTROMA_TERMINAL_SETTINGS_FILE ?? env.STRATA_TERMINAL_SETTINGS_FILE);
-  if (platform === 'win32') return join(env.APPDATA || join(homedir(), 'AppData', 'Roaming'), 'Strata', 'settings.json');
-  return join(env.XDG_CONFIG_HOME || join(homedir(), '.config'), 'strata', 'settings.json');
+  if ((env.NOSTROMA_TERMINAL_SETTINGS_FILE ?? env.NOSTROMA_TERMINAL_SETTINGS_FILE)) return (env.NOSTROMA_TERMINAL_SETTINGS_FILE ?? env.NOSTROMA_TERMINAL_SETTINGS_FILE);
+  if (platform === 'win32') return join(env.APPDATA || join(homedir(), 'AppData', 'Roaming'), 'Nostroma', 'settings.json');
+  return join(env.XDG_CONFIG_HOME || join(homedir(), '.config'), 'nostroma', 'settings.json');
 }
 
 /** Write the person's data folder into a settings file (merged, atomically) with the time of the change; returns whether it changed. Never

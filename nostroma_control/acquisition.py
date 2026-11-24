@@ -9,7 +9,7 @@ SETUP, UPDATE or `nostroma install`. This module is that line, in one place:
   network probe, a compile) and raises `AcquisitionRefused` inside such a stretch;
 * `AcquisitionRefused` is the typed error: it says what is missing and names the explicit command.
 
-The environment variable `STRATA_NO_ACQUIRE=1` forbids acquiring for a whole process. A process
+The environment variable `NOSTROMA_NO_ACQUIRE=1` forbids acquiring for a whole process. A process
 that serves (`nostroma serve`, `nostroma runtime start`, the API server) never imports the installer, so
 for it this is a second line of defence, not the first.
 
@@ -23,7 +23,7 @@ import os
 import sys
 import threading
 
-ENV = "STRATA_NO_ACQUIRE"
+ENV = "NOSTROMA_NO_ACQUIRE"
 
 _lock = threading.Lock()
 _depth = 0
@@ -80,5 +80,5 @@ def main_guard(fn, *, fail=None):
     except AcquisitionRefused as exc:
         if fail is not None:
             return fail(str(exc), None)
-        print(f"strata: {exc}", file=sys.stderr)
+        print(f"nostroma: {exc}", file=sys.stderr)
         return exc.exit_code

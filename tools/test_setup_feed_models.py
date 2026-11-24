@@ -82,7 +82,7 @@ def tables(mod) -> str:
 
 
 def parsed(*models) -> tuple:
-    doc = {"schema_version": 1, "feed": "strata-updates", "channel": "stable", "sequence": 1, "generated_at": "2026-11-06T00:00:00Z", "expires_at": None,
+    doc = {"schema_version": 1, "feed": "nostroma-updates", "channel": "stable", "sequence": 1, "generated_at": "2026-11-06T00:00:00Z", "expires_at": None,
            "models": {"packages": list(models)}}
     f = feedmod.parse(json.dumps(doc).encode(), source="x", key_id="k")
     assert not f.models_dropped, f.models_dropped
@@ -97,10 +97,10 @@ class Base(unittest.TestCase):
         self.key = signing.generate_key()
         keys = self.root / "keys.json"
         keys.write_text(json.dumps({"keys": [signing.public_part(self.key)]}), encoding="utf-8")
-        patch = mock.patch.dict(os.environ, {"STRATA_COMPONENTS_DIR": str(self.root / "components"), "STRATA_UPDATE_TRUSTED_KEYS": str(keys)})
+        patch = mock.patch.dict(os.environ, {"NOSTROMA_COMPONENTS_DIR": str(self.root / "components"), "NOSTROMA_UPDATE_TRUSTED_KEYS": str(keys)})
         patch.start()
         self.addCleanup(patch.stop)
-        os.environ.pop("STRATA_FEED_MODELS", None)
+        os.environ.pop("NOSTROMA_FEED_MODELS", None)
         policy = mock.patch.object(feed_models, "UNAVAILABLE_POLICY", "not_offered")     # the tests below were written for "not_offered"; OwnerRule sets its own
         policy.start()
         self.addCleanup(policy.stop)
@@ -119,7 +119,7 @@ class Base(unittest.TestCase):
     def signed_feed(self, name="feed", sequence=1, models=None) -> str:
         out = self.root / name
         out.mkdir(exist_ok=True)
-        members = {"schema_version": 1, "feed": "strata-updates", "channel": "stable", "sequence": sequence, "generated_at": "2026-11-06T00:00:00Z",
+        members = {"schema_version": 1, "feed": "nostroma-updates", "channel": "stable", "sequence": sequence, "generated_at": "2026-11-06T00:00:00Z",
                    "expires_at": None}
         if models is not None:
             members["models"] = {"packages": models}
@@ -187,7 +187,7 @@ class FlashNextModel(Base):
         self.assertIsNone(self.setup.file_pin(base + "other.gguf"))
 
     def test_its_config_is_found_again_by_choices_from_config(self):
-        cfg = self.root / "strata-qwen4-test-q4_k_m.json"
+        cfg = self.root / "nostroma-qwen4-test-q4_k_m.json"
         cfg.write_text(json.dumps({"args": ["--max-context", "65536"], "arch": "qwen4exp"}), encoding="utf-8")
         got = self.setup.choices_from_config(cfg)
         self.assertEqual((got["family"], got["model"], got["context"]), ("qwen4-test", "Q4_K_M", 65536))
@@ -300,7 +300,7 @@ class OwnPathModel(Base):
         self.assertIn(("sha", "Q4-model.gguf", *pin("Q4-model.gguf")), calls)         # the feed's size and SHA-256 reach the check
         self.assertIn(("sha", "mmproj-q4.gguf", *pin("mmproj-q4.gguf")), calls)
         self.assertEqual((cfg["arch"], cfg["model_name"]), ("qwen35moe", "qwen35-test-ud-q4"))
-        self.assertIn(("config", "strata-qwen35-test-ud-q4.json"), calls)
+        self.assertIn(("config", "nostroma-qwen35-test-ud-q4.json"), calls)
         self.assertEqual(cfg["args"][cfg["args"].index("--native") + 1], str(self.root / "models" / "qwen35-test-UD-Q4" / "Q4-model.gguf"))
         self.assertEqual(cfg["args"][cfg["args"].index("--mtp") + 1], "2")
 
@@ -402,11 +402,11 @@ class RefusalsAndOffline(Base):
 
 
 class TerminalAndApp(Base):
-    """strata_mcp is the app's and the Terminal's one catalog."""
+    """nostroma_mcp is the app's and the Terminal's one catalog."""
 
     def table(self, ram=64.0):
-        import strata_mcp as M
-        s = M.Strata(ROOT)
+        import nostroma_mcp as M
+        s = M.Nostroma(ROOT)
         # the PC these tests describe, not the box they run on (p1006's real Arc card sent install_plan down the Intel path)
         s._hardware = lambda: {"os": "TestOS 1", "ram_gb": ram, "cpu": {"name": "Fake CPU", "cores": 12, "avx2": True, "avx512": False},
                                "gpus": [{"index": 0, "name": "NVIDIA GeForce RTX 5070", "vram_gb": 11.9, "arch": "120", "vendor": "nvidia",
@@ -431,7 +431,7 @@ class TerminalAndApp(Base):
         self.assertEqual(by["later-one"]["sizes"], [])                                   # the app hides a family without sizes
         self.assertFalse(by["later-one"]["available"])
         self.assertEqual(by["later-one"]["unavailable_reason"], feed_models.UNAVAILABLE_UNKNOWN)
-        import strata_mcp as M
+        import nostroma_mcp as M
         plan, args = M.Tools(s).install_plan("qwen4-test", "Q4_K_M", 65536, "no", None, None, None, None, "auto", None, None)
         self.assertEqual(args[args.index("--family") + 1:args.index("--family") + 4:2], ["qwen4-test", "Q4_K_M"])        # the install runs setup with the feed model's names
         self.assertEqual(plan["download_gb"], 0.0)
@@ -527,8 +527,8 @@ class MacTables(Base):
 
     def test_the_mac_table_lists_it_after_the_built_in_sizes(self):
         feed_models.load(self.signed_feed("f", 7, [flash_next()]), trusted={self.key["key_id"]: base64.b64decode(self.key["public"])})
-        import strata_mcp as M
-        rows = M.Strata(ROOT).model_table({"ram_gb": 64.0, "gpus": [], "mac": {"chip": "M4", "unified_gb": 64}})
+        import nostroma_mcp as M
+        rows = M.Nostroma(ROOT).model_table({"ram_gb": 64.0, "gpus": [], "mac": {"chip": "M4", "unified_gb": 64}})
         by = {r["family"]: r for r in rows}
         self.assertTrue(by["qwen4-test"]["feed"])
         self.assertEqual([x["model"] for x in by["qwen4-test"]["sizes"]], ["Q4_K_M"])

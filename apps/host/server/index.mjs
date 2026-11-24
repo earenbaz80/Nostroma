@@ -88,14 +88,14 @@ import { validateChatImages } from './chat-images.mjs';
 import { createTimeSkip, measureFolder, timeskipRevisionMessage, imageTypeOf } from './timeskip.mjs';
 import { aliasOldNames, childEnv, envVar } from './env-compat.mjs';
 
-// The names moved to NOSTROMA_*; anything started with the older STRATA_* names keeps working, and children get both.
+// The names moved to NOSTROMA_*; anything started with the older NOSTROMA_* names keeps working, and children get both.
 aliasOldNames();
 
 const HERE = fileURLToPath(new URL('.', import.meta.url));
 const ROOT = resolve(HERE, '..');
 const argv = process.argv.slice(2);
 const distFlag = argv.indexOf('--dist');
-// `STRATA_DIST` exists for carriers that load this module directly rather than starting it as its
+// `NOSTROMA_DIST` exists for carriers that load this module directly rather than starting it as its
 // own process (the Electron app does that). Such a carrier cannot rely on `--dist`: when the host
 // runs as the Electron main process, `process.argv` is Chromium's switch list and the host's own
 // flags are not reliably present. An explicit environment variable is unambiguous, and the CLI
@@ -137,7 +137,7 @@ function defaultWorkspace() {
   const user = process.env.USERPROFILE ?? process.env.HOME ?? homedir();
   for (const base of [join(user, 'Documents'), user]) {
     const dir = join(base, 'Nostroma', 'Workspace');
-    const previous = join(base, 'Strata', 'Workspace');
+    const previous = join(base, 'Nostroma', 'Workspace');
     try {
       if (!existsSync(dir) && existsSync(previous)) { mkdirSync(join(base, 'Nostroma'), { recursive: true }); renameSync(previous, dir); }
       mkdirSync(dir, { recursive: true }); return dir;
@@ -162,7 +162,7 @@ const control = createControl({ control: CONTROL });
 if (control && process.platform === 'win32' && !envVar('NO_REPAIR_ACCESS')) void control.repairAccess().catch(() => {});
 /* Which window shows the page (the app window or, when that cannot run, a browser tab) and what only the app window can do: app-ui.mjs. */
 const appUi = createAppUi({ shutdown: () => shutdown() });
-/* The app's version has one source: the desktop shell passes it (STRATA_APP_VERSION, from apps/desktop/src-tauri/Cargo.toml). Outside the app it is read from the same file in a checkout, else 'dev'. */
+/* The app's version has one source: the desktop shell passes it (NOSTROMA_APP_VERSION, from apps/desktop/src-tauri/Cargo.toml). Outside the app it is read from the same file in a checkout, else 'dev'. */
 function appVersion() { return appVersionFrom({ env: process.env, here: HERE }); }
 const appUpdater = appUi.updater;
 const shellNotifier = createShellNotifier();
@@ -199,7 +199,7 @@ if (control) {
 }
 const native=createNativeControl({control,ready:bundledEngine,appUpdater,hardwareProbe:()=>(hardware.cachedHardware()?.gpus??[]).map((g,n)=>({index:g.index??n,vram_gb:g.vramGb})),directory:store.DATA_DIR,modelsDirectory:()=>store.MODELS_DIR,nativeDataDirectory:store.nativeDataDirectory,beforeLoad:async()=>{if(models.REAL&&models.library().loaded){if(serving.state().requests.some(r=>runtimeModels.state().instances.some(i=>i.id===r.instanceId)&&["queued","generating"].includes(r.state)))throw new Error("Finish requests before switching engines.");await models.unload();runtimeState();}},requests:()=>serving.state().requests,changed:value=>hub.send('native',value)});
 /* The agent: chats become DeepSeek Harness sessions when that component is installed. It is a separate
-   pinned component (STRATA_HARNESS_DIR), not part of this host, so its absence is a visible capability
+   pinned component (NOSTROMA_HARNESS_DIR), not part of this host, so its absence is a visible capability
    state and the chat falls back to the direct path with a notice, never silently to another model. */
 // What the person chose in Settings -> Tools (tool groups, web search service and key, the browser, their own tools).
 const llmProxy = createLlmProxy({ targetOf: key => agent.llmTarget(key), samplingNow: () => samplingFromExpert(store.get().expert) });
@@ -291,9 +291,9 @@ function runtimeState(){
    GGUF nobody had loaded). Models run on the Nostroma engine, whose own start does not come through here. */
 const backend = await detectBackend({ force: true });
 
-console.log(`strata host  ·  http://${HOST}:${PORT}`);
+console.log(`nostroma host  ·  http://${HOST}:${PORT}`);
 console.log(`hardware     ·  ${boot.accelerator.label} / ${boot.accelerator.backend} / ${boot.cpu.cores} cores / ${Math.round(boot.memory.totalGb)} GB`);
-const printInference = engine => console.log(`inference    ·  ${models.REAL ? inferenceLine({ backend, engine, settled: bundledEngineSettled }) : 'simulated (design iteration) — set STRATA_REAL_ENGINE=1 for a real engine'}`);
+const printInference = engine => console.log(`inference    ·  ${models.REAL ? inferenceLine({ backend, engine, settled: bundledEngineSettled }) : 'simulated (design iteration) — set NOSTROMA_REAL_ENGINE=1 for a real engine'}`);
 if (models.REAL && control && backend.kind === 'unavailable' && bundledEngineSettled) void control.engine().catch(() => null).then(printInference);
 else printInference(null);
 console.log(`models dir   ·  ${store.MODELS_DIR}`);
@@ -537,7 +537,7 @@ function saveWorkspaces() {
   }
 }
 
-const SKIP_DIRS = new Set(['node_modules', '.git', '.npm-cache', '.strata', '.shots', 'dist', '.vite', '__pycache__', '.cache']);
+const SKIP_DIRS = new Set(['node_modules', '.git', '.npm-cache', '.nostroma', '.shots', 'dist', '.vite', '__pycache__', '.cache']);
 
 function workspaceListing(root = WORKSPACE) {
   const entries = [];
@@ -578,12 +578,12 @@ function workspaceListing(root = WORKSPACE) {
 
 function clientName(req) {
   const ua = req.headers['user-agent'] ?? '';
-  const header = req.headers['x-strata-client'];
+  const header = req.headers['x-nostroma-client'];
   if (typeof header === 'string' && header) return header;
   if (/curl/i.test(ua)) return 'curl';
   if (/python|httpx|requests/i.test(ua)) return 'Python client';
   if (/node|undici|axios/i.test(ua)) return 'Node client';
-  if (/strata/i.test(ua)) return 'Nostroma chat';
+  if (/nostroma/i.test(ua)) return 'Nostroma chat';
   return 'Local client';
 }
 
@@ -665,7 +665,7 @@ async function runTurn({ message, history = [], onFrame, signal, client, workspa
   if(native.hasLive()||nativeModelId){
     let instance;try{instance=native.resolveInstance(nativeModelId??native.state().defaultId);}catch(e){const message=plainNoModel(e.message);onFrame({type:'error',message});return {error:message};}const started=Date.now(),cancel=new AbortController();
     const entry=serving.open({client:client??'Nostroma chat',endpoint:'/chat/completions',model:instance.apiModelId,instanceId:instance.id,gpuIds:instance.gpus.map(String),cancel:()=>cancel.abort()});
-    try{serving.mark(entry.id,{state:'generating'});const applied=selectSkills(skillState,message,workspaceId);const result=await proxyCompletion({baseUrl:`http://127.0.0.1:${instance.port}/v1`,modelId:instance.apiModelId,authorization:instance.key,message,history,images,extra:{strata_mcp:useTools===true,...(thinkingBudget>0&&String(thinking).toLowerCase()!=='off'?{reasoning_budget_tokens:thinkingBudget}:{}),reasoning_effort:({off:'none',max:'high'}[String(thinking).toLowerCase()]??String(thinking).toLowerCase())},systemPrompt:[SYSTEM_PROMPT,skillInstructions(applied)].filter(Boolean).join('\n\n'),signal:signal?AbortSignal.any([signal,cancel.signal]):cancel.signal,onFrame:frame=>onFrame({...frame,requestId:entry.id,model:instance.label,contextMax:instance.metrics?.engine?.max_context??instance.context,skills:applied.map(s=>s.name)})});serving.mark(entry.id,{...result,usageSource:result.usageSource});serving.finish(entry.id,{tokensOut:result.tokensOut,durationMs:Date.now()-started});return result;}catch(e){serving.finish(entry.id,{durationMs:Date.now()-started,error:e.message});onFrame({type:'error',message:e.message,requestId:entry.id});return {error:e.message};}
+    try{serving.mark(entry.id,{state:'generating'});const applied=selectSkills(skillState,message,workspaceId);const result=await proxyCompletion({baseUrl:`http://127.0.0.1:${instance.port}/v1`,modelId:instance.apiModelId,authorization:instance.key,message,history,images,extra:{nostroma_mcp:useTools===true,...(thinkingBudget>0&&String(thinking).toLowerCase()!=='off'?{reasoning_budget_tokens:thinkingBudget}:{}),reasoning_effort:({off:'none',max:'high'}[String(thinking).toLowerCase()]??String(thinking).toLowerCase())},systemPrompt:[SYSTEM_PROMPT,skillInstructions(applied)].filter(Boolean).join('\n\n'),signal:signal?AbortSignal.any([signal,cancel.signal]):cancel.signal,onFrame:frame=>onFrame({...frame,requestId:entry.id,model:instance.label,contextMax:instance.metrics?.engine?.max_context??instance.context,skills:applied.map(s=>s.name)})});serving.mark(entry.id,{...result,usageSource:result.usageSource});serving.finish(entry.id,{tokensOut:result.tokensOut,durationMs:Date.now()-started});return result;}catch(e){serving.finish(entry.id,{durationMs:Date.now()-started,error:e.message});onFrame({type:'error',message:e.message,requestId:entry.id});return {error:e.message};}
   }
   runtimeState();
   let instance;
@@ -847,13 +847,13 @@ async function stopTrial(id) {
  * The plan and the report are real; the sweep is gated on that harness.
  */
 function createTuning({ repoRoot, python, pythonArgs = [], env = process.env } = {}) {
-  const cli = join(repoRoot, 'strata.py');
+  const cli = join(repoRoot, 'nostroma.py');
   const stateDir = () => tuningDir(env);
 
   function runCli(args) {
     return new Promise((resolve) => {
       const child = spawn(python, [...pythonArgs, cli, ...args, '--output', 'json'], {
-        cwd: repoRoot, windowsHide: true, env: childEnv({ ...env, PYTHONUTF8: '1', PYTHONIOENCODING: 'utf-8', STRATA_TUNE_DIR: stateDir() }),
+        cwd: repoRoot, windowsHide: true, env: childEnv({ ...env, PYTHONUTF8: '1', PYTHONIOENCODING: 'utf-8', NOSTROMA_TUNE_DIR: stateDir() }),
         stdio: ['ignore', 'pipe', 'pipe'],
       });
       let out = '', err = '';
@@ -922,12 +922,12 @@ const timeskip = createTimeSkip({
   repoRoot: REPO_ROOT,
   python: TS_PYTHON,
   pythonArgs: PYTHON.args,
-  env: childEnv({ ...process.env, STRATA_TIMESKIP_DIR: envVar('TIMESKIP_DIR') ?? '' }),
+  env: childEnv({ ...process.env, NOSTROMA_TIMESKIP_DIR: envVar('TIMESKIP_DIR') ?? '' }),
 });
 
 const runAgentTask = createAgentTaskRunner({
   agent, workspace: WORKSPACE,
-  // The loaded local model. (STRATA_TASK_REMOTE_MODEL="<connection id>:<model id>" lets a developer or an API-only setup name a saved API model instead.)
+  // The loaded local model. (NOSTROMA_TASK_REMOTE_MODEL="<connection id>:<model id>" lets a developer or an API-only setup name a saved API model instead.)
   choice: () => {
     try { return { instanceId: native.resolveInstance(native.state().defaultId).id }; } catch { /* no local model is ready */ }
     const [connectionId, ...rest] = String(envVar('TASK_REMOTE_MODEL') ?? '').split(':');
@@ -974,13 +974,13 @@ const server = http.createServer(async (req, res) => {
   // DNS rebinding: a well-formed Host that is not one of this app's names is another site's page and gets nothing, before any other
   // header goes out. serve/server.py checks the same thing; this port is where chats, files and engine control live.
   if (!hostAllowed(req.headers.host, HOST_NAMES)) {
-    return error(res, 403, 'This app answers only to its own addresses. Open it on 127.0.0.1 or localhost. Under another name on purpose (a proxy)? List it in STRATA_ALLOWED_HOSTS.');
+    return error(res, 403, 'This app answers only to its own addresses. Open it on 127.0.0.1 or localhost. Under another name on purpose (a proxy)? List it in NOSTROMA_ALLOWED_HOSTS.');
   }
   const path = url.pathname;
   const method = req.method ?? 'GET';
 
   res.setHeader('access-control-allow-origin', '*');
-  res.setHeader('access-control-allow-headers', 'content-type, authorization, x-api-key, x-strata-client');
+  res.setHeader('access-control-allow-headers', 'content-type, authorization, x-api-key, x-nostroma-client');
   res.setHeader('access-control-allow-methods', 'GET, POST, PATCH, DELETE, OPTIONS');
   if (method === 'OPTIONS') {
     res.writeHead(204);
@@ -1005,7 +1005,7 @@ const server = http.createServer(async (req, res) => {
     }
     return await staticFile(req, res, path);
   } catch (err) {
-    console.error('[strata]', err);
+    console.error('[nostroma]', err);
     if (res.headersSent) { res.end(); return; }   // a stream already began: it ends here (a second writeHead would throw out of this handler and end the process)
     error(res, 500, err.message ?? 'Internal error');
   }
@@ -1014,14 +1014,14 @@ const server = http.createServer(async (req, res) => {
 async function api(req, res, path, method, url) {
   if(path==='/api/fonts'&&method==='GET')return json(res,200,await systemFonts());
   // --- chats: one file each in the data folder -----------------------------
-  // Not held back by a model folder move: saving a chat has nothing to do with the models. A page must name itself (x-strata-client), which
+  // Not held back by a model folder move: saving a chat has nothing to do with the models. A page must name itself (x-nostroma-client), which
   // a web page from another site cannot do without the browser asking the host first.
   const chatsRoute = /^\/api\/chats(?:\/([^/]+))?$/.exec(path);
   if (chatsRoute) {
-    if (!req.headers['x-strata-client']) return error(res, 403, 'Not allowed.');
+    if (!req.headers['x-nostroma-client']) return error(res, 403, 'Not allowed.');
     let id = null;
     try { id = chatsRoute[1] ? decodeURIComponent(chatsRoute[1]) : null; } catch { return error(res, 400, 'That is not a chat id.', { code: 'bad-id' }); }
-    const from = typeof req.headers['x-strata-window'] === 'string' ? req.headers['x-strata-window'].slice(0, 64) : null;
+    const from = typeof req.headers['x-nostroma-window'] === 'string' ? req.headers['x-nostroma-window'].slice(0, 64) : null;
     try {
       if (!id && method === 'GET') return json(res, 200, chatStore.list());
       if (id === 'import' && method === 'POST') {
@@ -1039,7 +1039,7 @@ async function api(req, res, path, method, url) {
       }
       if (id && method === 'PUT') {
         const text = (await readRaw(req, 256 * 1024 * 1024)).toString('utf8');
-        const base = req.headers['x-strata-base-rev'];
+        const base = req.headers['x-nostroma-base-rev'];
         const saved = await chatStore.save(id, text, { baseRev: typeof base === 'string' && /^\d+$/.test(base) ? Number(base) : null });
         hub.send('chats', { id, rev: saved.rev, from });
         return json(res, 200, saved);
@@ -1226,7 +1226,7 @@ async function api(req, res, path, method, url) {
       workspace, prompt,
       attempts: body.attempts ?? 1,
       reviseCommand,
-      extraEnv: { STRATA_HOST_URL: `http://127.0.0.1:${PORT}`, STRATA_INTERNAL_SECRET: INTERNAL_SECRET },
+      extraEnv: { NOSTROMA_HOST_URL: `http://127.0.0.1:${PORT}`, NOSTROMA_INTERNAL_SECRET: INTERNAL_SECRET },
     });
     if (!result.ok) return error(res, result.code === 2 ? 400 : 502, result.error);
     const chatId = typeof body.sessionId === 'string' && body.sessionId ? body.sessionId : null;
@@ -1258,7 +1258,7 @@ async function api(req, res, path, method, url) {
   }
   // One revision attempt for a job this host started: the app's assistant works inside the candidate folder.
   if (path === '/api/internal/timeskip-revise' && method === 'POST') {
-    if (!sameSecret(req.headers['x-strata-internal'], INTERNAL_SECRET)) return error(res, 403, 'Not allowed.');
+    if (!sameSecret(req.headers['x-nostroma-internal'], INTERNAL_SECRET)) return error(res, 403, 'Not allowed.');
     const body = await readBody(req);
     const cwd = String(body.cwd ?? '');
     // Only the job's own candidate folders may be worked in.
@@ -1368,13 +1368,13 @@ async function api(req, res, path, method, url) {
   // The shell (and nothing else) holds the secret that lets it end the host or tell it which window is in use.
   const fromShell = () => {
     const token = envVar('SHUTDOWN_TOKEN') ?? '';
-    return token.length >= 32 && sameSecret(req.headers['x-strata-shutdown'], token);
+    return token.length >= 32 && sameSecret(req.headers['x-nostroma-shutdown'], token);
   };
   // Which window the person is using: the page shows "Quit Nostroma" in browser mode only.
   if (path === '/api/app/mode' && method === 'GET') return json(res, 200, appUi.state());
   if (path === '/api/app/quit' && method === 'POST') {
     // A web page cannot send this header without the browser asking the host first, and the host refuses pages that are not local (above).
-    if (!req.headers['x-strata-client']) return error(res, 403, 'Not allowed.');
+    if (!req.headers['x-nostroma-client']) return error(res, 403, 'Not allowed.');
     const verdict = appUi.quit();
     return verdict.ok ? json(res, verdict.status, { stopping: true }) : error(res, verdict.status, verdict.error);
   }
@@ -2093,7 +2093,7 @@ async function api(req, res, path, method, url) {
     /* Agent turn, when the component is there and this request can use it. A client that disappears
        detaches from the turn (it keeps running in the Harness); Stop is its own request. */
     const chatId = typeof body.sessionId === 'string' && body.sessionId ? body.sessionId : null;
-    const agentSkip = envVar('AGENT') === 'off' ? 'The agent is turned off (STRATA_AGENT=off).'
+    const agentSkip = envVar('AGENT') === 'off' ? 'The agent is turned off (NOSTROMA_AGENT=off).'
       : body.agent === false || body.tools === false ? 'This chat runs without the agent.'
       : !chatId ? 'This request did not name a chat.'
       : !(body.remoteModel || native.hasLive()) ? 'The agent needs a loaded Nostroma model or an API model.'
@@ -2140,14 +2140,14 @@ async function api(req, res, path, method, url) {
 async function openai(req, res, path, method) {
   if (!serving.authorized(req)) return error(res, 401, 'Invalid API key');
   if(native.state().instances.length){
-    if(path==='/v1/models'&&method==='GET')return json(res,200,{object:'list',data:native.state().instances.filter(i=>i.status==='ready').map(i=>({id:i.apiModelId,object:'model',owned_by:'strata',meta:{instanceId:i.id,gpus:i.gpus,label:i.label,aliases:i.aliases}}))});
+    if(path==='/v1/models'&&method==='GET')return json(res,200,{object:'list',data:native.state().instances.filter(i=>i.status==='ready').map(i=>({id:i.apiModelId,object:'model',owned_by:'nostroma',meta:{instanceId:i.id,gpus:i.gpus,label:i.label,aliases:i.aliases}}))});
     if(method==='POST'&&['/v1/chat/completions','/v1/messages','/v1/responses'].includes(path)){if(store.get().serving?.pauseServing)return error(res,503,'New API requests are paused.');if(path==='/v1/responses'&&!native.state().capabilities.responses)return error(res,501,'Update the native Nostroma installation to use the Responses API.');return nativeGateway({req,res,path,body:await readBody(req,12*1024*1024),control:native,serving});}
   }
   if(path==='/v1/responses'&&method==='POST')return error(res,503,'Load a native Nostroma model to use the Responses API.');
 
   if (path === '/v1/models' && method === 'GET') {
     const runtime=runtimeState();
-    return json(res,200,{object:'list',data:runtime.instances.map(i=>({id:i.apiModelId,object:'model',created:Math.floor(new Date(i.loadedAt).getTime()/1000),owned_by:'strata',meta:{label:i.family,context:i.memory.context,instanceId:i.id,gpuIds:i.gpuIds,mode:runtime.mode}}))});
+    return json(res,200,{object:'list',data:runtime.instances.map(i=>({id:i.apiModelId,object:'model',created:Math.floor(new Date(i.loadedAt).getTime()/1000),owned_by:'nostroma',meta:{label:i.family,context:i.memory.context,instanceId:i.id,gpuIds:i.gpuIds,mode:runtime.mode}}))});
   }
 
   if ((path === '/v1/chat/completions' || path === '/v1/messages') && method === 'POST') {
@@ -2346,13 +2346,13 @@ async function staticFile(req, res, path) {
 /* ------------------------------------------------------------------ start --- */
 
 server.on('error', error => {
-  if (server.listening) { console.error(`[strata] ${error.message}`); return; }
+  if (server.listening) { console.error(`[nostroma] ${error.message}`); return; }
   // a taken or Windows-reserved port: one plain sentence instead of a stack trace
-  console.error(`[strata] ${listenProblem(error, PORT, HOST)}`);
+  console.error(`[nostroma] ${listenProblem(error, PORT, HOST)}`);
   process.exit(1);
 });
 server.listen(PORT, HOST, () => {
-  if (process.send) process.send({ type: 'strata-ready', port: PORT });
+  if (process.send) process.send({ type: 'nostroma-ready', port: PORT });
   // Engines a lost owner left behind (an earlier crash, an older version): ended after a PID + start time + command-line check.
   if (control && envVar('PACKAGED') === '1') control.cleanup().catch(() => {});
 });

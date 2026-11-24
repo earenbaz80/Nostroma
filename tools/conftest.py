@@ -1,9 +1,9 @@
 """pytest, tools/: the tests here describe Linux and Windows PCs on x86 (NVIDIA, AMD and Intel cards; the Spark and the Mac tests say
 so themselves by patching the platform or the CPU). On a Mac every one of them ran the Mac or ARM branch instead: setup.main() goes to
-the Metal installer (`sys.platform == "darwin"`), strata_mcp takes the unified-memory path, and an Apple CPU reads as ARM64.
+the Metal installer (`sys.platform == "darwin"`), nostroma_mcp takes the unified-memory path, and an Apple CPU reads as ARM64.
 
 On macOS only, for each test:
-* setup.py and tools/strata_mcp.py see sys.platform "linux" (their module-level `sys` is a view of the real one with another
+* setup.py and tools/nostroma_mcp.py see sys.platform "linux" (their module-level `sys` is a view of the real one with another
   platform; the rest of the process, and the tests' own skip decisions, still see darwin);
 * the CPU reads as x86_64 (platform.machine and nostroma_control.sysinfo.machine), as on GitHub's Linux runner.
 Linux and Windows are not touched. A test that wants darwin or arm64 patches it on top, as before (setup.sys.platform, is_arm64)."""
@@ -14,7 +14,7 @@ from unittest import mock
 
 import pytest
 
-LINUX_VIEW = ("setup", "strata_mcp")
+LINUX_VIEW = ("setup", "nostroma_mcp")
 
 
 class _SysView:

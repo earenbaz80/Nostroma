@@ -15,8 +15,8 @@ test('native instances isolate devices, ports, IDs and private keys; default loa
  }finally{await f.cleanup();}
 });
 test('native save preserves unknown fields, credentials and a backup; null restores native defaults',async()=>{
- const f=nativeFixture();try{await f.control.refresh();const original=f.control.settings('iq2_xs');assert.equal(original.values.env.STRATA_TOKEN,'••••••••');f.control.save('iq2_xs',{values:{...original.values,parallel:2,reasoning_budget_tokens:null},mcp:{files:{command:'node',args:['file-server.mjs'],env:{TOKEN:'secret'}}}});
- const saved=JSON.parse(readFileSync(join(f.repo,'strata-iq2_xs.json')));assert.deepEqual(saved.unknown_native_key,{preserve:true});assert.equal(saved.env.PATH,'/native/bin');assert.equal(saved.env.STRATA_TOKEN,'private');assert.equal(saved.parallel,2);assert.equal('reasoning_budget_tokens' in saved,false);assert.ok(readFileSync(join(f.repo,'strata-iq2_xs.json.bak')));
+ const f=nativeFixture();try{await f.control.refresh();const original=f.control.settings('iq2_xs');assert.equal(original.values.env.NOSTROMA_TOKEN,'••••••••');f.control.save('iq2_xs',{values:{...original.values,parallel:2,reasoning_budget_tokens:null},mcp:{files:{command:'node',args:['file-server.mjs'],env:{TOKEN:'secret'}}}});
+ const saved=JSON.parse(readFileSync(join(f.repo,'nostroma-iq2_xs.json')));assert.deepEqual(saved.unknown_native_key,{preserve:true});assert.equal(saved.env.PATH,'/native/bin');assert.equal(saved.env.NOSTROMA_TOKEN,'private');assert.equal(saved.parallel,2);assert.equal('reasoning_budget_tokens' in saved,false);assert.ok(readFileSync(join(f.repo,'nostroma-iq2_xs.json.bak')));
  assert.equal(f.control.settings('iq2_xs').mcp.files.env.TOKEN,'••••••••');
  }finally{await f.cleanup();}
 });
@@ -26,20 +26,20 @@ test('benchmarks retain reported rates and cancellation aborts measurement',asyn
  }finally{await f.cleanup();}
 });
 test('the app update is refused before git runs; calibration targets the chosen installed configuration',async()=>{
- const f=nativeFixture();try{await f.control.refresh();const asked=f.calls.length;assert.throws(()=>f.control.operation('update-strata'),/App updates are off/);assert.deepEqual(f.calls.slice(asked),[],'the refused update ran nothing (no git status, no pull)');
- const calibrated=await finishJob(f.control,f.control.operation('calibrate',{model:'iq3_s'}).id);assert.equal(calibrated.state,'done',calibrated.error);assert.ok(f.calls.find(c=>c.args[0]==='-c'&&c.args[2].endsWith('strata-iq3_s.json')));
+ const f=nativeFixture();try{await f.control.refresh();const asked=f.calls.length;assert.throws(()=>f.control.operation('update-nostroma'),/App updates are off/);assert.deepEqual(f.calls.slice(asked),[],'the refused update ran nothing (no git status, no pull)');
+ const calibrated=await finishJob(f.control,f.control.operation('calibrate',{model:'iq3_s'}).id);assert.equal(calibrated.state,'done',calibrated.error);assert.ok(f.calls.find(c=>c.args[0]==='-c'&&c.args[2].endsWith('nostroma-iq3_s.json')));
  f.setExternal([{port:8080,model:'other'}]);await f.control.refresh(true);const load=await finishJob(f.control,f.control.operation('load',{model:'iq2_xs'}).id);assert.equal(load.state,'error');assert.match(load.error,/outside this UI/);
  }finally{await f.cleanup();}
 });
 
 test('cancelling a native load before dispatch preserves the running instance',async()=>{const f=nativeFixture();try{await f.control.refresh();const first=await finishJob(f.control,f.control.operation('load',{model:'iq2_xs',gpus:[0]}).id);const job=f.control.operation('load',{model:'iq3_s',gpus:[1]});await f.control.cancel(job.id);await new Promise(r=>setTimeout(r,20));assert.equal(f.control.state().instances.length,1);assert.equal(f.control.state().instances[0].id,first.result.instanceId);assert.equal(f.control.state().jobs.find(j=>j.id===job.id).state,'cancelled');}finally{await f.cleanup();}});
 
-test('retuning or repairing an installed native model reuses its original data folder',async()=>{const f=nativeFixture();try{await f.control.refresh();await f.control.plan({family:'qwen',model:'IQ2_XS',context:131072});const call=f.rpcCalls.find(c=>c.name==='strata_install');assert.equal(call.arguments.data_dir,f.installed.data_folder);assert.equal(call.arguments.confirm,false);}finally{await f.cleanup();}});
+test('retuning or repairing an installed native model reuses its original data folder',async()=>{const f=nativeFixture();try{await f.control.refresh();await f.control.plan({family:'qwen',model:'IQ2_XS',context:131072});const call=f.rpcCalls.find(c=>c.name==='nostroma_install');assert.equal(call.arguments.data_dir,f.installed.data_folder);assert.equal(call.arguments.confirm,false);}finally{await f.cleanup();}});
 
 test('a model the person pointed at their own GGUF folder keeps that folder for the next load: setup is not asked to download it again (#3199)',async()=>{const f=nativeFixture();try{
  const own=join(f.directory,'my-ggufs');mkdirSync(own,{recursive:true});const shard=join(own,'Qwen3.8-Flash-Next-IQ2_XS-00001-of-00002.gguf');writeFileSync(shard,'x');
- const path=join(f.repo,'strata-iq2_xs.json'),config=JSON.parse(readFileSync(path));config.args=['--native',shard,'--max-context','32768'];writeFileSync(path,JSON.stringify(config));
+ const path=join(f.repo,'nostroma-iq2_xs.json'),config=JSON.parse(readFileSync(path));config.args=['--native',shard,'--max-context','32768'];writeFileSync(path,JSON.stringify(config));
  await f.control.refresh(true);await f.control.plan({family:'qwen',model:'IQ2_XS',context:131072});
- const call=f.rpcCalls.filter(c=>c.name==='strata_install').pop();assert.equal(call.arguments.gguf_dir,own);assert.equal(call.arguments.data_dir,undefined,'the person\'s folder is not the data folder');
- await f.control.plan({family:'qwen',model:'IQ3_S',context:131072});const other=f.rpcCalls.filter(c=>c.name==='strata_install').pop();assert.equal(other.arguments.gguf_dir,undefined,'a model Nostroma downloaded itself keeps its normal folders');
+ const call=f.rpcCalls.filter(c=>c.name==='nostroma_install').pop();assert.equal(call.arguments.gguf_dir,own);assert.equal(call.arguments.data_dir,undefined,'the person\'s folder is not the data folder');
+ await f.control.plan({family:'qwen',model:'IQ3_S',context:131072});const other=f.rpcCalls.filter(c=>c.name==='nostroma_install').pop();assert.equal(other.arguments.gguf_dir,undefined,'a model Nostroma downloaded itself keeps its normal folders');
 }finally{await f.cleanup();}});

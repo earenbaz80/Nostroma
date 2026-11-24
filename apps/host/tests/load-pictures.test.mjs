@@ -26,12 +26,12 @@ const listing = root => { const out = {}; const walk = dir => { for (const e of 
  * layout 'local'    a model added with "Use a local GGUF": files in the person's folder, pack and draft layer in a Nostroma data folder of that day
  */
 function fixture({ layout = 'own', vision = null, arch = undefined, onFetch = null, mmprojFile = false, engineRoot = null } = {}) {
-  const root = mkdtempSync(join(tmpdir(), 'strata-lp-test-'));
+  const root = mkdtempSync(join(tmpdir(), 'nostroma-lp-test-'));
   const install = join(root, 'install'), data = join(root, 'host-data'), home = join(root, 'home'), modelsDir = join(home, 'models');
   for (const d of [install, data, modelsDir]) mkdirSync(d, { recursive: true });
-  const earlier = process.env.STRATA_INSTALL_DIR;
-  process.env.STRATA_INSTALL_DIR = install;
-  const dataFolder = layout === 'own' ? join(root, 'qwen-own') : layout === 'normal' ? join(root, 'Strata-data') : join(root, 'Strata-data');
+  const earlier = process.env.NOSTROMA_INSTALL_DIR;
+  process.env.NOSTROMA_INSTALL_DIR = install;
+  const dataFolder = layout === 'own' ? join(root, 'qwen-own') : layout === 'normal' ? join(root, 'Nostroma-data') : join(root, 'Nostroma-data');
   const modelFolder = layout === 'normal' ? join(dataFolder, 'models', 'IQ3_S') : layout === 'local' ? join(root, 'my-files', 'IQ3_S') : join(dataFolder, 'IQ3_S');
   const gguf = join(modelFolder, 'Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf');
   mkdirSync(modelFolder, { recursive: true });
@@ -41,13 +41,13 @@ function fixture({ layout = 'own', vision = null, arch = undefined, onFetch = nu
   writeFileSync(join(pack, 'native_experts.txt'), 'x'); writeFileSync(join(mtp, 'experts.bin'), 'e'); writeFileSync(join(dataFolder, 'mtp', 'mtp-q2_0.gguf'), 'm');
   const mmproj = join(dataFolder, 'models', 'mmproj-Qwen3.8-Flash-Next-BF16.gguf');
   if (mmprojFile) { mkdirSync(join(dataFolder, 'models'), { recursive: true }); writeFileSync(mmproj, 'mm'); }
-  const configPath = join(install, 'strata-iq3_s.json');
+  const configPath = join(install, 'nostroma-iq3_s.json');
   const args = ['--pack', pack, '--native', gguf, '--ple-gguf', gguf.replace('00001', '00002'), '--mtp', mtp, '--max-context', '8192', '--kv', 'int8'];
-  const config = { exe: 'component:strata-engine', tokenizer: join(pack, 'tokenizer'), args, model_name: 'qwen3.8-flash-next-iq3_s', port: 8080, ...(arch ? { arch } : {}),
-    ...(vision ? { vision: { exe: join(root, 'engine', 'strata-vision'), mmproj, model: gguf, gpu: false, max_tokens: 300 } } : {}) };
+  const config = { exe: 'component:nostroma-engine', tokenizer: join(pack, 'tokenizer'), args, model_name: 'qwen3.8-flash-next-iq3_s', port: 8080, ...(arch ? { arch } : {}),
+    ...(vision ? { vision: { exe: join(root, 'engine', 'nostroma-vision'), mmproj, model: gguf, gpu: false, max_tokens: 300 } } : {}) };
   writeFileSync(configPath, JSON.stringify(config));
-  const settingsFile = process.env.STRATA_SETTINGS_FILE;
-  writeFileSync(settingsFile, JSON.stringify({ data_dir: join(root, 'host-owned', 'Strata-data'), data_dir_at: 1700000000 }));
+  const settingsFile = process.env.NOSTROMA_SETTINGS_FILE;
+  writeFileSync(settingsFile, JSON.stringify({ data_dir: join(root, 'host-owned', 'Nostroma-data'), data_dir_at: 1700000000 }));
   const calls = [], saved = [], rpc = [];
   const control = {
     control: { dir: join(root, 'control'), python: join(root, 'control', 'python', 'python') }, version: '0.2.9',
@@ -56,7 +56,7 @@ function fixture({ layout = 'own', vision = null, arch = undefined, onFetch = nu
       return { install_dir: install, models: [{ id: 'iq3_s', name: 'qwen3.8-flash-next-iq3_s', source_config: configPath, context_tokens: 8192, backend: 'cuda',
         component_status: String(arch ?? '').startsWith('deepseek') ? 'retired' : gone ? 'missing_or_invalid' : 'present', ...(String(arch ?? '').startsWith('deepseek') ? { retired: 'deepseek', retired_line: 'DeepSeek - no longer supported.', refusal: 'DeepSeek-V4.1-Flash ISTA-DAS 2.00 bpw is a DeepSeek model. This version of Nostroma no longer runs DeepSeek models, so it was not started. Choose a Qwen model to run instead. If you no longer need the DeepSeek files, you can delete that folder to free the space.' } : {}), ...(gone ? { missing: [{ part: 'vision/mmproj', file: 'mmproj-Qwen3.8-Flash-Next-BF16.gguf', status: 'missing' }], issue_codes: ['COMPONENT_MISSING'] } : { missing: [], issue_codes: [] }) }] };
     },
-    async engine() { return { usable: true, backend: 'cuda', components_dir: join(root, 'c'), engine: { version: '0.1.55', platform: 'linux-x86_64', backend: 'cuda', exe: join(root, 'engine', 'strata'), root: engineRoot ?? join(root, 'engine') } }; },
+    async engine() { return { usable: true, backend: 'cuda', components_dir: join(root, 'c'), engine: { version: '0.1.55', platform: 'linux-x86_64', backend: 'cuda', exe: join(root, 'engine', 'nostroma'), root: engineRoot ?? join(root, 'engine') } }; },
     async saveProfile(name, path) { calls.push(['saveProfile', name]); saved.push(JSON.parse(readFileSync(path, 'utf8'))); return {}; },
     async start() { calls.push(['start']); return { ok: true, state: 'ready' }; },
     async stop() { return { ok: true }; },
@@ -66,7 +66,7 @@ function fixture({ layout = 'own', vision = null, arch = undefined, onFetch = nu
       options.onEvent?.({ event: 'progress', step: 'Downloading the picture files…', done: 9e8, total: 9e8 });
       mkdirSync(join(options.dataDir, 'models'), { recursive: true });
       writeFileSync(mmproj, 'mmproj');
-      return { ok: true, event: 'result', mmproj, vision: { exe: join(root, 'engine', 'strata-vision'), mmproj, model: gguf, gpu: false, max_tokens: 300, threads: 6 }, fetched: true, note: '', data_dir: options.dataFolder };
+      return { ok: true, event: 'result', mmproj, vision: { exe: join(root, 'engine', 'nostroma-vision'), mmproj, model: gguf, gpu: false, max_tokens: 300, threads: 6 }, fetched: true, note: '', data_dir: options.dataFolder };
     },
   };
   const catalog = { families: [{ family: 'qwen', title: 'Qwen3.8-Flash-Next', about: 'x', images: true, experimental: false, sizes: [
@@ -74,7 +74,7 @@ function fixture({ layout = 'own', vision = null, arch = undefined, onFetch = nu
     contexts: [8192, 32768], recommendation: { family: 'qwen', model: 'IQ3_S', context: 32768 }, context_note: '' };
   const hardware = { ram_gb: 63, cpu: { name: 'cpu', cores: 12 }, engine_vendor: 'nvidia', gpus: [{ index: 0, name: 'NVIDIA GeForce RTX 5070', vendor: 'nvidia', vram_gb: 11.9, arch: 120, usable: true }] };
   const spawnProcess = (command, argv) => {
-    if (!String(argv[0]).endsWith('strata_mcp.py')) throw new Error('no process but the installer may be started in packaged mode: ' + command + ' ' + argv.join(' '));
+    if (!String(argv[0]).endsWith('nostroma_mcp.py')) throw new Error('no process but the installer may be started in packaged mode: ' + command + ' ' + argv.join(' '));
     const child = new EventEmitter(); child.stdout = new EventEmitter(); child.stderr = new EventEmitter(); child.exitCode = null;
     child.kill = () => { child.exitCode = 0; queueMicrotask(() => child.emit('exit', 0)); return true; };
     child.stdin = { write(line) {
@@ -82,9 +82,9 @@ function fixture({ layout = 'own', vision = null, arch = undefined, onFetch = nu
       if (message.method === 'tools/call') rpc.push(message.params);
       let result;
       if (message.method === 'initialize') result = { protocolVersion: '2024-11-05' };
-      else if (message.method === 'tools/list') result = { tools: ['strata_models', 'strata_status', 'strata_install', 'strata_remove'].map(name => ({ name })) };
-      else if (message.params.name === 'strata_models') result = { structuredContent: catalog };
-      else if (message.params.name === 'strata_status') result = { structuredContent: { hardware, recommendation: catalog.recommendation, install: null, running: [], summary: 'x' } };
+      else if (message.method === 'tools/list') result = { tools: ['nostroma_models', 'nostroma_status', 'nostroma_install', 'nostroma_remove'].map(name => ({ name })) };
+      else if (message.params.name === 'nostroma_models') result = { structuredContent: catalog };
+      else if (message.params.name === 'nostroma_status') result = { structuredContent: { hardware, recommendation: catalog.recommendation, install: null, running: [], summary: 'x' } };
       else if (Object.keys(message.params.arguments ?? {}).length === 0) result = { structuredContent: { summary: 'Install finished', install: { running: false, exit_code: 0 } } };
       else if (message.params.arguments?.confirm) result = { structuredContent: { summary: 'Install started', plan: {}, install: { running: true, step: '1/7 checking your PC' } } };
       else result = { structuredContent: { summary: 'Plan', plan: { title: 'Qwen3.8-Flash-Next IQ3_S', download_gb: 0, disk_short: null } } };
@@ -95,10 +95,10 @@ function fixture({ layout = 'own', vision = null, arch = undefined, onFetch = nu
   const native = createNativeControl({ control, directory: data, spawnProcess, fetcher: async () => Response.json({ status: 'ok' }), requests: () => [], modelsDirectory: () => modelsDir,
     hardwareProbe: () => [{ index: 0, vram_gb: 11.9 }] });
   const fetches = () => calls.filter(c => c[0] === 'picturesFetch').map(c => c[1]);
-  const installs = () => rpc.filter(p => p.name === 'strata_install');
+  const installs = () => rpc.filter(p => p.name === 'nostroma_install');
   return { native, calls, saved, rpc, fetches, installs, root, install, data, home, modelsDir, dataFolder, modelFolder, gguf, pack, mtp, mmproj, configPath, args, settingsFile,
     config: () => JSON.parse(readFileSync(configPath, 'utf8')), settings: () => readFileSync(settingsFile, 'utf8'),
-    cleanup: () => { if (earlier === undefined) delete process.env.STRATA_INSTALL_DIR; else process.env.STRATA_INSTALL_DIR = earlier; rmSync(root, { recursive: true, force: true }); } };
+    cleanup: () => { if (earlier === undefined) delete process.env.NOSTROMA_INSTALL_DIR; else process.env.NOSTROMA_INSTALL_DIR = earlier; rmSync(root, { recursive: true, force: true }); } };
 }
 const loadOp = (f, args) => f.native.operation('load', { model: 'iq3_s', ...args });
 
@@ -130,7 +130,7 @@ test('own folder: Load with Read pictures on downloads only the picture files in
     assert.equal(f.installs().length, 0, 'the installer was not asked to do anything: no re-check, no second pack, no second draft layer');
     const [asked] = f.fetches();
     assert.equal(f.fetches().length, 1);
-    assert.equal(asked.dataDir, f.dataFolder, 'the data folder of the model, not <home>/Strata-data');
+    assert.equal(asked.dataDir, f.dataFolder, 'the data folder of the model, not <home>/Nostroma-data');
     assert.equal(asked.configPath, f.configPath);
     assert.equal(asked.vision, 'yes');
     assert.equal(asked.family, 'qwen');
@@ -141,7 +141,7 @@ test('own folder: Load with Read pictures on downloads only the picture files in
     const added = Object.keys(after).filter(k => !(k in treeBefore));
     assert.deepEqual(added.map(k => k.replaceAll('\\', '/')), ['/models/mmproj-Qwen3.8-Flash-Next-BF16.gguf']);
     for (const [k, size] of Object.entries(treeBefore)) assert.equal(after[k], size, `${k} untouched`);
-    assert.equal(existsSync(join(f.home, 'Strata-data')), false, 'no second data folder next to the app\'s models folder');
+    assert.equal(existsSync(join(f.home, 'Nostroma-data')), false, 'no second data folder next to the app\'s models folder');
     assert.equal(existsSync(join(f.root, 'host-data', 'mtp')), false);
     const config = f.config();
     assert.deepEqual(config.args, configBefore.args, 'the pack, the draft layer and the other arguments are exactly as they were');
@@ -341,7 +341,7 @@ test('a model added with "Use a local GGUF" keeps its folder when the person lat
   const f = fixture({ layout: 'local' });
   try {
     await f.native.refresh(true);
-    const elsewhere = join(f.root, 'elsewhere', 'Strata-data');
+    const elsewhere = join(f.root, 'elsewhere', 'Nostroma-data');
     mkdirSync(elsewhere, { recursive: true });
     f.native.setDownloadDirectory(elsewhere);
     const chosen = f.settings();

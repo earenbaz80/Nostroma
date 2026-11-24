@@ -6,8 +6,8 @@ import { fileURLToPath } from 'node:url';
 
 const out = await build({ entryPoints: [fileURLToPath(new URL('../src/lib/native-job-diagnostics.ts', import.meta.url))], bundle: true, format: 'esm', platform: 'node', write: false, logLevel: 'silent' });
 const { recoveredInterruptions, jobErrorText, INTERRUPTED } = await import(`data:text/javascript;base64,${Buffer.from(out.outputFiles[0].text).toString('base64')}`);
-const failed = { id: 'a', kind: 'update-strata', state: 'error', summary: 'Interrupted operation', error: INTERRUPTED, startedAt: '2026-10-20T11:41:02.916Z' };
-const done = { id: 'b', kind: 'update-strata', state: 'done', summary: 'Complete', error: null, startedAt: '2026-10-20T23:11:18.883Z' };
+const failed = { id: 'a', kind: 'update-nostroma', state: 'error', summary: 'Interrupted operation', error: INTERRUPTED, startedAt: '2026-10-20T11:41:02.916Z' };
+const done = { id: 'b', kind: 'update-nostroma', state: 'done', summary: 'Complete', error: null, startedAt: '2026-10-20T23:11:18.883Z' };
 
 test('a later finished update of the same component settles the interruption, in any array order, and the records are untouched', () => {
   const jobs = structuredClone([failed, done]), before = JSON.stringify(jobs);

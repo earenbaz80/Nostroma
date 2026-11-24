@@ -1,5 +1,5 @@
 [package]
-name = "strata-desktop"
+name = "nostroma-desktop"
 version = "0.2.15"
 description = "Nostroma Desktop — local AI, tuned to one model."
 edition = "2021"

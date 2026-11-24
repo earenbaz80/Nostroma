@@ -18,22 +18,22 @@ function controlDir(parent, name, version) {
   mkdirSync(join(dir, 'python', ...(isWin ? [] : ['bin'])), { recursive: true });
   mkdirSync(join(dir, 'nostroma_control'), { recursive: true });
   writeFileSync(bundledPython(dir), 'x');
-  writeFileSync(join(dir, 'strata.py'), '# cli');
+  writeFileSync(join(dir, 'nostroma.py'), '# cli');
   if (version) writeFileSync(join(dir, 'BUNDLE.json'), JSON.stringify({ version }));
   return dir;
 }
 
-test('only the update step may acquire: Control keeps STRATA_NO_ACQUIRE unless `acquire` is asked for', () => {
-  const control = { dir: '/c', python: '/c/python/python3', cli: '/c/strata.py' };
-  assert.equal(controlEnvironment(control, { env: {}, components: '/k' }).STRATA_NO_ACQUIRE, '1');
-  const env = controlEnvironment(control, { env: { STRATA_NO_ACQUIRE: '1' }, components: '/k', acquire: true });
-  assert.equal('STRATA_NO_ACQUIRE' in env, false);
-  assert.equal(env.STRATA_COMPONENTS_DIR, '/k');
+test('only the update step may acquire: Control keeps NOSTROMA_NO_ACQUIRE unless `acquire` is asked for', () => {
+  const control = { dir: '/c', python: '/c/python/python3', cli: '/c/nostroma.py' };
+  assert.equal(controlEnvironment(control, { env: {}, components: '/k' }).NOSTROMA_NO_ACQUIRE, '1');
+  const env = controlEnvironment(control, { env: { NOSTROMA_NO_ACQUIRE: '1' }, components: '/k', acquire: true });
+  assert.equal('NOSTROMA_NO_ACQUIRE' in env, false);
+  assert.equal(env.NOSTROMA_COMPONENTS_DIR, '/k');
   assert.equal(env.PYTHONNOUSERSITE, '1');
 });
 
 test('an updated Control wins only when it is newer than the bundled one, and only when whole', () => {
-  const root = mkdtempSync(join(tmpdir(), 'strata-update-control-'));
+  const root = mkdtempSync(join(tmpdir(), 'nostroma-update-control-'));
   try {
     const install = join(root, 'install');
     mkdirSync(join(install, 'host'), { recursive: true });
@@ -47,7 +47,7 @@ test('an updated Control wins only when it is newer than the bundled one, and on
     assert.equal(find().dir, bundled, 'an app update that ships a newer Control is not held back by an older updated one');
     writeFileSync(join(bundled, 'BUNDLE.json'), JSON.stringify({ version: '0.1.46' }));
     assert.equal(find().dir, bundled, 'a tie keeps the bundled one');
-    rmSync(join(updated, 'strata.py'));
+    rmSync(join(updated, 'nostroma.py'));
     writeFileSync(join(bundled, 'BUNDLE.json'), JSON.stringify({ version: '0.1.45' }));
     assert.equal(find().dir, bundled, 'a half-installed updated Control is not used');
     writeFileSync(join(components, 'control', 'active.json'), JSON.stringify({ version: '0.1.46', folder: '../../etc' }));
@@ -72,34 +72,34 @@ function fakeSpawn(lines, code = 0, seen = []) {
 test('runCli streams JSON lines as events and returns the last record; `acquire` reaches the environment', async () => {
   const seen = [];
   const events = [];
-  const control = { dir: '/c', python: '/c/python/python3', cli: '/c/strata.py' };
+  const control = { dir: '/c', python: '/c/python/python3', cli: '/c/nostroma.py' };
   const spawnProcess = fakeSpawn([{ event: 'phase', phase: 'feed', message: 'Reading' }, { event: 'progress', percent: 50, label: 'engine 0.1.46' }, { ok: true, results: [] }], 0, seen);
-  const result = await runCli(control, ['update', '--output', 'jsonl'], { spawnProcess, env: { STRATA_NO_ACQUIRE: '1' }, acquire: true, onLine: e => events.push(e) });
+  const result = await runCli(control, ['update', '--output', 'jsonl'], { spawnProcess, env: { NOSTROMA_NO_ACQUIRE: '1' }, acquire: true, onLine: e => events.push(e) });
   assert.equal(events.length, 3);
   assert.equal(events[1].percent, 50);
   assert.deepEqual(result.json, { ok: true, results: [] });
-  assert.equal('STRATA_NO_ACQUIRE' in seen[0].options.env, false);
+  assert.equal('NOSTROMA_NO_ACQUIRE' in seen[0].options.env, false);
   await runCli(control, ['models', 'list'], { spawnProcess: fakeSpawn([{ ok: true }], 0, seen), env: {} });
-  assert.equal(seen[1].options.env.STRATA_NO_ACQUIRE, '1', 'everything else keeps the switch on');
+  assert.equal(seen[1].options.env.NOSTROMA_NO_ACQUIRE, '1', 'everything else keeps the switch on');
 });
 
 test('createControl: the update calls ask the explicit commands; a failed step carries its message and exit code', async () => {
   const seen = [];
   const reply = { ok: true, results: [{ component: 'engine', status: 'updated' }] };
   const control = createControl({
-    control: { dir: '/c', python: '/p', cli: '/c/strata.py' }, env: { STRATA_UPDATE_FEED: 'http://127.0.0.1:1/strata-feed.json', STRATA_APP_VERSION: '0.1.0' },
+    control: { dir: '/c', python: '/p', cli: '/c/nostroma.py' }, env: { NOSTROMA_UPDATE_FEED: 'http://127.0.0.1:1/nostroma-feed.json', NOSTROMA_APP_VERSION: '0.1.0' },
     run: async (args, options) => { seen.push([args.join(' '), !!options.acquire]); return { code: 0, json: args.includes('--check') ? { ok: true, engine: {} } : args[0] === 'components' ? { ok: true, to: '0.1.45' } : reply, text: '', stderr: '' }; },
   });
   await control.updateCheck();
   await control.update({ engine: true, control: false });
   await control.rollbackEngine();
   assert.deepEqual(seen, [
-    ['update --check --output json --feed http://127.0.0.1:1/strata-feed.json --app-version 0.1.0', true],
-    ['update --output jsonl --feed http://127.0.0.1:1/strata-feed.json --no-control --app-version 0.1.0', true],
+    ['update --check --output json --feed http://127.0.0.1:1/nostroma-feed.json --app-version 0.1.0', true],
+    ['update --output jsonl --feed http://127.0.0.1:1/nostroma-feed.json --no-control --app-version 0.1.0', true],
     ['components rollback --output json', false],
   ], 'only the check and the update acquire; the rollback downloads nothing');
   const failing = createControl({
-    control: { dir: '/c', python: '/p', cli: '/c/strata.py' }, env: {},
+    control: { dir: '/c', python: '/p', cli: '/c/nostroma.py' }, env: {},
     run: async () => ({ code: 7, json: { ok: false, results: [{ component: 'engine', status: 'failed', error: 'app-1 is serving.', exit_code: 7 }] }, text: '', stderr: '' }),
   });
   await assert.rejects(failing.update({}), err => err.code === 'engine_serving' && /serving/.test(err.message) && err.exitCode === 7);
@@ -109,13 +109,13 @@ test('the app row is off whatever the feed and the shell say, and the shell is n
   const feed = (control = { installed: '0.2.5', offered: '0.2.5', status: 'current' }) => ({ version: '0.2.5', async updateCheck() { return { ok: true, feed: { sequence: 3 }, engine: { installed: { version: '0.1.50' }, offered: { version: '0.1.50' }, status: 'current' }, control, app: { status: 'available', offered: '0.2.6' } }; } });
   const shell = { check: async () => { throw new Error('the shell must not be asked about the app'); } };
   const nothing = await checkComponentUpdates({ control: feed(), appUpdater: shell, appVersion: '0.2.5' });
-  assert.equal(nothing.strata.status, 'unavailable');
-  assert.equal(nothing.strata.canInstall, false);
-  assert.equal(nothing.strata.message, APP_UPDATES_OFF);
-  assert.equal(nothing.strata.latestVersion, undefined);
+  assert.equal(nothing.nostroma.status, 'unavailable');
+  assert.equal(nothing.nostroma.canInstall, false);
+  assert.equal(nothing.nostroma.message, APP_UPDATES_OFF);
+  assert.equal(nothing.nostroma.latestVersion, undefined);
   const withControl = await checkComponentUpdates({ control: feed({ installed: '0.2.5', offered: '0.2.6', status: 'available' }), appVersion: '0.2.5' });
-  assert.equal(withControl.strata.status, 'unavailable', 'a newer Control in the feed is not an app update to offer');
-  assert.equal(withControl.strata.canInstall, false);
+  assert.equal(withControl.nostroma.status, 'unavailable', 'a newer Control in the feed is not an app update to offer');
+  assert.equal(withControl.nostroma.canInstall, false);
   assert.equal(withControl.engine.status, 'current');
 });
 
@@ -128,7 +128,7 @@ test('the Settings update check maps the feed to the existing result shape', asy
   assert.match(result.engine.message, /new engine is available \(505 MB\)/);
   assert.doesNotMatch(result.engine.message, /0\.1\.4|sha|exit/i);
   assert.equal(result.engine.canInstall, true);
-  assert.equal(result.strata.status, 'unavailable');
+  assert.equal(result.nostroma.status, 'unavailable');
   result = await checkComponentUpdates({ control: make(report({ engine: { installed: null, offered: { version: '0.1.46' }, status: 'install', download_bytes: 505_000_000 } })) });
   assert.equal(result.engine.status, 'available');
   assert.match(result.engine.message, /needs an engine to run models\. Press Update engine/);
@@ -144,7 +144,7 @@ test('the Settings update check maps the feed to the existing result shape', asy
   assert.match(result.engine.message, /Nothing was changed/, 'the app says why in plain words, not that no engine exists for the card');
   assert.doesNotMatch(result.engine.message, /isn't an engine for this PC/);
   result = await checkComponentUpdates({ control: make(new Error('this build trusts no update key')) });
-  assert.equal(result.strata.status, 'error');
+  assert.equal(result.nostroma.status, 'error');
   assert.equal(result.engine.status, 'error');
   assert.doesNotMatch(result.engine.message, /update key/);
   assert.match(result.engine.details, /no update key/);
@@ -152,14 +152,14 @@ test('the Settings update check maps the feed to the existing result shape', asy
   // a shell verdict is no longer used: the app row stays off
   const shell = { check: async () => { throw new Error('the shell must not be asked about the app'); } };
   result = await checkComponentUpdates({ control: make(report()), appUpdater: shell, appVersion: '0.1.0' });
-  assert.equal(result.strata.status, 'unavailable');
-  assert.equal(result.strata.canInstall, false);
-  assert.equal(result.strata.message, APP_UPDATES_OFF);
+  assert.equal(result.nostroma.status, 'unavailable');
+  assert.equal(result.nostroma.canInstall, false);
+  assert.equal(result.nostroma.message, APP_UPDATES_OFF);
 });
 
 test('the shell bridge client exists only inside the desktop app, speaks to loopback with the token, and polls to the end', async () => {
   assert.equal(createAppUpdater({ env: {} }), null);
-  assert.equal(createAppUpdater({ env: { STRATA_SHELL_BRIDGE: 'http://example.com:80', STRATA_SHELL_TOKEN: 'x' } }), null, 'not a loopback address');
+  assert.equal(createAppUpdater({ env: { NOSTROMA_SHELL_BRIDGE: 'http://example.com:80', NOSTROMA_SHELL_TOKEN: 'x' } }), null, 'not a loopback address');
   const calls = [];
   const states = [{ state: 'downloading', downloaded: 10, total: 100 }, { state: 'downloading', downloaded: 100, total: 100 }, { state: 'done' }];
   const fetcher = async (url, init) => {
@@ -167,14 +167,14 @@ test('the shell bridge client exists only inside the desktop app, speaks to loop
     if (url.endsWith('/app-update/status')) return Response.json(states.shift());
     return Response.json(url.endsWith('/check') ? { available: true, version: '0.2.0' } : { state: 'downloading' });
   };
-  const updater = createAppUpdater({ env: { STRATA_SHELL_BRIDGE: 'http://127.0.0.1:4000', STRATA_SHELL_TOKEN: 'tok' }, fetcher, sleep: async () => {} });
+  const updater = createAppUpdater({ env: { NOSTROMA_SHELL_BRIDGE: 'http://127.0.0.1:4000', NOSTROMA_SHELL_TOKEN: 'tok' }, fetcher, sleep: async () => {} });
   assert.equal((await updater.check()).version, '0.2.0');
   const progress = [];
   await updater.install({ onProgress: p => progress.push(p.downloaded ?? null) });
   assert.deepEqual(progress, [10, 100, null]);
   assert.ok(calls.every(c => c[2] === 'Bearer tok'));
   assert.deepEqual(calls.map(c => c[0] + ' ' + c[1].split('/').pop()), ['GET check', 'POST install', 'GET status', 'GET status', 'GET status']);
-  const failing = createAppUpdater({ env: { STRATA_SHELL_BRIDGE: 'http://127.0.0.1:4000', STRATA_SHELL_TOKEN: 'tok' }, sleep: async () => {},
+  const failing = createAppUpdater({ env: { NOSTROMA_SHELL_BRIDGE: 'http://127.0.0.1:4000', NOSTROMA_SHELL_TOKEN: 'tok' }, sleep: async () => {},
     fetcher: async url => Response.json(url.endsWith('/status') ? { state: 'error', error: 'signature mismatch' } : {}) });
   await assert.rejects(failing.install(), /signature mismatch/);
 });
@@ -182,12 +182,12 @@ test('the shell bridge client exists only inside the desktop app, speaks to loop
 // ---------------------------------------------------------------------------------- the Settings buttons in the packaged app
 
 function fixture({ withApp = false, update, appInstall } = {}) {
-  const root = mkdtempSync(join(tmpdir(), 'strata-update-ops-'));
+  const root = mkdtempSync(join(tmpdir(), 'nostroma-update-ops-'));
   const install = join(root, 'install'), data = join(root, 'data');
   mkdirSync(install, { recursive: true });
-  process.env.STRATA_INSTALL_DIR = install;      // the app's own install folder: the host always names it to Control
-  const config = join(install, 'strata-iq2_xs.json');
-  writeFileSync(config, JSON.stringify({ exe: 'component:strata-engine', tokenizer: join(install, 'tok'), args: ['--max-context', '32768'], model_name: 'Qwen', port: 8080 }));
+  process.env.NOSTROMA_INSTALL_DIR = install;      // the app's own install folder: the host always names it to Control
+  const config = join(install, 'nostroma-iq2_xs.json');
+  writeFileSync(config, JSON.stringify({ exe: 'component:nostroma-engine', tokenizer: join(install, 'tok'), args: ['--max-context', '32768'], model_name: 'Qwen', port: 8080 }));
   const calls = [];
   let previous = null;
   const control = {
@@ -211,7 +211,7 @@ function fixture({ withApp = false, update, appInstall } = {}) {
     check: async () => ({ available: true, version: '0.2.0' }),
     install: appInstall ?? (async ({ onProgress }) => { calls.push(['app-install']); onProgress({ downloaded: 50, total: 100 }); return { state: 'done' }; }),
   } : null;
-  const native = createNativeControl({ control, appUpdater, directory: data, spawnProcess: (...args) => { if (!args[1]?.some(a => String(a).endsWith('strata_mcp.py'))) spawned.push(args); throw new Error('no process but the installer tool (Control strata_mcp.py, absent in this fixture) may be started by the host in packaged mode'); }, fetcher: async () => Response.json({}), requests: () => [] });
+  const native = createNativeControl({ control, appUpdater, directory: data, spawnProcess: (...args) => { if (!args[1]?.some(a => String(a).endsWith('nostroma_mcp.py'))) spawned.push(args); throw new Error('no process but the installer tool (Control nostroma_mcp.py, absent in this fixture) may be started by the host in packaged mode'); }, fetcher: async () => Response.json({}), requests: () => [] });
   return { native, calls, spawned, data, control, cleanup: () => rmSync(root, { recursive: true, force: true }) };
 }
 const finish = async (native, id) => { for (let i = 0; i < 400; i++) { const job = native.state().jobs.find(j => j.id === id); if (job.state !== 'running') return job; await new Promise(r => setTimeout(r, 10)); } throw new Error('job did not finish'); };
@@ -274,22 +274,22 @@ test('packaged: "Update Nostroma" is refused before Control is asked, so nothing
   try {
     await f.native.refresh(true);
     const before = f.calls.length;
-    assert.throws(() => f.native.operation('update-strata', {}), /App updates are off/);
+    assert.throws(() => f.native.operation('update-nostroma', {}), /App updates are off/);
     assert.deepEqual(f.calls.slice(before), [], 'Control was not asked for an update and the shell was not asked for an installer');
     assert.deepEqual(f.native.state().jobs, [], 'no job was started');
   } finally { await f.native.close(); f.cleanup(); }
 });
 
 test('packaged: an app update job an earlier build left running is settled by the version that comes back', async () => {
-  const before = process.env.STRATA_APP_VERSION;
+  const before = process.env.NOSTROMA_APP_VERSION;
   const f = fixture({ withApp: true });
   try {
     // this build starts no app update, but a job an earlier one wrote is still on disk
-    const saved = { id: 'u1', kind: 'update-strata', state: 'running', startedAt: new Date().toISOString(), summary: 'Installing the app update…', result: null, error: null, appUpdateFrom: '0.2.2', appUpdateTo: '0.2.3' };
+    const saved = { id: 'u1', kind: 'update-nostroma', state: 'running', startedAt: new Date().toISOString(), summary: 'Installing the app update…', result: null, error: null, appUpdateFrom: '0.2.2', appUpdateTo: '0.2.3' };
     const mk = () => createNativeControl({ control: f.control, directory: f.data, spawnProcess: () => { throw new Error('no process'); }, fetcher: async () => Response.json({}), requests: () => [] });
     writeFileSync(join(f.data, 'native-jobs.json'), JSON.stringify([saved]));
     // the app is gone; the installer started the new version (0.2.3) on the same data
-    process.env.STRATA_APP_VERSION = '0.2.3';
+    process.env.NOSTROMA_APP_VERSION = '0.2.3';
     const after = mk();
     const done = after.state().jobs.find(j => j.id === 'u1');
     assert.equal(done.state, 'done');
@@ -297,23 +297,23 @@ test('packaged: an app update job an earlier build left running is settled by th
     assert.match(done.summary, /updated to 0\.2\.3/);
     await after.close();
     // the same record read by an app that did NOT change version stays an interruption
-    process.env.STRATA_APP_VERSION = '0.2.2';
+    process.env.NOSTROMA_APP_VERSION = '0.2.2';
     writeFileSync(join(f.data, 'native-jobs.json'), JSON.stringify([saved]));
     const same = mk();
     const unfinished = same.state().jobs.find(j => j.id === 'u1');
     assert.equal(unfinished.state, 'error');
     assert.match(unfinished.error, /update to 0\.2\.[0-9] did not finish.*releases/s, 'the app came back as the old version: the installer did not finish, and the alert says so');
     await same.close();
-  } finally { if (before === undefined) delete process.env.STRATA_APP_VERSION; else process.env.STRATA_APP_VERSION = before; await f.native.close(); f.cleanup(); }
+  } finally { if (before === undefined) delete process.env.NOSTROMA_APP_VERSION; else process.env.NOSTROMA_APP_VERSION = before; await f.native.close(); f.cleanup(); }
 });
 
 test('packaged: an update job an OLDER host left running is finished when the app program file is newer than the job', async () => {
-  // <install>/strata-desktop(.exe) as seen from <install>/host; native-control.mjs looks for the name of the platform it runs on
-  const exe = new URL(process.platform === 'win32' ? '../../strata-desktop.exe' : '../../strata-desktop', import.meta.url);
+  // <install>/nostroma-desktop(.exe) as seen from <install>/host; native-control.mjs looks for the name of the platform it runs on
+  const exe = new URL(process.platform === 'win32' ? '../../nostroma-desktop.exe' : '../../nostroma-desktop', import.meta.url);
   const f = fixture({ withApp: true });
   try {
     const { fileURLToPath } = await import('node:url');
-    const old = { id: 'old-1', kind: 'update-strata', state: 'running', startedAt: new Date(Date.now() - 60_000).toISOString(), summary: 'Starting…', result: null, error: null };
+    const old = { id: 'old-1', kind: 'update-nostroma', state: 'running', startedAt: new Date(Date.now() - 60_000).toISOString(), summary: 'Starting…', result: null, error: null };
     writeFileSync(join(f.data, 'native-jobs.json'), JSON.stringify([old]));
     const mk = () => createNativeControl({ control: f.control, directory: f.data, spawnProcess: () => { throw new Error('no process'); }, fetcher: async () => Response.json({}), requests: () => [] });
     const before = mk();
@@ -345,7 +345,7 @@ test('packaged: a chosen engine file goes to Control; only a file in the own inc
   try {
     const incoming = join(f.data, 'incoming-engine');
     mkdirSync(incoming, { recursive: true });
-    const mine = join(incoming, 'strata-engine-x.tar.gz'), theirs = join(f.data, 'keep-me.tar.gz');
+    const mine = join(incoming, 'nostroma-engine-x.tar.gz'), theirs = join(f.data, 'keep-me.tar.gz');
     writeFileSync(mine, 'x'); writeFileSync(theirs, 'y');
     const job = await finish(f.native, f.native.operation('install-engine-file', { path: mine }).id);
     assert.equal(job.state, 'done', job.error);
@@ -377,7 +377,7 @@ test('first-run card data: an offer with its size, nothing-fits with reasons, of
 test('the app update is refused in a source checkout too, before git or Control is touched', async () => {
   const f = fixture();
   try {
-    assert.throws(() => f.native.operation('update-strata', {}), /App updates are off/);
+    assert.throws(() => f.native.operation('update-nostroma', {}), /App updates are off/);
     assert.deepEqual(f.calls, [], 'no git command, no Control call');
     assert.deepEqual(f.native.state().jobs, []);
   } finally { await f.native.close(); f.cleanup(); }
@@ -430,16 +430,16 @@ test('offline, the signed-feed check says there is no internet connection in pla
   for (const raw of ['fetch failed', '<urlopen error [Errno 11001] getaddrinfo failed>', 'getaddrinfo ENOTFOUND updates.example']) {
     const control = { version: '0.1.45', async updateCheck() { throw new Error(raw); } };
     const result = await checkComponentUpdates({ control, appVersion: '0.2.0' });
-    assert.equal(result.strata.status, 'error', raw);
-    assert.equal(result.strata.message, "No internet connection. Try again when you're online.", raw);
+    assert.equal(result.nostroma.status, 'error', raw);
+    assert.equal(result.nostroma.message, "No internet connection. Try again when you're online.", raw);
     assert.equal(result.engine.message, "No internet connection. Try again when you're online.", raw);
-    assert.equal(result.strata.details, raw);
+    assert.equal(result.nostroma.details, raw);
   }
 });
 
 test('the app updater and the host never reach the network by themselves: only check() does', async () => {
   const calls = [];
-  const updater = createAppUpdater({ env: { STRATA_SHELL_BRIDGE: 'http://127.0.0.1:4000', STRATA_SHELL_TOKEN: 'tok' }, fetcher: async url => { calls.push(url); return Response.json({ available: false }); } });
+  const updater = createAppUpdater({ env: { NOSTROMA_SHELL_BRIDGE: 'http://127.0.0.1:4000', NOSTROMA_SHELL_TOKEN: 'tok' }, fetcher: async url => { calls.push(url); return Response.json({ available: false }); } });
   assert.ok(updater);
   assert.equal(calls.length, 0, 'creating the updater makes no call');
   await updater.check();

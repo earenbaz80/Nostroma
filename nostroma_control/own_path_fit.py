@@ -1,5 +1,5 @@
-"""Which conversation context fits a graphics card for Qwen3.6-35B-A3B (the strata-q36 engine path, GitHub #5715): the one rule setup's context
-menu, the start line in serve/server.py and the app's estimate (via the catalog, tools/strata_mcp.py) use.  The app's copy of the formula
+"""Which conversation context fits a graphics card for Qwen3.6-35B-A3B (the nostroma-q36 engine path, GitHub #5715): the one rule setup's context
+menu, the start line in serve/server.py and the app's estimate (via the catalog, tools/nostroma_mcp.py) use.  The app's copy of the formula
 (apps/host/src/lib/native-fit.ts `ownPathCacheGb` / `ownPathContextFits`) is pinned to this one by apps/host/tests/own-path-fit.test.mjs.
 
     need(ctx) GiB = BASE_GIB + the size's hybrid minimum + STATE_GIB + ctx x BYTES_PER_TOKEN / 2^30

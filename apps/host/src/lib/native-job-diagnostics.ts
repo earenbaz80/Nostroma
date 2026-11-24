@@ -2,7 +2,7 @@ import type { NativeJob } from './native';
 
 /** What the host says about a job a restart cut short. */
 export const INTERRUPTED = 'The host restarted before completion. Check diagnostics, then retry; completed files are kept.';
-const updateKinds = new Set(['update-strata', 'update-engine']);
+const updateKinds = new Set(['update-nostroma', 'update-engine']);
 
 /**
  * A later finished update of the same component settles the restart interruption of an earlier one (ported from #3578 by medking82).

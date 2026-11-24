@@ -14,14 +14,14 @@ import { checkComponentUpdates, engineFailedBeforeText, engineFirstRun } from '.
 const LOCK = 'another update is already running for this component folder';
 
 function fixture({ update, cfgExtra = {}, reload } = {}) {
-  const root = mkdtempSync(join(tmpdir(), 'strata-applin-'));
+  const root = mkdtempSync(join(tmpdir(), 'nostroma-applin-'));
   const install = join(root, 'install'), data = join(root, 'data');
   mkdirSync(install, { recursive: true });
-  process.env.STRATA_INSTALL_DIR = install;
-  const config = join(install, 'strata-iq2_xs.json');
+  process.env.NOSTROMA_INSTALL_DIR = install;
+  const config = join(install, 'nostroma-iq2_xs.json');
   mkdirSync(join(root, 'control', 'data'), { recursive: true });
   writeFileSync(join(root, 'control', 'data', 'expert-profile.bin'), 'x');
-  writeFileSync(config, JSON.stringify({ exe: 'component:strata-engine', args: ['--max-context', '32768'], model_name: 'Qwen', port: 8080, ...cfgExtra }));
+  writeFileSync(config, JSON.stringify({ exe: 'component:nostroma-engine', args: ['--max-context', '32768'], model_name: 'Qwen', port: 8080, ...cfgExtra }));
   const calls = [];
   const control = {
     control: { dir: join(root, 'control') }, version: '0.1.60',
@@ -102,7 +102,7 @@ test('a serving refusal is not retried', async () => {
 // ------------------------------------------------------------------ item 3: a failed engine update is not "up to date"
 
 test('an engine version that failed its test start here is offered again with the owner-approved words', async () => {
-  const note = '0.1.59 failed its test start on 2026-11-09 (read_expert_profile: cannot open ...); run `strata update --force` to try it again';
+  const note = '0.1.59 failed its test start on 2026-11-09 (read_expert_profile: cannot open ...); run `nostroma update --force` to try it again';
   const control = { version: '0.1.59', async updateCheck() { return { ok: true, feed: { sequence: 123 }, engine: { installed: { version: '0.1.58' }, offered: { version: '0.1.59' }, status: 'failed-before', note, download_bytes: 723e6 }, control: { installed: '0.1.59', offered: '0.1.59', status: 'current' }, app: { status: 'not-in-feed' } }; } };
   const result = await checkComponentUpdates({ control, appVersion: '0.2.13' });
   assert.equal(result.engine.status, 'available');
@@ -129,7 +129,7 @@ test('the app\'s Update engine asks Control to try a held-back version again (--
 // ------------------------------------------------------------------ item 2: a stale /tmp/.mount_* path
 
 test('the engine update repairs run-config paths of a gone AppImage mount before Control test-starts with it', async () => {
-  const gone = '/tmp/.mount_StratappjGco/usr/lib/Strata/control';
+  const gone = '/tmp/.mount_NostromappjGco/usr/lib/Nostroma/control';
   let seen = null;
   const f = fixture({ cfgExtra: { cwd: gone, args: ['--expert-profile', gone + '/data/expert-profile.bin', '--max-context', '32768'] },
     update: async () => { seen = JSON.parse(readFileSync(f.config, 'utf8')); } });
@@ -145,12 +145,12 @@ test('the engine update repairs run-config paths of a gone AppImage mount before
 // ------------------------------------------------------------------ item 1: the app update's job across the restart
 
 test('an app update job the old host closed as "cancelled" is read as finished by the new version; this host keeps it running when it closes', async () => {
-  const before = process.env.STRATA_APP_VERSION;
-  const root = mkdtempSync(join(tmpdir(), 'strata-applin-jobs-'));
+  const before = process.env.NOSTROMA_APP_VERSION;
+  const root = mkdtempSync(join(tmpdir(), 'nostroma-applin-jobs-'));
   try {
-    const job = { id: 'j1', kind: 'update-strata', state: 'cancelled', startedAt: new Date().toISOString(), summary: 'Downloading the app update: 100%', appUpdateFrom: '0.2.13', appUpdateTo: '0.2.14' };
+    const job = { id: 'j1', kind: 'update-nostroma', state: 'cancelled', startedAt: new Date().toISOString(), summary: 'Downloading the app update: 100%', appUpdateFrom: '0.2.13', appUpdateTo: '0.2.14' };
     writeFileSync(join(root, 'native-jobs.json'), JSON.stringify([job, { ...job, id: 'j2', appUpdateFrom: undefined }]));
-    process.env.STRATA_APP_VERSION = '0.2.14';
+    process.env.NOSTROMA_APP_VERSION = '0.2.14';
     const mk = () => createNativeControl({ control: { control: { dir: '/c' }, version: '0.1.60' }, directory: root, spawnProcess: () => { throw new Error('no process'); }, fetcher: async () => Response.json({}), requests: () => [] });
     const next = mk();
     const jobs = next.state().jobs;
@@ -163,15 +163,15 @@ test('an app update job the old host closed as "cancelled" is read as finished b
     const same = mk();
     assert.equal(same.state().jobs[0].state, 'error');
     await same.close();
-  } finally { if (before === undefined) delete process.env.STRATA_APP_VERSION; else process.env.STRATA_APP_VERSION = before; rmSync(root, { recursive: true, force: true }); }
+  } finally { if (before === undefined) delete process.env.NOSTROMA_APP_VERSION; else process.env.NOSTROMA_APP_VERSION = before; rmSync(root, { recursive: true, force: true }); }
 });
 
 test('an app update cannot start any more: nothing runs, no job is recorded and Control is not asked', async () => {
-  const root = mkdtempSync(join(tmpdir(), 'strata-applin-close-'));
+  const root = mkdtempSync(join(tmpdir(), 'nostroma-applin-close-'));
   const control = { control: { dir: '/c' }, version: '0.1.60', async update() { throw new Error('Control must not be asked for an app update'); } };
   const native = createNativeControl({ control, directory: root, spawnProcess: () => { throw new Error('no process'); }, fetcher: async () => Response.json({}), requests: () => [] });
   try {
-    assert.throws(() => native.operation('update-strata', {}), /App updates are off/);
+    assert.throws(() => native.operation('update-nostroma', {}), /App updates are off/);
     assert.deepEqual(native.state().jobs, [], 'no job was started');
     await native.close();
   } finally { rmSync(root, { recursive: true, force: true }); }
@@ -218,11 +218,11 @@ test('without withControl (or from Settings) the engine update never touches Con
 
 test('createControl.reload switches to a newer Control and the next call runs from it; the same folder is no switch', async () => {
   const seen = [];
-  const first = { dir: '/a/control', python: '/a/py', cli: '/a/strata.py', bundle: { version: '0.1.60' } };
+  const first = { dir: '/a/control', python: '/a/py', cli: '/a/nostroma.py', bundle: { version: '0.1.60' } };
   const ctl = createControl({ control: first, run: async (args) => { seen.push(args[0]); return { code: 0, json: { ok: true } }; } });
   assert.equal(ctl.reload({ find: () => ({ ...first }) }), false);
   assert.equal(ctl.reload({ find: () => null }), false);
-  const next = { dir: '/b/control', python: '/b/py', cli: '/b/strata.py', bundle: { version: '0.1.60.1' } };
+  const next = { dir: '/b/control', python: '/b/py', cli: '/b/nostroma.py', bundle: { version: '0.1.60.1' } };
   assert.equal(ctl.reload({ find: () => next }), true);
   assert.equal(ctl.control.dir, '/b/control');
   assert.equal(ctl.version, '0.1.60.1');

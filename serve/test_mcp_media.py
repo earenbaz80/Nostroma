@@ -153,7 +153,7 @@ class HistoryReferences(unittest.TestCase):
             class Hub:
                 media_dir = tmp
             svc.mcp = Hub()
-            message = [{'role': 'tool', 'content': [{'type': 'image', 'source': 'strata-tool-media:' + name}]}]
+            message = [{'role': 'tool', 'content': [{'type': 'image', 'source': 'nostroma-tool-media:' + name}]}]
             with patch.object(svc, '_note_unreadable_tool_images', return_value={}):
                 with self.assertRaisesRegex(ValueError, 'without the vision encoder'):
                     svc.prepare(message, [], {}, 16)
@@ -180,8 +180,8 @@ class HistoryReferences(unittest.TestCase):
             svc.mcp = Hub()
             messages = [{'role': 'tool', 'content': [
                 {'type': 'text', 'text': 'Retain this text.'},
-                {'type': 'image', 'source': 'strata-tool-media:' + '0' * 64 + '.png'},
-                {'type': 'image', 'source': 'strata-tool-media:' + media['url'].split('/')[-1]}]}]
+                {'type': 'image', 'source': 'nostroma-tool-media:' + '0' * 64 + '.png'},
+                {'type': 'image', 'source': 'nostroma-tool-media:' + media['url'].split('/')[-1]}]}]
             try:
                 ids, _, _ = svc.prepare(messages, [], {}, 16)
                 prompt = tok.decode(ids)
@@ -197,7 +197,7 @@ class HistoryReferences(unittest.TestCase):
         tok = ByteTokenizer()
         svc = Service(ScriptedEngine(tok, ['OK']), tok, ChatTemplate(Path(__file__).parent / 'chat_template.jinja'))
         with self.assertRaisesRegex(ValueError, 'invalid tool image reference'):
-            svc.prepare([{'role': 'tool', 'content': [{'type': 'image', 'source': 'strata-tool-media:../../secret.png'}]}], [], {}, 16)
+            svc.prepare([{'role': 'tool', 'content': [{'type': 'image', 'source': 'nostroma-tool-media:../../secret.png'}]}], [], {}, 16)
 
 class ImageLoop(unittest.TestCase):
     setUp = fixtures.ToolLoop.setUp
@@ -218,7 +218,7 @@ class ImageLoop(unittest.TestCase):
                     {'id': 'old', 'type': 'function', 'function': {'name': 'fake__echo', 'arguments': '{}'}}]},
                 {'role': 'tool', 'tool_call_id': 'old', 'content': [
                     {'type': 'text', 'text': 'Keep this original tool text.'},
-                    {'type': 'image_url', 'image_url': {'url': 'strata-tool-media:' + '0' * 64 + '.png'}}]},
+                    {'type': 'image_url', 'image_url': {'url': 'nostroma-tool-media:' + '0' * 64 + '.png'}}]},
                 {'role': 'user', 'content': 'Continue with text only'}]
             # API clients resend the original unmodified history on every later turn.
             for turn in range(2):
@@ -234,7 +234,7 @@ class ImageLoop(unittest.TestCase):
                         prompt = self.engine.prompt_text(turn * 2 + int(stream))
                         self.assertIn('Keep this original tool text.', prompt)
                         self.assertIn('[image omitted:', prompt)
-                        self.assertNotIn('strata-tool-media:', prompt)
+                        self.assertNotIn('nostroma-tool-media:', prompt)
 
     def test_missing_cache_history_continues_across_turns(self):
         self.check_stale_history('missing')
@@ -251,16 +251,16 @@ class ImageLoop(unittest.TestCase):
         for name in ('../../secret.png', 'a' * 64 + '.svg', 'A' * 64 + '.png', 'short.png'):
             with self.subTest(name=name):
                 code, text = self.post({'messages': [{'role': 'tool', 'content': [
-                    {'type': 'image_url', 'image_url': {'url': 'strata-tool-media:' + name}}]}]}, stream=False)
+                    {'type': 'image_url', 'image_url': {'url': 'nostroma-tool-media:' + name}}]}]}, stream=False)
                 self.assertEqual(code, 400)
                 self.assertIn('invalid tool image reference', text)
         self.assertEqual(self.engine.prompts, [])
 
     def test_default_stream_has_no_image_fields(self):
         self.start(call_script('fake__echo', text='hello'), '</think>\n\nDone.')
-        code, text = self.post({'strata_mcp': True})
+        code, text = self.post({'nostroma_mcp': True})
         self.assertEqual(code, 200)
-        event = [c['strata_mcp'] for c in self.chunks(text) if c.get('strata_mcp', {}).get('event') == 'result'][0]
+        event = [c['nostroma_mcp'] for c in self.chunks(text) if c.get('nostroma_mcp', {}).get('event') == 'result'][0]
         self.assertEqual(set(event), {'event', 'id', 'ok', 'text', 'chars', 'truncated', 'ms'})
 
     def test_image_result_streams_and_reaches_vision_prepare(self):
@@ -280,10 +280,10 @@ class ImageLoop(unittest.TestCase):
                 return native(clean, *args, **kwargs)
             result = {'ok': True, 'text': 'image delivered', 'chars': 15, 'truncated': False, 'ms': 1, 'images': im, 'model_content': [{'type': 'text', 'text': 'image delivered'}, {'type': 'image', 'source': source}]}
             with patch.object(self.hub, 'call', return_value=result), patch.object(self.svc, 'prepare', side_effect=prepare):
-                code, text = self.post({'strata_mcp': True})
+                code, text = self.post({'nostroma_mcp': True})
             self.assertEqual(code, 200)
             self.assertIn(source, seen)
-            events = [c['strata_mcp'] for c in self.chunks(text) if 'strata_mcp' in c]
+            events = [c['nostroma_mcp'] for c in self.chunks(text) if 'nostroma_mcp' in c]
             self.assertEqual(events[-1]['images'], im)
             answer = ''.join((c['choices'][0]['delta'].get('content', '') for c in self.chunks(text)))
             self.assertIn('Image received.', answer)

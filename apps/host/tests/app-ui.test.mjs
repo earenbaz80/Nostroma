@@ -15,7 +15,7 @@ const root = fileURLToPath(new URL('..', import.meta.url));
 const delay = ms => new Promise(r => setTimeout(r, ms));
 /** Wait until `done()` is true, polling every 10 ms for up to `ms` (a busy PC can hold a timer back by far more than a fixed 20 ms sleep). */
 const until = async (done, ms = 5000) => { const end = Date.now() + ms; while (!done() && Date.now() < end) await delay(10); return done(); };
-const bridgeEnv = { STRATA_SHELL_BRIDGE: 'http://127.0.0.1:5555', STRATA_SHELL_TOKEN: 'a'.repeat(32) };
+const bridgeEnv = { NOSTROMA_SHELL_BRIDGE: 'http://127.0.0.1:5555', NOSTROMA_SHELL_TOKEN: 'a'.repeat(32) };
 
 test('a host nobody started has no window mode, no Quit and no updater', () => {
   const ui = createAppUi({ env: {} });
@@ -25,7 +25,7 @@ test('a host nobody started has no window mode, no Quit and no updater', () => {
 });
 
 test('window mode: no Quit entry (closing the window ends everything), the updater waits for the window process', async () => {
-  const ui = createAppUi({ env: { STRATA_UI_MODE: 'window' } });
+  const ui = createAppUi({ env: { NOSTROMA_UI_MODE: 'window' } });
   assert.equal(ui.state().canQuit, false);
   assert.equal(ui.state().appUpdate, 'available');
   assert.equal(ui.quit().status, 409);
@@ -38,7 +38,7 @@ test('window mode: no Quit entry (closing the window ends everything), the updat
 
 test('browser mode (chosen): Quit works once and the app updater says why it is not available', async () => {
   let stopped = 0;
-  const ui = createAppUi({ env: { STRATA_UI_MODE: 'browser' }, shutdown: () => { stopped++; } });
+  const ui = createAppUi({ env: { NOSTROMA_UI_MODE: 'browser' }, shutdown: () => { stopped++; } });
   assert.deepEqual(ui.state(), { mode: 'browser', reason: 'chosen', canQuit: true, appUpdate: 'unavailable' });
   assert.equal(ui.updater.unavailable, BROWSER_UPDATE_MESSAGE);
   await assert.rejects(ui.updater.check(), error => error.code === APP_UPDATE_UNAVAILABLE && error.message === BROWSER_UPDATE_MESSAGE);
@@ -50,7 +50,7 @@ test('browser mode (chosen): Quit works once and the app updater says why it is 
 
 test('the shell moves a window host to a browser tab: opens the page, sends the notice, drops the window updater', async () => {
   const opened = [], notices = [];
-  const ui = createAppUi({ env: { STRATA_UI_MODE: 'window' }, open: async url => { opened.push(url); return true; }, notify: async text => { notices.push(text); } });
+  const ui = createAppUi({ env: { NOSTROMA_UI_MODE: 'window' }, open: async url => { opened.push(url); return true; }, notify: async text => { notices.push(text); } });
   ui.setBridge({ url: 'http://127.0.0.1:6001', token: 'b'.repeat(32) });
   const out = await ui.switchToBrowser({ url: 'http://127.0.0.1:47831/', notice: 'Nostroma opened in your browser because the app window couldn\'t start on this computer.' });
   assert.deepEqual(out, { mode: 'browser', reason: 'window-failed', opened: true });
@@ -59,7 +59,7 @@ test('the shell moves a window host to a browser tab: opens the page, sends the 
   assert.equal(ui.state().canQuit, true);
   await assert.rejects(ui.updater.check(), error => error.code === APP_UPDATE_UNAVAILABLE);
   // no browser could be opened: the shell is told, it prints the address
-  const none = createAppUi({ env: { STRATA_UI_MODE: 'window' }, open: async () => false, notify: async () => false });
+  const none = createAppUi({ env: { NOSTROMA_UI_MODE: 'window' }, open: async () => false, notify: async () => false });
   assert.equal((await none.switchToBrowser({ url: 'http://127.0.0.1:1/' })).opened, false);
 });
 
@@ -82,21 +82,21 @@ test('an opener that is missing or fails fast is a failure; one still running is
 test('update check: the app row says updates are off, and the engine row still comes from Control', async () => {
   const control = { version: '0.1.0', updateCheck: async () => ({ app: { status: 'available', offered: '0.2.0', notes: 'Faster.' }, engine: { status: 'current', installed: { version: '1' } }, control: { status: 'available', offered: '0.1.1' } }) };
   const result = await checkComponentUpdates({ control, appVersion: '0.1.0' });
-  assert.equal(result.strata.status, 'unavailable');
-  assert.equal(result.strata.canInstall, false);
-  assert.equal(result.strata.message, APP_UPDATES_OFF);
-  assert.equal(result.strata.latestVersion, undefined, 'the app installer or Control package of the feed is not offered as this app');
+  assert.equal(result.nostroma.status, 'unavailable');
+  assert.equal(result.nostroma.canInstall, false);
+  assert.equal(result.nostroma.message, APP_UPDATES_OFF);
+  assert.equal(result.nostroma.latestVersion, undefined, 'the app installer or Control package of the feed is not offered as this app');
   assert.equal(result.engine.status, 'current', 'engine updates keep their own path');
 });
 
 async function freePort() { const s = createServer(); await new Promise(r => s.listen(0, '127.0.0.1', r)); const p = s.address().port; await new Promise(r => s.close(r)); return p; }
 
 async function startHost(extraEnv) {
-  const home = await mkdtemp(join(tmpdir(), 'strata-host-appui-'));
+  const home = await mkdtemp(join(tmpdir(), 'nostroma-host-appui-'));
   const port = await freePort();
   const host = spawn(process.execPath, ['server/index.mjs'], {
     cwd: root, stdio: 'ignore',
-    env: { ...process.env, STRATA_HOME: home, STRATA_MODELS_DIR: join(home, 'models'), STRATA_PORT: String(port), STRATA_SHARE_PORT: String(await freePort()), STRATA_TUNNEL_PORT: String(await freePort()), STRATA_NO_ACQUIRE: '1', STRATA_NO_BUNDLED_ENGINE: '1', ...extraEnv },
+    env: { ...process.env, NOSTROMA_HOME: home, NOSTROMA_MODELS_DIR: join(home, 'models'), NOSTROMA_PORT: String(port), NOSTROMA_SHARE_PORT: String(await freePort()), NOSTROMA_TUNNEL_PORT: String(await freePort()), NOSTROMA_NO_ACQUIRE: '1', NOSTROMA_NO_BUNDLED_ENGINE: '1', ...extraEnv },
   });
   let up = false;
   for (let i = 0; i < 150 && !up; i++) { try { up = (await fetch(`http://127.0.0.1:${port}/api/health`)).ok; } catch { await delay(100); } }
@@ -106,30 +106,30 @@ async function startHost(extraEnv) {
 }
 
 test('browser-mode host over HTTP: mode, Quit needs the client header, then the host stops cleanly and only listens on 127.0.0.1', async () => {
-  const { port, host, exited, home, base } = await startHost({ STRATA_UI_MODE: 'browser' });
+  const { port, host, exited, home, base } = await startHost({ NOSTROMA_UI_MODE: 'browser' });
   try {
     const mode = await (await fetch(`${base}/api/app/mode`)).json();
     assert.equal(mode.mode, 'browser'); assert.equal(mode.canQuit, true);
     // a plain POST (what a web page could send without asking first) is refused, and so is a page from another site
     assert.equal((await fetch(`${base}/api/app/quit`, { method: 'POST' })).status, 403);
-    assert.equal((await fetch(`${base}/api/app/quit`, { method: 'POST', headers: { 'x-strata-client': 'ui', origin: 'https://example.com' } })).status, 403);
+    assert.equal((await fetch(`${base}/api/app/quit`, { method: 'POST', headers: { 'x-nostroma-client': 'ui', origin: 'https://example.com' } })).status, 403);
     // the shell's own routes need the secret
     assert.equal((await fetch(`${base}/api/control/ui`, { method: 'POST', body: '{}' })).status, 403);
     // it is listening on the loopback address only
     const { networkInterfaces } = await import('node:os');
     const other = Object.values(networkInterfaces()).flat().find(i => i && !i.internal && i.family === 'IPv4');
     if (other) await assert.rejects(fetch(`http://${other.address}:${port}/api/health`, { signal: AbortSignal.timeout(2000) }));
-    assert.equal((await fetch(`${base}/api/app/quit`, { method: 'POST', headers: { 'x-strata-client': 'ui' } })).status, 202);
+    assert.equal((await fetch(`${base}/api/app/quit`, { method: 'POST', headers: { 'x-nostroma-client': 'ui' } })).status, 202);
     assert.equal(await Promise.race([exited, delay(30000).then(() => 'still running')]), 0);
   } finally { host.kill(); await rm(home, { recursive: true, force: true }); }
 });
 
 test('window-mode host over HTTP: Quit is refused; the shell (with its secret) registers the bridge and can move the host to browser mode', async () => {
   const secret = 'c'.repeat(64);
-  const { host, home, base } = await startHost({ STRATA_UI_MODE: 'window', STRATA_SHUTDOWN_TOKEN: secret, STRATA_OPENER: 'record' });
+  const { host, home, base } = await startHost({ NOSTROMA_UI_MODE: 'window', NOSTROMA_SHUTDOWN_TOKEN: secret, NOSTROMA_OPENER: 'record' });
   try {
-    assert.equal((await fetch(`${base}/api/app/quit`, { method: 'POST', headers: { 'x-strata-client': 'ui' } })).status, 409);
-    const as = (body, token = secret) => fetch(`${base}/api/control/ui`, { method: 'POST', headers: { 'x-strata-shutdown': token, 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    assert.equal((await fetch(`${base}/api/app/quit`, { method: 'POST', headers: { 'x-nostroma-client': 'ui' } })).status, 409);
+    const as = (body, token = secret) => fetch(`${base}/api/control/ui`, { method: 'POST', headers: { 'x-nostroma-shutdown': token, 'content-type': 'application/json' }, body: JSON.stringify(body) });
     assert.equal((await as({}, 'd'.repeat(64))).status, 403);
     assert.equal((await as({ bridge: { url: 'http://evil.example:1', token: 'e'.repeat(32) } })).status, 400);
     assert.equal((await as({ bridge: { url: 'http://127.0.0.1:9', token: 'e'.repeat(32) } })).status, 200);

@@ -1,7 +1,7 @@
 """The component updater: the one explicit step that downloads and installs engines (and Control, and the app installer).
 
 Everything that fetches software lives behind this module. Starting or serving never imports it (`acquisition.require`
-refuses here when ``STRATA_NO_ACQUIRE`` is set), so a PC that only runs models never reaches the network.
+refuses here when ``NOSTROMA_NO_ACQUIRE`` is set), so a PC that only runs models never reaches the network.
 
 What an engine update does, in order, and what keeps the old engine safe at each point:
 
@@ -315,7 +315,7 @@ def _amd_card_names() -> list[str]:
 
 def detect_hardware(environ=None) -> dict:
     """What the package choice depends on. Read-only probes of tools that are already installed (nvidia-smi, rocminfo, sysfs);
-    ``STRATA_ENGINE_BACKEND`` overrides the backend like it does for a start. Anything unreadable is left empty, which the
+    ``NOSTROMA_ENGINE_BACKEND`` overrides the backend like it does for a start. Anything unreadable is left empty, which the
     selection treats as "cannot tell", never as a refusal."""
     environ = os.environ if environ is None else environ
     prefer = ""
@@ -631,7 +631,7 @@ def make_guard(ctx: Context) -> str | None:
       - if this PC really has a card of the installed make too (the display adapters / PCI vendors say so), the update stays
         on the installed make (a PC with an NVIDIA card and an AMD card keeps the engine it was set up with);
       - otherwise nothing is chosen and the returned sentence says why.
-    An explicit ask (``--backend``, ``STRATA_ENGINE_BACKEND``) is the person's decision and passes. Returns None when the update
+    An explicit ask (``--backend``, ``NOSTROMA_ENGINE_BACKEND``) is the person's decision and passes. Returns None when the update
     may go on."""
     hw = ctx.hardware
     want = hw.get("backend")
@@ -1023,7 +1023,7 @@ def _test_start_failure(component: ec.EngineComponent, started: dict, ctx: Conte
         if phase == "ready_file_not_matched":
             return TestStartFailed(component.version, f"it reported that it was ready, but Nostroma could not match it to the engine process it "
                                    f"started", busy=False,
-                                   hint="This looks like a problem in Strata, not in your engine or card. Nothing was changed; report it with the log." + kept)
+                                   hint="This looks like a problem in Nostroma, not in your engine or card. Nothing was changed; report it with the log." + kept)
         return TestStartFailed(component.version, f"it was still loading the model after {minutes} minutes", busy=True,
                                hint="Nothing was changed. A slow disk or a card that other programs are using can do this: close them and run "
                                     "`nostroma update` again." + kept)
@@ -1073,7 +1073,7 @@ def light_test_args(args: list) -> list:
 
 
 def default_test_start(stage_root: Path, component: ec.EngineComponent, ctx: Context) -> dict:
-    """Start the staged engine through the real start path (owner runtime, `component:strata-engine`, a saved model), wait for
+    """Start the staged engine through the real start path (owner runtime, `component:nostroma-engine`, a saved model), wait for
     the one-token generation probe, and stop it. Everything runs in an isolated runtime, profile and component folder, so a
     user's own instances, profiles and engines are not involved. With no model installed the engine is only run with --version."""
     source = Path(ctx.run_config) if ctx.run_config else discover_run_config(ctx.environ)
@@ -1089,7 +1089,7 @@ def default_test_start(stage_root: Path, component: ec.EngineComponent, ctx: Con
         from nostroma_control import control_paths
         cfg = control_paths.repoint(cfg)
         # #5681: paths in a version folder an update removed (components/control/0.1.56/...) are resolved to the current version HERE, while
-        # STRATA_COMPONENTS_DIR is still the real one: under the sandbox's (the stage, which has no control folder) the start's own repair
+        # NOSTROMA_COMPONENTS_DIR is still the real one: under the sandbox's (the stage, which has no control folder) the start's own repair
         # found no current Control and the test start failed with a ProfileError about the old file
         from nostroma_control import cfg_paths
         cfg, _moved, _lost = cfg_paths.resolve_config(cfg)
@@ -1103,12 +1103,12 @@ def default_test_start(stage_root: Path, component: ec.EngineComponent, ctx: Con
         cfg["log"] = str(sandbox / "engine.log")
         config_path = sandbox / "run.json"
         config_path.write_text(json.dumps(cfg, indent=1), encoding="utf-8")
-        env = {"STRATA_COMPONENTS_DIR": str(stage_root), "STRATA_PROFILE_DIR": str(sandbox / "profiles"),
-               "STRATA_RUNTIME_DIR": str(sandbox / "runtime"), "STRATA_NO_ACQUIRE": "1",
-               "STRATA_ENGINE_BACKEND": component.backend}
+        env = {"NOSTROMA_COMPONENTS_DIR": str(stage_root), "NOSTROMA_PROFILE_DIR": str(sandbox / "profiles"),
+               "NOSTROMA_RUNTIME_DIR": str(sandbox / "runtime"), "NOSTROMA_NO_ACQUIRE": "1",
+               "NOSTROMA_ENGINE_BACKEND": component.backend}
         name = "updtest"
         with _patched_environ(env):
-            os.environ.pop("STRATA_API_KEY", None)
+            os.environ.pop("NOSTROMA_API_KEY", None)
             profiles.create(name, str(config_path))
             started = None
             try:
@@ -1523,7 +1523,7 @@ def _control_version(interpreter: str, entry: Path, stage: Path, ctx: Context, v
     for attempt, timeout in enumerate(CONTROL_VERSION_TIMEOUTS):
         try:
             done = subprocess.run([interpreter, str(entry), "--version"], capture_output=True, text=True, errors="replace", timeout=timeout, cwd=str(stage),
-                                  env={**ctx.environ, "PYTHONNOUSERSITE": "1", "STRATA_NO_ACQUIRE": "1", "STRATA_HANDOVER": "1"},
+                                  env={**ctx.environ, "PYTHONNOUSERSITE": "1", "NOSTROMA_NO_ACQUIRE": "1", "NOSTROMA_HANDOVER": "1"},
                                   creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
             last_error = None
             if done.returncode == 0 and version in done.stdout:
@@ -1602,7 +1602,7 @@ def update_control(ctx: Context, feed: feedmod.Feed, state: State) -> dict:
 
 def app_public_key(environ=None) -> str | None:
     environ = os.environ if environ is None else environ
-    explicit = environ.get("NOSTROMA_APP_UPDATE_PUBKEY", environ.get("STRATA_APP_UPDATE_PUBKEY"))
+    explicit = environ.get("NOSTROMA_APP_UPDATE_PUBKEY", environ.get("NOSTROMA_APP_UPDATE_PUBKEY"))
     if explicit:
         return explicit
     try:
@@ -1655,7 +1655,7 @@ def update_app(ctx: Context, feed: feedmod.Feed) -> dict:
         raise UpdateError(f"the app installer failed its signature check: {exc}; it was deleted", 5) from None
     target_dir = updates_dir(root) / "app"
     target_dir.mkdir(parents=True, exist_ok=True)
-    name = Path(transfer.resolve_ref(transfer.base_of(feed.source), entry["url"]).replace("\\", "/")).name or f"strata-app-{feed.app.version}"
+    name = Path(transfer.resolve_ref(transfer.base_of(feed.source), entry["url"]).replace("\\", "/")).name or f"nostroma-app-{feed.app.version}"
     target = target_dir / name
     _atomic_mod.replace(archive, target)
     result.update({"changed": True, "status": "downloaded", "installed_after": None, "version": feed.app.version, "path": str(target),

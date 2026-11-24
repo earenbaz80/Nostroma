@@ -423,7 +423,7 @@ Function PageLeaveReinstall
 FunctionEnd
 
 ; 5. Choose install directory page. The app is installed for this user only (no administrator), so the folder must be one the
-; user can write to: another drive (D:\Strata) or a folder in the profile, not Program Files. An update (passive: the app's own
+; user can write to: another drive (D:\Nostroma) or a folder in the profile, not Program Files. An update (passive: the app's own
 ; updater) and a silent install skip it and keep the earlier folder (RestorePreviousInstallLocation).
 !ifdef MUI_PAGE_HEADER_TEXT
   !undef MUI_PAGE_HEADER_TEXT
@@ -498,7 +498,7 @@ Function un.DataPage
   ${IfThen} $(^RTL) = 1 ${|} nsDialogs::SetRTL $(^RTL) ${|}
   ${NSD_CreateCheckBox} 0 0 100% 12u "Also remove my Nostroma data (models, chats, settings)"
   Pop $DeleteAppDataCheckbox
-  ${NSD_CreateLabel} 12u 18u -12u 96u "If you tick it, these folders are deleted, and nothing else:$\r$\n$\r$\n$LOCALAPPDATA\Strata   (engine, installed copy, tunings)$\r$\n$APPDATA\Strata   (settings)$\r$\n$PROFILE\.strata   (your chats, app settings)$\r$\n$DOCUMENTS\Strata\Models   (models Nostroma downloaded into its own folder)$\r$\n$\r$\nA model folder you chose yourself is never deleted."
+  ${NSD_CreateLabel} 12u 18u -12u 96u "If you tick it, these folders are deleted, and nothing else:$\r$\n$\r$\n$LOCALAPPDATA\Nostroma   (engine, installed copy, tunings)$\r$\n$APPDATA\Nostroma   (settings)$\r$\n$PROFILE\.nostroma   (your chats, app settings)$\r$\n$DOCUMENTS\Nostroma\Models   (models Nostroma downloaded into its own folder)$\r$\n$\r$\nA model folder you chose yourself is never deleted."
   Pop $0
   ${NSD_SetFocus} $DeleteAppDataCheckbox
   nsDialogs::Show
@@ -686,49 +686,49 @@ Section WebView2
   ${EndIf}
 SectionEnd
 
-; STRATA-MIGRATE-BEGIN
-; An earlier build installed the app into %LOCALAPPDATA%\Strata, the folder that also holds the user's data (components, install,
+; NOSTROMA-MIGRATE-BEGIN
+; An earlier build installed the app into %LOCALAPPDATA%\Nostroma, the folder that also holds the user's data (components, install,
 ; procs, runtime, time-skip). Remove only the app files that build put there; everything else stays.
-!macro StrataMigrateOldInstall OLDDIR NEWDIR
+!macro NostromaMigrateOldInstall OLDDIR NEWDIR
   StrCmp "${OLDDIR}" "${NEWDIR}" +8
-  IfFileExists "${OLDDIR}\strata-desktop.exe" 0 +7
-    Delete "${OLDDIR}\strata-desktop.exe"
+  IfFileExists "${OLDDIR}\nostroma-desktop.exe" 0 +7
+    Delete "${OLDDIR}\nostroma-desktop.exe"
     Delete "${OLDDIR}\uninstall.exe"
     RMDir /r "${OLDDIR}\host"
     RMDir /r "${OLDDIR}\node"
     RMDir /r "${OLDDIR}\control"
     RMDir "${OLDDIR}"
 !macroend
-; STRATA-MIGRATE-END
+; NOSTROMA-MIGRATE-END
 
-; STRATA-STOP-BEGIN
+; NOSTROMA-STOP-BEGIN
 ; Stop what Nostroma itself started from the install folder (the app, its host, the node runtime, the engine) before files are removed:
 ; a running copy keeps its files open, so the folder stayed behind after use. Only processes whose image path is inside INSTDIR are
 ; stopped; this uninstaller's own process and any program elsewhere are left alone.
-!macro StrataStopOwnProcesses INSTALLDIR
-  System::Call 'kernel32::SetEnvironmentVariableW(w "STRATA_INSTDIR", w "${INSTALLDIR}")'
+!macro NostromaStopOwnProcesses INSTALLDIR
+  System::Call 'kernel32::SetEnvironmentVariableW(w "NOSTROMA_INSTDIR", w "${INSTALLDIR}")'
   System::Call 'kernel32::GetCurrentProcessId()i.r9'
-  System::Call 'kernel32::SetEnvironmentVariableW(w "STRATA_SELFPID", w "$9")'
+  System::Call 'kernel32::SetEnvironmentVariableW(w "NOSTROMA_SELFPID", w "$9")'
   ; the installer is a 32-bit program, so plain powershell.exe is the 32-bit one, which cannot read the image path of a 64-bit process: use the 64-bit one
   StrCpy $8 "$WINDIR\Sysnative\WindowsPowerShell\v1.0\powershell.exe"
   IfFileExists $8 +2 0
     StrCpy $8 "powershell.exe"
-  nsExec::Exec '"$8" -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "$$d = [IO.Path]::GetFullPath($$env:STRATA_INSTDIR).TrimEnd([char]92) + [char]92; $$ids = @(); $$ids += Get-Process -ErrorAction SilentlyContinue | Where-Object { $$_.Path -and [IO.Path]::GetFullPath($$_.Path).StartsWith($$d, [StringComparison]::OrdinalIgnoreCase) } | ForEach-Object { $$_.Id }; try { $$ids += Get-CimInstance Win32_Process -ErrorAction Stop | Where-Object { $$_.ExecutablePath -and [IO.Path]::GetFullPath($$_.ExecutablePath).StartsWith($$d, [StringComparison]::OrdinalIgnoreCase) } | ForEach-Object { $$_.ProcessId } } catch {}; $$ids | Sort-Object -Unique | Where-Object { $$_ -ne [int]$$env:STRATA_SELFPID } | ForEach-Object { Stop-Process -Id $$_ -Force -ErrorAction SilentlyContinue }; Start-Sleep -Milliseconds 1500"'
+  nsExec::Exec '"$8" -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "$$d = [IO.Path]::GetFullPath($$env:NOSTROMA_INSTDIR).TrimEnd([char]92) + [char]92; $$ids = @(); $$ids += Get-Process -ErrorAction SilentlyContinue | Where-Object { $$_.Path -and [IO.Path]::GetFullPath($$_.Path).StartsWith($$d, [StringComparison]::OrdinalIgnoreCase) } | ForEach-Object { $$_.Id }; try { $$ids += Get-CimInstance Win32_Process -ErrorAction Stop | Where-Object { $$_.ExecutablePath -and [IO.Path]::GetFullPath($$_.ExecutablePath).StartsWith($$d, [StringComparison]::OrdinalIgnoreCase) } | ForEach-Object { $$_.ProcessId } } catch {}; $$ids | Sort-Object -Unique | Where-Object { $$_ -ne [int]$$env:NOSTROMA_SELFPID } | ForEach-Object { Stop-Process -Id $$_ -Force -ErrorAction SilentlyContinue }; Start-Sleep -Milliseconds 1500"'
   Pop $9
 !macroend
-; STRATA-STOP-END
+; NOSTROMA-STOP-END
 
-; STRATA-CLEAN-BEGIN
+; NOSTROMA-CLEAN-BEGIN
 ; The app writes into its own folders while it runs (Python bytecode caches under control\, for one), and the file-by-file delete below does not know them,
 ; so those folders stayed behind with a few dozen files. These four folders hold only what the installer put there and what the app made there;
 ; user data is never in them (it lives in the data folder), and the install folder itself is still removed with a plain RMDir.
-!macro StrataRemoveAppFolders INSTALLDIR
+!macro NostromaRemoveAppFolders INSTALLDIR
   RMDir /r "${INSTALLDIR}\control"
   RMDir /r "${INSTALLDIR}\host"
   RMDir /r "${INSTALLDIR}\node"
   RMDir /r "${INSTALLDIR}\harness"
 !macroend
-; STRATA-CLEAN-END
+; NOSTROMA-CLEAN-END
 
 Section Install
   SetOutPath $INSTDIR
@@ -737,7 +737,7 @@ Section Install
     !insertmacro NSIS_HOOK_PREINSTALL
   !endif
 
-  !insertmacro StrataMigrateOldInstall "$LOCALAPPDATA\${PRODUCTNAME}" "$INSTDIR"
+  !insertmacro NostromaMigrateOldInstall "$LOCALAPPDATA\${PRODUCTNAME}" "$INSTDIR"
 
   !insertmacro CheckIfAppIsRunning "$INSTDIR\${MAINBINARYNAME}.exe" "${PRODUCTNAME}"
 
@@ -876,7 +876,7 @@ Section Uninstall
     !insertmacro NSIS_HOOK_PREUNINSTALL
   !endif
 
-  !insertmacro StrataStopOwnProcesses "$INSTDIR"
+  !insertmacro NostromaStopOwnProcesses "$INSTDIR"
   !insertmacro CheckIfAppIsRunning "$INSTDIR\${MAINBINARYNAME}.exe" "${PRODUCTNAME}"
 
   ; Delete the app directory and its content from disk
@@ -909,7 +909,7 @@ Section Uninstall
   {{/each}}
 
 
-  !insertmacro StrataRemoveAppFolders "$INSTDIR"
+  !insertmacro NostromaRemoveAppFolders "$INSTDIR"
 
   ; Delete uninstaller
   Delete "$INSTDIR\uninstall.exe"
@@ -984,17 +984,17 @@ Section Uninstall
 
     ; Nostroma's own data, for a fresh start: the folders listed on the page, nothing else. Each path is checked first.
     ${If} "$LOCALAPPDATA" != ""
-      RmDir /r "$LOCALAPPDATA\Strata"
+      RmDir /r "$LOCALAPPDATA\Nostroma"
     ${EndIf}
     ${If} "$APPDATA" != ""
-      RmDir /r "$APPDATA\Strata"
+      RmDir /r "$APPDATA\Nostroma"
     ${EndIf}
     ${If} "$PROFILE" != ""
-      RmDir /r "$PROFILE\.strata"
+      RmDir /r "$PROFILE\.nostroma"
     ${EndIf}
     ${If} "$DOCUMENTS" != ""
-      RmDir /r "$DOCUMENTS\Strata\Models"
-      RmDir "$DOCUMENTS\Strata"          ; only if it is empty now
+      RmDir /r "$DOCUMENTS\Nostroma\Models"
+      RmDir "$DOCUMENTS\Nostroma"          ; only if it is empty now
     ${EndIf}
   ${EndIf}
 
@@ -1040,7 +1040,7 @@ FunctionEnd
 Function RestorePreviousInstallLocation
   ReadRegStr $4 SHCTX "${MANUPRODUCTKEY}" ""
   StrCmp $4 "" restore_done 0
-  ; %LOCALAPPDATA%\Strata holds the user's engines, model configs and tuning: never an app folder
+  ; %LOCALAPPDATA%\Nostroma holds the user's engines, model configs and tuning: never an app folder
   StrCmp $4 "$LOCALAPPDATA\${PRODUCTNAME}" restore_done 0
   Push $4
   Push "$LOCALAPPDATA\Temp"

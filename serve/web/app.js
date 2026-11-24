@@ -13,8 +13,8 @@ const ctxfmt = (n) => (n && n % 1024 === 0 ? `${fmt(n / 1024)}K` : kfmt(n));
 const gb = (b, d = 1) => (b == null ? "–" : fmt(b / 1073741824, d));   // memory: binary GB, as Windows shows it
 
 const store = {
-  get(k, d) { try { const v = localStorage.getItem("strata." + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
-  set(k, v) { try { localStorage.setItem("strata." + k, JSON.stringify(v)); return true; } catch (e) { return false; } },
+  get(k, d) { try { const v = localStorage.getItem("nostroma." + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem("nostroma." + k, JSON.stringify(v)); return true; } catch (e) { return false; } },
 };
 
 // ------------------------------------------------------------------ toasts
@@ -57,7 +57,7 @@ async function copyText(text, btn) {
 // the system's theme until the user picks one (only a click is saved)
 function setTheme(t, save) {
   document.documentElement.dataset.theme = t;
-  if (save) try { localStorage.setItem("strata.theme", t); } catch (e) { /* ignore */ }
+  if (save) try { localStorage.setItem("nostroma.theme", t); } catch (e) { /* ignore */ }
   $("theme-icon").setAttribute("href", `${SPRITE}#i-${t === "dark" ? "sun" : "moon"}`);
   $("dark-toggle").setAttribute("aria-checked", String(t === "dark"));
   refreshPreviews();                                  // the preview frames carry the page's colours
@@ -68,7 +68,7 @@ $("dark-toggle").onclick = flipTheme;
 setTheme(document.documentElement.dataset.theme || "light", false);
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
   let saved = null;
-  try { saved = localStorage.getItem("strata.theme"); } catch (err) { /* ignore */ }
+  try { saved = localStorage.getItem("nostroma.theme"); } catch (err) { /* ignore */ }
   if (!saved) setTheme(e.matches ? "dark" : "light", false);
 });
 
@@ -107,7 +107,7 @@ function saveApiKey(notify = false) {
 $("api-key").oninput = () => saveApiKey();
 $("api-key").onchange = () => saveApiKey(true);
 
-let health = {model: "strata", images: false, max_context: 0};
+let health = {model: "nostroma", images: false, max_context: 0};
 // the texts that depend on what this server offers: the empty chat's line and the attach button's hint
 function renderEmptyChat() {
   $("attach-btn").title = health.images ? tr("composer.attachPictures", "Attach a text file or a picture (or drop it here)")
@@ -606,7 +606,7 @@ $("req-all").addEventListener("click", () => { reqShowAll = !reqShowAll; if (las
 
 // ------------------------------------------------------------------ MCP servers (GET /mcp)
 // Tools from the MCP servers in the run config: the chat offers them to the model (opt-in per request,
-// "strata_mcp": true, which only this page sends); the Monitor lists the servers and what they offer.
+// "nostroma_mcp": true, which only this page sends); the Monitor lists the servers and what they offer.
 let mcpInfo = {servers: [], tools: 0}, mcpRetry = null;
 async function loadMcp() {
   try {
@@ -640,7 +640,7 @@ function renderMcp() {
 }
 
 // ------------------------------------------------------------------ Model settings (GET / POST /config, #564)
-// A few documented keys of the run config (strata-<model>.json), for every client, from the next start on.  The
+// A few documented keys of the run config (nostroma-<model>.json), for every client, from the next start on.  The
 // server lists them, checks every value and keeps every other key of the file as it is.
 let cfgKeys = [];
 async function loadConfig() {
@@ -714,8 +714,8 @@ function pageTheme() {
 }
 function fillPreview(fr, scripts, blank) {
   const box = fr.closest(".st-code");
-  const doc = blank ? null : StrataPreview.previewDoc(fr.dataset.lang, box.querySelector("pre").textContent, scripts, pageTheme(), window);
-  const nf = StrataPreview.makeFrame(doc, {scripts, title: fr.title, lang: fr.dataset.lang});
+  const doc = blank ? null : NostromaPreview.previewDoc(fr.dataset.lang, box.querySelector("pre").textContent, scripts, pageTheme(), window);
+  const nf = NostromaPreview.makeFrame(doc, {scripts, title: fr.title, lang: fr.dataset.lang});
   fr.replaceWith(nf);
   box.classList.toggle("st-code--run", !!(doc && scripts));
   const rb = box.querySelector("[data-preview-scripts]");
@@ -726,8 +726,8 @@ function fillPreview(fr, scripts, blank) {
 }
 function refreshPreviews() { for (const fr of document.querySelectorAll("iframe[data-opened]")) fillPreview(fr, fr.dataset.scripts === "1"); }
 function codeBlock(lang, code, complete) {
-  const ok = complete && StrataPreview.canPreview(lang || "", code);
-  const kind = ok ? StrataPreview.kindOf(lang) : null;
+  const ok = complete && NostromaPreview.canPreview(lang || "", code);
+  const kind = ok ? NostromaPreview.kindOf(lang) : null;
   const label = kind === "svg" ? tr("preview.showSvg", "Preview the picture") : tr("preview.showPage", "Preview the page");
   const head = `<div class="st-code__head"><span>${esc(lang || tr("code.label", "code"))}</span><span class="st-code__btns">` +
     (kind === "page" ? `<button class="st-btn st-btn--icon" data-preview-scripts aria-label="${esc(tr("preview.runScripts", "Run scripts"))}" aria-pressed="false" title="${esc(tr("preview.runScripts", "Run scripts"))}">${icon("warning")}</button>` : "") +
@@ -912,7 +912,7 @@ function hydrateToolImages(root) {
 // the answer's text with the tool blocks where the model called them
 // math (opt-in, serve/web/math.js): formulas become placeholders before the Markdown runs and are drawn after it
 function answerMarkdown(text) {
-  return settings.math ? StrataMath.markdown(text, markdown) : markdown(text);
+  return settings.math ? NostromaMath.markdown(text, markdown) : markdown(text);
 }
 function answerHtml(m) {
   if (!m.tools || !m.tools.length) return answerMarkdown(m.text || "");
@@ -925,7 +925,7 @@ function answerHtml(m) {
   });
   return html + answerMarkdown(m.text.slice(pos));
 }
-// a tool event from the stream (the `strata_mcp` field of a chunk)
+// a tool event from the stream (the `nostroma_mcp` field of a chunk)
 function onTool(m, x) {
   if (x.event === "limit") { m.limit = x.max_rounds; return; }
   m.tools = m.tools || [];
@@ -961,7 +961,7 @@ function updateAssistant(el, m, streaming) {
   } else {
     bubble.innerHTML = answerHtml(m);
     hydrateToolImages(bubble);
-    if (settings.math) StrataMath.hydrate(bubble);
+    if (settings.math) NostromaMath.hydrate(bubble);
     if (streaming) bubble.classList.add("cursor"); else bubble.classList.remove("cursor");
   }
   el.querySelector(".meta-text").textContent = m.meta || (streaming ? "" : m.stopped ? tr("chat.stopped", "Stopped") : "");
@@ -1089,7 +1089,7 @@ function assistantMessages(m) {
     for (const t of calls) {
       const pictures = t.vision ? (t.images || []).filter((im) => safeToolMedia(im.url)) : [];
       const content = pictures.length ? [{type: "text", text: t.result}, ...pictures.map((im) =>
-        ({type: "image_url", image_url: {url: "strata-tool-media:" + im.url.split("/").pop()}}))] : t.result;
+        ({type: "image_url", image_url: {url: "nostroma-tool-media:" + im.url.split("/").pop()}}))] : t.result;
       out.push({role: "tool", tool_call_id: t.id, content});
     }
     pos = at;
@@ -1228,7 +1228,7 @@ async function generateReply() {
   if (settings.seed) body.seed = +settings.seed;
   if (settings.max) body.max_tokens = +settings.max;
   if (projectionLoaded()) body.experimental_speed_projection = !!settings.esp;
-  if (settings.mcp !== false && mcpInfo.tools > 0) body.strata_mcp = true;   // this server may run MCP tools for it
+  if (settings.mcp !== false && mcpInfo.tools > 0) body.nostroma_mcp = true;   // this server may run MCP tools for it
 
   let firstAt = null, thinkStart = null, usage = null, frame = 0;
   const paint = () => { frame = 0; updateAssistant(el, m, true); scrollDown(); };
@@ -1258,8 +1258,8 @@ async function generateReply() {
         try { j = JSON.parse(data); } catch (e) { continue; }
         if (j.error) throw new Error(j.error.message || tr("toast.engineError", "the engine reported an error"));
         if (j.usage) usage = j.usage;
-        if (j.strata_mcp) {
-          onTool(m, j.strata_mcp);
+        if (j.nostroma_mcp) {
+          onTool(m, j.nostroma_mcp);
           // an interjection waited for a running tool: it has its result now, so the answer can stop
           if (busy.cutAfterTool && !busy.cut && !(m.tools || []).some((t) => t.state === "running")) { busy.cut = true; controller.abort(); }
         }
@@ -1344,7 +1344,7 @@ $("export-btn").onclick = () => {
     `## ${health.model}\n\n${m.reasoning ? `<details><summary>Thinking</summary>\n\n${m.reasoning}\n\n</details>\n\n` : ""}${tools(m)}${m.text || m.error || ""}\n`).join("\n");
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([md], {type: "text/markdown"}));
-  a.download = `strata-chat-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-")}.md`;
+  a.download = `nostroma-chat-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-")}.md`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 5000);
 };
@@ -1519,7 +1519,7 @@ $("s-apply").onclick = async () => {
               chatList: locked ? !!prev.chatList : checked("s-list"), chatEdit: locked ? !!prev.chatEdit : checked("s-edit"),
               whileBusy: segValue("s-busy") || "wait"};
   store.set("sampling", settings);
-  StrataMath.reset();                                  // math on or off: every answer is drawn again
+  NostromaMath.reset();                                  // math on or off: every answer is drawn again
   if (settings.chatList !== !!prev.chatList) await setChatList(settings.chatList, true);
   if (settings.chatEdit !== !!prev.chatEdit) { clearUndo(); syncActions(); }
   if (settings.whileBusy === "wait" && pending) releasePending();    // "wait" parks nothing: a waiting message goes back to the box
@@ -1550,9 +1550,9 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape" && $("drawe
 // ------------------------------------------------------------------ language (serve/web/i18n.js)
 // The user's own choice, kept in this browser: English until they pick another. /?lang=de shows one for this visit only.
 const urlLang = new URLSearchParams(location.search).get("lang");
-$("lang").innerHTML = StrataI18n.LANGUAGES.map(([code, name]) => `<option value="${esc(code)}">${esc(name)}</option>`).join("");
+$("lang").innerHTML = NostromaI18n.LANGUAGES.map(([code, name]) => `<option value="${esc(code)}">${esc(name)}</option>`).join("");
 function showLanguage() {
-  $("lang").value = StrataI18n.lang;
+  $("lang").value = NostromaI18n.lang;
   renderEmptyChat();
   setSidebar(sidebarOpen, false);
   outputs();
@@ -1562,14 +1562,14 @@ function showLanguage() {
 }
 $("lang").onchange = async () => {
   store.set("lang", $("lang").value);
-  await StrataI18n.setLanguage($("lang").value);
+  await NostromaI18n.setLanguage($("lang").value);
   showLanguage();
 };
 
 // ------------------------------------------------------------------ start
 async function start() {
-  await StrataI18n.setLanguage(urlLang || store.get("lang", "en"));
-  $("lang").value = StrataI18n.lang;
+  await NostromaI18n.setLanguage(urlLang || store.get("lang", "en"));
+  $("lang").value = NostromaI18n.lang;
   renderEmptyChat();
   initChats();
   if (settings.chatList) await setChatList(true, false);       // the saved-chats list is read before the first draw

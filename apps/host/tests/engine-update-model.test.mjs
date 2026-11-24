@@ -11,12 +11,12 @@ const src = name => read(new URL(`../${name}`, import.meta.url), 'utf8');
 
 /** A packaged host with one installed model and a fake Control whose `update` plays the events of `nostroma update --stop-model --output jsonl`. */
 function fixture({ updateScript } = {}) {
-  const root = mkdtempSync(join(tmpdir(), 'strata-update-model-'));
+  const root = mkdtempSync(join(tmpdir(), 'nostroma-update-model-'));
   const install = join(root, 'install'), data = join(root, 'data');
   mkdirSync(install, { recursive: true });
-  process.env.STRATA_INSTALL_DIR = install;
-  const config = join(install, 'strata-iq2_xs.json');
-  writeFileSync(config, JSON.stringify({ exe: 'component:strata-engine', tokenizer: join(install, 'tok'), args: ['--max-context', '32768'], model_name: 'Qwen', port: 8080 }));
+  process.env.NOSTROMA_INSTALL_DIR = install;
+  const config = join(install, 'nostroma-iq2_xs.json');
+  writeFileSync(config, JSON.stringify({ exe: 'component:nostroma-engine', tokenizer: join(install, 'tok'), args: ['--max-context', '32768'], model_name: 'Qwen', port: 8080 }));
   const calls = [];
   const control = {
     control: { dir: join(root, 'control') }, version: '0.1.45',
@@ -34,7 +34,7 @@ function fixture({ updateScript } = {}) {
       options.onEvent?.({ event: 'progress', phase: 'download', label: 'engine 0.1.46', percent: 40 });
       options.onEvent?.({ event: 'models', phase: 'stopping', models: [{ profile, name: 'Qwen', port: 8080, kind: 'profile', state: 'ready' }] });
       options.onEvent?.({ event: 'models', phase: 'stopped', models: [{ profile, name: 'Qwen', port: 8080, kind: 'profile', state: 'stopped' }] });
-      options.onEvent?.({ event: 'models', phase: 'left-stopped', models: [{ profile, name: 'Qwen', port: 8080, kind: 'profile', state: 'stopped' }], start: 'strata launch' });
+      options.onEvent?.({ event: 'models', phase: 'left-stopped', models: [{ profile, name: 'Qwen', port: 8080, kind: 'profile', state: 'stopped' }], start: 'nostroma launch' });
       return { ok: true, results: [{ component: 'engine', status: 'updated', installed_after: { version: '0.1.46' } }] };
     },
     async rollbackEngine() { return { ok: true }; },
@@ -52,7 +52,7 @@ async function loaded(f) {
 
 test('Control is called with --stop-model only when the app asks for it', async () => {
   const seen = [];
-  const control = createControl({ control: { dir: '/c', python: '/c/python', cli: '/c/strata.py' }, env: {}, run: async args => { seen.push(args); return { code: 0, json: { ok: true, results: [] } }; } });
+  const control = createControl({ control: { dir: '/c', python: '/c/python', cli: '/c/nostroma.py' }, env: {}, run: async args => { seen.push(args); return { code: 0, json: { ok: true, results: [] } }; } });
   await control.update({ engine: true, control: false });
   await control.update({ engine: true, control: false, stopModel: true });
   assert.ok(!seen[0].includes('--stop-model'));
@@ -199,7 +199,7 @@ test('the notice for a newer engine stays an ordinary quiet card: no toast, no b
 
 test('offline, the update says nothing by itself: the dialog opens only from a button and shows only what the host reports', () => {
   const settings = src('src/components/SettingsUpdates.tsx');
-  assert.match(settings, /onClick=\{\(\) => setConfirm\(name === 'Nostroma' \? 'update-strata' : 'update-engine'\)\}/, 'the button opens the confirmation; nothing opens it on a timer or on a failed check');
+  assert.match(settings, /onClick=\{\(\) => setConfirm\(name === 'Nostroma' \? 'update-nostroma' : 'update-engine'\)\}/, 'the button opens the confirmation; nothing opens it on a timer or on a failed check');
 });
 
 test('all nine languages carry the dialog\'s words with the same slots', () => {

@@ -2,7 +2,7 @@
 
 This is the only network code of the update path. It is reached from `nostroma update` / `nostroma components update` and
 the app's explicit "Update" step, never from a start or a serve: ``require_acquisition`` is called by the caller before
-anything here runs, and it refuses under ``STRATA_NO_ACQUIRE``.
+anything here runs, and it refuses under ``NOSTROMA_NO_ACQUIRE``.
 
 A *source* is where the feed lives: an ``https://`` URL (or ``http://`` to a loopback address, which is how a local test
 feed is served), a ``file://`` URL, or a plain folder / file path. Everything the feed points at is resolved against it
@@ -42,7 +42,7 @@ _DEST_OPEN_ERRORS = (PermissionError, IsADirectoryError, NotADirectoryError, Fil
 
 
 def _destination(exc: BaseException) -> BaseException:
-    exc.strata_destination = True        # read in _transfer: a plain TransferError, not an Interrupted
+    exc.nostroma_destination = True        # read in _transfer: a plain TransferError, not an Interrupted
     return exc
 
 
@@ -107,7 +107,7 @@ def no_room_words(exc: BaseException, partial: Path, got: int, size: int, what: 
 
 
 SMALL_LIMIT = 8 << 20
-ENV_ALLOW_HTTP = "STRATA_UPDATE_ALLOW_HTTP"
+ENV_ALLOW_HTTP = "NOSTROMA_UPDATE_ALLOW_HTTP"
 
 
 class TransferError(RuntimeError):
@@ -224,7 +224,7 @@ class _PolicyRedirects(urllib.request.HTTPRedirectHandler):
 
 
 _opener = netpolicy.build_opener(_PolicyRedirects)      # the network rule: the connection phase is bounded, a stalled read ends after 60 s
-_USER_AGENT = "strata-updater/1"
+_USER_AGENT = "nostroma-updater/1"
 
 
 _SERVER_DATE: list = []
@@ -414,7 +414,7 @@ def _transfer(location, partial: Path, have: int, size: int, progress, cancel, t
         reason = getattr(exc, "reason", exc)
         said = (f"the download of {location} was interrupted after {got} of {size} bytes "
                 f"({type(exc).__name__}: {reason}); the partial file is kept and the next try resumes it")
-        if getattr(exc, "strata_destination", False):     # the .part cannot be written (a full disk, no permission): at once, as before
+        if getattr(exc, "nostroma_destination", False):     # the .part cannot be written (a full disk, no permission): at once, as before
             said = no_room_words(exc, partial, got, size, what, location) or said     # full / quota / read-only: in plain words
             raise TransferError(said, resumable=True) from None
         raise Interrupted(said, resumable=True) from None

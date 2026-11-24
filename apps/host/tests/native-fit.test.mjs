@@ -64,7 +64,7 @@ test('the draft layer (MTP) counts about 1 GB of the card', () => {
 const v = (sourceFamily, model) => ({ sourceFamily, model, id: sourceFamily + '-' + model });
 const all = [v('qwen', 'Q2_0'), v('gyro', 'Gyro-S'), v('gyro', 'Gyro-M'), v('swift', 'IQ2_XS'), v('qwen', 'IQ3_XXS'), v('qwen', 'IQ3_S'), v('unsloth', 'UD-Q4_K_XL')];
 
-test('the page shows the own pick of the engine for this PC first (the same one strata launch prints), per memory tier', () => {
+test('the page shows the own pick of the engine for this PC first (the same one nostroma launch prints), per memory tier', () => {
   const names = rows => rows.map(x => x.v.model + (x.r.note === PICK_NOTE ? '*' : x.r.note === OTHER_NOTE ? '+' : ''));
   assert.deepEqual(names(recommendedVersions(all)), ['Gyro-S', 'IQ2_XS', 'IQ3_S', 'UD-Q4_K_XL'], 'no pick: the fixed list');
   const t40 = { family: 'swift', model: 'IQ2_XS', why: '40 GB tier: Swift 1.5 IQ2_XS; Gyro-M (35 GB) is the other choice there' };
@@ -75,8 +75,8 @@ test('the page shows the own pick of the engine for this PC first (the same one 
   assert.deepEqual(names(recommendedVersions(all, { family: null, model: null })), ['Gyro-S', 'IQ2_XS', 'IQ3_S', 'UD-Q4_K_XL']);
 });
 
-test('the tiers of the engine are 40 GB Swift IQ2_XS, 48 GB IQ3_XXS, 64 GB IQ3_S in both Python places the page and strata launch read', async () => {
-  for (const file of ['../../../setup.py', '../../../tools/strata_mcp.py']) {
+test('the tiers of the engine are 40 GB Swift IQ2_XS, 48 GB IQ3_XXS, 64 GB IQ3_S in both Python places the page and nostroma launch read', async () => {
+  for (const file of ['../../../setup.py', '../../../tools/nostroma_mcp.py']) {
     const text = await readFile(new URL(file, import.meta.url), 'utf8');
     const m = /^MEMORY_TIERS\s*=\s*(.*)$/m.exec(text);
     assert.ok(m, file);

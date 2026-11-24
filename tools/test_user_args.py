@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tools"))
 import setup  # noqa: E402
-import strata_mcp  # noqa: E402
+import nostroma_mcp  # noqa: E402
 from serve import runconfig  # noqa: E402
 from serve.server import engine_args  # noqa: E402
 from nostroma_control import tune_apply, user_args  # noqa: E402
@@ -70,21 +70,21 @@ class SetupRerun(unittest.TestCase):
     def test_3216_control_vector_arguments_survive_a_load(self):
         first = self.first()
         old = {**first, "args": first["args"] + CVEC, "args_written": first["args"]}      # typed into the JSON editor
-        code, out, cfg, _ = self.run_setup("--context", "131072", configs=[("strata-q2_0.json", old)])
+        code, out, cfg, _ = self.run_setup("--context", "131072", configs=[("nostroma-q2_0.json", old)])
         self.assertEqual(code, 0, out)
         a = cfg["args"]
         self.assertEqual(a[a.index("--control-vector-scaled"):][:9], CVEC)
         self.assertEqual(value(a, "--max-context"), "131072")                              # setup's own choice still applies
         self.assertEqual(cfg["user_args"], CVEC)
         # the second Load: the options are in user_args, so they stay
-        code, out, again, _ = self.run_setup("--context", "65536", configs=[("strata-q2_0.json", cfg)])
+        code, out, again, _ = self.run_setup("--context", "65536", configs=[("nostroma-q2_0.json", cfg)])
         self.assertEqual(again["user_args"], CVEC)
         self.assertEqual(value(again["args"], "--cvec-mode"), "project")
 
     def test_3216_a_config_without_args_written_keeps_them_too(self):
         first = self.first()
         old = {**first, "args": first["args"] + CVEC}                                      # 0.2.0-beta: no copy of what was written
-        code, out, cfg, _ = self.run_setup("--context", "131072", configs=[("strata-q2_0.json", old)])
+        code, out, cfg, _ = self.run_setup("--context", "131072", configs=[("nostroma-q2_0.json", old)])
         self.assertEqual(code, 0, out)
         self.assertEqual(cfg["user_args"], CVEC)
         self.assertEqual(cfg["args"][-len(CVEC):], CVEC)
@@ -96,7 +96,7 @@ class SetupRerun(unittest.TestCase):
         edited[edited.index("--vram-reserve-mib") + 1] = "0"
         for old in ({**first, "args": edited, "args_written": written},                    # with the copy of what was written
                     {**first, "args": edited}):                                           # a 0.2.0-beta file
-            code, out, cfg, _ = self.run_setup("--context", "131072", configs=[("strata-q2_0.json", old)])
+            code, out, cfg, _ = self.run_setup("--context", "131072", configs=[("nostroma-q2_0.json", old)])
             self.assertEqual(code, 0, out)
             self.assertEqual(value(cfg["args"], "--vram-reserve-mib"), "0")
             self.assertEqual(cfg["user_args"], ["--vram-reserve-mib", "0"])
@@ -107,20 +107,20 @@ class SetupRerun(unittest.TestCase):
         for mib in ("1024", "256"):
             edited = [*written]
             edited[edited.index("--vram-reserve-mib") + 1] = mib
-            code, out, cfg, _ = self.run_setup("--context", "131072", configs=[("strata-q2_0.json", {**first, "args": edited, "args_written": written})])
+            code, out, cfg, _ = self.run_setup("--context", "131072", configs=[("nostroma-q2_0.json", {**first, "args": edited, "args_written": written})])
             self.assertEqual(value(cfg["args"], "--vram-reserve-mib"), mib)
 
     def test_the_vision_default_is_not_taken_for_a_choice(self):
         first = self.first()                                                               # pictures on the GPU write 700 themselves
         self.assertEqual(value(first["args"], "--vram-reserve-mib"), "700")
-        code, out, cfg, _ = self.run_setup("--context", "131072", "--vision", "cpu", configs=[("strata-q2_0.json", first)])
+        code, out, cfg, _ = self.run_setup("--context", "131072", "--vision", "cpu", configs=[("nostroma-q2_0.json", first)])
         self.assertNotIn("user_args", cfg)
         self.assertNotIn("--vram-reserve-mib", cfg["args"])                                # the CPU reader needs no reserve
 
     def test_an_option_given_on_the_command_line_wins_and_is_kept(self):
         first = self.first()
         old = {**first, "args": first["args"] + ["--vram-reserve-mib", "0"], "user_args": ["--vram-reserve-mib", "0"]}
-        code, out, cfg, _ = self.run_setup("--context", "131072", "--vram-reserve-mib", "256", configs=[("strata-q2_0.json", old)])
+        code, out, cfg, _ = self.run_setup("--context", "131072", "--vram-reserve-mib", "256", configs=[("nostroma-q2_0.json", old)])
         self.assertEqual(code, 0, out)
         self.assertEqual(cfg["user_args"], ["--vram-reserve-mib", "256"])
         self.assertEqual(value(cfg["args"], "--vram-reserve-mib"), "256")
@@ -131,7 +131,7 @@ class SetupRerun(unittest.TestCase):
 
     def test_setup_writes_args_written_and_a_rerun_with_no_edit_makes_no_user_args(self):
         first = self.first()
-        code, out, cfg, _ = self.run_setup("--context", "131072", configs=[("strata-q2_0.json", {**first, "args_written": first["args"]})])
+        code, out, cfg, _ = self.run_setup("--context", "131072", configs=[("nostroma-q2_0.json", {**first, "args_written": first["args"]})])
         self.assertNotIn("user_args", cfg)
 
 
@@ -170,7 +170,7 @@ class DisplayCards(unittest.TestCase):
 
     def test_nvidia_by_nvidia_smi(self):
         gpus = [{"vendor": "nvidia", "index": 0}, {"vendor": "nvidia", "index": 1}, {"vendor": "nvidia", "index": 2}]
-        strata_mcp.mark_display(gpus, {0: False, 1: True}, [])
+        nostroma_mcp.mark_display(gpus, {0: False, 1: True}, [])
         self.assertIs(gpus[0]["drives_display"], False)
         self.assertIs(gpus[1]["drives_display"], True)
         self.assertNotIn("drives_display", gpus[2])                                        # not told: unknown
@@ -178,13 +178,13 @@ class DisplayCards(unittest.TestCase):
     def test_amd_by_the_windows_adapter_with_a_desktop(self):
         amd = {"vendor": "amd", "index": 1, "pci_id": 0x744C}
         gpus = [{"vendor": "amd", "index": 0, "pci_id": 0x164E}, amd]
-        strata_mcp.mark_display(gpus, {}, ["PCI\\VEN_1002&DEV_164E&SUBSYS_1"])
+        nostroma_mcp.mark_display(gpus, {}, ["PCI\\VEN_1002&DEV_164E&SUBSYS_1"])
         self.assertIs(gpus[0]["drives_display"], True)
         self.assertIs(amd["drives_display"], False)
         twins = [{"vendor": "amd", "pci_id": 0x744C}, {"vendor": "amd", "pci_id": 0x744C}]
-        strata_mcp.mark_display(twins, {}, ["PCI\\VEN_1002&DEV_744C"])
+        nostroma_mcp.mark_display(twins, {}, ["PCI\\VEN_1002&DEV_744C"])
         self.assertNotIn("drives_display", twins[0])                                       # two of one model: not told apart
-        strata_mcp.mark_display(gpus[:1] + [{"vendor": "amd", "pci_id": 0x1}], {}, [])
+        nostroma_mcp.mark_display(gpus[:1] + [{"vendor": "amd", "pci_id": 0x1}], {}, [])
         self.assertTrue(True)
 
 

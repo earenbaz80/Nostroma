@@ -2,12 +2,12 @@
 /**
  * AGENT-LOST end to end: a long single-file write through the real agent bridge, the real Harness and a real engine.
  *
- *   STRATA_HARNESS_DIR=<harness folder> node scripts/agent-lost-e2e.mjs [pagoda|long|cut ...]
+ *   NOSTROMA_HARNESS_DIR=<harness folder> node scripts/agent-lost-e2e.mjs [pagoda|long|cut ...]
  *
  * Scenarios (default: all)
  *   pagoda  the owner's own prompt ("Write me a 100 voxel pagoda in one html file with garden."), thinking Medium, bypass mode
  *   long    a deterministic long write: one file of N numbered lines (E2E_LINES, default 1800, about 22K tokens), thinking Off
- *   mcp     Strata's own tool loop (serve runs an MCP tool itself): a call that finishes, and a call the reply is cut inside
+ *   mcp     Nostroma's own tool loop (serve runs an MCP tool itself): a call that finishes, and a call the reply is cut inside
  *   raw     the model server alone: a reply cut inside a tool call, as the client receives it
  *   cut     the same long write with the Harness told a small window (E2E_CUT_WINDOW, default 24000), so the reply budget is
  *           about 7K tokens and the reply is cut inside the tool call: the turn must say so in words and the agent must carry on
@@ -15,7 +15,7 @@
  * A model server that is already running is used when E2E_BASE_URL is set (nothing is started or stopped). Otherwise this
  * starts serve/server.py as its own child with the engine named below and stops it by PID.
  *
- * Environment: E2E_ENGINE (strata executable), E2E_PACK, E2E_GGUF1, E2E_GGUF2, E2E_MTP, E2E_PROFILE, E2E_LIB (library folder),
+ * Environment: E2E_ENGINE (nostroma executable), E2E_PACK, E2E_GGUF1, E2E_GGUF2, E2E_MTP, E2E_PROFILE, E2E_LIB (library folder),
  * E2E_PORT (18590), E2E_WINDOW (65536), E2E_OUT (result folder), E2E_PYTHON.
  *
  * It prints one table and writes <E2E_OUT>/result.json with the frames summary of each scenario.
@@ -34,7 +34,7 @@ const PORT = Number(env('E2E_PORT', '18590'));
 const WINDOW = Number(env('E2E_WINDOW', '65536'));
 const EXISTING = process.env.E2E_BASE_URL ?? '';
 const PYTHON = env('E2E_PYTHON', 'python3');
-const OUT = env('E2E_OUT', mkdtempSync(join(tmpdir(), 'strata-agent-lost-')));
+const OUT = env('E2E_OUT', mkdtempSync(join(tmpdir(), 'nostroma-agent-lost-')));
 const LINES = Number(env('E2E_LINES', '1100'));
 const REPEAT = Number(env('E2E_REPEAT', '1'));
 const TURN_S = Number(env('E2E_TURN_S', '900'));
@@ -42,7 +42,7 @@ const wanted = process.argv.slice(2);
 const want = id => wanted.length === 0 || wanted.includes(id);
 mkdirSync(OUT, { recursive: true });
 
-if (!envVar('HARNESS_DIR')) { console.error('STRATA_HARNESS_DIR is not set'); process.exit(2); }
+if (!envVar('HARNESS_DIR')) { console.error('NOSTROMA_HARNESS_DIR is not set'); process.exit(2); }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 let server = null, bridge = null;
@@ -62,7 +62,7 @@ if (!EXISTING) {
   const g2 = env('E2E_GGUF2', join(HOME, 'models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf'));
   const mtp = env('E2E_MTP', join(HOME, 'pr1426/mtp-rt'));
   const profile = env('E2E_PROFILE', join(HOME, 'bwm/cnt3/data/expert-profile.bin'));
-  const exe = env('E2E_ENGINE', join(HOME, 'agentlost/eng/strata'));
+  const exe = env('E2E_ENGINE', join(HOME, 'agentlost/eng/nostroma'));
   const lib = env('E2E_LIB', join(HOME, 'agentlost/eng'));
   for (const f of [pack, g1, g2, mtp, exe]) if (!existsSync(f)) { console.error(`missing: ${f}`); process.exit(2); }
   const config = join(OUT, 'server.json');
@@ -72,11 +72,11 @@ if (!EXISTING) {
       ...(process.env.E2E_ENGINE_ARGS ? process.env.E2E_ENGINE_ARGS.split(' ').filter(Boolean) : [])],
     cwd: REPO, tokenizer: join(pack, 'tokenizer'), model_name: 'qwen3.8-flash-next-iq3_s', log: join(OUT, 'engine.log'), lib_dirs: [lib], port: PORT, gpu: 0,
     fit_max_tokens: true,
-    // Strata's own tool loop (serve/server.py run_with_mcp): one small MCP server, offered only to requests that ask for it (strata_mcp).
+    // Nostroma's own tool loop (serve/server.py run_with_mcp): one small MCP server, offered only to requests that ask for it (nostroma_mcp).
     mcp_servers: { fake: { command: PYTHON, args: [join(REPO, 'serve', 'mcp_fake_server.py')] } },
   }, null, 2));
-  server = spawn(PYTHON, ['serve/server.py', '--engine', 'strata', '--config', config, '--port', String(PORT), '--no-api-key', '--ready-file', join(OUT, 'ready.json')], {
-    cwd: REPO, env: { ...process.env, LD_LIBRARY_PATH: `${lib}:${process.env.LD_LIBRARY_PATH ?? ''}`, STRATA_DATA_DIR: join(OUT, 'data'), PYTHONPATH: `${join(REPO, 'tools')}:${REPO}` }, stdio: ['ignore', 'pipe', 'pipe'], detached: true,
+  server = spawn(PYTHON, ['serve/server.py', '--engine', 'nostroma', '--config', config, '--port', String(PORT), '--no-api-key', '--ready-file', join(OUT, 'ready.json')], {
+    cwd: REPO, env: { ...process.env, LD_LIBRARY_PATH: `${lib}:${process.env.LD_LIBRARY_PATH ?? ''}`, NOSTROMA_DATA_DIR: join(OUT, 'data'), PYTHONPATH: `${join(REPO, 'tools')}:${REPO}` }, stdio: ['ignore', 'pipe', 'pipe'], detached: true,
   });
   const sink = [];
   server.stdout.on('data', d => sink.push(String(d)));
@@ -160,13 +160,13 @@ if (want('raw')) {
 }
 
 if (want('mcp')) {
-  // Strata's own tool loop: the server runs the MCP tool itself. A call that finishes is run; a call the reply is cut inside is announced and never run.
+  // Nostroma's own tool loop: the server runs the MCP tool itself. A call that finishes is run; a call the reply is cut inside is announced and never run.
   const ask = async (content, max_tokens) => {
     const res = await fetch(`${base}/v1/chat/completions`, { method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ model, stream: true, strata_mcp: true, max_tokens, temperature: 0.6, chat_template_kwargs: { enable_thinking: false }, messages: [{ role: 'user', content }] }) });
+      body: JSON.stringify({ model, stream: true, nostroma_mcp: true, max_tokens, temperature: 0.6, chat_template_kwargs: { enable_thinking: false }, messages: [{ role: 'user', content }] }) });
     const text = await res.text();
     const events = text.split(String.fromCharCode(10)).filter(l => l.startsWith('data: {')).map(l => JSON.parse(l.slice(6)));
-    const mcp = events.map(e => e.strata_mcp).filter(Boolean);
+    const mcp = events.map(e => e.nostroma_mcp).filter(Boolean);
     const finish = events.flatMap(e => e.choices ?? []).map(c => c.finish_reason).filter(Boolean).at(-1);
     const said = events.flatMap(e => e.choices ?? []).map(c => c.delta?.content ?? '').join('');
     return { mcp, finish, said };

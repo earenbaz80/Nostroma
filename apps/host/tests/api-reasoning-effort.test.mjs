@@ -14,7 +14,7 @@ import {ROOMY_HOST} from './helpers/hardware.mjs';
 const choices={Off:'none',Low:'low',Medium:'medium',High:'high',Max:'high'};
 const history=[{role:'user',content:'Earlier question'},{role:'assistant',content:'Earlier answer'}];
 async function fixture(t,options={}){
- const mock=await createMockModelApi(),directory=mkdtempSync(join(tmpdir(),'strata-api-effort-'));
+ const mock=await createMockModelApi(),directory=mkdtempSync(join(tmpdir(),'nostroma-api-effort-'));
  t.after(async()=>{await mock.close();rmSync(directory,{recursive:true,force:true});});
  const probe=createVisionProbe(),service=createModelProviders({directory,knownThinks:(c,id)=>probe.knownThinks(c,id)});
  const connection=service.save({kind:'custom',name:'Fixture',baseUrl:mock.baseUrl,protocol:'openai-chat',apiKey:'fixture-key',models:[{id:'mock-reasoning',reasoning:true}],...options}).connections[0];
@@ -70,7 +70,7 @@ test('Responses and Anthropic retain their existing payloads even for reasoning 
 });
 async function freePort(){const s=createServer();await new Promise(r=>s.listen(0,'127.0.0.1',r));const p=s.address().port;await new Promise(r=>s.close(r));return p;}
 test('host forwards incoming composer choices using saved and probed support without trusting client capabilities',{timeout:30000},async t=>{
- const mock=await createMockModelApi(),home=mkdtempSync(join(tmpdir(),'strata-api-effort-host-'));
+ const mock=await createMockModelApi(),home=mkdtempSync(join(tmpdir(),'nostroma-api-effort-host-'));
  let child,exited;
  t.after(async()=>{if(child&&child.exitCode===null){child.kill();await exited;}await mock.close();rmSync(home,{recursive:true,force:true,maxRetries:3});});
  mkdirSync(join(home,'data'));writeFileSync(join(home,'spy.log'),'');
@@ -78,7 +78,7 @@ test('host forwards incoming composer choices using saved and probed support wit
  const models=[{id:'mock-chat',reasoning:true},{id:'mock-reasoning',reasoning:null},{id:'plain',reasoning:false},{id:'unknown',reasoning:null}];
  writeFileSync(join(home,'data','model-providers.json'),JSON.stringify([{id:'fixture',kind:'custom',name:'Fixture',baseUrl:mock.baseUrl,protocol:'openai-chat',apiKey:'fixture-key',models}]));
  const port=await freePort(),base=`http://127.0.0.1:${port}`;
- const env={...process.env,STRATA_HOME:home,STRATA_MODELS_DIR:join(home,'models'),STRATA_WORKSPACE:join(home,'work'),STRATA_SETTINGS_FILE:join(home,'settings.json'),STRATA_COMPONENTS_DIR:join(home,'components'),STRATA_CONTROL_DIR:join(home,'no-control'),STRATA_HARNESS_DIR:join(home,'no-harness'),STRATA_NATIVE_REPO:join(home,'no-repo'),STRATA_PORT:String(port),STRATA_SHARE_PORT:String(await freePort()),STRATA_TUNNEL_PORT:String(await freePort()),STRATA_BIND:'127.0.0.1',STRATA_REAL_ENGINE:'0',STRATA_TEST_HARDWARE:ROOMY_HOST,STRATA_AGENT:'off',STRATA_NO_ACQUIRE:'1',ACQUIRE_SPY_LOG:join(home,'spy.log')};
+ const env={...process.env,NOSTROMA_HOME:home,NOSTROMA_MODELS_DIR:join(home,'models'),NOSTROMA_WORKSPACE:join(home,'work'),NOSTROMA_SETTINGS_FILE:join(home,'settings.json'),NOSTROMA_COMPONENTS_DIR:join(home,'components'),NOSTROMA_CONTROL_DIR:join(home,'no-control'),NOSTROMA_HARNESS_DIR:join(home,'no-harness'),NOSTROMA_NATIVE_REPO:join(home,'no-repo'),NOSTROMA_PORT:String(port),NOSTROMA_SHARE_PORT:String(await freePort()),NOSTROMA_TUNNEL_PORT:String(await freePort()),NOSTROMA_BIND:'127.0.0.1',NOSTROMA_REAL_ENGINE:'0',NOSTROMA_TEST_HARDWARE:ROOMY_HOST,NOSTROMA_AGENT:'off',NOSTROMA_NO_ACQUIRE:'1',ACQUIRE_SPY_LOG:join(home,'spy.log')};
  child=spawn(process.execPath,['--import','./tests/helpers/acquire-spy.mjs','server/index.mjs'],{cwd:join(import.meta.dirname,'..'),windowsHide:true,stdio:'ignore',env});
  exited=once(child,'exit');
  let up=false;for(let n=0;n<100&&!up;n++){try{up=(await fetch(base+'/api/health')).ok;}catch{}if(!up)await new Promise(r=>setTimeout(r,100));}assert.ok(up,'fixture host started');

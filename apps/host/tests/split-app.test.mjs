@@ -23,29 +23,29 @@ const DFLASH2_PLAN = { ok: true, split: false, choice: 'dflash2', drafter: 'dfla
  * (it may write options.outPath), `installFails` makes the installer's MCP tool fail, `startFails` fails the first N engine starts.
  */
 function fixture({ plan, split = null, installFails = false, startFails = 0, metrics = {}, config = {} } = {}) {
-  const root = mkdtempSync(join(tmpdir(), 'strata-splitapp-test-'));
+  const root = mkdtempSync(join(tmpdir(), 'nostroma-splitapp-test-'));
   const install = join(root, 'install'), data = join(root, 'host-data'), home = join(root, 'home'), modelsDir = join(home, 'models');
   for (const d of [install, data, modelsDir]) mkdirSync(d, { recursive: true });
-  const earlier = process.env.STRATA_INSTALL_DIR;
-  process.env.STRATA_INSTALL_DIR = install;
-  const dataFolder = join(root, 'Strata-data'), modelFolder = join(dataFolder, 'models', 'UD-Q4_K_XL');
+  const earlier = process.env.NOSTROMA_INSTALL_DIR;
+  process.env.NOSTROMA_INSTALL_DIR = install;
+  const dataFolder = join(root, 'Nostroma-data'), modelFolder = join(dataFolder, 'models', 'UD-Q4_K_XL');
   const gguf = join(modelFolder, 'Qwen3.8-Flash-Next-UD-Q4_K_XL-00001-of-00002.gguf');
   mkdirSync(modelFolder, { recursive: true });
   writeFileSync(gguf, 'GGUF'); writeFileSync(gguf.replace('00001', '00002'), 'GGUF');
   const pack = join(dataFolder, 'packs', 'ud_q4_k_xl'), mtp = join(dataFolder, 'mtp', 'rt');
   mkdirSync(join(pack, 'tokenizer'), { recursive: true });
   writeFileSync(join(pack, 'native_experts.txt'), 'x');
-  const configPath = join(install, 'strata-ud_q4_k_xl.json');
+  const configPath = join(install, 'nostroma-ud_q4_k_xl.json');
   const args = ['--pack', pack, '--native', gguf, '--ple-gguf', gguf.replace('00001', '00002'), '--mtp', mtp, '--max-context', '131072', '--kv', 'int8'];
-  writeFileSync(configPath, JSON.stringify({ exe: 'component:strata-engine', tokenizer: join(pack, 'tokenizer'), args, model_name: 'qwen3.8-flash-next-ud_q4_k_xl', port: 8080, gpu: [0, 1], ...config }));
-  writeFileSync(process.env.STRATA_SETTINGS_FILE, JSON.stringify({ data_dir: join(root, 'host-owned', 'Strata-data'), data_dir_at: 1700000000 }));
+  writeFileSync(configPath, JSON.stringify({ exe: 'component:nostroma-engine', tokenizer: join(pack, 'tokenizer'), args, model_name: 'qwen3.8-flash-next-ud_q4_k_xl', port: 8080, gpu: [0, 1], ...config }));
+  writeFileSync(process.env.NOSTROMA_SETTINGS_FILE, JSON.stringify({ data_dir: join(root, 'host-owned', 'Nostroma-data'), data_dir_at: 1700000000 }));
   const state = { installs: 0, planCalls: [], fetchCalls: [], splitCalls: [], saved: [], starts: 0, rpc: [] };
   const control = {
     control: { dir: join(root, 'control'), python: join(root, 'control', 'python', 'python') }, version: '0.2.10',
     async installedModels() {
       return { install_dir: install, models: [{ id: 'ud_q4_k_xl', name: 'qwen3.8-flash-next-ud_q4_k_xl', source_config: configPath, context_tokens: 131072, backend: 'cuda', component_status: 'present', missing: [], issue_codes: [] }] };
     },
-    async engine() { return { usable: true, backend: 'cuda', components_dir: join(root, 'c'), engine: { version: '0.1.56', platform: 'linux-x86_64', backend: 'cuda', exe: join(root, 'engine', 'strata'), root: join(root, 'engine') } }; },
+    async engine() { return { usable: true, backend: 'cuda', components_dir: join(root, 'c'), engine: { version: '0.1.56', platform: 'linux-x86_64', backend: 'cuda', exe: join(root, 'engine', 'nostroma'), root: join(root, 'engine') } }; },
     async draftingPlan(options) { state.planCalls.push(options); return typeof plan === 'function' ? plan(options, state) : plan; },
     async draftingFetch(options) { state.fetchCalls.push(options); return { ok: true, event: 'result', pack: null, skipped: false }; },
     async splitEngine(options) {
@@ -62,7 +62,7 @@ function fixture({ plan, split = null, installFails = false, startFails = 0, met
     contexts: [32768, 131072], recommendation: { family: 'qwen', model: 'UD-Q4_K_XL', context: 131072 }, context_note: '' };
   const hardware = { ram_gb: 256, cpu: { name: 'cpu', cores: 32 }, engine_vendor: 'nvidia', gpus: [0, 1].map(index => ({ index, name: 'NVIDIA RTX A6000', vendor: 'nvidia', vram_gb: 48, arch: 86, usable: true })) };
   const spawnProcess = (command, argv) => {
-    if (!String(argv[0]).endsWith('strata_mcp.py')) throw new Error('no process but the installer may be started in packaged mode: ' + command + ' ' + argv.join(' '));
+    if (!String(argv[0]).endsWith('nostroma_mcp.py')) throw new Error('no process but the installer may be started in packaged mode: ' + command + ' ' + argv.join(' '));
     const child = new EventEmitter(); child.stdout = new EventEmitter(); child.stderr = new EventEmitter(); child.exitCode = null;
     child.kill = () => { child.exitCode = 0; queueMicrotask(() => child.emit('exit', 0)); return true; };
     child.stdin = { write(line) {
@@ -70,9 +70,9 @@ function fixture({ plan, split = null, installFails = false, startFails = 0, met
       if (message.method === 'tools/call') state.rpc.push(message.params);
       let result;
       if (message.method === 'initialize') result = { protocolVersion: '2024-11-05' };
-      else if (message.method === 'tools/list') result = { tools: ['strata_models', 'strata_status', 'strata_install', 'strata_remove'].map(name => ({ name })) };
-      else if (message.params.name === 'strata_models') result = { structuredContent: catalog };
-      else if (message.params.name === 'strata_status') result = { structuredContent: { hardware, recommendation: catalog.recommendation, install: null, running: [], summary: 'x' } };
+      else if (message.method === 'tools/list') result = { tools: ['nostroma_models', 'nostroma_status', 'nostroma_install', 'nostroma_remove'].map(name => ({ name })) };
+      else if (message.params.name === 'nostroma_models') result = { structuredContent: catalog };
+      else if (message.params.name === 'nostroma_status') result = { structuredContent: { hardware, recommendation: catalog.recommendation, install: null, running: [], summary: 'x' } };
       else if (Object.keys(message.params.arguments ?? {}).length === 0) result = { structuredContent: { summary: 'Install finished', install: { running: false, exit_code: 0 } } };
       else if (message.params.arguments?.confirm) {
         if (installFails) result = { isError: true, structuredContent: { error: 'The download did not finish.' } };
@@ -85,7 +85,7 @@ function fixture({ plan, split = null, installFails = false, startFails = 0, met
   const fetcher = async url => String(url).endsWith('/metrics') ? Response.json({ engine: metrics }) : Response.json({ status: 'ok' });
   const native = createNativeControl({ control, directory: data, spawnProcess, fetcher, requests: () => [], modelsDirectory: () => modelsDir, hardwareProbe: () => [0, 1].map(index => ({ index, vram_gb: 48 })) });
   return { native, state, root, gguf, modelFolder, mtp, configPath, args,
-    cleanup: () => { if (earlier === undefined) delete process.env.STRATA_INSTALL_DIR; else process.env.STRATA_INSTALL_DIR = earlier; rmSync(root, { recursive: true, force: true }); } };
+    cleanup: () => { if (earlier === undefined) delete process.env.NOSTROMA_INSTALL_DIR; else process.env.NOSTROMA_INSTALL_DIR = earlier; rmSync(root, { recursive: true, force: true }); } };
 }
 const finish = async (native, id) => { for (let i = 0; i < 1500; i++) { const job = native.state().jobs.find(j => j.id === id); if (job.state !== 'running') return job; await new Promise(r => setTimeout(r, 10)); } throw new Error('job did not finish'); };
 const load = (f, args = {}) => f.native.operation('load', { model: 'ud_q4_k_xl', ...args });
@@ -94,7 +94,7 @@ const load = (f, args = {}) => f.native.operation('load', { model: 'ud_q4_k_xl',
 const splitAnswer = (options) => {
   const cfg = JSON.parse(readFileSync(options.configPath, 'utf8'));
   const lanes = Math.min(8, cfg.parallel ?? 6);
-  writeFileSync(options.outPath, JSON.stringify({ ...cfg, exe: '/e/strata-split-2-sm86', args: ['--native', cfg.args[cfg.args.indexOf('--native') + 1], '--batch', String(lanes)], drafting: 'mtp', split_fallback: { exe: cfg.exe, args: cfg.args, parallel: cfg.parallel }, split_engine_note: 'Using the all-cards split engine on 2 cards.' }));
+  writeFileSync(options.outPath, JSON.stringify({ ...cfg, exe: '/e/nostroma-split-2-sm86', args: ['--native', cfg.args[cfg.args.indexOf('--native') + 1], '--batch', String(lanes)], drafting: 'mtp', split_fallback: { exe: cfg.exe, args: cfg.args, parallel: cfg.parallel }, split_engine_note: 'Using the all-cards split engine on 2 cards.' }));
   return { ok: true, split: true, line: 'Using the all-cards split engine on 2 cards.', warn: false, reasons: [], cards: 2, written: options.outPath };
 };
 /** Before the layer is fetched Control says split + mtp_needed; after it, split with the layer here. */
@@ -102,7 +102,7 @@ const splitPlan = (_options, state) => state.installs === 0 ? { ...SPLIT_PLAN, m
 
 test('no drafting call of the host carries --no-split by itself, and the flag is there for the failed layer fetch', async () => {
   const calls = [];
-  const control = createControl({ control: { dir: 'C:/c', python: 'py', cli: 'strata.py' }, run: async args => { calls.push(args); return { code: 0, json: { ok: true, event: 'result', serves: true, split: false }, text: '', stderr: '' }; } });
+  const control = createControl({ control: { dir: 'C:/c', python: 'py', cli: 'nostroma.py' }, run: async args => { calls.push(args); return { code: 0, json: { ok: true, event: 'result', serves: true, split: false }, text: '', stderr: '' }; } });
   await control.draftingPlan({ mode: 'auto' });
   await control.draftingPlan({ configPath: 'C:/w/cfg.json', mode: 'auto', family: 'unsloth', dataDir: 'C:/d' });
   await control.draftingFetch({ configPath: 'C:/w/cfg.json', mode: 'auto' });
@@ -118,7 +118,7 @@ test('no drafting call of the host carries --no-split by itself, and the flag is
 
 test('--engines-unloading is on the plan and the fetch only when the host asks for it', async () => {
   const calls = [];
-  const control = createControl({ control: { dir: 'C:/c', python: 'py', cli: 'strata.py' }, run: async args => { calls.push(args); return { code: 0, json: { ok: true, event: 'result', serves: true, split: false }, text: '', stderr: '' }; } });
+  const control = createControl({ control: { dir: 'C:/c', python: 'py', cli: 'nostroma.py' }, run: async args => { calls.push(args); return { code: 0, json: { ok: true, event: 'result', serves: true, split: false }, text: '', stderr: '' }; } });
   await control.draftingPlan({ configPath: 'C:/w/cfg.json', mode: 'auto' });
   await control.draftingPlan({ configPath: 'C:/w/cfg.json', mode: 'auto', unloading: true });
   await control.draftingFetch({ configPath: 'C:/w/cfg.json', mode: 'auto', unloading: true });
@@ -172,7 +172,7 @@ test('Auto on two cards: the MTP draft layer is fetched through the installer wi
     assert.ok(f.state.planCalls.length >= 2);
     assert.ok(f.state.planCalls.every(c => c.noSplit !== true), 'the host never asks without the split here');
     // the layer: one installer call with drafter mtp, the model folder, and nothing that names a download of the model itself
-    const real = f.state.rpc.filter(p => p.name === 'strata_install' && p.arguments?.confirm === true);
+    const real = f.state.rpc.filter(p => p.name === 'nostroma_install' && p.arguments?.confirm === true);
     assert.equal(real.length, 1);
     assert.equal(real[0].arguments.drafter, 'mtp');
     assert.equal(real[0].arguments.gguf_dir, dirname(f.gguf), 'the model\'s files folder, so the model is never fetched again');
@@ -184,7 +184,7 @@ test('Auto on two cards: the MTP draft layer is fetched through the installer wi
     assert.equal(f.state.splitCalls[0].input.host, '127.0.0.1');
     assert.ok(f.state.splitCalls[0].input.api_key);
     assert.equal(f.state.saved.length, 1);
-    assert.equal(f.state.saved[0].exe, '/e/strata-split-2-sm86');
+    assert.equal(f.state.saved[0].exe, '/e/nostroma-split-2-sm86');
     assert.equal(f.state.saved[0].args[f.state.saved[0].args.indexOf('--batch') + 1], '4');
     assert.equal(f.state.saved[0].drafting, 'mtp');
     assert.equal(f.state.saved[0].split_fallback.parallel, 4, 'the server\'s fallback keeps the app\'s slots');
@@ -201,9 +201,9 @@ test('the layer is already on disk: no installer call, still the split', async (
     await f.native.refresh(true);
     const job = await finish(f.native, load(f).id);
     assert.equal(job.state, 'done', job.error);
-    assert.equal(f.state.rpc.filter(p => p.name === 'strata_install').length, 0);
+    assert.equal(f.state.rpc.filter(p => p.name === 'nostroma_install').length, 0);
     assert.equal(f.state.splitCalls.length, 1);
-    assert.equal(f.state.saved[0].exe, '/e/strata-split-2-sm86');
+    assert.equal(f.state.saved[0].exe, '/e/nostroma-split-2-sm86');
   } finally { await f.native.close(); f.cleanup(); }
 });
 
@@ -214,11 +214,11 @@ test('a person\'s DFlash2: the plan says layer split, DFlash2 is fetched as befo
     const job = await finish(f.native, load(f, { values: { drafting: 'dflash2' } }).id);
     assert.equal(job.state, 'done', job.error);
     assert.equal(f.state.splitCalls.length, 0);
-    assert.equal(f.state.rpc.filter(p => p.name === 'strata_install').length, 0, 'no draft layer download');
+    assert.equal(f.state.rpc.filter(p => p.name === 'nostroma_install').length, 0, 'no draft layer download');
     assert.equal(f.state.fetchCalls.length, 1);
     assert.equal(f.state.fetchCalls[0].mode, 'dflash2');
     assert.ok(f.state.fetchCalls[0].noSplit !== true);
-    assert.equal(f.state.saved[0].exe, 'component:strata-engine');
+    assert.equal(f.state.saved[0].exe, 'component:nostroma-engine');
     assert.equal(f.state.saved[0].parallel, undefined, 'DFlash2 answers one request at a time');
   } finally { await f.native.close(); f.cleanup(); }
 });
@@ -231,7 +231,7 @@ test('Off keeps the layer split and the split engine is not asked', async () => 
     assert.equal(job.state, 'done', job.error);
     assert.equal(f.state.splitCalls.length, 0);
     assert.ok(!f.state.saved[0].args.includes('--mtp'));
-    assert.equal(f.state.saved[0].exe, 'component:strata-engine');
+    assert.equal(f.state.saved[0].exe, 'component:nostroma-engine');
   } finally { await f.native.close(); f.cleanup(); }
 });
 
@@ -251,7 +251,7 @@ test('the draft layer for the split cannot be downloaded: one plain note, the pl
     assert.equal(f.state.fetchCalls.length, 1, 'the DFlash2 drafter is the fallback fetch');
     assert.equal(f.state.fetchCalls[0].noSplit, true, 'and Control is told, so it does not plan the split\'s layer again');
     assert.equal(f.state.saved.length, 1);
-    assert.equal(f.state.saved[0].exe, 'component:strata-engine');
+    assert.equal(f.state.saved[0].exe, 'component:nostroma-engine');
     assert.equal(f.native.state().instances[0].status, 'ready');
   } finally { await f.native.close(); f.cleanup(); }
 });
@@ -263,7 +263,7 @@ test('a plain Auto restart with no draft layer on disk does not download it and 
     await f.native.refresh(true);
     const job = await finish(f.native, load(f).id);
     assert.equal(job.state, 'done', job.error);
-    assert.equal(f.state.rpc.filter(p => p.name === 'strata_install').length, 0, 'a restart never downloads');
+    assert.equal(f.state.rpc.filter(p => p.name === 'nostroma_install').length, 0, 'a restart never downloads');
     assert.equal(f.state.saved.length, 1);
   } finally { await f.native.close(); f.cleanup(); }
 });
@@ -275,7 +275,7 @@ test('the split engine says no (a rule Control knows: engine package, RAM, conte
     const job = await finish(f.native, load(f).id);
     assert.equal(job.state, 'done', job.error);
     assert.equal(f.state.splitCalls.length, 1);
-    assert.equal(f.state.saved[0].exe, 'component:strata-engine');
+    assert.equal(f.state.saved[0].exe, 'component:nostroma-engine');
     assert.equal(f.state.saved[0].parallel, 4);
     assert.equal(f.native.state().instances[0].splitNote, undefined);
   } finally { await f.native.close(); f.cleanup(); }
@@ -287,7 +287,7 @@ test('Control cannot be asked about the split: the layer split starts as it was'
     await f.native.refresh(true);
     const job = await finish(f.native, load(f).id);
     assert.equal(job.state, 'done', job.error);
-    assert.equal(f.state.saved[0].exe, 'component:strata-engine');
+    assert.equal(f.state.saved[0].exe, 'component:nostroma-engine');
   } finally { await f.native.close(); f.cleanup(); }
 });
 
@@ -310,8 +310,8 @@ test('the second try after a failed start is never the split: one request at a t
     const job = await finish(f.native, load(f).id);
     assert.equal(job.state, 'done', job.error);
     assert.equal(f.state.saved.length, 2);
-    assert.equal(f.state.saved[0].exe, '/e/strata-split-2-sm86');
-    assert.equal(f.state.saved[1].exe, 'component:strata-engine');
+    assert.equal(f.state.saved[0].exe, '/e/nostroma-split-2-sm86');
+    assert.equal(f.state.saved[1].exe, 'component:nostroma-engine');
     assert.equal(f.state.saved[1].parallel, undefined);
     assert.equal(f.state.splitCalls.length, 1, 'Control was asked once');
     assert.equal(f.native.state().instances[0].splitNote, undefined, 'the line that said the split would run is gone');

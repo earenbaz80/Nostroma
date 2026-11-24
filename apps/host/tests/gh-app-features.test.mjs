@@ -78,7 +78,7 @@ test('the readings strip lists only what this PC can read and the Settings has t
 });
 
 test('shell prefs: defaults, a valid port, automatic, a refused port, the tray, the language', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'strata-shell-prefs-'));
+  const dir = mkdtempSync(join(tmpdir(), 'nostroma-shell-prefs-'));
   try {
     const file = join(dir, 'sub', 'shell-prefs.json');
     assert.deepEqual(readShellPrefs(file), DEFAULTS);
@@ -101,9 +101,9 @@ test('the busy-port notice and the shell notifier come only from the shell', asy
   assert.equal(parsePortNotice('busy:x:1'), null);
   assert.equal(parsePortNotice(undefined), null);
   assert.equal(createShellNotifier({ env: {} }), null, 'a browser or a source checkout has no shell');
-  assert.equal(createShellNotifier({ env: { STRATA_SHELL_BRIDGE: 'http://example.com:1', STRATA_SHELL_TOKEN: 't' } }), null, 'only a loopback bridge');
+  assert.equal(createShellNotifier({ env: { NOSTROMA_SHELL_BRIDGE: 'http://example.com:1', NOSTROMA_SHELL_TOKEN: 't' } }), null, 'only a loopback bridge');
   const seen = [];
-  const notifier = createShellNotifier({ env: { STRATA_SHELL_BRIDGE: 'http://127.0.0.1:5555', STRATA_SHELL_TOKEN: 'secret' }, fetcher: async (url, init) => { seen.push([url, init]); return { ok: true, json: async () => ({ shown: true }) }; } });
+  const notifier = createShellNotifier({ env: { NOSTROMA_SHELL_BRIDGE: 'http://127.0.0.1:5555', NOSTROMA_SHELL_TOKEN: 'secret' }, fetcher: async (url, init) => { seen.push([url, init]); return { ok: true, json: async () => ({ shown: true }) }; } });
   assert.deepEqual(await notifier.notify({ title: 'Nostroma needs your answer', body: 'a & b?' }), { shown: true });
   assert.equal(seen[0][0], 'http://127.0.0.1:5555/shell/notify?title=Nostroma%20needs%20your%20answer&body=a%20%26%20b%3F');
   assert.equal(seen[0][1].headers.authorization, 'Bearer secret');
@@ -167,7 +167,7 @@ test('every new string exists in all eight languages with the same slots, and do
     /* The English string is the key, so the call keeps upstream's wording; the app swaps the
        brand on the way out (src/lib/i18n.ts), and the expected text has to be swapped too. */
     assert.equal(A.tr('Port {0} is used by another program, so Nostroma started on port {1}. Chats and settings saved on port {0} are not shown until Nostroma can use it again. Close the other program and restart Nostroma.', [47831, 51234]),
-      gh[l][busyId].replaceAll('{0}', '47831').replaceAll('{1}', '51234').replaceAll('Strata', 'Nostroma'), l);
+      gh[l][busyId].replaceAll('{0}', '47831').replaceAll('{1}', '51234').replaceAll('Nostroma', 'Nostroma'), l);
   }
   A.setTranslationLanguage('en');
 });
@@ -201,13 +201,13 @@ test('the host route for the shell: a browser has no shell, the port choice is s
   const { createServer } = await import('node:net');
   const { mkdirSync } = await import('node:fs');
   const free = async () => { const s = createServer(); await new Promise(r => s.listen(0, '127.0.0.1', r)); const p = s.address().port; await new Promise(r => s.close(r)); return p; };
-  const home = mkdtempSync(join(tmpdir(), 'strata-shell-route-'));
+  const home = mkdtempSync(join(tmpdir(), 'nostroma-shell-route-'));
   let child, exited;
   t.after(async () => { if (child && child.exitCode === null) { child.kill(); await exited; } rmSync(home, { recursive: true, force: true, maxRetries: 3 }); });
   mkdirSync(join(home, 'data'));
   const port = await free(), base = `http://127.0.0.1:${port}`;
-  const env = { ...process.env, STRATA_HOME: home, STRATA_MODELS_DIR: join(home, 'models'), STRATA_WORKSPACE: join(home, 'work'), STRATA_SETTINGS_FILE: join(home, 'settings.json'), STRATA_COMPONENTS_DIR: join(home, 'components'), STRATA_CONTROL_DIR: join(home, 'no-control'), STRATA_HARNESS_DIR: join(home, 'no-harness'), STRATA_NATIVE_REPO: join(home, 'no-repo'), STRATA_PORT: String(port), STRATA_SHARE_PORT: String(await free()), STRATA_TUNNEL_PORT: String(await free()), STRATA_BIND: '127.0.0.1', STRATA_REAL_ENGINE: '0', STRATA_AGENT: 'off', STRATA_NO_ACQUIRE: '1', STRATA_PORT_NOTICE: 'busy:47831:' + port, STRATA_TEST_LOCALE: 'de-DE', LOCALAPPDATA: join(home, 'Local'), APPDATA: join(home, 'Roaming'), XDG_DATA_HOME: join(home, 'xdg-data'), XDG_STATE_HOME: join(home, 'xdg-state'), XDG_CONFIG_HOME: join(home, 'xdg-config') };
-  delete env.STRATA_SHELL_BRIDGE; delete env.STRATA_SHELL_TOKEN;
+  const env = { ...process.env, NOSTROMA_HOME: home, NOSTROMA_MODELS_DIR: join(home, 'models'), NOSTROMA_WORKSPACE: join(home, 'work'), NOSTROMA_SETTINGS_FILE: join(home, 'settings.json'), NOSTROMA_COMPONENTS_DIR: join(home, 'components'), NOSTROMA_CONTROL_DIR: join(home, 'no-control'), NOSTROMA_HARNESS_DIR: join(home, 'no-harness'), NOSTROMA_NATIVE_REPO: join(home, 'no-repo'), NOSTROMA_PORT: String(port), NOSTROMA_SHARE_PORT: String(await free()), NOSTROMA_TUNNEL_PORT: String(await free()), NOSTROMA_BIND: '127.0.0.1', NOSTROMA_REAL_ENGINE: '0', NOSTROMA_AGENT: 'off', NOSTROMA_NO_ACQUIRE: '1', NOSTROMA_PORT_NOTICE: 'busy:47831:' + port, NOSTROMA_TEST_LOCALE: 'de-DE', LOCALAPPDATA: join(home, 'Local'), APPDATA: join(home, 'Roaming'), XDG_DATA_HOME: join(home, 'xdg-data'), XDG_STATE_HOME: join(home, 'xdg-state'), XDG_CONFIG_HOME: join(home, 'xdg-config') };
+  delete env.NOSTROMA_SHELL_BRIDGE; delete env.NOSTROMA_SHELL_TOKEN;
   child = spawn(process.execPath, ['server/index.mjs'], { cwd: join(import.meta.dirname, '..'), windowsHide: true, stdio: 'ignore', env });
   exited = once(child, 'exit');
   let up = false;

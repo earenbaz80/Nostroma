@@ -79,7 +79,7 @@ test('plain engine answers: nothing says exit codes, folders or hashes outside t
 
 test('createControl asks the same commands the Terminal runs, and none of them acquires', async () => {
   const seen = [];
-  const control = createControl({ control: { dir: '/c', python: '/p', cli: '/c/strata.py' }, env: {}, run: async (args, options) => { seen.push([args.join(' '), !!options.acquire]); return { code: 0, json: { ok: true, families: [] } }; } });
+  const control = createControl({ control: { dir: '/c', python: '/p', cli: '/c/nostroma.py' }, env: {}, run: async (args, options) => { seen.push([args.join(' '), !!options.acquire]); return { code: 0, json: { ok: true, families: [] } }; } });
   await control.engines();
   await control.useEngine({ family: 'qwen', folder: '0.1.54-linux-x86_64-cuda-cuda13' });
   await control.removeEngine({ family: 'qwen', folder: '0.1.50-linux-x86_64-cuda-cuda13' });
@@ -135,7 +135,7 @@ test('the Engine tab lists and switches, and has no update; About has the update
   assert.doesNotMatch(about, /Roll back|rollback|Restore previous engine|Previous engine available/i);
   assert.match(about, /Check for updates/);
   assert.match(about, /'update-engine'/);
-  assert.match(about, /'update-strata'/);
+  assert.match(about, /'update-nostroma'/);
 });
 
 test('the engine in use has no Delete button; every other row has Use this (when it can run here) and Delete', () => {
@@ -162,7 +162,7 @@ test('the engine catalogs: same keys and placeholders in nine languages, none st
     }
   }
   for (const [id, text] of Object.entries(en)) assert.ok(!others.has(text), `already in another catalog: ${id} ${text}`);
-  const brand = (t) => String(t).replace(/\bStrata\b/g, 'Nostroma');   // the catalogues keep upstream's wording; i18n.ts swaps it on the way out
+  const brand = (t) => String(t).replace(/\bNostroma\b/g, 'Nostroma');   // the catalogues keep upstream's wording; i18n.ts swaps it on the way out
   const known = new Set(Object.values(en).flatMap(v => [v, brand(v)]));
   for (const sentence of [
     'A model is running, so nothing was changed. Unload the model in Models, then try again.',
@@ -180,7 +180,7 @@ test('the engine catalogs: same keys and placeholders in nine languages, none st
     assert.ok(known.has(sentence), `not in the engine catalog: ${sentence}`);
     /* The catalogues hold upstream's wording (the English string is the key the interface looks up);
        the host speaks the product's own name, so the two are compared with the brand normalised. */
-    const said = [src('server/engine-library.mjs'), src('server/update-messages.mjs'), src('server/updates.mjs')].join('\n').replace(/Strata/g, 'Nostroma');
-    assert.ok(said.includes(sentence.replace(/Strata/g, 'Nostroma')), `no longer said by the host: ${sentence}`);
+    const said = [src('server/engine-library.mjs'), src('server/update-messages.mjs'), src('server/updates.mjs')].join('\n').replace(/Nostroma/g, 'Nostroma');
+    assert.ok(said.includes(sentence.replace(/Nostroma/g, 'Nostroma')), `no longer said by the host: ${sentence}`);
   }
 });

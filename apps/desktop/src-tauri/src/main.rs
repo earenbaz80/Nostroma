@@ -184,7 +184,7 @@ fn contain_app() -> bool {
                 return true;
             }
         }
-        eprintln!("[strata] could not put the app in a job object; engines are stopped by the host and their owners instead");
+        eprintln!("[nostroma] could not put the app in a job object; engines are stopped by the host and their owners instead");
         false
     }
     #[cfg(not(windows))]
@@ -224,7 +224,7 @@ fn random_token() -> String {
 fn control_dir(res: &Path) -> Option<PathBuf> {
     let dir = res.join("control");
     let python = if cfg!(windows) { dir.join("python").join("python.exe") } else { dir.join("python").join("bin").join("python3") };
-    if python.exists() && dir.join("strata.py").exists() {
+    if python.exists() && dir.join("nostroma.py").exists() {
         Some(dir)
     } else {
         None
@@ -233,9 +233,9 @@ fn control_dir(res: &Path) -> Option<PathBuf> {
 
 /// What every host start gets, packaged or self-test: acquiring is forbidden, Control is where the bundle put it.
 fn apply_runtime_policy(cmd: &mut Command, res: &Path) {
-    cmd.env("STRATA_NO_ACQUIRE", "1");
+    cmd.env("NOSTROMA_NO_ACQUIRE", "1");
     if let Some(dir) = control_dir(res) {
-        cmd.env("STRATA_CONTROL_DIR", dir);
+        cmd.env("NOSTROMA_CONTROL_DIR", dir);
     }
 }
 
@@ -257,7 +257,7 @@ fn pick_port() -> Result<u16, String> {
 /// launch starts with empty storage, as before).
 const PREFERRED_PORT: u16 = 47831;
 
-/// Set when the port the person (or the app) wanted was busy: "busy:<wanted>:<used>". The host gets it as STRATA_PORT_NOTICE and tells the
+/// Set when the port the person (or the app) wanted was busy: "busy:<wanted>:<used>". The host gets it as NOSTROMA_PORT_NOTICE and tells the
 /// person (the chats and settings saved on the page belong to the port, so a different port starts empty) (#3402).
 static PORT_NOTICE: std::sync::Mutex<Option<String>> = std::sync::Mutex::new(None);
 
@@ -467,31 +467,31 @@ fn host_command(res: &Path, port: u16, shutdown_token: &str) -> Result<Command, 
     let mut cmd = Command::new(&node);
     cmd.arg(&entry)
         .current_dir(&host_dir)
-        .env("STRATA_PORT", port.to_string())
-        .env("STRATA_DIST", &dist)
+        .env("NOSTROMA_PORT", port.to_string())
+        .env("NOSTROMA_DIST", &dist)
         .env("NODE_ENV", "production")
         // U12: a packaged build must have no success path that uses demo responses or demo
-        // metrics. `STRATA_PACKAGED` makes the host refuse to simulate; `STRATA_REAL_ENGINE` is set
+        // metrics. `NOSTROMA_PACKAGED` makes the host refuse to simulate; `NOSTROMA_REAL_ENGINE` is set
         // for the same reason, so the monitor reports `none` instead of fabricated numbers.
-        .env("STRATA_PACKAGED", "1")
-        .env("STRATA_REAL_ENGINE", "1")
+        .env("NOSTROMA_PACKAGED", "1")
+        .env("NOSTROMA_REAL_ENGINE", "1")
         // the host leaves, after stopping what this app started, when this shell is gone (killed, crashed)
-        .env("STRATA_EXIT_WITH_PARENT", "1")
+        .env("NOSTROMA_EXIT_WITH_PARENT", "1")
         // the host listens on the loopback address only, whatever the caller's environment says
-        .env("STRATA_BIND", "127.0.0.1")
-        .env("STRATA_SHUTDOWN_TOKEN", shutdown_token)
+        .env("NOSTROMA_BIND", "127.0.0.1")
+        .env("NOSTROMA_SHUTDOWN_TOKEN", shutdown_token)
         .stdin(Stdio::null())
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit());
     apply_runtime_policy(&mut cmd, res);
     hide_console(&mut cmd);
     if let Some(notice) = PORT_NOTICE.lock().unwrap().clone() {
-        cmd.env("STRATA_PORT_NOTICE", notice);
+        cmd.env("NOSTROMA_PORT_NOTICE", notice);
     }
     // A user with the Nostroma API worker on a different port sets this; unset means the worker's
     // documented loopback default.
-    if let Ok(url) = std::env::var("NOSTROMA_SERVER_URL").or_else(|_| std::env::var("STRATA_SERVER_URL")) {
-        cmd.env("NOSTROMA_SERVER_URL", &url).env("STRATA_SERVER_URL", url);
+    if let Ok(url) = std::env::var("NOSTROMA_SERVER_URL").or_else(|_| std::env::var("NOSTROMA_SERVER_URL")) {
+        cmd.env("NOSTROMA_SERVER_URL", &url).env("NOSTROMA_SERVER_URL", url);
     }
     Ok(cmd)
 }
@@ -548,7 +548,7 @@ const HOST_STOP_SECONDS: u64 = 60;
 /// Stop the App Host, and with it the engines this app started.
 ///
 /// The host stops them through Control (profiles `app-N`), then exits. Engines another client started (the
-/// Terminal's `strata runtime start`) are not touched. If the host does not finish in time it is ended, and the
+/// Terminal's `nostroma runtime start`) are not touched. If the host does not finish in time it is ended, and the
 /// engines are ended by the job object (Windows) or by their owners following the host (`--die-with-pid`).
 #[cfg(not(target_os = "linux"))]
 fn stop_host(app: &tauri::AppHandle) {
@@ -578,7 +578,7 @@ fn kill_host(app: &tauri::AppHandle) {
 /// started (the Terminal) are not touched. If it does not finish in time the process is ended.
 fn stop_host_child(child: &mut Child, port: Option<u16>, token: Option<&str>) {
     if let (Some(port), Some(token)) = (port, token) {
-        let _ = http_post(&format!("http://127.0.0.1:{port}/api/control/shutdown"), &[("x-strata-shutdown", token)]);
+        let _ = http_post(&format!("http://127.0.0.1:{port}/api/control/shutdown"), &[("x-nostroma-shutdown", token)]);
         let deadline = Instant::now() + Duration::from_secs(HOST_STOP_SECONDS);
         while Instant::now() < deadline {
             if let Ok(Some(_)) = child.try_wait() {
@@ -601,7 +601,7 @@ fn packaged_resource_dir(exe: &Path) -> Option<PathBuf> {
     if let Some(up) = dir.parent() {
         candidates.push(up.join("Resources"));
         candidates.push(up.join("lib").join("Nostroma"));
-        candidates.push(up.join("lib").join("strata-desktop"));
+        candidates.push(up.join("lib").join("nostroma-desktop"));
     }
     candidates
         .into_iter()
@@ -614,7 +614,7 @@ fn self_test_path(args: &[String]) -> Option<String> {
         if a == "--self-test" {
             return Some(
                 std::env::temp_dir()
-                    .join("strata-desktop-self-test.json")
+                    .join("nostroma-desktop-self-test.json")
                     .to_string_lossy()
                     .into_owned(),
             );
@@ -626,13 +626,13 @@ fn self_test_path(args: &[String]) -> Option<String> {
     None
 }
 
-/// Run `strata.py --version` on the bundle's own interpreter with a scrubbed environment.
+/// Run `nostroma.py --version` on the bundle's own interpreter with a scrubbed environment.
 fn control_runs(dir: &Path) -> (bool, String) {
     let python = if cfg!(windows) { dir.join("python").join("python.exe") } else { dir.join("python").join("bin").join("python3") };
     let mut cmd = Command::new(&python);
-    cmd.arg(dir.join("strata.py")).arg("--version").current_dir(dir)
+    cmd.arg(dir.join("nostroma.py")).arg("--version").current_dir(dir)
         .env_remove("PYTHONHOME").env_remove("PYTHONPATH").env_remove("VIRTUAL_ENV")
-        .env("PYTHONNOUSERSITE", "1").env("PYTHONDONTWRITEBYTECODE", "1").env("STRATA_NO_ACQUIRE", "1");
+        .env("PYTHONNOUSERSITE", "1").env("PYTHONDONTWRITEBYTECODE", "1").env("NOSTROMA_NO_ACQUIRE", "1");
     hide_console(&mut cmd);
     match cmd.output() {
         Ok(out) => {
@@ -648,13 +648,13 @@ fn control_runs(dir: &Path) -> (bool, String) {
 /// and must not create or fetch anything.
 fn control_engine_notice(dir: &Path) -> (bool, String) {
     let python = if cfg!(windows) { dir.join("python").join("python.exe") } else { dir.join("python").join("bin").join("python3") };
-    let empty = std::env::temp_dir().join(format!("strata-self-test-components-{}", std::process::id()));
+    let empty = std::env::temp_dir().join(format!("nostroma-self-test-components-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&empty);
     let mut cmd = Command::new(&python);
-    cmd.arg(dir.join("strata.py")).args(["components", "engine", "--backend", "cuda", "--output", "json"])
+    cmd.arg(dir.join("nostroma.py")).args(["components", "engine", "--backend", "cuda", "--output", "json"])
         .arg("--components-dir").arg(&empty).current_dir(dir)
         .env_remove("PYTHONHOME").env_remove("PYTHONPATH")
-        .env("PYTHONNOUSERSITE", "1").env("PYTHONDONTWRITEBYTECODE", "1").env("STRATA_NO_ACQUIRE", "1");
+        .env("PYTHONNOUSERSITE", "1").env("PYTHONDONTWRITEBYTECODE", "1").env("NOSTROMA_NO_ACQUIRE", "1");
     hide_console(&mut cmd);
     let result = match cmd.output() {
         Ok(out) => {
@@ -738,10 +738,10 @@ fn run_self_test(report_path: &str) -> i32 {
     let mut cmd = Command::new(&node);
     cmd.arg(&entry)
         .current_dir(&host_dir)
-        .env("STRATA_PORT", port.to_string())
-        .env("STRATA_DIST", &dist)
-        .env("STRATA_PACKAGED", "1")
-        .env("STRATA_REAL_ENGINE", "1")
+        .env("NOSTROMA_PORT", port.to_string())
+        .env("NOSTROMA_DIST", &dist)
+        .env("NOSTROMA_PACKAGED", "1")
+        .env("NOSTROMA_REAL_ENGINE", "1")
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null());
@@ -821,7 +821,7 @@ fn write_self_test_report(path: &str, steps: Vec<(String, bool, String)>, error:
         .collect();
     let report = serde_json::json!({
         "schemaVersion": 1,
-        "kind": "strata-desktop-self-test",
+        "kind": "nostroma-desktop-self-test",
         "carrier": "tauri",
         "ok": ok,
         "error": error,
@@ -829,7 +829,7 @@ fn write_self_test_report(path: &str, steps: Vec<(String, bool, String)>, error:
     });
     let text = serde_json::to_string_pretty(&report).unwrap_or_else(|_| "{}".into());
     if let Err(e) = std::fs::write(path, &text) {
-        eprintln!("[strata] could not write the self-test report to {path}: {e}");
+        eprintln!("[nostroma] could not write the self-test report to {path}: {e}");
     }
     println!("{text}");
     if ok {
@@ -842,7 +842,7 @@ fn write_self_test_report(path: &str, steps: Vec<(String, bool, String)>, error:
 fn main() {
     // ------------------------------------------------------------------ self-test
     //
-    // `Nostroma.app/Contents/MacOS/strata-desktop --self-test[=path]` starts the App Host from the
+    // `Nostroma.app/Contents/MacOS/nostroma-desktop --self-test[=path]` starts the App Host from the
     // *packaged resources*, waits for it to answer, checks that it serves the supplied UI, writes a
     // JSON report and exits 0/1. This is what makes the shipped artifact verifiable without a human
     // at the screen — the lesson from the Electron attempt, where a packaged app that never started
@@ -870,7 +870,7 @@ fn main() {
     // window process (`--window-child`) only shows the page. See supervisor.rs.
     #[cfg(target_os = "linux")]
     {
-        let options = supervisor::parse_args(&args, std::env::var("STRATA_UI").ok().as_deref());
+        let options = supervisor::parse_args(&args, std::env::var("NOSTROMA_UI").ok().as_deref());
         if !options.window_child {
             std::process::exit(supervisor::run(&options));
         }
@@ -916,8 +916,8 @@ fn run_embedded() {
         .manage(ShutdownToken(Mutex::new(None)))
         .setup(|app| {
             // A way to prove the safety net on a computer where the app starts fine (tests only): a panic at the place a setup error ends in.
-            if std::env::var_os("STRATA_DESKTOP_TEST_PANIC").is_some() {
-                panic!("STRATA_DESKTOP_TEST_PANIC is set: the app panics on purpose");
+            if std::env::var_os("NOSTROMA_DESKTOP_TEST_PANIC").is_some() {
+                panic!("NOSTROMA_DESKTOP_TEST_PANIC is set: the app panics on purpose");
             }
             let handle = app.handle().clone();
             // A setup error would become a panic inside Tauri ("Failed to setup app"), and with panic = "abort" a crash with no message.
@@ -1191,13 +1191,13 @@ fn pointer_buttons_up(widget: &webkit2gtk::WebView) -> bool {
 /// The script that tells the page a file drag is over the window (`state` is "enter" or "leave"); the page shows its drop box (apps/host DropZone).
 #[cfg_attr(windows, allow(dead_code))]
 fn drag_script(state: &str) -> String {
-    format!("window.dispatchEvent(new CustomEvent('strata:native-drag', {{ detail: '{state}' }}));")
+    format!("window.dispatchEvent(new CustomEvent('nostroma:native-drag', {{ detail: '{state}' }}));")
 }
 
 /// The script that tells the page which dropped files the host holds for it (`files_json` is the host's own JSON array of { id, name, type, size }).
 #[cfg_attr(windows, allow(dead_code))]
 fn drop_script(files_json: &str) -> String {
-    format!("window.dispatchEvent(new CustomEvent('strata:native-drop', {{ detail: {files_json} }}));")
+    format!("window.dispatchEvent(new CustomEvent('nostroma:native-drop', {{ detail: {files_json} }}));")
 }
 
 /// The files of one drop, by path, to the host (which reads them and keeps each for the page to fetch once); then the page is told.
@@ -1209,13 +1209,13 @@ fn hand_over_drop(window: tauri::WebviewWindow, port: u16, token: String, paths:
         let answer = http_request_body(
             "POST",
             &format!("http://127.0.0.1:{port}/api/app/drop"),
-            &[("x-strata-shutdown", token.as_str()), ("content-type", "application/json")],
+            &[("x-nostroma-shutdown", token.as_str()), ("content-type", "application/json")],
             Some(&body),
         );
         let files = match answer {
             Ok((status, text)) if status.contains(" 200") => serde_json::from_str::<serde_json::Value>(&text).ok().and_then(|v| v.get("files").cloned()),
-            Ok((status, _)) => { eprintln!("[strata] the host did not take the dropped files: {status}"); None }
-            Err(e) => { eprintln!("[strata] the dropped files could not be handed to the host: {e}"); None }
+            Ok((status, _)) => { eprintln!("[nostroma] the host did not take the dropped files: {status}"); None }
+            Err(e) => { eprintln!("[nostroma] the dropped files could not be handed to the host: {e}"); None }
         };
         let json = files.map(|f| f.to_string()).unwrap_or_else(|| "[]".to_string());
         let _ = window.eval(&drop_script(&json));
@@ -1227,11 +1227,11 @@ fn hand_over_drop(window: tauri::WebviewWindow, port: u16, token: String, paths:
 /// process dies; the shell moves to browser mode.
 #[cfg(target_os = "linux")]
 fn run_window_process() -> ! {
-    let port: u16 = std::env::var("STRATA_WINDOW_PORT").ok().and_then(|v| v.parse().ok()).unwrap_or(PREFERRED_PORT);
-    let token = std::env::var("STRATA_SHUTDOWN_TOKEN").unwrap_or_default();
+    let port: u16 = std::env::var("NOSTROMA_WINDOW_PORT").ok().and_then(|v| v.parse().ok()).unwrap_or(PREFERRED_PORT);
+    let token = std::env::var("NOSTROMA_SHUTDOWN_TOKEN").unwrap_or_default();
     // A way to prove the safety net on a computer where the window works (tests only): this process dies the way a WebKit crash does.
-    if std::env::var_os("STRATA_WINDOW_TEST_CRASH").is_some() {
-        eprintln!("[strata] STRATA_WINDOW_TEST_CRASH is set: the window process aborts on purpose.");
+    if std::env::var_os("NOSTROMA_WINDOW_TEST_CRASH").is_some() {
+        eprintln!("[nostroma] NOSTROMA_WINDOW_TEST_CRASH is set: the window process aborts on purpose.");
         std::process::abort();
     }
     // WebKitGTK aborts while it draws a COLRv1 colour emoji font (fontguard.rs, #4533): this process is told to leave that font out. Only this
@@ -1270,10 +1270,10 @@ fn run_window_process() -> ! {
                 if let Err(e) = http_request_body(
                     "POST",
                     &format!("http://127.0.0.1:{port}/api/control/ui"),
-                    &[("x-strata-shutdown", token.as_str()), ("content-type", "application/json")],
+                    &[("x-nostroma-shutdown", token.as_str()), ("content-type", "application/json")],
                     Some(&body),
                 ) {
-                    eprintln!("[strata] the app updater could not be registered with the host: {e}");
+                    eprintln!("[nostroma] the app updater could not be registered with the host: {e}");
                 }
             }
             open_window(app, port, &token)
@@ -1304,10 +1304,10 @@ mod tests {
 
     #[test]
     fn the_scripts_the_shell_sends_the_page_for_a_file_drop() {
-        assert_eq!(drag_script("enter"), "window.dispatchEvent(new CustomEvent('strata:native-drag', { detail: 'enter' }));");
+        assert_eq!(drag_script("enter"), "window.dispatchEvent(new CustomEvent('nostroma:native-drag', { detail: 'enter' }));");
         let files = r#"[{"id":"a","name":"x.png","type":"image/png","size":3}]"#;
         let script = drop_script(files);
-        assert!(script.starts_with("window.dispatchEvent(new CustomEvent('strata:native-drop', { detail: [{"));
+        assert!(script.starts_with("window.dispatchEvent(new CustomEvent('nostroma:native-drop', { detail: [{"));
         assert!(script.contains("x.png") && script.ends_with("}));"));
     }
 
@@ -1330,7 +1330,7 @@ mod tests {
     }
 
     fn scratch(name: &str) -> PathBuf {
-        let dir = std::env::temp_dir().join(format!("strata-desktop-{name}-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("nostroma-desktop-{name}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         dir
@@ -1366,8 +1366,8 @@ mod tests {
         let py = if cfg!(windows) { dir.join("python").join("python.exe") } else { dir.join("python").join("bin").join("python3") };
         std::fs::create_dir_all(py.parent().unwrap()).unwrap();
         std::fs::write(&py, b"").unwrap();
-        assert!(control_dir(&res).is_none(), "no strata.py yet");
-        std::fs::write(dir.join("strata.py"), b"").unwrap();
+        assert!(control_dir(&res).is_none(), "no nostroma.py yet");
+        std::fs::write(dir.join("nostroma.py"), b"").unwrap();
         assert_eq!(control_dir(&res), Some(dir));
         let _ = std::fs::remove_dir_all(&res);
     }
@@ -1423,9 +1423,9 @@ mod tests {
     fn packaged_resources_are_found_for_each_platform_layout() {
         let root = scratch("layout");
         for (exe_rel, res_rel) in [
-            ("Contents/MacOS/strata-desktop", "Contents/Resources"),
-            ("install/strata-desktop.exe", "install"),
-            ("usr/bin/strata-desktop", "usr/lib/Nostroma"),
+            ("Contents/MacOS/nostroma-desktop", "Contents/Resources"),
+            ("install/nostroma-desktop.exe", "install"),
+            ("usr/bin/nostroma-desktop", "usr/lib/Nostroma"),
         ] {
             let exe = root.join(exe_rel);
             let res = root.join(res_rel);
@@ -1448,19 +1448,19 @@ mod tests {
         std::fs::create_dir_all(res.join("node")).unwrap();
         std::fs::write(res.join("node").join(NODE_EXE), b"").unwrap();
         // a caller's environment must not widen the bind address: the command sets it itself
-        std::env::set_var("STRATA_BIND", "0.0.0.0");
+        std::env::set_var("NOSTROMA_BIND", "0.0.0.0");
         let cmd = host_command(&res, 47831, "s3cret").expect("a host command");
-        std::env::remove_var("STRATA_BIND");
+        std::env::remove_var("NOSTROMA_BIND");
         let env: std::collections::HashMap<String, String> = cmd
             .get_envs()
             .filter_map(|(k, v)| Some((k.to_string_lossy().into_owned(), v?.to_string_lossy().into_owned())))
             .collect();
-        assert_eq!(env.get("STRATA_BIND").map(String::as_str), Some("127.0.0.1"));
-        assert_eq!(env.get("STRATA_PORT").map(String::as_str), Some("47831"));
-        assert_eq!(env.get("STRATA_SHUTDOWN_TOKEN").map(String::as_str), Some("s3cret"));
-        assert_eq!(env.get("STRATA_PACKAGED").map(String::as_str), Some("1"));
-        assert_eq!(env.get("STRATA_NO_ACQUIRE").map(String::as_str), Some("1"));
-        assert!(env.get("STRATA_DIST").unwrap().ends_with("dist"));
+        assert_eq!(env.get("NOSTROMA_BIND").map(String::as_str), Some("127.0.0.1"));
+        assert_eq!(env.get("NOSTROMA_PORT").map(String::as_str), Some("47831"));
+        assert_eq!(env.get("NOSTROMA_SHUTDOWN_TOKEN").map(String::as_str), Some("s3cret"));
+        assert_eq!(env.get("NOSTROMA_PACKAGED").map(String::as_str), Some("1"));
+        assert_eq!(env.get("NOSTROMA_NO_ACQUIRE").map(String::as_str), Some("1"));
+        assert!(env.get("NOSTROMA_DIST").unwrap().ends_with("dist"));
         // a layout without the built UI or the host is refused in plain words
         assert!(host_command(&scratch("empty"), 1, "x").unwrap_err().contains("App Host entry is missing"));
         let _ = std::fs::remove_dir_all(&res);

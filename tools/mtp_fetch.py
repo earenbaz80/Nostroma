@@ -35,18 +35,18 @@ from nostroma_control import netpolicy, tls  # noqa: E402
 tls.install()       # #3722: the operating system's certificates
 
 # #214: a fixed commit of the checkpoint (its `sha` from https://huggingface.co/api/models/Qwen/Qwen3.8-Flash-Next
-# on 2026-09-30), so every install reads the same tensors; STRATA_MTP_REVISION overrides it (e.g. main).  When the
-# repository no longer has it, reading stops (resolve_repo) unless STRATA_ALLOW_UNPINNED=1.
+# on 2026-09-30), so every install reads the same tensors; NOSTROMA_MTP_REVISION overrides it (e.g. main).  When the
+# repository no longer has it, reading stops (resolve_repo) unless NOSTROMA_ALLOW_UNPINNED=1.
 PINNED_REVISION = "de4b8e4d43b917e7706784d8bb445c9af86a3540"
-REVISION = os.environ.get("STRATA_MTP_REVISION") or PINNED_REVISION
+REVISION = os.environ.get("NOSTROMA_MTP_REVISION") or PINNED_REVISION
 # #495: HF_ENDPOINT (a mirror, e.g. https://hf-mirror.com) serves the same revision; the SHA256 checks below still apply
 HF_ENDPOINT = (os.environ.get("HF_ENDPOINT") or "").strip().rstrip("/") or "https://huggingface.co"
 REPO = HF_ENDPOINT + "/Qwen/Qwen3.8-Flash-Next/resolve/%s/" % REVISION
 PINNED = HF_ENDPOINT + "/Qwen/Qwen3.8-Flash-Next/resolve/%s/" % PINNED_REVISION   # SHA256's revision
-# STRATA_SOURCE=modelscope (setup's --source): the same checkpoint from ModelScope.  It serves the repository's current
+# NOSTROMA_SOURCE=modelscope (setup's --source): the same checkpoint from ModelScope.  It serves the repository's current
 # files, not a pinned revision, so REPO and PINNED are one URL here: every tensor is still checked against the pinned
 # revision's SHA256 below, so a tensor that differs from it is caught, not used.
-if (os.environ.get("STRATA_SOURCE") or "").strip().lower() in ("ms", "modelscope"):
+if (os.environ.get("NOSTROMA_SOURCE") or "").strip().lower() in ("ms", "modelscope"):
     MS_ENDPOINT = (os.environ.get("MODELSCOPE_ENDPOINT") or "").strip().rstrip("/") or "https://www.modelscope.cn"
     REPO = PINNED = MS_ENDPOINT + "/models/Qwen/Qwen3.8-Flash-Next/resolve/master/"
 DTYPE_BYTES = {"BF16": 2, "F16": 2, "F32": 4, "F8_E4M3": 1, "I64": 8, "I32": 4}
@@ -151,7 +151,7 @@ def get(url, start=None, end=None, retries=6):
     for attempt in range(retries):
         try:
             used = _final(url)
-            req = urllib.request.Request(used, headers={"User-Agent": "strata-mtp-fetch"})
+            req = urllib.request.Request(used, headers={"User-Agent": "nostroma-mtp-fetch"})
             if start is not None:
                 req.add_header("Range", "bytes=%d-%d" % (start, end))
             answer = netpolicy.open_url(netpolicy.urlopen, req, say=_say_waiting,
@@ -181,7 +181,7 @@ def get(url, start=None, end=None, retries=6):
 
 class Progress:
     """One line a couple of seconds, `MTP draft layer: 1.23 / 5.04 GB (24%)`: the form of setup's own download line, so the app's
-    progress parser (tools/strata_mcp.py install_progress) shows it.  `done` counts what an earlier run already has."""
+    progress parser (tools/nostroma_mcp.py install_progress) shows it.  `done` counts what an earlier run already has."""
     LABEL = "MTP draft layer"
 
     def __init__(self, total, done=0, every=2.0, out=None):
@@ -232,9 +232,9 @@ def lock_folder(out, wait=900.0):
 
 
 def exit_with_parent():
-    """STRATA_EXIT_WITH_PARENT=1 (set by setup.py for the tools it runs): end when the process that started this one ends, so a cancelled
+    """NOSTROMA_EXIT_WITH_PARENT=1 (set by setup.py for the tools it runs): end when the process that started this one ends, so a cancelled
     or killed setup does not leave a download running on its own (#3257: taskkill /T does not reach a grandchild whose parent is gone)."""
-    if (os.environ.get("STRATA_EXIT_WITH_PARENT") or "").strip() != "1":
+    if (os.environ.get("NOSTROMA_EXIT_WITH_PARENT") or "").strip() != "1":
         return
     parent = os.getppid()
     if parent <= 1:
@@ -260,9 +260,9 @@ def exit_with_parent():
 
 
 def connections():
-    """Ranges read at once: STRATA_DL_CONNECTIONS (the setting of setup's downloads), else 16; 1 reads them one by one."""
+    """Ranges read at once: NOSTROMA_DL_CONNECTIONS (the setting of setup's downloads), else 16; 1 reads them one by one."""
     try:
-        n = int((os.environ.get("STRATA_DL_CONNECTIONS") or "").strip() or 16)
+        n = int((os.environ.get("NOSTROMA_DL_CONNECTIONS") or "").strip() or 16)
     except ValueError:
         n = 16
     return max(1, min(n, 32))
@@ -323,17 +323,17 @@ def sha256_of(path):
 
 def resolve_repo():
     """REPO.  When the pinned revision is gone from the repository (a 404 on its index) it stops, unless
-    STRATA_ALLOW_UNPINNED=1: then the current files are read (their tensors are still checked against the pinned SHA256)."""
+    NOSTROMA_ALLOW_UNPINNED=1: then the current files are read (their tensors are still checked against the pinned SHA256)."""
     global REPO
     try:
         req = urllib.request.Request(REPO + "model.safetensors.index.json", method="HEAD",
-                                     headers={"User-Agent": "strata-mtp-fetch"})
+                                     headers={"User-Agent": "nostroma-mtp-fetch"})
         netpolicy.open_url(netpolicy.urlopen, req, say=_say_waiting).close()
     except urllib.error.HTTPError as e:
         if e.code == 404 and "/resolve/%s/" % REVISION in REPO:
-            if (os.environ.get("STRATA_ALLOW_UNPINNED") or "").strip() != "1":
+            if (os.environ.get("NOSTROMA_ALLOW_UNPINNED") or "").strip() != "1":
                 sys.exit("the pinned version of the checkpoint (%s) is no longer on Hugging Face: update Nostroma" % REVISION)
-            print("STRATA_ALLOW_UNPINNED=1: the checkpoint's pinned revision %s is gone: reading its current files "
+            print("NOSTROMA_ALLOW_UNPINNED=1: the checkpoint's pinned revision %s is gone: reading its current files "
                   "(main); every tensor is still checked against the pinned SHA256" % REVISION, file=sys.stderr)
             REPO = REPO.replace("/resolve/%s/" % REVISION, "/resolve/main/")
     except OSError:
@@ -458,7 +458,7 @@ def fetch(out, only):
 
 def verify(out):
     """#327: the fetched tensors against SHA256 -> the names that are missing or wrong.  [] when they are right, or
-    when there is nothing to check (no tensors/, or STRATA_MTP_REVISION names another revision).  A tensor's verdict
+    when there is nothing to check (no tensors/, or NOSTROMA_MTP_REVISION names another revision).  A tensor's verdict
     is kept in tensors/verified.json by size and mtime, so a later run hashes only what changed."""
     tdir = os.path.join(out, "tensors")
     if not pinned() or not os.path.isdir(tdir):

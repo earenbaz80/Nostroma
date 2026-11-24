@@ -20,13 +20,13 @@ const delay = ms => new Promise(r => setTimeout(r, ms));
 async function freePort() { const s = createServer(); await new Promise(r => s.listen(0, '127.0.0.1', r)); const p = s.address().port; await new Promise(r => s.close(r)); return p; }
 
 async function startOfflineHost() {
-  const home = await mkdtemp(join(tmpdir(), 'strata-offline-'));
+  const home = await mkdtemp(join(tmpdir(), 'nostroma-offline-'));
   const log = join(home, 'net.log');
   const port = await freePort();
   let output = '';
   const host = spawn(process.execPath, ['--import', preload, 'server/index.mjs'], {
     cwd: root, stdio: ['ignore', 'pipe', 'pipe'],
-    env: { ...process.env, STRATA_HOME: home, STRATA_MODELS_DIR: join(home, 'models'), STRATA_PORT: String(port), STRATA_SHARE_PORT: String(await freePort()), STRATA_TUNNEL_PORT: String(await freePort()), STRATA_PACKAGED: '1', STRATA_COMPONENTS_DIR: join(home, 'components'), STRATA_NET_LOG: log, STRATA_NO_ACQUIRE: '1', STRATA_REAL_ENGINE: '0', STRATA_TEST_HARDWARE: ROOMY_HOST },
+    env: { ...process.env, NOSTROMA_HOME: home, NOSTROMA_MODELS_DIR: join(home, 'models'), NOSTROMA_PORT: String(port), NOSTROMA_SHARE_PORT: String(await freePort()), NOSTROMA_TUNNEL_PORT: String(await freePort()), NOSTROMA_PACKAGED: '1', NOSTROMA_COMPONENTS_DIR: join(home, 'components'), NOSTROMA_NET_LOG: log, NOSTROMA_NO_ACQUIRE: '1', NOSTROMA_REAL_ENGINE: '0', NOSTROMA_TEST_HARDWARE: ROOMY_HOST },
   });
   host.stdout.on('data', d => { output += d; }); host.stderr.on('data', d => { output += d; });
   let up = false;
@@ -65,8 +65,8 @@ test('the update check reaches out to nothing: it answers in plain words, online
   const checked = await h.get('/api/updates/check');
   assert.equal(checked.status, 200);
   assert.equal(h.calls().length, 0, 'the click reaches out to nothing: this build has no feed of its own');
-  assert.equal(checked.data.strata.status, 'unavailable');
-  assert.equal(checked.data.strata.canInstall, false);
-  assert.equal(checked.data.strata.message, 'App updates are off in this build. Engine updates still work.');
+  assert.equal(checked.data.nostroma.status, 'unavailable');
+  assert.equal(checked.data.nostroma.canInstall, false);
+  assert.equal(checked.data.nostroma.message, 'App updates are off in this build. Engine updates still work.');
   assert.doesNotMatch(JSON.stringify(checked.data), /fetch failed/);
 });

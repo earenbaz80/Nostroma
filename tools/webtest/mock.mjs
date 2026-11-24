@@ -49,7 +49,7 @@ export async function startMock({ port = 0, root = WEB, loaded = true, csp = tru
       if (p === "") return file(res, path.join(root, "index.html"), undefined, csp && PAGE_CSP ? { "Content-Security-Policy": PAGE_CSP } : {});
       if (p.startsWith("/web/")) return file(res, path.join(root, p.slice(5)), root);
       if (p.startsWith("/fonts/")) return file(res, path.join(root, "fonts", p.slice(7)), root);
-      if (p === "/health") return json(200, { status: "ok", max_context: 32768, model: "Mock-Model", images: true, image_generation: false, loaded: state.loaded, service: "strata" });
+      if (p === "/health") return json(200, { status: "ok", max_context: 32768, model: "Mock-Model", images: true, image_generation: false, loaded: state.loaded, service: "nostroma" });
       if (p === "/metrics") return json(200, metrics(state));
       if (p === "/mcp") return json(200, { servers: [], tools: 0 });
       if (p === "/settings") return json(200, { shared: false, defaults: null });
@@ -85,9 +85,9 @@ export async function startMock({ port = 0, root = WEB, loaded = true, csp = tru
     else if (text.includes("#tool")) {
       await say("Let me look that up. ", 5);
       const id = "call-1";
-      send({ strata_mcp: { event: "call", id, name: "fs__read", server: "fs", tool: "read", arguments: { path: "notes.txt" }, round: 0 } });
+      send({ nostroma_mcp: { event: "call", id, name: "fs__read", server: "fs", tool: "read", arguments: { path: "notes.txt" }, round: 0 } });
       await sleep(900);
-      send({ strata_mcp: { event: "result", id, text: "The file says hello.", ok: true, chars: 20, ms: 900 } });
+      send({ nostroma_mcp: { event: "result", id, text: "The file says hello.", ok: true, chars: 20, ms: 900 } });
       await say("The file says hello.", 5);
     } else await say(`Mock answer ${state.answers}.`, 5);
     if (!closed) {

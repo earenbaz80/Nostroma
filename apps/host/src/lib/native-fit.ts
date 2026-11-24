@@ -91,7 +91,7 @@ export const RECOMMENDED: { family: string; model: string; note: string }[] = [
  *  (the running version's group used to stay open whatever was clicked). */
 export const groupOpen = (opened: Record<string, boolean>, id: string, containsSelected: boolean): boolean => opened[id] ?? containsSelected;
 
-/** What the engine's own pick for this PC is (catalog.recommendation: the memory tiers of setup.py and tools/strata_mcp.py, the same answer `nostroma launch` shows). */
+/** What the engine's own pick for this PC is (catalog.recommendation: the memory tiers of setup.py and tools/nostroma_mcp.py, the same answer `nostroma launch` shows). */
 export interface PcPick { family?: string | null; model?: string | null; why?: string }
 export const PICK_NOTE = 'the pick for this PC';
 export const OTHER_NOTE = 'the other choice';

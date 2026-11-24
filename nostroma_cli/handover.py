@@ -2,12 +2,12 @@
 
 `nostroma update` stages a newer Control in ``<components>/control/<ver>/`` and writes ``<components>/control/active.json``. The
 desktop app follows that pointer; the Terminal on PATH is a different install, so without this it kept running the old one.
-`maybe_hand_over` runs at the very start of ``strata.py``, before any heavy import, and (only when that Control is newer and whole)
+`maybe_hand_over` runs at the very start of ``nostroma.py``, before any heavy import, and (only when that Control is newer and whole)
 runs the same command line with the newer Control's own interpreter and entry point.
 
 Rules: standard library only; never an older or equal target; never a pointer that leaves the control folder; never a loop
-(``STRATA_HANDOVER`` marks a process that was already handed over); a broken target costs one warning line and the current
-Control keeps running. ``STRATA_NO_HANDOVER=1`` turns it off.
+(``NOSTROMA_HANDOVER`` marks a process that was already handed over); a broken target costs one warning line and the current
+Control keeps running. ``NOSTROMA_NO_HANDOVER=1`` turns it off.
 """
 
 from __future__ import annotations
@@ -19,9 +19,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-ENV_GUARD = "STRATA_HANDOVER"
-ENV_OFF = "STRATA_NO_HANDOVER"
-ENV_CHECKOUT = "STRATA_HANDOVER_IN_CHECKOUT"         # tests only: allow a hand-over from a source checkout
+ENV_GUARD = "NOSTROMA_HANDOVER"
+ENV_OFF = "NOSTROMA_NO_HANDOVER"
+ENV_CHECKOUT = "NOSTROMA_HANDOVER_IN_CHECKOUT"         # tests only: allow a hand-over from a source checkout
 
 
 def running_from_checkout() -> bool:
@@ -34,12 +34,12 @@ _VERSION = re.compile(r"^[0-9]+(\.[0-9]+){1,3}(-[0-9A-Za-z][0-9A-Za-z.]*)?$")   
 def components_dir(environ=None) -> Path:
     """The per-user component folder (same rule as nostroma_control/engine_component.py components_dir)."""
     environ = os.environ if environ is None else environ
-    if environ.get("NOSTROMA_COMPONENTS_DIR", environ.get("STRATA_COMPONENTS_DIR")):
-        return Path(environ.get("NOSTROMA_COMPONENTS_DIR", environ["STRATA_COMPONENTS_DIR"]))
+    if environ.get("NOSTROMA_COMPONENTS_DIR", environ.get("NOSTROMA_COMPONENTS_DIR")):
+        return Path(environ.get("NOSTROMA_COMPONENTS_DIR", environ["NOSTROMA_COMPONENTS_DIR"]))
     home = Path.home()
     if os.name == "nt":
-        return Path(environ.get("LOCALAPPDATA") or str(home / "AppData" / "Local")) / "Strata" / "components"
-    return Path(environ.get("XDG_DATA_HOME") or str(home / ".local" / "share")) / "strata" / "components"
+        return Path(environ.get("LOCALAPPDATA") or str(home / "AppData" / "Local")) / "Nostroma" / "components"
+    return Path(environ.get("XDG_DATA_HOME") or str(home / ".local" / "share")) / "nostroma" / "components"
 
 
 def version_key(text) -> tuple[int, ...] | None:
@@ -109,7 +109,7 @@ def find_target(running: str, environ=None, root: Path | None = None):
         return (None, None, f"its version ({version!r}) cannot be read") if version else (None, None, None)
     if want <= have:
         return None, None, None                          # never an older or equal Control
-    if not (bundled_python(folder).is_file() and (folder / "strata.py").is_file() and (folder / "nostroma_control").is_dir()):
+    if not (bundled_python(folder).is_file() and (folder / "nostroma.py").is_file() and (folder / "nostroma_control").is_dir()):
         return None, version, f"{folder} is missing its interpreter or entry point"
     return folder, version, None
 
@@ -141,29 +141,29 @@ def maybe_hand_over(argv, environ=None, root=None, running=None, execv=None, run
         return None
     if problem:
         what = f"Control {version}" if version else "Control"
-        warn(f"strata: a newer {what} was installed but {problem}; running {running} instead. Run `nostroma update` again to repair it.")
+        warn(f"nostroma: a newer {what} was installed but {problem}; running {running} instead. Run `nostroma update` again to repair it.")
         return None
     if folder is None:
         return None
-    python, entry = str(bundled_python(folder)), str(folder / "strata.py")
+    python, entry = str(bundled_python(folder)), str(folder / "nostroma.py")
     command = [python, entry, *argv]
     env = _child_env(environ)
     if os.name != "nt":
         try:
             (execv or os.execve)(python, command, env)
         except OSError as exc:
-            warn(f"strata: could not start the updated Control {version} ({exc.strerror or exc}); running {running} instead.")
+            warn(f"nostroma: could not start the updated Control {version} ({exc.strerror or exc}); running {running} instead.")
         return None
     try:
         return (run or subprocess.call)(command, env=env, cwd=os.getcwd())
     except KeyboardInterrupt:
         return 130
     except OSError as exc:
-        warn(f"strata: could not start the updated Control {version} ({exc.strerror or exc}); running {running} instead.")
+        warn(f"nostroma: could not start the updated Control {version} ({exc.strerror or exc}); running {running} instead.")
         return None
 
 
-#: What a Terminal older than 0.1.46.2 cannot do: its strata.py has no hand-over, so a Control it installs is never used. Its updater
+#: What a Terminal older than 0.1.46.2 cannot do: its nostroma.py has no hand-over, so a Control it installs is never used. Its updater
 #: (which cannot be changed any more) test-starts the new Control with `--version` and prints the first 120 characters of the answer
 #: when that fails, so this is the sentence it shows. No quote marks in it: the old updater prints it as a Python string.
 OLD_LAUNCHER_TEXT = "This Terminal cannot switch to the new Control by itself. Run the Nostroma install command once more to update it."
@@ -174,11 +174,11 @@ _STAGE_FOLDER = ".s"                                 # nostroma_control.updater.
 def refuse_old_updater(argv, environ=None, tree=None) -> int | None:
     """0.2.0-beta's Terminal (Control 0.1.45.3) and the other releases before 0.1.46.2 install a newer Control and report success, but their
     launcher never switches to it (no hand-over code), so the update would change nothing. They test-start the staged Control with
-    `--version`, with STRATA_NO_ACQUIRE=1 and without STRATA_HANDOVER (every updater that can hand over sets it). This Control, started that
+    `--version`, with NOSTROMA_NO_ACQUIRE=1 and without NOSTROMA_HANDOVER (every updater that can hand over sets it). This Control, started that
     way from the updater's staging folder, says in one plain sentence what to do and exits non-zero, so the old updater keeps the old
     Control and shows the sentence instead of 'updated'. Returns the exit code to use, or None for any other start."""
     environ = os.environ if environ is None else environ
-    if list(argv) != ["--version"] or environ.get("NOSTROMA_NO_ACQUIRE", environ.get("STRATA_NO_ACQUIRE")) != "1" or environ.get(ENV_GUARD):
+    if list(argv) != ["--version"] or environ.get("NOSTROMA_NO_ACQUIRE", environ.get("NOSTROMA_NO_ACQUIRE")) != "1" or environ.get(ENV_GUARD):
         return None
     tree = Path(__file__).resolve().parents[1] if tree is None else Path(tree)
     if tree.parent.name != _STAGE_FOLDER:

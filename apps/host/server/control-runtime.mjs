@@ -26,9 +26,9 @@ export function bundledPython(dir, platform = process.platform) {
 
 /** The per-user component folder, the same rule as nostroma_control/engine_component.py components_dir(). */
 export function componentsDirectory({ env = process.env, platform = process.platform, home = homedir() } = {}) {
-  if ((env.NOSTROMA_COMPONENTS_DIR ?? env.STRATA_COMPONENTS_DIR)) return (env.NOSTROMA_COMPONENTS_DIR ?? env.STRATA_COMPONENTS_DIR);
-  if (platform === 'win32') return join(env.LOCALAPPDATA || join(home, 'AppData', 'Local'), 'Strata', 'components');
-  return join(env.XDG_DATA_HOME || join(home, '.local', 'share'), 'strata', 'components');
+  if ((env.NOSTROMA_COMPONENTS_DIR ?? env.NOSTROMA_COMPONENTS_DIR)) return (env.NOSTROMA_COMPONENTS_DIR ?? env.NOSTROMA_COMPONENTS_DIR);
+  if (platform === 'win32') return join(env.LOCALAPPDATA || join(home, 'AppData', 'Local'), 'Nostroma', 'components');
+  return join(env.XDG_DATA_HOME || join(home, '.local', 'share'), 'nostroma', 'components');
 }
 
 /**
@@ -51,7 +51,7 @@ function newer(a, b) {
 }
 
 /**
- * Is there a Control component to use? STRATA_CONTROL_DIR names one (the Tauri shell sets it to the bundled one), the
+ * Is there a Control component to use? NOSTROMA_CONTROL_DIR names one (the Tauri shell sets it to the bundled one), the
  * `control` folder beside `host` is the installed app's, and `<components>/control/active.json` is one the component
  * updater installed. Each must be whole; the newest version wins, so an app update that ships a newer Control is never
  * held back by an older updated one, and an updated Control is never lost to an older bundled one. A tie goes to the first
@@ -59,15 +59,15 @@ function newer(a, b) {
  */
 export function findControl({ env = process.env, platform = process.platform, exists = existsSync, hostDir = resolve(HERE, '..'), components = null } = {}) {
   const updated = updatedControlDirectory({ env, platform, components });
-  const candidates = [{ dir: (env.NOSTROMA_CONTROL_DIR ?? env.STRATA_CONTROL_DIR) }, { dir: join(hostDir, '..', 'control') }, ...(updated ? [updated] : [])]
+  const candidates = [{ dir: (env.NOSTROMA_CONTROL_DIR ?? env.NOSTROMA_CONTROL_DIR) }, { dir: join(hostDir, '..', 'control') }, ...(updated ? [updated] : [])]
     .filter(c => c.dir).map(c => ({ ...c, dir: resolve(c.dir) }));
   let best = null;
   for (const candidate of candidates) {
     const python = bundledPython(candidate.dir, platform);
-    if (!(exists(python) && exists(join(candidate.dir, 'strata.py')) && exists(join(candidate.dir, 'nostroma_control')))) continue;
+    if (!(exists(python) && exists(join(candidate.dir, 'nostroma.py')) && exists(join(candidate.dir, 'nostroma_control')))) continue;
     let bundle = null;
     try { bundle = JSON.parse(readFileSync(join(candidate.dir, 'BUNDLE.json'), 'utf8').replace(/^﻿/, '')); } catch { /* optional */ }
-    const found = { dir: candidate.dir, python, cli: join(candidate.dir, 'strata.py'), bundle, key: versionKey(bundle?.version ?? candidate.version) };
+    const found = { dir: candidate.dir, python, cli: join(candidate.dir, 'nostroma.py'), bundle, key: versionKey(bundle?.version ?? candidate.version) };
     if (!best || newer(found.key, best.key)) best = found;
   }
   if (!best) return null;
@@ -77,39 +77,39 @@ export function findControl({ env = process.env, platform = process.platform, ex
 
 /**
  * The environment of the server the host starts from a source checkout (#3851): the key travels in the run configuration, so a
- * STRATA_API_KEY the host itself was started with is removed. Setting it to an empty string made serve/server.py stop with
+ * NOSTROMA_API_KEY the host itself was started with is removed. Setting it to an empty string made serve/server.py stop with
  * "an API key was given but it is empty".
  */
 export function sourceServerEnvironment(env = process.env) {
   const next = { ...env, PYTHONUNBUFFERED: '1', PYTHONUTF8: '1', PYTHONIOENCODING: 'utf-8' };
-  delete next.STRATA_API_KEY;
+  delete next.NOSTROMA_API_KEY;
   return next;
 }
 
 /** The environment Control runs in: nothing from the user's Python, and acquiring forbidden. */
 export function controlEnvironment(control, { env = process.env, components = componentsDirectory({ env }), acquire = false } = {}) {
   const next = { ...env };
-  for (const key of ['PYTHONHOME', 'PYTHONPATH', 'PYTHONSTARTUP', 'VIRTUAL_ENV', 'STRATA_PYTHON', 'NOSTROMA_PYTHON', 'STRATA_NATIVE_PYTHON', 'NOSTROMA_NATIVE_PYTHON', 'STRATA_API_KEY', 'NOSTROMA_API_KEY']) delete next[key];
+  for (const key of ['PYTHONHOME', 'PYTHONPATH', 'PYTHONSTARTUP', 'VIRTUAL_ENV', 'NOSTROMA_PYTHON', 'NOSTROMA_PYTHON', 'NOSTROMA_NATIVE_PYTHON', 'NOSTROMA_NATIVE_PYTHON', 'NOSTROMA_API_KEY', 'NOSTROMA_API_KEY']) delete next[key];
   const result = {
     ...next,
     PYTHONNOUSERSITE: '1', PYTHONUTF8: '1', PYTHONUNBUFFERED: '1', PYTHONIOENCODING: 'utf-8',
-    STRATA_NO_ACQUIRE: '1', STRATA_COMPONENTS_DIR: components,
+    NOSTROMA_NO_ACQUIRE: '1', NOSTROMA_COMPONENTS_DIR: components,
     // The app's own settings file, beside its components: Control and the installer never read or write the file an older
     // command-line Nostroma keeps in %APPDATA% / ~/.config (its list of Nostroma folders), so an old install is never adopted.
-    ...(components ? { STRATA_SETTINGS_FILE: (env.NOSTROMA_SETTINGS_FILE ?? env.STRATA_SETTINGS_FILE) || join(dirname(components), 'app-settings.json') } : {}),
-    ...(control?.dir ? { STRATA_CONTROL_DIR: control.dir } : {}),
+    ...(components ? { NOSTROMA_SETTINGS_FILE: (env.NOSTROMA_SETTINGS_FILE ?? env.NOSTROMA_SETTINGS_FILE) || join(dirname(components), 'app-settings.json') } : {}),
+    ...(control?.dir ? { NOSTROMA_CONTROL_DIR: control.dir } : {}),
   };
   // Only the explicit update step (`nostroma update`) may acquire; every other Control process keeps the switch on.
-  if (acquire) delete result.STRATA_NO_ACQUIRE;
-  return childEnv(result);   // Control reads the older STRATA_* names; both names go to it
+  if (acquire) delete result.NOSTROMA_NO_ACQUIRE;
+  return childEnv(result);   // Control reads the older NOSTROMA_* names; both names go to it
 }
 
 /**
- * The environment of the installer process (tools/strata_mcp.py): Control's, with acquiring still forbidden for the process
+ * The environment of the installer process (tools/nostroma_mcp.py): Control's, with acquiring still forbidden for the process
  * itself. Only the install job it starts when the user asks to download a model lifts that for its own children.
  */
 export function installerEnvironment(control, { env = process.env, installDir, components = componentsDirectory({ env }) } = {}) {
-  return childEnv({ ...controlEnvironment(control, { env, components }), STRATA_CONTROL_INSTALL: '1', ...(installDir ? { STRATA_INSTALL_DIR: installDir } : {}) });
+  return childEnv({ ...controlEnvironment(control, { env, components }), NOSTROMA_CONTROL_INSTALL: '1', ...(installDir ? { NOSTROMA_INSTALL_DIR: installDir } : {}) });
 }
 
 export class ControlError extends Error {
@@ -123,7 +123,7 @@ export class ControlError extends Error {
 }
 
 /**
- * Small Control programs that are a module of nostroma_control and not a `strata` command. They run on Control's interpreter with Control's folder first on the
+ * Small Control programs that are a module of nostroma_control and not a `nostroma` command. They run on Control's interpreter with Control's folder first on the
  * path (the folder is the working directory), so they work whatever the interpreter does with the script folder.
  */
 const BOOT = {
@@ -202,14 +202,14 @@ export function createControl({ control = findControl(), env = process.env, run 
     },
     /**
      * The explicit update step. These are the only calls that let Control reach the network: `acquire` removes
-     * STRATA_NO_ACQUIRE for that one process. Starting, serving, listing and rolling back never do.
+     * NOSTROMA_NO_ACQUIRE for that one process. Starting, serving, listing and rolling back never do.
      */
-    async updateCheck({ feed = (env.NOSTROMA_UPDATE_FEED ?? env.STRATA_UPDATE_FEED) ?? null, appVersion = (env.NOSTROMA_APP_VERSION ?? env.STRATA_APP_VERSION) ?? null } = {}) {
+    async updateCheck({ feed = (env.NOSTROMA_UPDATE_FEED ?? env.NOSTROMA_UPDATE_FEED) ?? null, appVersion = (env.NOSTROMA_APP_VERSION ?? env.NOSTROMA_APP_VERSION) ?? null } = {}) {
       const result = await call(['update', '--check', '--output', 'json', ...feedArgs(feed), ...(appVersion ? ['--app-version', appVersion] : [])], { timeoutMs: 90_000, acquire: true });
       if (result.json?.ok) return result.json;
       throw failure(result, 'The update check failed.');
     },
-    async update({ feed = (env.NOSTROMA_UPDATE_FEED ?? env.STRATA_UPDATE_FEED) ?? null, engine = true, control: withControl = true, appVersion = (env.NOSTROMA_APP_VERSION ?? env.STRATA_APP_VERSION) ?? null, force = false, stopModel = false, onEvent = null, signal = null } = {}) {
+    async update({ feed = (env.NOSTROMA_UPDATE_FEED ?? env.NOSTROMA_UPDATE_FEED) ?? null, engine = true, control: withControl = true, appVersion = (env.NOSTROMA_APP_VERSION ?? env.NOSTROMA_APP_VERSION) ?? null, force = false, stopModel = false, onEvent = null, signal = null } = {}) {
       const args = ['update', '--output', 'jsonl', ...feedArgs(feed), ...(engine ? [] : ['--no-engine']), ...(withControl ? [] : ['--no-control']),
         ...(appVersion ? ['--app-version', appVersion] : []), ...(force ? ['--force'] : []), ...(stopModel ? ['--stop-model'] : [])];
       const result = await call(args, { timeoutMs: 3 * 3600_000, acquire: true, onLine: onEvent ?? (() => {}), signal });

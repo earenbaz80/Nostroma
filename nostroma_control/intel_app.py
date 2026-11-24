@@ -1,11 +1,11 @@
-"""The Intel Arc card in the desktop app (the model setup of Nostroma Control, tools/strata_mcp.py and setup.py in their CONTROL mode).
+"""The Intel Arc card in the desktop app (the model setup of Nostroma Control, tools/nostroma_mcp.py and setup.py in their CONTROL mode).
 
 The Terminal (`nostroma launch`) sets an Arc up in two steps (nostroma_cli/launch/runner.py adopt_prepared_files): `setup.py --prepare-pack` makes the pack
-from the model's GGUF files, and nostroma_cli/launch/adopt.py writes the run config, with the engine named as the component (`component:strata-engine`).
+from the model's GGUF files, and nostroma_cli/launch/adopt.py writes the run config, with the engine named as the component (`component:nostroma-engine`).
 Intel cards do not download models: the files must be on the computer. The app's install job did neither step: it ran setup.py's normal NVIDIA / AMD
 path, which stops with "no NVIDIA GPU found (nvidia-smi did not answer)" (0.2.13 and 0.2.12, found by QAGUI-LIN on an Arc A750).
 
-This module is the part both tools/strata_mcp.py (which engine the install is for; the card list) and setup.py (`--backend sycl` in CONTROL mode)
+This module is the part both tools/nostroma_mcp.py (which engine the install is for; the card list) and setup.py (`--backend sycl` in CONTROL mode)
 share. NVIDIA and AMD are never touched: an Arc is added to the card list only when this PC has no usable NVIDIA or AMD card, and the engine
 Nostroma Control itself would pick (nostroma_control/engine_component.py detect_backend) is the Intel one.
 """
@@ -54,7 +54,7 @@ def arc_cards(root: str = "/sys/class/drm") -> list[dict]:
 
 def engine_is_intel() -> bool:
     """Is the engine this computer's Nostroma Control would use the Intel one (SYCL)? The same decision the engine download makes (nostroma_control/
-    engine_component.py detect_backend: STRATA_ENGINE_BACKEND, the saved choice, then the cards)."""
+    engine_component.py detect_backend: NOSTROMA_ENGINE_BACKEND, the saved choice, then the cards)."""
     from nostroma_control import engine_component as ec
     return ec.detect_backend()[0] == "sycl"
 

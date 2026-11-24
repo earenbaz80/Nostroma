@@ -10,7 +10,7 @@ What it does, in a scratch folder (nothing of the real install, %APPDATA% or the
   1. writes a small synthetic qwen4exp GGUF with tools/q4geo_synth.py (random weights; `--tokenizer-from` gives it a real tokenizer);
   2. builds a models-only feed signed with a THROW-AWAY key (packaging/feed_tool.py's own build_feed) whose entry says `drafter: none`, has no picture reader
      and a shape that is not the shipped Flash-Next one;
-  3. serves the file from a tiny Hugging Face stand-in on 127.0.0.1 and runs `setup.py` in the app's mode (STRATA_CONTROL_INSTALL=1: no engine, no pip, no build)
+  3. serves the file from a tiny Hugging Face stand-in on 127.0.0.1 and runs `setup.py` in the app's mode (NOSTROMA_CONTROL_INSTALL=1: no engine, no pip, no build)
      with the feed as the model list: download, SHA-256 check, preparation (the pack), run config;
   4. checks: setup exits 0 and prints neither a Traceback nor `KeyError`; the Flash-Next draft layer was not asked for (the stand-in saw only the model file);
      the owner's two lines are there; the run config reads the file in place with a RAM budget and no second copy of the experts was written; a neutral expert
@@ -22,7 +22,7 @@ What it does, in a scratch folder (nothing of the real install, %APPDATA% or the
     python tools/feed_model_install_gate.py --tokenizer-from <a real Flash-Next shard 1> --engine <engine folder> --full
 
 `tools/test_feed_model_install_realfile.py` runs step 1 to 4 as a test in `python tools/check` (py-tools). The preparation tools read GGUF files with the vendored
-their own GGUF code (tools/strata_gguf.py), so no gguf-py, no llama.cpp checkout, no STRATA_TEST_LLAMA_CPP and no network are needed; the check also fails if setup says it
+their own GGUF code (tools/nostroma_gguf.py), so no gguf-py, no llama.cpp checkout, no NOSTROMA_TEST_LLAMA_CPP and no network are needed; the check also fails if setup says it
 fetched llama.cpp. Without numpy it is SKIPPED with that reason (never a pass).
 Exit codes: 0 pass, 1 a check failed, 2 not run (no numpy, no NVIDIA card on a Windows box), 3 the engine phase failed.
 """
@@ -54,12 +54,12 @@ REPO = "gate-test/Qwen4-Gate-GGUF"
 MODEL_ID = "qwen4-gate"
 QUANT = "GATE-Q4"
 FILE_NAME = "Qwen4-Gate-GATE-Q4.gguf"
-SETUP_TIMEOUT = int(os.environ.get("STRATA_GATE_SETUP_TIMEOUT", "300"))   # seconds for one setup run (the 0.2 GB file takes about 6)
+SETUP_TIMEOUT = int(os.environ.get("NOSTROMA_GATE_SETUP_TIMEOUT", "300"))   # seconds for one setup run (the 0.2 GB file takes about 6)
 NEUTRAL_LINE = "This model's shape differs from Flash-Next, so a neutral expert profile is used."
 NO_DRAFT_LINE = "The model list says this model has no draft layer (MTP), so none is fetched or used."
 
 # the shape of the small file: a q4_lite model cut down to 1 layer of 8 experts, so a run takes seconds and the file is 0.2 GB. --full: the case-B stand-in of the rehearsal
-# (4 layers of q4_lite, the shape a `-DSTRATA_GEOMETRY_FILE` engine of that rehearsal was built for)
+# (4 layers of q4_lite, the shape a `-DNOSTROMA_GEOMETRY_FILE` engine of that rehearsal was built for)
 TINY = dict(layers=1, vocab=2048, set="n_expert=8,n_expert_used=2,n_ff=64")
 FULL = dict(layers=4, vocab=None, set="")
 
@@ -69,9 +69,9 @@ class NotRun(Exception):
 
 
 def check_gguf_tools() -> None:
-    """The preparation tools read and write GGUF files with their own code (tools/strata_gguf.py, tools/strata_quants.py): nothing to find, nothing to
-    fetch, and no gguf-py needed (this gate also runs on a copy of the tree without third_party/strata-gguf-py)."""
-    for f in ("strata_gguf.py", "strata_quants.py", "strata_quant_tables.py"):
+    """The preparation tools read and write GGUF files with their own code (tools/nostroma_gguf.py, tools/nostroma_quants.py): nothing to find, nothing to
+    fetch, and no gguf-py needed (this gate also runs on a copy of the tree without third_party/nostroma-gguf-py)."""
+    for f in ("nostroma_gguf.py", "nostroma_quants.py", "nostroma_quant_tables.py"):
         if not (ROOT / "tools" / f).is_file():
             raise NotRun("tools/%s is missing from this checkout" % f)
 
@@ -180,7 +180,7 @@ def make_synthetic(out: Path, shape: dict, tokenizer_from: str | None) -> None:
 
 
 def build_feed(feed: Path, entry: dict, work: Path) -> Path:
-    """A models-only feed signed with a throw-away key; returns the file of trusted keys for STRATA_UPDATE_TRUSTED_KEYS."""
+    """A models-only feed signed with a throw-away key; returns the file of trusted keys for NOSTROMA_UPDATE_TRUSTED_KEYS."""
     import feed_tool
     from nostroma_control import signing
     key = signing.generate_key()
@@ -232,14 +232,14 @@ def nvidia_stub_if_needed(env: dict, work: Path, log) -> None:
 
 
 def sandbox_env(work: Path, install: Path, feed: Path, trust: Path, port: int) -> dict:
-    env = {k: v for k, v in os.environ.items() if not k.startswith(("STRATA_", "HF_")) and k not in ("PYTHONPATH", "PYTHONHOME")}
+    env = {k: v for k, v in os.environ.items() if not k.startswith(("NOSTROMA_", "HF_")) and k not in ("PYTHONPATH", "PYTHONHOME")}
     home = work / "home"
     home.mkdir(exist_ok=True)
     env.update({"HOME": str(home), "USERPROFILE": str(home), "APPDATA": str(home / "AppData" / "Roaming"), "LOCALAPPDATA": str(home / "AppData" / "Local"),
                 "XDG_DATA_HOME": str(home / ".local" / "share"), "XDG_CONFIG_HOME": str(home / ".config"), "XDG_STATE_HOME": str(home / ".local" / "state"),
-                "XDG_CACHE_HOME": str(home / ".cache"), "STRATA_CONTROL_INSTALL": "1", "STRATA_INSTALL_DIR": str(install), "STRATA_COMPONENTS_DIR": str(work / "comp"),
-                "STRATA_UPDATE_FEED": str(feed), "STRATA_UPDATE_TRUSTED_KEYS": str(trust), "STRATA_NO_PATH": "1", "HF_ENDPOINT": f"http://127.0.0.1:{port}",
-                "PYTHONUTF8": "1", "PYTHONNOUSERSITE": "1", "STRATA_ALLOW_UNPINNED": "1"})
+                "XDG_CACHE_HOME": str(home / ".cache"), "NOSTROMA_CONTROL_INSTALL": "1", "NOSTROMA_INSTALL_DIR": str(install), "NOSTROMA_COMPONENTS_DIR": str(work / "comp"),
+                "NOSTROMA_UPDATE_FEED": str(feed), "NOSTROMA_UPDATE_TRUSTED_KEYS": str(trust), "NOSTROMA_NO_PATH": "1", "HF_ENDPOINT": f"http://127.0.0.1:{port}",
+                "PYTHONUTF8": "1", "PYTHONNOUSERSITE": "1", "NOSTROMA_ALLOW_UNPINNED": "1"})
     return env
 
 
@@ -256,7 +256,7 @@ def kill_tree(proc: subprocess.Popen) -> None:
 
 def run_setup(env: dict, data: Path, extra: list[str], timeout: int = SETUP_TIMEOUT) -> tuple[int, str]:
     """setup.py in the app's mode. A run that does not end in `timeout` seconds (a fetch of something the model list did not name keeps retrying) is killed and reported."""
-    cmd = [sys.executable, str(ROOT / "setup.py"), "--family", MODEL_ID, "--model", QUANT, "--data-dir", str(data), "--feed", env["STRATA_UPDATE_FEED"],
+    cmd = [sys.executable, str(ROOT / "setup.py"), "--family", MODEL_ID, "--model", QUANT, "--data-dir", str(data), "--feed", env["NOSTROMA_UPDATE_FEED"],
            "--yes", "--no-start", "--vision", "no", "--context", "32768", "--no-browser", *extra]
     proc = subprocess.Popen(cmd, cwd=str(ROOT), env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, errors="replace",
                             start_new_session=(os.name != "nt"))
@@ -299,7 +299,7 @@ def check(work: Path, tokenizer_from: str | None, shape: dict, log) -> dict:
             if bad in out:
                 problems.append(f"setup printed {bad!r}")
         if "llama.cpp source" in out or any("llama.cpp" in p or "ggml-org" in p for p in mirror.seen):
-            problems.append("setup fetched llama.cpp (the preparation tools have their own GGUF code: tools/strata_gguf.py)")
+            problems.append("setup fetched llama.cpp (the preparation tools have their own GGUF code: tools/nostroma_gguf.py)")
         if (install / "third_party" / "llama.cpp").exists():
             problems.append("setup wrote third_party/llama.cpp into the install folder")
         wrong = sorted({p for p in asked if FILE_NAME not in p})
@@ -374,18 +374,18 @@ def start_engine(config: Path, engine: Path, work: Path, log) -> list[str]:
     """Step 5: the engine of the run config, one request. The engine folder replaces the config's `component:` engine."""
     problems: list[str] = []
     d = json.loads(config.read_text(encoding="utf-8-sig"))
-    exe = next((p for p in (engine / "strata", engine / "strata.exe", engine / "bin" / "strata", engine / "bin" / "strata.exe") if p.is_file()), None)
+    exe = next((p for p in (engine / "nostroma", engine / "nostroma.exe", engine / "bin" / "nostroma", engine / "bin" / "nostroma.exe") if p.is_file()), None)
     if exe is None:
-        return [f"no strata engine program in {engine}"]
+        return [f"no nostroma engine program in {engine}"]
     port = free_port()
-    cfg = dict(d, exe=str(exe), port=port, host="127.0.0.1")            # the config's `component:strata-engine` is this engine folder
+    cfg = dict(d, exe=str(exe), port=port, host="127.0.0.1")            # the config's `component:nostroma-engine` is this engine folder
     cfg_file = work / "engine-run.json"
     cfg_file.write_text(json.dumps(cfg), encoding="utf-8")
     env = dict(os.environ, PYTHONUTF8="1")
     env.update({k: str(v) for k, v in (d.get("env") or {}).items()})
     libs = [str(engine)] + [str(x) for x in d.get("lib_dirs", [])]
     env["LD_LIBRARY_PATH"] = os.pathsep.join(libs + [env.get("LD_LIBRARY_PATH", "")])
-    args = [sys.executable, "-m", "serve.server", "--engine", "strata", "--config", str(cfg_file), "--port", str(port), "--host", "127.0.0.1"]
+    args = [sys.executable, "-m", "serve.server", "--engine", "nostroma", "--config", str(cfg_file), "--port", str(port), "--host", "127.0.0.1"]
     logfile = work / "engine.log"
     with logfile.open("wb") as lf:
         proc = subprocess.Popen(args, cwd=str(ROOT), env=env, stdout=lf, stderr=subprocess.STDOUT)
@@ -440,7 +440,7 @@ def main(argv=None) -> int:
     except NotRun as e:
         print("NOT RUN:", e)
         return 2
-    work = a.work or Path(tempfile.mkdtemp(prefix="strata-feed-install-gate-"))
+    work = a.work or Path(tempfile.mkdtemp(prefix="nostroma-feed-install-gate-"))
     if a.work:
         if work.exists() and any(work.iterdir()):
             print("--work needs a new or empty folder", file=sys.stderr)

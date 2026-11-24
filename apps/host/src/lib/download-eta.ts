@@ -43,7 +43,7 @@ export function useDownloadEta(download: { done_gb?: number; remaining_gb?: numb
  *  the job's combined `download` fields ({done_gb, total_gb, remaining_gb, percent}) are used as they are. */
 export interface InstallParts { parts?: { done_gb?: number; total_gb?: number; state?: string }[]; download?: { done_gb?: number; total_gb?: number; remaining_gb?: number; percent?: number; file?: string } }
 export function installProgress(install: InstallParts | undefined): { done_gb: number; total_gb: number; remaining_gb: number; percent: number; file?: string } | undefined {
-  /* setup is checking files that are all on disk (strata_mcp combined_progress: file "checking files"): the check's own figure, not the
+  /* setup is checking files that are all on disk (nostroma_mcp combined_progress: file "checking files"): the check's own figure, not the
      parts' (which stood at 96% for the whole check, DL99) */
   const check = install?.download;
   if (check?.file === 'checking files' && Number.isFinite(check.done_gb) && Number.isFinite(check.total_gb) && (check.total_gb ?? 0) > 0)

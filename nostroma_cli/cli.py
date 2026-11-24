@@ -38,11 +38,11 @@ class _VersionAction(argparse.Action):
 
 
 def prog() -> str:
-    """The name this command was typed as: `nostroma`, or the `strata` it was called before. The launchers hand over to
-    strata.py, so argv[0] cannot tell the two apart: they pass the name they were called by in NOSTROMA_PROG. Anything
-    else (an interpreter path, strata.py itself) presents as nostroma."""
+    """The name this command was typed as: `nostroma`, or the `nostroma` it was called before. The launchers hand over to
+    nostroma.py, so argv[0] cannot tell the two apart: they pass the name they were called by in NOSTROMA_PROG. Anything
+    else (an interpreter path, nostroma.py itself) presents as nostroma."""
     name = os.environ.get("NOSTROMA_PROG") or os.path.basename(sys.argv[0] or "")
-    return "strata" if name == "strata" else "nostroma"
+    return "nostroma" if name == "nostroma" else "nostroma"
 
 
 def parser() -> argparse.ArgumentParser:
@@ -52,8 +52,8 @@ def parser() -> argparse.ArgumentParser:
     sp = ap.add_subparsers(dest="command", required=True)
     serve = sp.add_parser("serve", help="start the existing Nostroma inference server in the foreground")
     serve.add_argument("--profile", "--config", dest="config", required=True, metavar="CONFIG.json")
-    serve.add_argument("--engine", choices=("strata", "mock"), default="strata",
-                       help="strata: the engine in the run config (default); mock: a scripted engine for client tests, "
+    serve.add_argument("--engine", choices=("nostroma", "mock"), default="nostroma",
+                       help="nostroma: the engine in the run config (default); mock: a scripted engine for client tests, "
                             "no GPU and no model")
     serve.add_argument("--host")
     serve.add_argument("--port", type=int)
@@ -140,7 +140,7 @@ def parser() -> argparse.ArgumentParser:
         "engine", help="which engine package in the local component folder this PC would start (never downloads)")
     components_engine.add_argument("--backend", default=None, help="ask for one backend family instead of detecting it")
     components_engine.add_argument("--components-dir", default=None,
-                                   help="the component folder (default: STRATA_COMPONENTS_DIR or the per-user folder)")
+                                   help="the component folder (default: NOSTROMA_COMPONENTS_DIR or the per-user folder)")
     components_engine.add_argument("--full", action="store_true", help="hash every file, not only the entrypoint")
     components_engine.add_argument("--output", choices=("human", "json"), default="human")
     from nostroma_cli import update_cmd
@@ -318,7 +318,7 @@ def parser() -> argparse.ArgumentParser:
     bench_run.add_argument("--out", metavar="NEW_DIRECTORY",
                            help="new output directory (required for serving suites). Standard suite: a new folder "
                                 "<date>-standard-<gpu>-<run id> under ./bench/results or ./bench-results")
-    bench_run.add_argument("--credential-env", default="STRATA_API_KEY")
+    bench_run.add_argument("--credential-env", default="NOSTROMA_API_KEY")
     bench_run.add_argument("--telemetry-credential-env", default=None)
     bench_run.add_argument("--output", choices=("human", "json"), default="human")
     standard = bench_run.add_argument_group("standard suite (docs/BENCHMARK_PROTOCOL.md)")
@@ -360,7 +360,7 @@ def parser() -> argparse.ArgumentParser:
 
     ts_run = timeskip_sp.add_parser("run", help="checkpoint, attempt a revision, check it and decide")
     ts_run.add_argument("--workspace", required=True,
-                        help="the directory holding the work (and, optionally, .strata/checks.json)")
+                        help="the directory holding the work (and, optionally, .nostroma/checks.json)")
     ts_run.add_argument("--prompt", required=True, help="what the revision should achieve")
     ts_run.add_argument("--attempts", type=int, default=2,
                         help="bounded revision attempts (0 = checkpoint and check the baseline only); "
@@ -368,13 +368,13 @@ def parser() -> argparse.ArgumentParser:
     ts_run.add_argument("--revise-command", default=None,
                         help="the command that performs ONE revision attempt. It runs with the "
                              "candidate directory as its working directory, receives the prompt in "
-                             "STRATA_TIMESKIP_PROMPT and the attempt number in "
-                             "STRATA_TIMESKIP_ATTEMPT, and must not touch the workspace. Without it "
+                             "NOSTROMA_TIMESKIP_PROMPT and the attempt number in "
+                             "NOSTROMA_TIMESKIP_ATTEMPT, and must not touch the workspace. Without it "
                              "no revision is attempted, which yields an inconclusive run rather than "
                              "a fabricated improvement.")
     ts_run.add_argument("--state-dir", default=None,
-                        help="where runs are recorded (default: $STRATA_TIMESKIP_DIR or "
-                             "$XDG_STATE_HOME/strata/time-skip, %%LOCALAPPDATA%%\\Strata\\time-skip on Windows)")
+                        help="where runs are recorded (default: $NOSTROMA_TIMESKIP_DIR or "
+                             "$XDG_STATE_HOME/nostroma/time-skip, %%LOCALAPPDATA%%\\Nostroma\\time-skip on Windows)")
     ts_run.add_argument("--output", choices=("human", "json"), default="human")
 
     ts_status = timeskip_sp.add_parser("status", help="read a run's durable state and evidence")
@@ -471,7 +471,7 @@ def parser() -> argparse.ArgumentParser:
         "apply", help="apply a reviewed recommendation, after verifying the candidate runs")
     tune_apply.add_argument("job_id", help="the completed sweep whose recommendation to apply")
     tune_apply.add_argument("--config", default=None,
-                            help="the run configuration to change (strata-<model>.json)")
+                            help="the run configuration to change (nostroma-<model>.json)")
     tune_apply.add_argument("--model-path", default=None,
                             help="the model file, to re-check the identity before writing")
     tune_apply.add_argument("--context", type=int, default=None)
@@ -537,7 +537,7 @@ def _error(message: str, code: int, machine: bool = False) -> int:
     if machine:
         print(json.dumps({"schema_version": 1, "ok": False, "error": {"code": code, "message": message}}))
     else:
-        print(f"strata: {message}", file=sys.stderr)
+        print(f"nostroma: {message}", file=sys.stderr)
     return code
 
 
@@ -600,7 +600,7 @@ def _models(a: argparse.Namespace) -> int:
         if not lines:
             where = ", ".join(result.get("install_dirs") or [result["install_dir"]])
             lines = [f"No installed models found. Looked in: {where}. "
-                     "If your models are somewhere else, add --install-dir FOLDER (the folder with the strata-*.json files), "
+                     "If your models are somewhere else, add --install-dir FOLDER (the folder with the nostroma-*.json files), "
                      "or run `nostroma launch` to set one up."]
         return _success(result, machine=a.output == "json", human="\n".join(lines))
     result = models.inspect(a.model_id, a.install_dir)
@@ -626,11 +626,11 @@ def _import_problem(plan: dict) -> str:
 def _models_move(a: argparse.Namespace) -> int:
     from nostroma_control import discovery, models, models_move as mm
     machine = a.output in ("json", "jsonl")
-    old = Path(a.source) if a.source else discovery.data_dir(Path.home() / "Strata")[0]
+    old = Path(a.source) if a.source else discovery.data_dir(Path.home() / "Nostroma")[0]
     if a.status or a.resume or a.leave:
         return _models_move_unfinished(a, old)
     if not a.to:
-        print("strata: name the new folder, or use --resume / --leave / --status for an interrupted move.", file=sys.stderr)
+        print("nostroma: name the new folder, or use --resume / --leave / --status for an interrupted move.", file=sys.stderr)
         return 2
     new = Path(a.to).expanduser()
     if a.plan:
@@ -660,7 +660,7 @@ def _models_move(a: argparse.Namespace) -> int:
         if machine:
             print(json.dumps({"schema_version": 1, "ok": False, "error": {"code": e.code, "message": str(e), "details": e.details}, **extra}, ensure_ascii=False))
         else:
-            print(f"\nstrata: {e} {e.details}".rstrip(), file=sys.stderr)
+            print(f"\nnostroma: {e} {e.details}".rstrip(), file=sys.stderr)
         return 5
     if machine:
         print(json.dumps({"schema_version": 1, "ok": True, "event": "result", **summary}, ensure_ascii=False))
@@ -689,7 +689,7 @@ def _models_move_unfinished(a: argparse.Namespace, old: Path) -> int:
         if machine:
             print(json.dumps({"schema_version": 1, "ok": False, "error": {"code": "nothing", "message": "No move was interrupted.", "details": ""}}))
         else:
-            print("strata: no move was interrupted.", file=sys.stderr)
+            print("nostroma: no move was interrupted.", file=sys.stderr)
         return 5
     try:
         installs = [models.resolve_install(a.install_dir)[0]] if a.install_dir else [p for p, _s in models.all_installs()]
@@ -703,7 +703,7 @@ def _models_move_unfinished(a: argparse.Namespace, old: Path) -> int:
             if machine:
                 print(json.dumps({"schema_version": 1, "ok": False, "error": {"code": e.code, "message": str(e), "details": e.details}}, ensure_ascii=False))
             else:
-                print(f"strata: {e} {e.details}".rstrip(), file=sys.stderr)
+                print(f"nostroma: {e} {e.details}".rstrip(), file=sys.stderr)
             return 5
         if machine:
             print(json.dumps({"schema_version": 1, "ok": True, "event": "result", "left": True, **result}, ensure_ascii=False))
@@ -767,8 +767,8 @@ def _effective(cfg: dict, saved: dict | None, cli: argparse.Namespace | None = N
             value, origin = overrides[key], "saved_profile"
         elif key in cfg:
             value, origin = cfg[key], "run_config"
-        elif key == "batch_telemetry" and ("NOSTROMA_BATCH_TELEMETRY" in os.environ or "STRATA_BATCH_TELEMETRY" in os.environ):
-            value, origin = os.environ.get("NOSTROMA_BATCH_TELEMETRY", os.environ["STRATA_BATCH_TELEMETRY"]) == "1", "environment"
+        elif key == "batch_telemetry" and ("NOSTROMA_BATCH_TELEMETRY" in os.environ or "NOSTROMA_BATCH_TELEMETRY" in os.environ):
+            value, origin = os.environ.get("NOSTROMA_BATCH_TELEMETRY", os.environ["NOSTROMA_BATCH_TELEMETRY"]) == "1", "environment"
         else:
             value, origin = default, "default"
         values[key], origins[key] = value, origin
@@ -794,14 +794,14 @@ def _launch_plan(ref: str, cli: argparse.Namespace | None = None) -> tuple[dict,
     values, origins = _effective(cfg, saved, cli)
     host = values["host"]
     from serve.server import api_key_of, explicit_no_key, key_list
-    raw_key = os.environ.get("NOSTROMA_API_KEY", os.environ.get("STRATA_API_KEY")) or cfg.get("api_key", "")
+    raw_key = os.environ.get("NOSTROMA_API_KEY", os.environ.get("NOSTROMA_API_KEY")) or cfg.get("api_key", "")
     if not explicit_no_key(raw_key):
         try:
             key_list(api_key_of(raw_key))
         except ValueError:
             raise ProfileError("the inference API key is invalid", 5) from None
     # A key is recommended on a network, never required: the server warns once at start (owner decision 2026-10-20).
-    server_args = ["--engine", getattr(cli, "engine", "strata"), "--config", str(path), "--host", str(host),
+    server_args = ["--engine", getattr(cli, "engine", "nostroma"), "--config", str(path), "--host", str(host),
                    "--port", str(values["port"])]
     if cli is not None:
         server_args += ["--shutdown-timeout", str(cli.shutdown_timeout)]
@@ -886,7 +886,7 @@ def _serve_jsonl(server_main, args: list[str], plan: dict, *, quiet: bool = Fals
         if result == 0 and not ready:
             result = 6
         if not isinstance(exc.code, int):
-            print("strata: foreground service startup failed; inspect the profile and component checks",
+            print("nostroma: foreground service startup failed; inspect the profile and component checks",
                   file=sys.stderr)
         emit("failed", {"phase": "startup" if not ready else "running", "exit_code": result})
         return result
@@ -894,7 +894,7 @@ def _serve_jsonl(server_main, args: list[str], plan: dict, *, quiet: bool = Fals
         emit("failed", {"phase": "startup" if not ready else "running", "exit_code": 130})
         return 130
     except Exception as exc:
-        print(f"strata: foreground service failed ({type(exc).__name__})", file=sys.stderr)
+        print(f"nostroma: foreground service failed ({type(exc).__name__})", file=sys.stderr)
         emit("failed", {"phase": "startup" if not ready else "running", "exit_code": 6})
         return 6
     if not ready:
@@ -915,9 +915,9 @@ def _serve_foreground(server_main, args: list[str], plan: dict, *, output: str, 
             with contextlib.redirect_stdout(human_output):
                 result = server_main(args, interrupt_exit_code=130)
         if result == 8:
-            print("strata: shutdown drain deadline expired; owned requests were cancelled", file=sys.stderr)
+            print("nostroma: shutdown drain deadline expired; owned requests were cancelled", file=sys.stderr)
         elif result:
-            print(f"strata: foreground service exited with code {result}", file=sys.stderr)
+            print(f"nostroma: foreground service exited with code {result}", file=sys.stderr)
         return result
     return server_main(args, interrupt_exit_code=130)
 
@@ -1308,7 +1308,7 @@ def _bench_standard(a: argparse.Namespace, machine: bool) -> int:
             if a.profile and target.get("/health", timeout=5) is None:
                 if a.no_start:
                     raise ProfileError("no server is answering at the profile's address and --no-start was given", 5)
-                scratch = Path(tempfile.mkdtemp(prefix="strata-bench-"))
+                scratch = Path(tempfile.mkdtemp(prefix="nostroma-bench-"))
                 engine_log = scratch / "engine.log"
                 run_log = Path(str(plan["config"]["log"])).expanduser() if isinstance(plan["config"].get("log"), str) else None
                 log_start = run_log.stat().st_size if run_log is not None and run_log.is_file() else 0
@@ -1492,7 +1492,7 @@ def _timeskip(a: argparse.Namespace) -> int:
     def state_root() -> Path:
         if getattr(a, "state_dir", None):
             return Path(a.state_dir)
-        env = os.environ.get("NOSTROMA_TIMESKIP_DIR", os.environ.get("STRATA_TIMESKIP_DIR"))
+        env = os.environ.get("NOSTROMA_TIMESKIP_DIR", os.environ.get("NOSTROMA_TIMESKIP_DIR"))
         if env:
             return Path(env)
         from nostroma_control.paths import state_base
@@ -1577,9 +1577,9 @@ def _timeskip(a: argparse.Namespace) -> int:
     try:
         checks = store.load_checks(workspace)
     except (time_skip.TimeSkipError, ValueError, OSError) as e:
-        return _error(f"could not read .strata/checks.json: {e}", 2, a.output == "json")
+        return _error(f"could not read .nostroma/checks.json: {e}", 2, a.output == "json")
     if not checks:
-        print("strata: no checks are declared for this workspace (.strata/checks.json); the run "
+        print("nostroma: no checks are declared for this workspace (.nostroma/checks.json); the run "
               "will checkpoint and report inconclusive rather than claim an improvement",
               file=sys.stderr)
 
@@ -1588,8 +1588,8 @@ def _timeskip(a: argparse.Namespace) -> int:
     def revise(candidate: Path, prompt: str, attempt: int):
         if not a.revise_command:
             return None
-        env = {**os.environ, "STRATA_TIMESKIP_PROMPT": prompt,
-               "STRATA_TIMESKIP_ATTEMPT": str(attempt)}
+        env = {**os.environ, "NOSTROMA_TIMESKIP_PROMPT": prompt,
+               "NOSTROMA_TIMESKIP_ATTEMPT": str(attempt)}
         proc = subprocess.run(a.revise_command, shell=True, cwd=str(candidate), env=env,
                               capture_output=True, text=True, errors="replace")
         if proc.returncode != 0:
@@ -1635,7 +1635,7 @@ def _reopen_run(store, data: dict):
 
 
 def _engine_arg(value: str, backend: str) -> Path:
-    """`--engine` is a path, or `component:strata-engine` for the engine package installed for this PC."""
+    """`--engine` is a path, or `component:nostroma-engine` for the engine package installed for this PC."""
     from nostroma_control import engine_component
     if engine_component.is_reference(value):
         try:
@@ -1659,7 +1659,7 @@ def _tune(a: argparse.Namespace) -> int:
     def state_root() -> Path:
         if getattr(a, "state_dir", None):
             return Path(a.state_dir)
-        env = os.environ.get("NOSTROMA_TUNE_DIR", os.environ.get("STRATA_TUNE_DIR"))
+        env = os.environ.get("NOSTROMA_TUNE_DIR", os.environ.get("NOSTROMA_TUNE_DIR"))
         if env:
             return Path(env)
         from nostroma_control.paths import state_base
@@ -1812,7 +1812,7 @@ def _tune_run(a: argparse.Namespace, *, store_root: Path) -> int:
         print(f"backend {plan.backend} · objective {plan.objective} · repeats {plan.repeats} · "
               f"at most {plan.max_trials} trials / {plan.total_time_s:.0f}s")
         if not plan.dimensions:
-            print("strata: this backend offers no searchable dimension for this engine, so the "
+            print("nostroma: this backend offers no searchable dimension for this engine, so the "
                   "sweep will measure the baseline and stop", file=sys.stderr)
 
     job = tuning.Tuner(store_root, plan, measure)
@@ -1878,7 +1878,7 @@ def _tune_apply(a: argparse.Namespace, *, store_root: Path) -> int:
 
     config = Path(a.config) if a.config else _find_config_for(job)
     if config is None or not config.exists():
-        return _error("no run configuration found; pass --config strata-<model>.json",
+        return _error("no run configuration found; pass --config nostroma-<model>.json",
                       2, a.output == "json")
 
     identity = None
@@ -2083,19 +2083,19 @@ def _install(a: argparse.Namespace) -> int:
     """The one place the terminal acquires anything: it hands over to the installer (setup.py) of a full Nostroma
     folder, which is where pip, the engine and the models are fetched. A folder without it (the terminal archive)
     says so and names what to do instead."""
-    installer = Path(os.environ.get("NOSTROMA_INSTALL_DIR", os.environ.get("STRATA_INSTALL_DIR")) or ROOT) / "setup.py"
+    installer = Path(os.environ.get("NOSTROMA_INSTALL_DIR", os.environ.get("NOSTROMA_INSTALL_DIR")) or ROOT) / "setup.py"
     if not installer.is_file():
         return _error("this folder has no installer (setup.py). Engines, models and updates are installed from a "
                       "full Nostroma folder with SETUP.bat / ./setup.sh and UPDATE.bat / ./update.sh; "
-                      "set STRATA_INSTALL_DIR to that folder to run it from here. To update the engine and Control "
+                      "set NOSTROMA_INSTALL_DIR to that folder to run it from here. To update the engine and Control "
                       "from the signed update feed, run `nostroma update`", 5)
     extra = [x for x in a.setup_args if x != "--"]
     env = dict(os.environ)
     if (ROOT / "python").is_dir() and (ROOT / "VERSION").is_file():
         # the Terminal bundle: its installer only downloads and prepares the model (no pip, no engine fetch, no compiler)
-        env["STRATA_CONTROL_INSTALL"] = "1"
+        env["NOSTROMA_CONTROL_INSTALL"] = "1"
         from nostroma_cli.launch.catalog import install_root
-        env.setdefault("STRATA_INSTALL_DIR", str(install_root()))
+        env.setdefault("NOSTROMA_INSTALL_DIR", str(install_root()))
     return subprocess.call([sys.executable, str(installer), "--update" if a.update else "--setup", *extra],
                            cwd=str(installer.parent), env=env)
 
@@ -2268,7 +2268,7 @@ def main(argv: list[str] | None = None) -> int:
     if extras:
         if getattr(a, "command", None) in ("launch", "connect"):
             from nostroma_cli.launch import cmd as launch_cmd
-            print("strata: " + launch_cmd.unknown_option_message(a.command, extras, ap), file=sys.stderr)
+            print("nostroma: " + launch_cmd.unknown_option_message(a.command, extras, ap), file=sys.stderr)
             return 2
         ap.error("unrecognized arguments: " + " ".join(extras))
     if getattr(a, "json", False) and a.command not in ("status", "monitor", "logs", "connection", "config"):
@@ -2285,6 +2285,6 @@ def main(argv: list[str] | None = None) -> int:
         code = _run(a)
     if code and captured.getvalue():
         if captured.truncated:
-            sys.stderr.write("strata: earlier human output omitted in quiet mode\n")
+            sys.stderr.write("nostroma: earlier human output omitted in quiet mode\n")
         sys.stderr.write(captured.getvalue())
     return code

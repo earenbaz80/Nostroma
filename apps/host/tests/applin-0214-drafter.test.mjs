@@ -13,29 +13,29 @@ import { tmpdir } from 'node:os';
 import { createNativeControl } from '../server/native-control.mjs';
 
 function fixture({ plan, split = null, installFails = false, startFails = 0, metrics = {}, config = {} } = {}) {
-  const root = mkdtempSync(join(tmpdir(), 'strata-applin-drafter-'));
+  const root = mkdtempSync(join(tmpdir(), 'nostroma-applin-drafter-'));
   const install = join(root, 'install'), data = join(root, 'host-data'), home = join(root, 'home'), modelsDir = join(home, 'models');
   for (const d of [install, data, modelsDir]) mkdirSync(d, { recursive: true });
-  const earlier = process.env.STRATA_INSTALL_DIR;
-  process.env.STRATA_INSTALL_DIR = install;
-  const dataFolder = join(root, 'Strata-data'), modelFolder = join(dataFolder, 'models', 'UD-Q4_K_XL');
+  const earlier = process.env.NOSTROMA_INSTALL_DIR;
+  process.env.NOSTROMA_INSTALL_DIR = install;
+  const dataFolder = join(root, 'Nostroma-data'), modelFolder = join(dataFolder, 'models', 'UD-Q4_K_XL');
   const gguf = join(modelFolder, 'Qwen3.8-Flash-Next-UD-Q4_K_XL-00001-of-00002.gguf');
   mkdirSync(modelFolder, { recursive: true });
   writeFileSync(gguf, 'GGUF'); writeFileSync(gguf.replace('00001', '00002'), 'GGUF');
   const pack = join(dataFolder, 'packs', 'ud_q4_k_xl'), mtp = join(dataFolder, 'mtp', 'rt');
   mkdirSync(join(pack, 'tokenizer'), { recursive: true });
   writeFileSync(join(pack, 'native_experts.txt'), 'x');
-  const configPath = join(install, 'strata-ud_q4_k_xl.json');
+  const configPath = join(install, 'nostroma-ud_q4_k_xl.json');
   const args = ['--pack', pack, '--native', gguf, '--ple-gguf', gguf.replace('00001', '00002'), '--mtp', mtp, '--max-context', '131072', '--kv', 'int8'];
-  writeFileSync(configPath, JSON.stringify({ exe: 'component:strata-engine', tokenizer: join(pack, 'tokenizer'), args, model_name: 'qwen3.8-flash-next-ud_q4_k_xl', port: 8080, ...config }));
-  writeFileSync(process.env.STRATA_SETTINGS_FILE, JSON.stringify({ data_dir: join(root, 'host-owned', 'Strata-data'), data_dir_at: 1700000000 }));
+  writeFileSync(configPath, JSON.stringify({ exe: 'component:nostroma-engine', tokenizer: join(pack, 'tokenizer'), args, model_name: 'qwen3.8-flash-next-ud_q4_k_xl', port: 8080, ...config }));
+  writeFileSync(process.env.NOSTROMA_SETTINGS_FILE, JSON.stringify({ data_dir: join(root, 'host-owned', 'Nostroma-data'), data_dir_at: 1700000000 }));
   const state = { installs: 0, planCalls: [], fetchCalls: [], splitCalls: [], saved: [], starts: 0, rpc: [] };
   const control = {
     control: { dir: join(root, 'control'), python: join(root, 'control', 'python', 'python') }, version: '0.2.10',
     async installedModels() {
       return { install_dir: install, models: [{ id: 'ud_q4_k_xl', name: 'qwen3.8-flash-next-ud_q4_k_xl', source_config: configPath, context_tokens: 131072, backend: 'cuda', component_status: 'present', missing: [], issue_codes: [] }] };
     },
-    async engine() { return { usable: true, backend: 'cuda', components_dir: join(root, 'c'), engine: { version: '0.1.56', platform: 'linux-x86_64', backend: 'cuda', exe: join(root, 'engine', 'strata'), root: join(root, 'engine') } }; },
+    async engine() { return { usable: true, backend: 'cuda', components_dir: join(root, 'c'), engine: { version: '0.1.56', platform: 'linux-x86_64', backend: 'cuda', exe: join(root, 'engine', 'nostroma'), root: join(root, 'engine') } }; },
     async draftingPlan(options) { state.planCalls.push(options); return typeof plan === 'function' ? plan(options, state) : plan; },
     async draftingFetch(options) { state.fetchCalls.push(options); return { ok: true, event: 'result', pack: null, skipped: false }; },
     async splitEngine(options) {
@@ -52,7 +52,7 @@ function fixture({ plan, split = null, installFails = false, startFails = 0, met
     contexts: [32768, 131072], recommendation: { family: 'qwen', model: 'UD-Q4_K_XL', context: 131072 }, context_note: '' };
   const hardware = { ram_gb: 256, cpu: { name: 'cpu', cores: 32 }, engine_vendor: 'nvidia', gpus: [{ index: 0, name: 'NVIDIA GeForce RTX 3060', vendor: 'nvidia', vram_gb: 12, arch: 86, usable: true }] };
   const spawnProcess = (command, argv) => {
-    if (!String(argv[0]).endsWith('strata_mcp.py')) throw new Error('no process but the installer may be started in packaged mode: ' + command + ' ' + argv.join(' '));
+    if (!String(argv[0]).endsWith('nostroma_mcp.py')) throw new Error('no process but the installer may be started in packaged mode: ' + command + ' ' + argv.join(' '));
     const child = new EventEmitter(); child.stdout = new EventEmitter(); child.stderr = new EventEmitter(); child.exitCode = null;
     child.kill = () => { child.exitCode = 0; queueMicrotask(() => child.emit('exit', 0)); return true; };
     child.stdin = { write(line) {
@@ -60,9 +60,9 @@ function fixture({ plan, split = null, installFails = false, startFails = 0, met
       if (message.method === 'tools/call') state.rpc.push(message.params);
       let result;
       if (message.method === 'initialize') result = { protocolVersion: '2024-11-05' };
-      else if (message.method === 'tools/list') result = { tools: ['strata_models', 'strata_status', 'strata_install', 'strata_remove'].map(name => ({ name })) };
-      else if (message.params.name === 'strata_models') result = { structuredContent: catalog };
-      else if (message.params.name === 'strata_status') result = { structuredContent: { hardware, recommendation: catalog.recommendation, install: null, running: [], summary: 'x' } };
+      else if (message.method === 'tools/list') result = { tools: ['nostroma_models', 'nostroma_status', 'nostroma_install', 'nostroma_remove'].map(name => ({ name })) };
+      else if (message.params.name === 'nostroma_models') result = { structuredContent: catalog };
+      else if (message.params.name === 'nostroma_status') result = { structuredContent: { hardware, recommendation: catalog.recommendation, install: null, running: [], summary: 'x' } };
       else if (Object.keys(message.params.arguments ?? {}).length === 0) result = { structuredContent: { summary: 'Install finished', install: { running: false, exit_code: 0 } } };
       else if (message.params.arguments?.confirm) {
         if (installFails) result = { isError: true, structuredContent: { error: 'The download did not finish.' } };
@@ -75,7 +75,7 @@ function fixture({ plan, split = null, installFails = false, startFails = 0, met
   const fetcher = async url => String(url).endsWith('/metrics') ? Response.json({ engine: metrics }) : Response.json({ status: 'ok' });
   const native = createNativeControl({ control, directory: data, spawnProcess, fetcher, requests: () => [], modelsDirectory: () => modelsDir, hardwareProbe: () => [{ index: 0, vram_gb: 12 }] });
   return { native, state, root, gguf, modelFolder, mtp, configPath, args,
-    cleanup: () => { if (earlier === undefined) delete process.env.STRATA_INSTALL_DIR; else process.env.STRATA_INSTALL_DIR = earlier; rmSync(root, { recursive: true, force: true }); } };
+    cleanup: () => { if (earlier === undefined) delete process.env.NOSTROMA_INSTALL_DIR; else process.env.NOSTROMA_INSTALL_DIR = earlier; rmSync(root, { recursive: true, force: true }); } };
 }
 const finish = async (native, id) => { for (let i = 0; i < 1500; i++) { const job = native.state().jobs.find(j => j.id === id); if (job.state !== 'running') return job; await new Promise(r => setTimeout(r, 10)); } throw new Error('job did not finish'); };
 const load = (f, args = {}) => f.native.operation('load', { model: 'ud_q4_k_xl', ...args });
@@ -87,7 +87,7 @@ const planner = ({ atInstall, layerAfter = 1 }) => (options, state) => {
   const missing = state.installs < layerAfter;
   return { ok: true, serves: true, split: false, choice: 'mtp', drafter: missing ? 'off' : 'mtp', needed: false, gb: 0, mtp_needed: missing, mtp_gb: missing ? 5.2 : 0, line: 'Drafting: MTP' };
 };
-const installs = f => f.state.rpc.filter(p => p.name === 'strata_install' && p.arguments?.confirm === true);
+const installs = f => f.state.rpc.filter(p => p.name === 'nostroma_install' && p.arguments?.confirm === true);
 const prepareAndLoad = f => f.native.operation('install', { family: 'qwen', model: 'UD_Q4_K_XL', gguf_dir: f.modelFolder, loadAfter: true });
 
 test('the install takes the drafter Control\'s Auto picks for this card: the MTP on a 12 GB streaming card, so the layer comes with the model', async () => {

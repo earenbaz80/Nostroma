@@ -4,7 +4,7 @@ Every step reports plain-word events through one callback (`emit`), so the TUI (
 tests see the same thing. Nothing here prints or reads the keyboard. The steps reuse what is already in the Terminal:
 
 * the engine comes from the signed feed (`nostroma update`, the one explicit step that downloads);
-* the model comes from setup.py in the app's own installer mode (STRATA_CONTROL_INSTALL), the same job the desktop app runs;
+* the model comes from setup.py in the app's own installer mode (NOSTROMA_CONTROL_INSTALL), the same job the desktop app runs;
 * the run config the engine uses is a private copy of the installed one with this launch's choices applied; the profile
   `launch-<name>` (the shared profiles store) points at it, and carries host, port and parallel;
 * tuning is `nostroma tune auto`, its result lives in the shared presets store and is applied at every start;
@@ -40,9 +40,9 @@ WINDOWS = os.name == "nt"
 
 def install_isolation_words(catalog, data_dir: str | os.PathLike | None = None) -> list[str]:
     """Round 8, N5: a clean test (a scratch data folder) silently ran an OLDER install found elsewhere (its run config and engine 0.1.41).
-    When a data folder was chosen (--data-dir, or STRATA_DATA_DIR from the installer) and the install in use is outside it, say which one is used
+    When a data folder was chosen (--data-dir, or NOSTROMA_DATA_DIR from the installer) and the install in use is outside it, say which one is used
     and why. Nothing is moved or switched."""
-    chosen = data_dir or os.environ.get("NOSTROMA_DATA_DIR", os.environ.get("STRATA_DATA_DIR"))
+    chosen = data_dir or os.environ.get("NOSTROMA_DATA_DIR", os.environ.get("NOSTROMA_DATA_DIR"))
     places = getattr(catalog, "places", None) or []
     if not chosen or not places or places[0].source == "explicit":
         return []
@@ -83,7 +83,7 @@ def argparse_failure(lines: list[str]) -> str:
     """setup.py's own refusal of an option ("setup.py: error: argument --kv: invalid choice: ..."), which is neither an [X] line nor a
     traceback (#3785): the words after "error:" are the cause."""
     for line in reversed(lines):
-        found = re.match(r"\s*(?:setup|strata)(?:\.py)?: error: (.+)", line)
+        found = re.match(r"\s*(?:setup|nostroma)(?:\.py)?: error: (.+)", line)
         if found:
             return found.group(1).strip()[:300]
     return ""
@@ -131,7 +131,7 @@ def setup_failure(lines: list[str], err: str, hint: str, details: str | None, ow
                 pass
             return LaunchError("The model could not be installed. " + (f"Windows would not let Nostroma write to {shown}" if shown else
                                "Windows would not let Nostroma write to a folder") + " (access denied).",
-                               "Pick a folder you own for the model files (the Folder step, or --data-dir D:\\Strata-models) and start again. "
+                               "Pick a folder you own for the model files (the Folder step, or --data-dir D:\\Nostroma-models) and start again. "
                                "Nothing was downloaded." + where, 6)
         return LaunchError(f"The model could not be installed. Setup stopped with an error ({crashed}).", "Run it again." + where, 6)
     return LaunchError("The model could not be installed." + (f" {capital(err.rstrip('.'))}." if err else ""),
@@ -453,11 +453,11 @@ def uses_integrated_gpu(computer, s: "S.LaunchSettings") -> bool:
     return False
 
 
-_SETUP_LOG_NAME = re.compile(r"^strata-[A-Za-z0-9_.-]+\.log$")
+_SETUP_LOG_NAME = re.compile(r"^nostroma-[A-Za-z0-9_.-]+\.log$")
 
 
 def own_log_path(base: dict) -> str | None:
-    """The log path a person wrote into the model's config themselves (#3656): setup names its own `strata-<model>.log`, so any other
+    """The log path a person wrote into the model's config themselves (#3656): setup names its own `nostroma-<model>.log`, so any other
     name is theirs and a launch keeps it instead of writing its per-profile log file."""
     value = base.get("log")
     if not isinstance(value, str) or not value.strip():
@@ -487,7 +487,7 @@ def derive_config(base: dict, s: S.LaunchSettings, *, bool_flags: frozenset[str]
         cfg["split_engine"] = s.split_engine
     if s.cache_boundary:                                     # serve/server.py configure_cache_boundary_env: the engine's message-boundary checkpoint (off unless asked)
         cfg["cache_boundary"] = s.cache_boundary
-    cfg.setdefault("exe", "component:strata-engine")
+    cfg.setdefault("exe", "component:nostroma-engine")
     cfg["open_browser"] = False                              # nostroma launch never opens a browser by itself (only `--open` does, after the start)
     if isinstance(cfg.get("args"), list):
         cfg["args"] = [a for a in cfg["args"] if a != "--open"]
@@ -642,9 +642,9 @@ class Runner:
 
     def _env(self) -> dict[str, str]:
         env = quiet_crash_env(dict(os.environ, PYTHONUNBUFFERED="1", PYTHONIOENCODING="utf-8"))   # no debugger on a user's machine
-        env.pop("STRATA_NO_ACQUIRE", None)                  # launch is the explicit step that may download
+        env.pop("NOSTROMA_NO_ACQUIRE", None)                  # launch is the explicit step that may download
         if self.components_dir:
-            env["STRATA_COMPONENTS_DIR"] = self.components_dir
+            env["NOSTROMA_COMPONENTS_DIR"] = self.components_dir
         return env
 
     def _spawn(self, argv: list[str], *, env: dict | None = None, cwd: str | None = None) -> subprocess.Popen:
@@ -668,7 +668,7 @@ class Runner:
                         pass
 
     def _cli(self, *args: str) -> list[str]:
-        return [self.python, str(ROOT / "strata.py"), *args]
+        return [self.python, str(ROOT / "nostroma.py"), *args]
 
     def warn_wsl_amd(self) -> None:
         """Under WSL the Linux AMD engines hang (no /dev/kfd, librocdxg never completes a GPU command): say so plainly with one next step,
@@ -701,7 +701,7 @@ class Runner:
             if not stale:
                 self.emit("engine", f"Engine {eng['version']} ({eng['backend']}) is installed.", 100)
                 return
-        feed = self.feed or os.environ.get("NOSTROMA_UPDATE_FEED", os.environ.get("STRATA_UPDATE_FEED"))
+        feed = self.feed or os.environ.get("NOSTROMA_UPDATE_FEED", os.environ.get("NOSTROMA_UPDATE_FEED"))
         if stale:
             blocked = self.stale_update_blocked(stale)
             if blocked:                                      # an engine update is the person's choice, and never beside a loaded model
@@ -799,7 +799,7 @@ class Runner:
     def model_shape(self) -> str | None:
         """The model shape whose own engine runs the chosen model (a feed model of a shape other than Flash-Next's: setup's FAMILIES entry has "shape"), or None."""
         try:
-            fam = (getattr(self.catalog.strata.setup_module(), "FAMILIES", None) or {}).get(self.s.family) or {}
+            fam = (getattr(self.catalog.nostroma.setup_module(), "FAMILIES", None) or {}).get(self.s.family) or {}
             shape = fam.get("shape")
             return shape if isinstance(shape, str) and shape else None
         except Exception:                                    # noqa: BLE001 - no table, no shape: the Nostroma engine
@@ -808,7 +808,7 @@ class Runner:
     def model_title(self) -> str | None:
         """The chosen model's title ("Q4 Lite Shape"), which the lines about its engine name instead of the geometry's name; None when the table has none."""
         try:
-            title = ((getattr(self.catalog.strata.setup_module(), "FAMILIES", None) or {}).get(self.s.family) or {}).get("title")
+            title = ((getattr(self.catalog.nostroma.setup_module(), "FAMILIES", None) or {}).get(self.s.family) or {}).get("title")
             return title if isinstance(title, str) and title else None
         except Exception:                                    # noqa: BLE001
             return None
@@ -822,7 +822,7 @@ class Runner:
         title = self.model_title()
         name = shape_engine.shown(shape, title)
         self.emit("engine", shape_engine.WORDS["checking"].format(model=name))
-        source = update_cmd._feed_source(argparse.Namespace(feed=self.feed or os.environ.get("NOSTROMA_UPDATE_FEED", os.environ.get("STRATA_UPDATE_FEED"))), root or ec.components_dir())
+        source = update_cmd._feed_source(argparse.Namespace(feed=self.feed or os.environ.get("NOSTROMA_UPDATE_FEED", os.environ.get("NOSTROMA_UPDATE_FEED"))), root or ec.components_dir())
         said: list[str] = []
         exe = shape_engine.ensure(shape, source, components=root, emit=lambda m: (said.append(m), self.emit("engine", m, 0)), title=title,
                                   automatic=True)     # with an engine installed, a check nobody asked for (netpolicy rule 4b)
@@ -835,7 +835,7 @@ class Runner:
     def needed_engine(self) -> tuple[int, ...] | None:
         """The oldest engine this model runs on, from setup.py's own tables (MIN_ENGINE for everything, GYRO_ENGINE for Gyro), or None."""
         try:
-            mod = self.catalog.strata.setup_module()
+            mod = self.catalog.nostroma.setup_module()
             need = tuple(getattr(mod, "MIN_ENGINE", ()) or ())
             if self.s.family == "gyro":
                 need = max(need, tuple(getattr(mod, "GYRO_ENGINE", ()) or ()))
@@ -918,7 +918,7 @@ class Runner:
         if s.vision == "off":
             return
         try:
-            desc = self.catalog.strata.describe_config(path)
+            desc = self.catalog.nostroma.describe_config(path)
         except Exception:                                    # noqa: BLE001
             return
         if (desc or {}).get("images") in (None, "off"):
@@ -964,7 +964,7 @@ class Runner:
         if s.model_path:
             p = Path(s.model_path)
             args += ["--gguf-dir", str(p if p.is_dir() else p.parent)]
-        if self.feed:                                     # --feed / STRATA_UPDATE_FEED: setup reads the signed feed from there too
+        if self.feed:                                     # --feed / NOSTROMA_UPDATE_FEED: setup reads the signed feed from there too
             args += ["--feed", str(self.feed)]
         if s.gpu_roles:
             args += ["--gpu-roles", ",".join(f"{k}={v}" for k, v in sorted(s.gpu_roles.items(), key=lambda kv: int(kv[0])))]
@@ -1018,7 +1018,7 @@ class Runner:
         path = self.catalog.installed_config(tag)
         if path is None:
             return None, None
-        desc = self.catalog.strata.describe_config(path)
+        desc = self.catalog.nostroma.describe_config(path)
         return path, desc
 
     def layer_back(self, path: Path | None = None) -> bool:
@@ -1151,7 +1151,7 @@ class Runner:
                     src = Path(source).resolve()
                 except (OSError, TypeError):
                     continue
-                if here == src or here == src / "Strata-data":
+                if here == src or here == src / "Nostroma-data":
                     return None                              # setup reuses it: the plan's installed answer is the start's
             return found
         except Exception:                                    # noqa: BLE001 - a plan line, never a reason to stop
@@ -1219,7 +1219,7 @@ class Runner:
         job = {"folder": str(cat.model_folder(data, s.family, s.model)),
                "total_gb": float(next((r.download_gb for r in cat.rows() if r.family == s.family and r.model == s.model), 0) or 0)}
         try:
-            setup_module = cat.strata.setup_module()
+            setup_module = cat.nostroma.setup_module()
             if setup_module is not None and not s.model_path:
                 job["files"] = cat.mcp.expected_files(setup_module, str(s.family), str(s.model), models_dir, self.vision_word() != "no")
                 first = next((f for f in job["files"] if f.get("role") == "model"), None)
@@ -1271,12 +1271,12 @@ class Runner:
             self.emit("model", note, None)
         argv = [self.python, str(cat.src / "setup.py"), *self.setup_args()]
         env = self._env()
-        env.update(STRATA_CONTROL_INSTALL="1", STRATA_INSTALL_DIR=str(cat.root), PYTHONNOUSERSITE="1")
-        env.pop("STRATA_NEED_ENGINE", None)
+        env.update(NOSTROMA_CONTROL_INSTALL="1", NOSTROMA_INSTALL_DIR=str(cat.root), PYTHONNOUSERSITE="1")
+        env.pop("NOSTROMA_NEED_ENGINE", None)
         if self.engine_problem:
-            env["STRATA_ALLOW_NO_ENGINE"] = "1"              # the person said go on: setup warns about the engine instead of stopping
+            env["NOSTROMA_ALLOW_NO_ENGINE"] = "1"              # the person said go on: setup warns about the engine instead of stopping
         else:
-            env["STRATA_NEED_ENGINE"] = "1"
+            env["NOSTROMA_NEED_ENGINE"] = "1"
         for k in ("PYTHONHOME", "PYTHONPATH", "VIRTUAL_ENV"):
             env.pop(k, None)
         env["PYTHONPATH"] = str(cat.src)
@@ -1407,7 +1407,7 @@ class Runner:
         argv = [self.python, str(cat.src / "setup.py"), "--prepare-pack", str(pack), "--gguf-dir", str(model_dir),
                 "--family", str(fam), "--model", str(model)]
         env = self._env()
-        env.update(STRATA_CONTROL_INSTALL="1", STRATA_INSTALL_DIR=str(cat.root), PYTHONNOUSERSITE="1")
+        env.update(NOSTROMA_CONTROL_INSTALL="1", NOSTROMA_INSTALL_DIR=str(cat.root), PYTHONNOUSERSITE="1")
         for k in ("PYTHONHOME", "PYTHONPATH", "VIRTUAL_ENV"):
             env.pop(k, None)
         env["PYTHONPATH"] = str(cat.src)
@@ -1455,7 +1455,7 @@ class Runner:
             self.prepare_pack(model_dir, pack_dir, files)
         cfg, problems = adopt.plan(family=s.family, model=s.model, model_dir=model_dir, data_dir=data_dir, src=cat.src,
                                    context=s.context or 32768, kv=s.kv, model_name=f"{fam.get('name', s.family)}-{s.model.lower()}", family_def=fam,
-                                   log=cat.root / f"strata-{tag}.log", backend=backend,
+                                   log=cat.root / f"nostroma-{tag}.log", backend=backend,
                                    vram_gb=float(cat.computer().main_vram_gb or 0), notes=self.notices, pack_name=tag.lower())
         if cfg is None:
             if backend == "sycl":
@@ -1465,7 +1465,7 @@ class Runner:
             raise LaunchError("The installer cannot set up this graphics card yet, and the files Nostroma would need to write the settings itself are not all there: "
                               + "; ".join(problems) + ".",
                               "Use model files that were prepared on this computer already (folder + pack): for an Intel Arc card the steps are in docs/INTEL_ARC.md (the Terminal carries tools/iq_pack.py for the pack). Or install on a computer with an NVIDIA or AMD card.", 5)
-        path = cat.root / f"strata-{tag}.json"
+        path = cat.root / f"nostroma-{tag}.json"
         adopt.write(path, cfg)
         self.notices.append("The downloader built into this Terminal sets up NVIDIA and AMD cards only (Intel Arc cards have a separate installer), so Nostroma wrote the "
                             f"run settings itself from the prepared model files already on this computer ({path.name}). No model files were downloaded.")
@@ -1576,7 +1576,7 @@ class Runner:
                     cards = [int(g) for g in s.gpus] if s.gpus else None
                     got = SE.expected(base, indexes=cards, native=native, context=int(s.context or SE.TESTED_CONTEXT),
                                       kv=next((str(a2) for a1, a2 in zip(base.get("args") or [], (base.get("args") or [])[1:]) if a1 == "--kv"), None),
-                                      allow_untested=os.environ.get("NOSTROMA_SPLIT_ALLOW_UNTESTED", os.environ.get("STRATA_SPLIT_ALLOW_UNTESTED")) == "1", probe=self.card_probe())
+                                      allow_untested=os.environ.get("NOSTROMA_SPLIT_ALLOW_UNTESTED", os.environ.get("NOSTROMA_SPLIT_ALLOW_UNTESTED")) == "1", probe=self.card_probe())
         except Exception:                                    # noqa: BLE001 - a question asked early is never a reason to stop a launch
             got = False
         self._split_expected = got
@@ -1720,12 +1720,12 @@ class Runner:
 
     def apply_split_engine(self, cfg: dict) -> None:
         """The all-cards split engine (docs/SPLIT_ENGINE.md): by itself ("auto", the default) for a Qwen model on this PC's NVIDIA or AMD (gfx1201) cards that passes
-        nostroma_control/split_engine.py's rule, never when the run config says "split_engine": "off" (`--split-engine off`, STRATA_SPLIT_ENGINE=0).
+        nostroma_control/split_engine.py's rule, never when the run config says "split_engine": "off" (`--split-engine off`, NOSTROMA_SPLIT_ENGINE=0).
         In auto a "no" is silent and the config stays as it is; with "on" it gets one plain line. It never stops a launch."""
         from nostroma_control import split_engine as SE
         if SE.mode(cfg) == "off":
             return
-        exe_for = SE.exe_finder(cfg)                         # strata-split-N beside the run config's engine (shared with the app's start)
+        exe_for = SE.exe_finder(cfg)                         # nostroma-split-N beside the run config's engine (shared with the app's start)
 
         # the split runs the model's own draft layer (--mtp) and refuses to start without it; the plan for Auto downloads DFlash2's drafter, not the draft layer, so
         # a start whose draft-layer folder is not on disk stays on the layer split (Auto: silently, with DFlash2 as the plan said; "on": one line saying how to get it)
@@ -1743,7 +1743,7 @@ class Runner:
         if lanes_added:
             cfg["parallel"] = int(self.s.parallel)
         try:
-            decision = SE.apply_to_config(cfg, exe_for_cards=exe_for, allow_untested=os.environ.get("NOSTROMA_SPLIT_ALLOW_UNTESTED", os.environ.get("STRATA_SPLIT_ALLOW_UNTESTED")) == "1", probe=self.card_probe())
+            decision = SE.apply_to_config(cfg, exe_for_cards=exe_for, allow_untested=os.environ.get("NOSTROMA_SPLIT_ALLOW_UNTESTED", os.environ.get("NOSTROMA_SPLIT_ALLOW_UNTESTED")) == "1", probe=self.card_probe())
         except Exception as e:                               # noqa: BLE001 - never stop a launch over an option
             if lanes_added:
                 cfg.pop("parallel", None)
@@ -2363,7 +2363,7 @@ class Runner:
         """For a ready-made pack family (NVFP4): what setup would still fetch into its models folder for these choices, {gb, folder, free_gb}, or None."""
         s = self.s
         try:
-            mod = self.catalog.strata.setup_module()
+            mod = self.catalog.nostroma.setup_module()
             _m, families, _c, _src = self.catalog.tables()
             if mod is None or not (families.get(s.family or "") or {}).get("ready") or not hasattr(mod, "ready_needed"):
                 return None
@@ -2732,9 +2732,9 @@ def explain_engine_exit(result: dict, config: Path | None, marks: dict | None = 
     # cards are full and it runs on the processor, matched "failed" and used to be the last line shown)
     vram_cause = vram_fit.engine_stop_reason(lines)
     reader = None if vram_cause else reader_room.find(lines)      # the picture reader found no room on its card (ggml prints it, then aborts): not the engine's line, so a search of its own
-    cause = vram_cause or next((x for x in reversed(lines) if CAUSE_LINE.search(x) and not x.lstrip().startswith(("strata generate: ", "strata serve: expert"))), None)
+    cause = vram_cause or next((x for x in reversed(lines) if CAUSE_LINE.search(x) and not x.lstrip().startswith(("nostroma generate: ", "nostroma serve: expert"))), None)
     cause = (cause or (lines[-1] if lines else "")).strip()
-    cause = re.sub(r"^(\[strata\]\s*)?(\d{4}-\d\d-\d\d[ T][\d:.]+\s*)?", "", cause)[:240]
+    cause = re.sub(r"^(\[nostroma\]\s*)?(\d{4}-\d\d-\d\d[ T][\d:.]+\s*)?", "", cause)[:240]
     state, why = result.get("state"), result.get("error") or result.get("message")
     if why == "startup_wait_expired":
         stage = "The model did not finish loading in time"
@@ -2749,7 +2749,7 @@ def explain_engine_exit(result: dict, config: Path | None, marks: dict | None = 
         real = next((x for x in reversed(lines) if any(p.search(x) for p, _ in KNOWN_CAUSES)), None)
         if real:
             hsa = None
-            cause = re.sub(r"^(\[strata\]\s*)?(\d{4}-\d\d-\d\d[ T][\d:.]+\s*)?", "", real.strip())[:240]
+            cause = re.sub(r"^(\[nostroma\]\s*)?(\d{4}-\d\d-\d\d[ T][\d:.]+\s*)?", "", real.strip())[:240]
         else:
             cause = ""
     if reader is not None and not hsa:                    # the plain sentence: which card, what the reader needs, what is free, and the next step

@@ -1,6 +1,6 @@
 """The Mac's model rules: which packs a Mac can run, whether one stays resident or streams its experts from the SSD, the
 Metal defaults of a run config. ONE definition, read by metal/setup_mac.py (a Mac that builds the engine itself), by setup.py's
-Control mode (the app and the Terminal on a Mac: model files only, the engine is a component) and by tools/strata_mcp.py (the
+Control mode (the app and the Terminal on a Mac: model files only, the engine is a component) and by tools/nostroma_mcp.py (the
 model list, the fit words and the recommendation both show). Pure: nothing here downloads, builds or starts anything.
 
 Unified memory: a Mac has one pool. Metal keeps a share of it resident (GPU_SHARE; on a big Mac the memory less what macOS and
@@ -64,9 +64,9 @@ STREAM_SPEC = 3
 # (section 31.1 of the same file; it has no Mac setup entry yet, the name is what a config for it would pass).
 SPEC3_MODELS = ("IQ3_S", "Q2_0", "CODER")
 SPEC3_MIN_P = "0.5"
-# STRATA_METAL_F16 (the fp16 decode windows, PR 4807) is the ENGINE's default for a resident IQ3_S or Q2_0 pack since 0.2.13 (metal window.cpp
+# NOSTROMA_METAL_F16 (the fp16 decode windows, PR 4807) is the ENGINE's default for a resident IQ3_S or Q2_0 pack since 0.2.13 (metal window.cpp
 # f16_auto_for, found from the GGUF file name).  M5 Max: decode +9 to +15% (Q2_0) and +9 to +12% (IQ3_S); top-1 agreement 97.1% / 96.2%, mean KL
-# 0.009 / 0.016; the 61-task suite passed the same tasks.  STRATA_METAL_F16=0 in the config's env turns it off.  Setup writes nothing for it.
+# 0.009 / 0.016; the 61-task suite passed the same tasks.  NOSTROMA_METAL_F16=0 in the config's env turns it off.  Setup writes nothing for it.
 
 
 def spec_args(model: str, stream: bool, mtp: bool) -> list[str]:
@@ -260,7 +260,7 @@ def stream_mtp(stream: bool, ram_gb: float) -> bool:
 def engine_args(pack: Path, shards: list, rt: Path, ctx: int, stream: bool = False, ram_gb: float = 0.0,
                 profile: Path | str = "data/expert-profile.bin", model: str = "") -> list[str]:
     """The Metal defaults: --spec 2 with the MTP draft layer (measured best on the M5 Max, docs/MAC.md) and the Q8_0
-    hyper-connection read (the engine's default on Metal; STRATA_HC_Q8=0 in the config's env gives the exact BF16
+    hyper-connection read (the engine's default on Metal; NOSTROMA_HC_Q8=0 in the config's env gives the exact BF16
     read).  Streaming from the SSD: one token per step, no draft layer (measured faster on the 32 GB M4); a streaming
     Mac with STREAM_MTP_FROM_GB or more keeps the draft layer and uses --spec STREAM_SPEC."""
     mtp = stream_mtp(stream, ram_gb) and not MAC_MODELS.get(model, {}).get("no_mtp")       # a feed model whose entry says "drafter: none" has no draft layer

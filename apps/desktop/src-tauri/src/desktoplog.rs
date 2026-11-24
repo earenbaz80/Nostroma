@@ -1,19 +1,19 @@
 //! The desktop shell's own logs (Linux): what the host and the window process printed, a crash log when the window dies, and
 //! `--save-logs`, which collects everything a person can send us without the window (the window is what may be crashing).
 //!
-//! Files, in `<data>/logs` (`$XDG_DATA_HOME/strata/logs`, usually `~/.local/share/strata/logs`; the newest ten of each kind are kept):
+//! Files, in `<data>/logs` (`$XDG_DATA_HOME/nostroma/logs`, usually `~/.local/share/nostroma/logs`; the newest ten of each kind are kept):
 //!   desktop-<UTC time>.log         one per start: the shell's lines, and every line the host (`[host]`) and the window (`[window]`) printed
 //!   desktop-crash-<UTC time>.log   written when the window process dies without being closed: what happened in plain words, the system,
 //!                                  the graphics session, the last lines of the window and of the host, and a backtrace when the system keeps one
 //!
-//! `strata-desktop --save-logs` puts the newest crash log, the tails of the newest shell logs and the engine server logs into one text file
+//! `nostroma-desktop --save-logs` puts the newest crash log, the tails of the newest shell logs and the engine server logs into one text file
 //! in the Downloads folder. The same pieces go into Settings > Engine > Diagnostics > Save logs (the host reads this folder).
 //!
 //! Windows and macOS (one process owns the host and the window) use the same folder and file names for what happens while the app starts:
 //! `init_startup` opens the run log first thing in `main`, before anything that can fail, and installs a panic hook; a start that fails
 //! (the host does not come up, the window cannot be made, any panic) ends in `startup_failed`: the reason goes into the run log and a
 //! `desktop-crash-` file, and the person sees a plain message box instead of a process that vanished with no trace. On Windows the folder
-//! is `%LOCALAPPDATA%\Strata\logs`, next to the components folder.
+//! is `%LOCALAPPDATA%\Nostroma\logs`, next to the components folder.
 
 // Linux uses the shell log, the crash log and --save-logs; Windows and macOS use the start-up half. Each side leaves the other unused.
 #![allow(dead_code)]
@@ -31,14 +31,14 @@ const RING_LINES: usize = 300;
 /// `<data>/` : where Nostroma keeps its engine, runtime and logs on this system.
 pub fn data_dir() -> PathBuf {
     if let Some(dir) = std::env::var_os("NOSTROMA_DESKTOP_DATA_DIR")
-        .or_else(|| std::env::var_os("STRATA_DESKTOP_DATA_DIR"))
+        .or_else(|| std::env::var_os("NOSTROMA_DESKTOP_DATA_DIR"))
     {
         return PathBuf::from(dir);
     }
     platform_data_dir()
 }
 
-/// Windows: `%LOCALAPPDATA%\Strata`, the folder the host and Control already use for the components and the install.
+/// Windows: `%LOCALAPPDATA%\Nostroma`, the folder the host and Control already use for the components and the install.
 #[cfg(windows)]
 fn platform_data_dir() -> PathBuf {
     std::env::var_os("LOCALAPPDATA")
@@ -46,10 +46,10 @@ fn platform_data_dir() -> PathBuf {
         .filter(|p| p.is_absolute())
         .or_else(|| std::env::var_os("USERPROFILE").map(|h| PathBuf::from(h).join("AppData").join("Local")))
         .unwrap_or_else(std::env::temp_dir)
-        .join("Strata")
+        .join("Nostroma")
 }
 
-/// Linux and macOS: `$XDG_DATA_HOME/strata`, usually `~/.local/share/strata`.
+/// Linux and macOS: `$XDG_DATA_HOME/nostroma`, usually `~/.local/share/nostroma`.
 #[cfg(not(windows))]
 fn platform_data_dir() -> PathBuf {
     let base = std::env::var_os("XDG_DATA_HOME")
@@ -57,7 +57,7 @@ fn platform_data_dir() -> PathBuf {
         .filter(|p| p.is_absolute())
         .or_else(|| std::env::var_os("HOME").map(|h| PathBuf::from(h).join(".local").join("share")))
         .unwrap_or_else(std::env::temp_dir);
-    base.join("strata")
+    base.join("nostroma")
 }
 
 pub fn logs_dir() -> PathBuf {
@@ -145,7 +145,7 @@ impl Log {
 
 /// Print what the shell says (terminal and log).
 pub fn say(log: &Log, text: &str) {
-    eprintln!("[strata] {text}");
+    eprintln!("[nostroma] {text}");
     log.line("shell", text);
 }
 
@@ -190,7 +190,7 @@ fn graphics_environment() -> Vec<String> {
     const NAMES: &[&str] = &[
         "XDG_SESSION_TYPE", "XDG_CURRENT_DESKTOP", "DESKTOP_SESSION", "DISPLAY", "WAYLAND_DISPLAY", "GDK_BACKEND", "GTK_THEME",
         "WEBKIT_DISABLE_DMABUF_RENDERER", "WEBKIT_DISABLE_COMPOSITING_MODE", "WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS", "LIBGL_ALWAYS_SOFTWARE",
-        "FONTCONFIG_FILE", "FONTCONFIG_PATH", "STRATA_FONT_CONFIG", "GALLIUM_DRIVER", "__GLX_VENDOR_LIBRARY_NAME", "__NV_PRIME_RENDER_OFFLOAD", "MESA_LOADER_DRIVER_OVERRIDE", "APPIMAGE", "APPDIR",
+        "FONTCONFIG_FILE", "FONTCONFIG_PATH", "NOSTROMA_FONT_CONFIG", "GALLIUM_DRIVER", "__GLX_VENDOR_LIBRARY_NAME", "__NV_PRIME_RENDER_OFFLOAD", "MESA_LOADER_DRIVER_OVERRIDE", "APPIMAGE", "APPDIR",
     ];
     NAMES.iter().filter_map(|n| std::env::var(n).ok().map(|v| format!("  {n}={v}"))).collect()
 }
@@ -312,7 +312,7 @@ fn tail_lines(path: &Path, n: usize) -> String {
 /// `--save-logs`: one text file with what we need to look at a crash. Returns its path.
 pub fn save_logs(out_dir: &Path) -> std::io::Result<PathBuf> {
     std::fs::create_dir_all(out_dir)?;
-    let path = out_dir.join(format!("strata-logs-{}.txt", stamp(SystemTime::now())));
+    let path = out_dir.join(format!("nostroma-logs-{}.txt", stamp(SystemTime::now())));
     let mut t = String::new();
     t.push_str(&format!("Nostroma desktop logs {} UTC\nApp {}\nSystem: {} / {}\n", stamp(SystemTime::now()), env!("CARGO_PKG_VERSION"), os_pretty_name(), first_line("/proc/version").unwrap_or_default()));
     if let Some(v) = first_line("/proc/driver/nvidia/version") {
@@ -363,11 +363,11 @@ pub fn run_log() -> Option<Log> {
 }
 
 /// Open the run log and install the panic hook. Call it first in `main`: nothing that can fail runs before it. `dialog` is false for
-/// the self-test (no person to read a message box); `STRATA_NO_DIALOG` does the same for scripted runs.
+/// the self-test (no person to read a message box); `NOSTROMA_NO_DIALOG` does the same for scripted runs.
 pub fn init_startup(dialog: bool) {
     let dialog = dialog
         && std::env::var_os("NOSTROMA_NO_DIALOG").is_none()
-        && std::env::var_os("STRATA_NO_DIALOG").is_none();
+        && std::env::var_os("NOSTROMA_NO_DIALOG").is_none();
     let log = Log::open();
     log.line("shell", &system_line());
     if RUN.set(Run { log, dialog }).is_ok() {
@@ -419,7 +419,7 @@ pub fn plain_reason(detail: &str) -> String {
             .into()
     } else if lower.contains("app host") || lower.contains("node runtime") || lower.contains("could not start the app host") {
         "Nostroma's background program did not start. Security software may have blocked a file in the Nostroma folder. \
-         Allow the Nostroma folder in it (or reinstall Strata) and start Nostroma again."
+         Allow the Nostroma folder in it (or reinstall Nostroma) and start Nostroma again."
             .into()
     } else {
         "Nostroma stopped while it was starting. Starting it again may work; if it does not, please send us the log file named below.".into()
@@ -462,7 +462,7 @@ fn show_error(text: &str) {
     const MB_SETFOREGROUND: u32 = 0x1_0000;
     const MB_TOPMOST: u32 = 0x4_0000;
     let wide = |s: &str| std::ffi::OsStr::new(s).encode_wide().chain(std::iter::once(0)).collect::<Vec<u16>>();
-    let (text, caption) = (wide(text), wide("Strata"));
+    let (text, caption) = (wide(text), wide("Nostroma"));
     unsafe {
         MessageBoxW(std::ptr::null_mut(), text.as_ptr(), caption.as_ptr(), MB_ICONERROR | MB_SETFOREGROUND | MB_TOPMOST);
     }
@@ -470,13 +470,13 @@ fn show_error(text: &str) {
 
 #[cfg(not(windows))]
 fn show_error(text: &str) {
-    eprintln!("[strata] {text}");
+    eprintln!("[nostroma] {text}");
 }
 
 /// Record a failed start (run log and crash file) and tell the person. Runs inside the panic hook as well, so it cannot panic.
 fn report_failure(detail: &str) {
     let Some(run) = RUN.get() else {
-        eprintln!("[strata] {detail}");
+        eprintln!("[nostroma] {detail}");
         return;
     };
     run.log.line("shell", &format!("START FAILED: {detail}"));
@@ -555,9 +555,9 @@ mod tests {
 
     #[test]
     fn logs_are_pruned_and_saved_into_one_file() {
-        let dir = std::env::temp_dir().join(format!("strata-desktoplog-test-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("nostroma-desktoplog-test-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
-        std::env::set_var("STRATA_DESKTOP_DATA_DIR", &dir);
+        std::env::set_var("NOSTROMA_DESKTOP_DATA_DIR", &dir);
         let logs = logs_dir();
         std::fs::create_dir_all(&logs).unwrap();
         for i in 0..14 {
@@ -574,7 +574,7 @@ mod tests {
         let saved = save_logs(&dir.join("out")).unwrap();
         let text = std::fs::read_to_string(saved).unwrap();
         assert!(text.contains("crash 13") && text.contains("run 13") && text.contains("engine line"));
-        std::env::remove_var("STRATA_DESKTOP_DATA_DIR");
+        std::env::remove_var("NOSTROMA_DESKTOP_DATA_DIR");
         let _ = std::fs::remove_dir_all(&dir);
     }
     #[test]
@@ -583,7 +583,7 @@ mod tests {
         assert!(webview.contains("WebView2") && webview.contains("go.microsoft.com"));
         assert!(plain_reason("the Nostroma App Host did not become healthy at http://127.0.0.1:47831/api/health").contains("background program"));
         assert!(plain_reason("something else").contains("log file"));
-        let dir = std::env::temp_dir().join(format!("strata-startlog-test-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("nostroma-startlog-test-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         let path = write_startup_failure(&dir, "the app stopped unexpectedly: boom (at main.rs:1, thread main)", Some(Path::new("/x/desktop-1.log"))).unwrap();
         assert!(path.file_name().unwrap().to_string_lossy().starts_with("desktop-crash-"));
@@ -596,9 +596,9 @@ mod tests {
 
     #[cfg(windows)]
     #[test]
-    fn on_windows_the_logs_sit_in_the_local_app_data_strata_folder() {
+    fn on_windows_the_logs_sit_in_the_local_app_data_nostroma_folder() {
         let dir = platform_data_dir();
-        assert!(dir.ends_with("Strata"), "{}", dir.display());
+        assert!(dir.ends_with("Nostroma"), "{}", dir.display());
         assert!(system_version().split('.').count() == 3, "{}", system_version());
     }
 }

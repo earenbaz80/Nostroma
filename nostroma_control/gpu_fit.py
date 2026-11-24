@@ -13,7 +13,7 @@ docs/MULTI_GPU.md says each card "holds the dense weights of its layers and its 
 
 Cards that count: not integrated (an iGPU shares the system RAM and is ignored), at least MIN_CARD_GB of graphics memory, flagged usable by
 the caller's own driver checks (NVIDIA RTX 20 or newer, a supported AMD card, ...). A card needs SPLIT_MIN_VRAM_GB to share a model.
-Pure functions, no I/O: setup.py, nostroma_cli/launch and tools/strata_mcp.py import it.
+Pure functions, no I/O: setup.py, nostroma_cli/launch and tools/nostroma_mcp.py import it.
 """
 
 from __future__ import annotations
@@ -261,7 +261,7 @@ def options(memory_gb: float, ram_gb: float | None, cards: list[dict], vendor: s
     vendor = vendor or pick_vendor(cards)
     mine, others = for_vendor(cards, vendor)
     keep, ignored = usable_cards(mine)
-    ignored = ignored + [{**c, "why_ignored": f"it needs the {VENDOR_NAME.get(_vendor(c), _vendor(c))} build of Strata, and this engine drives "
+    ignored = ignored + [{**c, "why_ignored": f"it needs the {VENDOR_NAME.get(_vendor(c), _vendor(c))} build of Nostroma, and this engine drives "
                                               f"{VENDOR_NAME.get(vendor, vendor)} cards"} for c in others]
     out: dict[str, Any] = {"options": [], "recommended": None, "ignored": ignored, "cards": len(keep), "vendor": vendor,
                            "other_vendor_note": other_vendor_note(cards, vendor)}

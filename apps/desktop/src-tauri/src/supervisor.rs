@@ -9,11 +9,11 @@
 //!
 //! If the window process dies for any reason except the person closing the window (a signal such as SIGSEGV, an abort, a failed
 //! start, a missing library), the shell keeps the host running, tells the host to open the page in the default browser and to
-//! show one notification, and prints the same sentence on the terminal. This is "browser mode"; `--browser` or STRATA_UI=browser
+//! show one notification, and prints the same sentence on the terminal. This is "browser mode"; `--browser` or NOSTROMA_UI=browser
 //! starts in it on purpose. In browser mode closing the tab does not stop the engine: the page has "Quit Nostroma", and `--quit`
-//! ends a running Nostroma from the command line. The host listens on 127.0.0.1 only (the shell sets STRATA_BIND itself).
+//! ends a running Nostroma from the command line. The host listens on 127.0.0.1 only (the shell sets NOSTROMA_BIND itself).
 //!
-//! The session file (`~/.strata/app-session.json`, mode 0600: process id, port, the secret only this user can read, the mode) is how
+//! The session file (`~/.nostroma/app-session.json`, mode 0600: process id, port, the secret only this user can read, the mode) is how
 //! a second start finds the first one: it focuses the window (window mode) or opens another tab (browser mode) instead of
 //! starting a second host.
 
@@ -29,7 +29,7 @@ pub const BROWSER_NOTICE: &str = "Nostroma opened in your browser because the ap
 /// What the command line asked for.
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Options {
-    /// `--browser` or STRATA_UI=browser: no app window, the page opens in the default browser.
+    /// `--browser` or NOSTROMA_UI=browser: no app window, the page opens in the default browser.
     pub browser: bool,
     /// `--quit`: end a running Nostroma and leave.
     pub quit: bool,
@@ -55,21 +55,21 @@ pub fn parse_args(args: &[String], ui_env: Option<&str>) -> Options {
     o
 }
 
-pub const HELP: &str = "Strata\n\
+pub const HELP: &str = "Nostroma\n\
   (no option)  open the Nostroma app window\n\
-  --browser    open Nostroma in your default browser instead of the app window (same as STRATA_UI=browser)\n\
+  --browser    open Nostroma in your default browser instead of the app window (same as NOSTROMA_UI=browser)\n\
   --quit       stop a running Nostroma (its engine too) and leave\n\
   --save-logs  put the logs (including the log of an app window crash) into one file in your Downloads folder, to send to us\n\
 Closing the browser tab does not stop Nostroma in browser mode: use Quit Nostroma in the menu, or --quit.\n";
 
-/// The command a person types to run this app again, for the messages ("run: Strata.AppImage --quit").
+/// The command a person types to run this app again, for the messages ("run: Nostroma.AppImage --quit").
 pub fn command_name() -> String {
     if let Ok(image) = std::env::var("APPIMAGE") {
         if let Some(name) = std::path::Path::new(&image).file_name() {
             return format!("./{}", name.to_string_lossy());
         }
     }
-    std::env::current_exe().ok().and_then(|p| p.file_name().map(|n| n.to_string_lossy().into_owned())).unwrap_or_else(|| "strata-desktop".into())
+    std::env::current_exe().ok().and_then(|p| p.file_name().map(|n| n.to_string_lossy().into_owned())).unwrap_or_else(|| "nostroma-desktop".into())
 }
 
 pub fn browser_chosen_line(port: u16) -> String {
@@ -94,7 +94,7 @@ pub struct Session {
 }
 
 fn session_path() -> PathBuf {
-    if let Some(p) = std::env::var_os("STRATA_APP_SESSION_FILE") {
+    if let Some(p) = std::env::var_os("NOSTROMA_APP_SESSION_FILE") {
         return PathBuf::from(p);
     }
     let home = std::env::var_os("HOME").map(PathBuf::from).unwrap_or_else(std::env::temp_dir);
@@ -118,7 +118,7 @@ pub fn write_session(s: &Session) {
         Ok(mut f) => {
             let _ = f.write_all(text.as_bytes());
         }
-        Err(e) => eprintln!("[strata] could not write {}: {e}", path.display()),
+        Err(e) => eprintln!("[nostroma] could not write {}: {e}", path.display()),
     }
 }
 
@@ -165,7 +165,7 @@ pub fn live_session() -> Option<Session> {
 
 /// POST to the host as the shell (the secret in the header). Returns the response body.
 fn host_post(port: u16, token: &str, path: &str, body: &serde_json::Value) -> Result<String, String> {
-    let (status, text) = crate::http_request_body("POST", &format!("http://127.0.0.1:{port}{path}"), &[("x-strata-shutdown", token), ("content-type", "application/json")], Some(&body.to_string()))?;
+    let (status, text) = crate::http_request_body("POST", &format!("http://127.0.0.1:{port}{path}"), &[("x-nostroma-shutdown", token), ("content-type", "application/json")], Some(&body.to_string()))?;
     if status.contains(" 200") || status.contains(" 202") {
         Ok(text)
     } else {
@@ -185,10 +185,10 @@ pub fn switch_host_to_browser(port: u16, token: &str, reason: &str, notice: &str
     match host_post(port, token, "/api/control/ui", &body) {
         Ok(answer) => {
             if !opened(&answer) {
-                eprintln!("[strata] {}", open_by_hand_line(port));
+                eprintln!("[nostroma] {}", open_by_hand_line(port));
             }
         }
-        Err(e) => eprintln!("[strata] could not tell the host to open your browser ({e}). Open http://127.0.0.1:{port}/ in your browser."),
+        Err(e) => eprintln!("[nostroma] could not tell the host to open your browser ({e}). Open http://127.0.0.1:{port}/ in your browser."),
     }
 }
 
@@ -196,7 +196,7 @@ pub fn switch_host_to_browser(port: u16, token: &str, reason: &str, notice: &str
 fn open_page_only(port: u16, token: &str) {
     match host_post(port, token, "/api/control/ui", &serde_json::json!({ "open": true })) {
         Ok(answer) if opened(&answer) => {}
-        _ => eprintln!("[strata] {}", open_by_hand_line(port)),
+        _ => eprintln!("[nostroma] {}", open_by_hand_line(port)),
     }
 }
 
@@ -228,7 +228,7 @@ pub fn describe_exit(status: &ExitStatus) -> String {
 
 /// The shell's process id, given to the window process it starts. A window process whose parent is not that shell was started by something else: the
 /// app updater's restart (Tauri's `app.restart()` starts `$APPIMAGE --window-child` again from the window process, with the old shell's environment).
-pub const SHELL_PID_ENV: &str = "STRATA_SHELL_PID";
+pub const SHELL_PID_ENV: &str = "NOSTROMA_SHELL_PID";
 
 /// Was this `--window-child` started by its shell? `shell_env` is SHELL_PID_ENV's value, `parent` this process's parent.
 pub fn started_by_shell(shell_env: Option<&str>, parent: u32) -> bool {
@@ -269,7 +269,7 @@ pub fn b64_decode(text: &str) -> Option<Vec<u8>> {
     Some(out)
 }
 
-/// The environment a person started Nostroma with: the AppImage's launcher records it in STRATA_ORIGINAL_ENV (`env -0 | base64 -w0`, repack-appimage.sh) at
+/// The environment a person started Nostroma with: the AppImage's launcher records it in NOSTROMA_ORIGINAL_ENV (`env -0 | base64 -w0`, repack-appimage.sh) at
 /// every start. A start from inside a running Nostroma (the updater's restart) records Nostroma's own environment, which holds the first record: the innermost
 /// one is the person's. None when there is no record (an older AppImage, a package install).
 pub fn original_environment(record: Option<&str>) -> Option<Vec<(String, String)>> {
@@ -286,14 +286,14 @@ pub fn original_environment(record: Option<&str>) -> Option<Vec<(String, String)
                 Some((k.to_string(), v.to_string()))
             })
             .collect();
-        let inner = vars.iter().find(|(k, _)| k == "STRATA_ORIGINAL_ENV").map(|(_, v)| v.clone());
+        let inner = vars.iter().find(|(k, _)| k == "NOSTROMA_ORIGINAL_ENV").map(|(_, v)| v.clone());
         found = Some(vars);
         match inner {
             Some(next) if !next.is_empty() => text = next,
             _ => break,
         }
     }
-    found.map(|vars| vars.into_iter().filter(|(k, _)| k != "STRATA_ORIGINAL_ENV").collect())
+    found.map(|vars| vars.into_iter().filter(|(k, _)| k != "NOSTROMA_ORIGINAL_ENV").collect())
 }
 
 /// The new Nostroma gets none of this process's files above stderr. This process got them from the window process that restarted it: the AppImage
@@ -354,12 +354,12 @@ pub fn restart_after_update() -> i32 {
         return 1;
     };
     let mut cmd = Command::new(&program);
-    match original_environment(std::env::var("STRATA_ORIGINAL_ENV").ok().as_deref()) {
+    match original_environment(std::env::var("NOSTROMA_ORIGINAL_ENV").ok().as_deref()) {
         Some(vars) => {
             cmd.env_clear().envs(vars);
         }
         None => {
-            for k in ["STRATA_WINDOW_PORT", "STRATA_SHUTDOWN_TOKEN", SHELL_PID_ENV] {
+            for k in ["NOSTROMA_WINDOW_PORT", "NOSTROMA_SHUTDOWN_TOKEN", SHELL_PID_ENV] {
                 cmd.env_remove(k);
             }
         }
@@ -389,8 +389,8 @@ fn spawn_window(port: u16, token: &str) -> std::io::Result<Child> {
     let exe = std::env::current_exe()?;
     Command::new(exe)
         .arg("--window-child")
-        .env("STRATA_WINDOW_PORT", port.to_string())
-        .env("STRATA_SHUTDOWN_TOKEN", token)
+        .env("NOSTROMA_WINDOW_PORT", port.to_string())
+        .env("NOSTROMA_SHUTDOWN_TOKEN", token)
         .env(SHELL_PID_ENV, std::process::id().to_string())
         .stdin(Stdio::null())
         .stdout(Stdio::inherit())
@@ -408,7 +408,7 @@ pub fn quit_running() -> i32 {
     match host_post(s.port, &s.token, "/api/control/shutdown", &serde_json::json!({})) {
         Ok(_) => {}
         Err(e) => {
-            eprintln!("[strata] could not ask Nostroma to stop ({e}).");
+            eprintln!("[nostroma] could not ask Nostroma to stop ({e}).");
             return 1;
         }
     }
@@ -420,7 +420,7 @@ pub fn quit_running() -> i32 {
         }
         std::thread::sleep(Duration::from_millis(200));
     }
-    eprintln!("[strata] Nostroma is still stopping its engine. Try again in a moment.");
+    eprintln!("[nostroma] Nostroma is still stopping its engine. Try again in a moment.");
     1
 }
 
@@ -435,12 +435,12 @@ fn join_running(s: &Session, browser: bool) -> i32 {
     match spawn_window(s.port, &s.token).and_then(|mut c| c.wait()) {
         Ok(status) if status.success() => 0,
         Ok(status) => {
-            eprintln!("[strata] The app window stopped ({}). Opening Nostroma in your browser.", describe_exit(&status));
+            eprintln!("[nostroma] The app window stopped ({}). Opening Nostroma in your browser.", describe_exit(&status));
             open_page_only(s.port, &s.token);
             0
         }
         Err(e) => {
-            eprintln!("[strata] could not start the app window ({e}). Opening Nostroma in your browser.");
+            eprintln!("[nostroma] could not start the app window ({e}). Opening Nostroma in your browser.");
             open_page_only(s.port, &s.token);
             0
         }
@@ -486,7 +486,7 @@ pub fn run(opts: &Options) -> i32 {
                 0
             }
             Err(e) => {
-                eprintln!("[strata] could not save the logs: {e}");
+                eprintln!("[nostroma] could not save the logs: {e}");
                 1
             }
         };
@@ -518,9 +518,9 @@ pub fn run(opts: &Options) -> i32 {
             return 1;
         }
     };
-    cmd.env("STRATA_UI_MODE", mode).env("STRATA_APP_VERSION", env!("CARGO_PKG_VERSION"));
+    cmd.env("NOSTROMA_UI_MODE", mode).env("NOSTROMA_APP_VERSION", env!("CARGO_PKG_VERSION"));
     if opts.browser {
-        cmd.env("STRATA_UI_REASON", "chosen");
+        cmd.env("NOSTROMA_UI_REASON", "chosen");
     }
     let mut host = match spawn_logged(&mut cmd, "host", &host_ring, &log) {
         Ok(c) => c,
@@ -549,7 +549,7 @@ pub fn run(opts: &Options) -> i32 {
     } else {
         let started = std::env::current_exe().and_then(|exe| {
             let mut c = Command::new(exe);
-            c.arg("--window-child").env("STRATA_WINDOW_PORT", port.to_string()).env("STRATA_SHUTDOWN_TOKEN", &token).env(SHELL_PID_ENV, me.to_string()).stdin(Stdio::null());
+            c.arg("--window-child").env("NOSTROMA_WINDOW_PORT", port.to_string()).env("NOSTROMA_SHUTDOWN_TOKEN", &token).env(SHELL_PID_ENV, me.to_string()).stdin(Stdio::null());
             spawn_logged(&mut c, "window", &window_ring, &log)
         });
         match started {
@@ -563,7 +563,7 @@ pub fn run(opts: &Options) -> i32 {
 
     let code = loop {
         std::thread::sleep(Duration::from_millis(200));
-        // The host ended (Quit Strata, a crash, someone killed it): nothing is left to show.
+        // The host ended (Quit Nostroma, a crash, someone killed it): nothing is left to show.
         if let Ok(Some(status)) = host.try_wait() {
             if let Some(w) = window.as_mut() {
                 let _ = w.kill();
@@ -599,7 +599,7 @@ mod tests {
     use super::*;
 
     fn args(list: &[&str]) -> Vec<String> {
-        std::iter::once("strata-desktop").chain(list.iter().copied()).map(String::from).collect()
+        std::iter::once("nostroma-desktop").chain(list.iter().copied()).map(String::from).collect()
     }
 
     #[test]
@@ -627,9 +627,9 @@ mod tests {
 
     #[test]
     fn a_session_round_trips_and_is_private() {
-        let dir = std::env::temp_dir().join(format!("strata-session-test-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("nostroma-session-test-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
-        std::env::set_var("STRATA_APP_SESSION_FILE", dir.join("s.json"));
+        std::env::set_var("NOSTROMA_APP_SESSION_FILE", dir.join("s.json"));
         assert!(read_session().is_none());
         let s = Session { pid: 4242, port: 47831, token: "ab".repeat(32), mode: "browser".into() };
         write_session(&s);
@@ -644,7 +644,7 @@ mod tests {
         assert!(read_session().is_some());
         remove_session(4242);
         assert!(read_session().is_none());
-        std::env::remove_var("STRATA_APP_SESSION_FILE");
+        std::env::remove_var("NOSTROMA_APP_SESSION_FILE");
         let _ = std::fs::remove_dir_all(&dir);
     }
 
@@ -684,15 +684,15 @@ mod tests {
     }
 
     #[test]
-    fn the_restart_gets_the_environment_the_person_started_strata_with() {
+    fn the_restart_gets_the_environment_the_person_started_nostroma_with() {
         // the first start: AppRun records the person's environment
-        let person = b"HOME=/home/u\0PATH=/usr/bin\0STRATA_UPDATE_FEED=http://127.0.0.1:1/f.json\0";
+        let person = b"HOME=/home/u\0PATH=/usr/bin\0NOSTROMA_UPDATE_FEED=http://127.0.0.1:1/f.json\0";
         let first = b64_encode(person);
         // inside Nostroma (the old window process): the old AppRun's own variables plus that record; the updater's restart records THAT
-        let inside = format!("HOME=/home/u\0PATH=/tmp/.mount_old/usr/bin:/usr/bin\0APPDIR=/tmp/.mount_old\0STRATA_WINDOW_PORT=47958\0STRATA_ORIGINAL_ENV={first}\0");
+        let inside = format!("HOME=/home/u\0PATH=/tmp/.mount_old/usr/bin:/usr/bin\0APPDIR=/tmp/.mount_old\0NOSTROMA_WINDOW_PORT=47958\0NOSTROMA_ORIGINAL_ENV={first}\0");
         let second = b64_encode(inside.as_bytes());
         let env = original_environment(Some(&second)).unwrap();
-        assert_eq!(env, vec![("HOME".into(), "/home/u".into()), ("PATH".into(), "/usr/bin".into()), ("STRATA_UPDATE_FEED".into(), "http://127.0.0.1:1/f.json".into())]);
+        assert_eq!(env, vec![("HOME".into(), "/home/u".into()), ("PATH".into(), "/usr/bin".into()), ("NOSTROMA_UPDATE_FEED".into(), "http://127.0.0.1:1/f.json".into())]);
         assert_eq!(original_environment(Some(&first)).unwrap().len(), 3);
         assert!(original_environment(None).is_none());
         assert!(original_environment(Some("%%%")).is_none());

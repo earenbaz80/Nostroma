@@ -1,7 +1,7 @@
 """What the person is told while a model downloads and is prepared: ONE place for the words, read by the app (through
-tools/strata_mcp.py `install_progress`) and by the Terminal (`nostroma launch`, nostroma_cli/launch/runner.py).
+tools/nostroma_mcp.py `install_progress`) and by the Terminal (`nostroma launch`, nostroma_cli/launch/runner.py).
 
-Setup prints its work in seven steps and the tools it runs print their command lines (`> python tools/strata_pack.py build ...`)
+Setup prints its work in seven steps and the tools it runs print their command lines (`> python tools/nostroma_pack.py build ...`)
 and progress lines (`name: 1.20 / 5.04 GB (24%)`). Those titles are for people who read the setup log ("writing the start script",
 "preparing the model for Nostroma"), and the name in a progress line is a file name or an internal label ("MTP draft layer",
 "llama.cpp source"). This turns what setup last printed into one plain sentence that says what is really happening now.
@@ -90,8 +90,8 @@ def describe(step: int | None, lines: list[str], download: dict | None = None) -
             return Words("verify", "The model files are on this computer; checking them")
         return Words("download", "Getting the model files")
     if step == 6:
-        marker = _last_matching(recent, "mtp_rt.py", "mtp_pack.py", "mtp_fetch.py", "mtp draft layer:", "strata_pack.py", "pack_index.py",
-                                "strata_tokenizer.py", "iq_pack.py", "nvfp4_local_pack.py", "converting the q2_0 experts",
+        marker = _last_matching(recent, "mtp_rt.py", "mtp_pack.py", "mtp_fetch.py", "mtp draft layer:", "nostroma_pack.py", "pack_index.py",
+                                "nostroma_tokenizer.py", "iq_pack.py", "nvfp4_local_pack.py", "converting the q2_0 experts",
                                 "writing the experts into one file", "of mtp tensors", "[ok] model prepared")
         low = (marker or "").lower()
         if not marker and dl_file.startswith("mtp draft"):
@@ -104,11 +104,11 @@ def describe(step: int | None, lines: list[str], download: dict | None = None) -
             return Words("draft", "Preparing the draft layer")
         if "[ok] model prepared" in low or not marker:      # nothing is being prepared (the model is prepared, or step 6 has only begun) and no draft-layer step runs:
             return Words("verify", "The model files are on this computer; checking them")    # words that claim no preparation (0.2.14.1 check: no "(one time)" on every launch)
-        if "strata_pack.py" in low or "converting the q2_0 experts" in low:
+        if "nostroma_pack.py" in low or "converting the q2_0 experts" in low:
             return Words("pack", "Packing the model's experts for your processor (one time, a few minutes)")
         if "pack_index.py" in low:
             return Words("pack", "Indexing the packed experts")
-        if "strata_tokenizer.py" in low:
+        if "nostroma_tokenizer.py" in low:
             return Words("tokenizer", "Preparing the tokenizer")
         if "writing the experts into one file" in low or ("iq_pack.py" in low and "--experts-bin" in low):
             return Words("pack", "Packing the experts into one file for low-memory mode (one time)")
