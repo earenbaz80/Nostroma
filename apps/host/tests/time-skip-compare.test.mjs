@@ -80,7 +80,7 @@ test('the working view says what is happening, from the host\'s words or the pha
   assert.ok(!/https?:\/\//.test(policy.split('<body>')[0]), 'nothing may be fetched');
   // An artifact's website preview is the same frame: the same document, the same policy, no second copy to drift.
   const artifacts = await readFile(new URL('../src/components/ArtifactPanel.tsx', import.meta.url), 'utf8');
-  assert.match(artifacts, /srcDoc={current\.content === undefined \? undefined : htmlPreviewDocument\(current\.content\)}/);
+  assert.match(artifacts, /srcDoc={current\.content === undefined \? undefined : withSandboxConsole\(htmlPreviewDocument\(current\.content\)\)}/);
   assert.match(artifacts, /sandbox={HTML_PREVIEW_SANDBOX}/);
   assert.ok(!/allow-same-origin|allow-forms|allow-popups|allow-top-navigation/.test(artifacts));
   // The note is only for a page that asks the internet for something: an embedded picture or style needs none.

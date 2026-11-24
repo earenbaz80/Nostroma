@@ -14,9 +14,14 @@ test('every screen header title uses the chat title step, from one rule', () => 
   assert.match(liquid, /\.main__head \.main__title \{ font-weight: 600; \}/);
   const imports = [...read('src/main.tsx').matchAll(/import '\.\/styles\/([^']+)'/g)].map(m => m[1]);
   /* The Nostroma skin is imported after liquid.css and only sets colours, corners and the
-     screen texture; it must never set a type size, or it would resize these titles. */
-  assert.equal(imports.at(-1), 'nostroma-crt.css', 'the skin loads last, so no sheet after it can resize a title');
-  assert.equal(imports.at(-2), 'liquid.css', 'liquid.css still loads after app.css, where the title step is raised');
+     screen texture; no sheet loaded after it may set a type size, or it would resize these titles. */
+  const skin = imports.indexOf('nostroma-crt.css');
+  assert.ok(skin > imports.indexOf('liquid.css'), 'liquid.css still loads after app.css, where the title step is raised, and the skin after it');
+  for (const sheet of imports.slice(skin + 1)) {
+    const css = read(`src/styles/${sheet}`);
+    assert.ok(!/\.chat-toolbar__conversation h1[^{]*\{[^}]*font-size/.test(css), `${sheet} loads after the skin and must not resize a chat title`);
+    assert.ok(!/\.main__head \.main__title[^{]*\{[^}]*font-size/.test(css), `${sheet} loads after the skin and must not resize a screen title`);
+  }
 });
 
 test('the chat title and the screen titles are the same size', () => {

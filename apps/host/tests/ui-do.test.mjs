@@ -8,6 +8,7 @@ import { build, transform } from 'esbuild';
 // a Windows checkout with core.autocrlf (GitHub's runners) has CRLF line ends: the source checks below match LF
 const src = name => readFileSync(new URL(`../src/${name}`, import.meta.url), 'utf8').replace(/\r\n/g, '\n');
 const locale = name => JSON.parse(readFileSync(new URL(`../src/locales/${name}.json`, import.meta.url), 'utf8'));
+const shared = name => readFileSync(new URL(`../shared/${name}`, import.meta.url), 'utf8').replaceAll(String.fromCharCode(13), '');
 const load = async name => {
   const { code } = await transform(src(name), { loader: 'ts', format: 'esm' });
   return import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`);
@@ -77,10 +78,11 @@ test('#4725 the dock and the waiting line are translated', async () => {
 // ---------------------------------------------------------------------------------------------------------------------- #4748
 import { readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 const walk = dir => readdirSync(dir).flatMap(name => { const p = join(dir, name); return statSync(p).isDirectory() ? (name === 'locales' ? [] : walk(p)) : /\.tsx?$/.test(name) ? [p] : []; });
 
 test('#4748 every Copy control goes through one shared behaviour: no bare clipboard call, no copy icon button of its own', () => {
-  const files = walk(new URL('../src', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
+  const files = walk(fileURLToPath(new URL('../src', import.meta.url)));
   const bare = [], own = [];
   for (const file of files) {
     if (/lib[\/]clipboard\.ts$/.test(file)) continue;
@@ -139,6 +141,23 @@ test('#4804 the new sentences are translated, and the existing one is reused', a
   const { tr, setTranslationLanguage, TUNE_BLOCK_TEXT } = await withI18n('native-tune.ts');
   for (const l of languages.slice(1)) { setTranslationLanguage(l); for (const text of Object.values(TUNE_BLOCK_TEXT)) assert.notEqual(tr(text), text, `${l}: ${text}`); assert.notEqual(tr('Checking for saved tunings\u2026'), 'Checking for saved tunings\u2026', l); }
   setTranslationLanguage('en');
+});
+
+test('a tuning whose PC changed is saved but not shown as in use', async () => {
+  const { tuningInUse } = await withI18n('native-tune.ts');
+  const active = { id: 'a', name: 'Mine', active: true };
+  assert.equal(tuningInUse({ active, state: 'hard' }), false, 'a hard change leaves the settings unused');
+  assert.equal(tuningInUse({ active, state: 'soft' }), true, 'a soft change is still applied, with a re-check offered');
+  assert.equal(tuningInUse({ active, state: 'fresh' }), true);
+  assert.equal(tuningInUse({ active: null, state: null }), false);
+  assert.equal(tuningInUse(null), false);
+  const badge = src('components/NativeTuneBadge.tsx');
+  assert.match(badge, /data-tuning-active=\{inUse \|\| undefined\}/);
+  assert.match(badge, /inUse \? tr\("Using your tuning '\{0\}'", \[active\.name\]\) : active\.name/);
+  const dialog = src('components/NativeTune.tsx');
+  assert.match(dialog, /inUse \? tr\("Saved tuning in use: \{0\}", \[active\.name\]\) : active\.name/);
+  assert.match(dialog, /tr\(inUse \? 'In use' : 'Not used'\)/, 'the saved-tunings list follows the one rule, not its own hard check');
+  assert.match(badge, /\{!inUse \? <> \{'·'\} \{tr\("This PC changed since it was tuned/, 'the badge explains a hard change from the same rule');
 });
 
 // ---------------------------------------------------------------------------------------------------------------------- #4721
@@ -268,17 +287,17 @@ test('#3723 Context memory has one line per format, from the documented memory f
   assert.ok(models.includes('KV_CHOICES.map(c => ({ value: c.value, label: `'));
   assert.ok(models.includes('kvMemoryGb(context, c.value, selectedSize?.context_fit)'));
   assert.ok(models.includes('title: c.hint }))'));
-  assert.ok(models.includes('About {0} GB of conversation memory at this context'));
+  assert.ok(models.includes('About {0} GB of KV cache at this context'), 'the figure is labelled as the cache, not the whole context cost');
   for (const text of ['INT8 is the standard: good quality and a medium amount of memory.', 'Q4 uses about half the memory of INT8, but is less precise on very long documents.', 'K8 / V4 uses about a quarter less memory than INT8 and is more precise than Q4. Prompts are 2 to 5% slower.']) assert.ok(models.includes(text), text);
-  // The figures are the ones of docs/DETAILS.md and of native-fit.ts: q4_0 576 and k8v4 816 against int8 1056 bytes per token and layer.
-  const fit = src('lib/native-fit.ts');
+  // The figures are the ones of docs/DETAILS.md and of shared/memory-budget.mjs: q4_0 576 and k8v4 816 against int8 1056 bytes per token and layer.
+  const fit = shared('memory-budget.mjs');
   assert.match(fit, /int8: 1056, q4_0: 576, k8v4: 816/);
   assert.ok(Math.abs(576 / 1056 - 0.55) < 0.06 && Math.abs(1 - 816 / 1056 - 0.23) < 0.01);
 });
 
 test('#3723 a start that ran out of graphics memory says so, with the engine\'s own words under Details', async () => {
   const { plainFailure } = await withI18n('plain-errors.ts');
-  const reported = "server_exited (exit code 1): EngineDied: the engine exited before it was ready | the engine process ended: exit code 1: \nthe engine log's last lines:\n  strata generate: expert cache auto: 1.92 GiB free, 2048 MiB reserved (+184 MiB for the draft head) -> 0 slots\n  strata generate: no VRAM is left for the expert cache: it needs at least 332 slots (737 MiB), about 1000 MiB more than this card has free.";
+  const reported = "server_exited (exit code 1): EngineDied: the engine exited before it was ready | the engine process ended: exit code 1: \nthe engine log's last lines:\n  nostroma generate: expert cache auto: 1.92 GiB free, 2048 MiB reserved (+184 MiB for the draft head) -> 0 slots\n  nostroma generate: no VRAM is left for the expert cache: it needs at least 332 slots (737 MiB), about 1000 MiB more than this card has free.";
   const r = plainFailure(reported);
   assert.equal(r.kind, 'vram');
   assert.equal(r.message, 'The model did not fit in your graphics card’s memory.');
@@ -304,7 +323,7 @@ import { tmpdir } from 'node:os';
 import { createAgentBridge } from '../server/agent/agent-bridge.mjs';
 
 test('#4749 a message for a helper is checked before anything is sent, and an agent that is not running says so', async () => {
-  const dir = mkdtempSync(join(tmpdir(), 'strata-helper-msg-'));
+  const dir = mkdtempSync(join(tmpdir(), 'nostroma-helper-msg-'));
   try {
     const bridge = createAgentBridge({ dataDir: dir, localInstances: () => [], connections: () => [], env: process.env });
     const code = async args => { try { await bridge.messageHelper(args); return 'sent'; } catch (e) { return e.code; } };
@@ -399,7 +418,7 @@ test('#4785 quoting is wired: the menu, the selection, the box above the compose
   assert.match(chat, /document\.addEventListener\('selectionchange', read\)/);
   assert.match(chat, /data-message-id=\{m\.id\}/);
   assert.match(chat, /return quotes\.length && !text\.startsWith\('\/'\) \? composeQuoted\(quotes\.map\(q => q\.text\), text\) : text;/, 'a command goes out as typed');
-  assert.match(chat, /void sendMessage\(session \? quotedMessage\(quotes, text\) : text\);/);
+  assert.match(chat, /const outgoing = session \? quotedMessage\(quotes, text\) : text;\s*void sendMessage\(outgoingMessage\(text, outgoing, session\?\.preferences\?\.mission === true\)\);/, 'the quotes are in the message that is sent, mission or not');
   assert.match(chat, /const sentQuote = m\.role === 'user' \? parseQuoted\(m\.content\) : null;/);
 });
 
@@ -470,7 +489,7 @@ test('#4244 the new words are translated', async () => {
 test('#3818 the transcript lets go of the newest token while the reader has words selected in it, and offers the way back', () => {
   const chat = src('screens/Chat.tsx');
   assert.match(chat, /function readerHasSelection\(scroller: HTMLElement\): boolean \{\s*const sel = window\.getSelection\(\);\s*return !!sel && !sel\.isCollapsed && !!sel\.anchorNode && scroller\.contains\(sel\.anchorNode\) && sel\.toString\(\)\.trim\(\)\.length > 0;/);
-  assert.match(chat, /if \(pinned\.current && readerHasSelection\(el\)\) \{\s*\/\/[^\n]*\n\s*pinned\.current = false;\s*setAwayFromBottom\(distanceFromBottom\(el\) > PILL_DISTANCE\);\s*\}\s*if \(pinned\.current\)\s*el\.scrollTop = el\.scrollHeight;/, 'the observer that follows a growing reply');
+  assert.match(chat, /if \(pinned\.current && readerHasSelection\(el\)\) \{\s*\/\/[^\n]*\n\s*pinned\.current = false;\s*setAwayFromBottom\(distanceFromBottom\(el\) > PILL_DISTANCE\);\s*\}\s*if \(pinned\.current\)\s*el\.scrollTop = empty \? 0 : el\.scrollHeight;/, 'the observer that follows a growing reply');
   assert.match(chat, /if \(pinned\.current && !sent && readerHasSelection\(el\)\) \{\s*pinned\.current = false;/, 'and the effect that follows each token; sending a message still brings the reader to it');
 });
 

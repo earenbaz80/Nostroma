@@ -7,11 +7,11 @@ const { outputFiles } = await build({ entryPoints: [fileURLToPath(new URL('../sr
 export const getState = () => testStore.state;
 export const selectSession = id => { testStore.state.activeSession = id; testStore.calls.push(['select',id]); };
 export const go = (...args) => testStore.calls.push(['go',...args]);
-export const exportConversation=()=>{},newSession=()=>({id:'new'}),pushToast=()=>{},restartEngine=()=>{},setFocus=()=>{},setNavOpen=()=>{},setPalette=()=>{},setShortcuts=()=>{},setTheme=()=>{},toggleFocus=()=>{},toggleRail=()=>{},unloadModel=()=>{};`, loader: 'js' })); } }] });
+export const exportConversation=()=>{},newSession=()=>({id:'new'}),pushToast=()=>{},restartEngine=()=>{},setFocus=()=>{},setNavOpen=()=>{},setPalette=()=>{},setShortcuts=()=>{},setTheme=()=>{},themeScheme=()=>'light',toggleFocus=()=>{},toggleRail=()=>{},unloadModel=()=>{};`, loader: 'js' })); } }] });
 function harness(overrides={}) {
   const testStore={state:{theme:'light',sessions:Array.from({length:8},(_,i)=>({id:String(i),title:'Chat '+i,updatedAt:`2026-10-${String(10-i).padStart(2,'0')}`})),activeSession:'7'},calls:[]};
   const module={exports:{}};
-  new Function('require','module','exports','testStore','localStorage','navigator','window',outputFiles[0].text)(createRequire(import.meta.url),module,module.exports,testStore,{getItem:()=>JSON.stringify(overrides)},{platform:'MacIntel'},{location:{hash:'#/chat/7'}});
+  new Function('require','module','exports','testStore','localStorage','navigator','window','matchMedia',outputFiles[0].text)(createRequire(import.meta.url),module,module.exports,testStore,{getItem:()=>JSON.stringify(overrides)},{platform:'MacIntel'},{location:{hash:'#/chat/7'}},()=>({matches:false}));
   const press=(key, extra={})=> {const event={key,code:'',metaKey:true,ctrlKey:false,altKey:false,shiftKey:false,target:{matches:()=>false},preventDefault(){this.prevented=true;},...extra};module.exports.handleAppShortcut(event);return event;};
   return {...module.exports,testStore,press};
 }

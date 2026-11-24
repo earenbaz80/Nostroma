@@ -12,17 +12,19 @@ import { locateModelFile } from '../server/model-files.mjs';
 import { createImageModels, IMAGE_CATALOG } from '../server/image-models.mjs';
 const cwd = fileURLToPath(new URL('..',import.meta.url));
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
-function fixture(t) { const home=realpathSync(mkdtempSync(join(tmpdir(),'strata-directory-'))); t.after(()=>rmSync(home,{recursive:true,force:true})); return home; }
+function fixture(t) { const home=realpathSync(mkdtempSync(join(tmpdir(),'nostroma-directory-'))); t.after(()=>rmSync(home,{recursive:true,force:true})); return home; }
 
-test('existing flat and Strata-layout weights are found; partial, wrong-header and outside symlinks are rejected', t => {
+test('existing flat and Nostroma-layout weights are found; partial, wrong-header and outside symlinks are rejected', t => {
  const home=fixture(t), folder=join(home,'models'); mkdirSync(folder);
  const bytes=Buffer.from('GGUFsmall-known-fixture'), model={id:'known',source:{file:'known.gguf',bytes:bytes.length}};
  const flat=join(folder,model.source.file); writeFileSync(flat,bytes);
  assert.equal(locateModelFile(folder,model),flat);
  writeFileSync(flat,bytes.subarray(0,5)); assert.equal(locateModelFile(folder,model),null);
  writeFileSync(flat,Buffer.from('bad!small-known-fixture')); assert.equal(locateModelFile(folder,model),null);
- rmSync(flat); const outside=join(home,'external.gguf');writeFileSync(outside,bytes);symlinkSync(outside,flat);
- assert.equal(locateModelFile(folder,model),null);rmSync(flat);
+ rmSync(flat); const outside=join(home,'external.gguf');writeFileSync(outside,bytes);
+ // Windows without the symlink privilege (no Developer Mode) cannot make one at all: then there is no link to refuse.
+ let linked=true;try{symlinkSync(outside,flat);}catch{linked=false;}
+ if(linked){assert.equal(locateModelFile(folder,model),null);rmSync(flat);}
  mkdirSync(join(folder,model.id));const nested=join(folder,model.id,model.source.file);writeFileSync(nested,bytes);
  assert.equal(locateModelFile(folder,model),nested);
 });
@@ -39,9 +41,9 @@ test('directory preferences survive restart, scope demo installs, and reject bad
   assert.equal(models.isOnDisk(id),false);assert.equal(store.get().setup.complete,true);assert.equal(store.get().serving.apiKey,'fixture-only-key');
   store.changeModelsDirectory(original);models.init({send(){}});assert.equal(models.isOnDisk(id),true);
   store.changeModelsDirectory(${JSON.stringify(next)});
- `],{cwd,env:{...process.env,STRATA_HOME:home,STRATA_MODELS_DIR:join(home,'models'),STRATA_REAL_ENGINE:'0'},encoding:'utf8'});
+ `],{cwd,env:{...process.env,NOSTROMA_HOME:home,NOSTROMA_MODELS_DIR:join(home,'models'),NOSTROMA_REAL_ENGINE:'0'},encoding:'utf8'});
  assert.equal(result.status,0,result.stderr);
- const restarted=spawnSync(process.execPath,['--input-type=module','-e',`const store=await import('./server/store.mjs');console.log(store.MODELS_DIR);`],{cwd,env:{...process.env,STRATA_HOME:home,STRATA_MODELS_DIR:join(home,'models')},encoding:'utf8'});
+ const restarted=spawnSync(process.execPath,['--input-type=module','-e',`const store=await import('./server/store.mjs');console.log(store.MODELS_DIR);`],{cwd,env:{...process.env,NOSTROMA_HOME:home,NOSTROMA_MODELS_DIR:join(home,'models')},encoding:'utf8'});
  assert.equal(restarted.stdout.trim(),next);
 });
 
@@ -55,7 +57,7 @@ test('real library reuses a known flat GGUF and deletion preserves other files',
   store.changeModelsDirectory(${JSON.stringify(next)});models.init({send(){}});
   assert.equal(models.isOnDisk(v.id),true);assert.equal(models.pathFor(v),file);assert.equal(models.library().variants[0].state,'installed');
   models.remove(v.id);assert.equal(fs.existsSync(file),false);assert.equal(fs.readFileSync(other,'utf8'),'keep');
- `],{cwd,env:{...process.env,STRATA_HOME:home,STRATA_MODELS_DIR:join(home,'models'),STRATA_REAL_ENGINE:'1'},encoding:'utf8'});
+ `],{cwd,env:{...process.env,NOSTROMA_HOME:home,NOSTROMA_MODELS_DIR:join(home,'models'),NOSTROMA_REAL_ENGINE:'1'},encoding:'utf8'});
  assert.equal(result.status,0,result.stderr);
 });
 
@@ -76,7 +78,7 @@ test('directory API protects loaded models, active requests and downloads, then 
  const original=join(home,'models'),keep=join(original,'keep.txt');writeFileSync(keep,'preserve');
  writeFileSync(join(home,'data','state.json'),JSON.stringify({installed:{'qwen38-q4_k_m':{simulated:true}},loaded:'qwen38-q4_k_m',setup:{complete:true,flowVersion:2,step:4}}));
  const port=await freePort(),base=`http://127.0.0.1:${port}`;
- const host=spawn(process.execPath,['server/index.mjs'],{cwd,env:{...process.env,STRATA_HOME:home,STRATA_MODELS_DIR:join(home,'models'),STRATA_REAL_ENGINE:'0',STRATA_TEST_HARDWARE:ROOMY_HOST,STRATA_PORT:String(port),STRATA_BIND:'127.0.0.1'},stdio:'ignore'});
+ const host=spawn(process.execPath,['server/index.mjs'],{cwd,env:{...process.env,NOSTROMA_HOME:home,NOSTROMA_MODELS_DIR:join(home,'models'),NOSTROMA_REAL_ENGINE:'0',NOSTROMA_TEST_HARDWARE:ROOMY_HOST,NOSTROMA_PORT:String(port),NOSTROMA_BIND:'127.0.0.1'},stdio:'ignore'});
  async function call(path,body){const response=await fetch(base+path,{method:body===undefined?'GET':'POST',headers:{'content-type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});return {status:response.status,body:await response.json()};}
  try {
   let ready=false;for(let i=0;i<100;i++){try{ready=(await call('/api/runtime')).status===200;if(ready)break;}catch{}await pause(100);}assert.ok(ready);
