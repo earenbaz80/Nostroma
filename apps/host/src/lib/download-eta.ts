@@ -13,6 +13,7 @@ export function etaMinutes(samples: { at: number; done: number }[], remainingGb:
 
 export function etaLabel(minutes: number | null): string {
   if (minutes === null) return '';
+  if (minutes <= 0) return tr('Less than a minute left');
   if (minutes >= 90) {
     const h = Math.floor(minutes / 60), m = minutes % 60;
     return m ? tr('About {0} h {1} min left', [h, m]) : tr('About {0} h left', [h]);
@@ -20,6 +21,34 @@ export function etaLabel(minutes: number | null): string {
   return tr('About {0} min left', [minutes]);
 }
 
+/** The stages of a model load, in the order the host reports them. */
+export const LOAD_STAGE_TEXT: Record<string, string> = {
+  preparing: 'Preparing your model…',
+  preflight: 'Checking your computer…',
+  'checking-engine': 'Checking the engine for this PC',
+  'starting-engine': 'Starting…',
+  loading: 'Loading the model…',
+  'reading-weights': "Reading the model's weights…",
+  'reading-experts': 'Reading the experts into memory…',
+  'filling-cache': "Filling the GPU's expert cache…",
+  'waiting-server': 'Waiting for the server…',
+  'speed-test': 'Measuring…',
+  ready: 'Ready',
+};
+/** What the host says a load is doing now, in the page's words. */
+export function loadStageText(stage?: string): string {
+  return stage ? tr(LOAD_STAGE_TEXT[stage] ?? stage) : '';
+}
+/** The host's remaining seconds for the current load stage, counted down from when that stage began. */
+export function loadEtaText(progress: { etaSeconds?: number | null; since?: string } | undefined): string {
+  if (progress?.etaSeconds === null || progress?.etaSeconds === undefined) return '';
+  const seconds = Number(progress.etaSeconds);
+  if (!Number.isFinite(seconds)) return '';
+  const started = progress?.since ? Date.parse(progress.since) : NaN;
+  const spent = Number.isFinite(started) ? Math.max(0, (Date.now() - started) / 1000) : 0;
+  const left = Math.max(0, seconds - spent);
+  return etaLabel(left < 60 ? 0 : Math.ceil(left / 60));
+}
 /** The approximate time left of a running download, for the progress bar. `key` restarts the estimate for another job. */
 export function useDownloadEta(download: { done_gb?: number; remaining_gb?: number } | undefined, key: string | undefined): string {
   const samples = useRef<{ at: number; done: number }[]>([]);

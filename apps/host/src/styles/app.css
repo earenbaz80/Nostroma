@@ -7561,6 +7561,12 @@ textarea {
 .native-progress__text { flex: 1 1 auto; min-width: 0; display: grid; gap: 2px; }
 .native-progress__step { margin: 0; font-size: var(--st-fs-md); font-weight: 600; color: var(--st-ink); line-height: 1.35; overflow-wrap: anywhere; }
 .native-progress__numbers { margin: 0; font-size: var(--st-fs-sm); color: var(--st-ink-muted); font-variant-numeric: tabular-nums; line-height: 1.4; }
+.native-progress__preflight { display: grid; gap: 6px; margin: 0; padding: 12px 0 0; border-top: 1px solid var(--st-line); }
+.native-progress__preflight > div { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.native-progress__preflight dt { color: var(--st-ink-muted); font-size: var(--st-fs-sm); }
+.native-progress__preflight dd { margin: 0; font-size: var(--st-fs-sm); color: var(--st-ink); font-variant-numeric: tabular-nums; }
+.native-progress__preflight dd[data-ok='false'] { color: var(--st-warn-text); }
+.native-progress__warning { margin: 0; font-size: var(--st-fs-sm); color: var(--st-warn-text); line-height: 1.5; }
 .native-progress__ring { position: relative; flex: none; width: 10px; height: 10px; margin: 0 4px; border-radius: 50%; background: var(--st-accent); }
 .native-progress__ring::before { content: ''; position: absolute; inset: 0; border-radius: 50%; background: var(--st-accent); opacity: 0; animation: native-ring 1.8s var(--st-ease-in-out) infinite; }
 .native-progress[data-state='running'] .native-progress__ring { animation: native-breathe 1.8s var(--st-ease-in-out) infinite; }

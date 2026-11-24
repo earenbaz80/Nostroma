@@ -4,7 +4,7 @@ import { build } from 'esbuild';
 
 const built = await build({ stdin: { contents: "export * from './src/lib/download-eta';", resolveDir: process.cwd() }, bundle: true, write: false, format: 'esm', platform: 'node', loader: { '.json': 'json' }, external: ['react'] });
 const src = built.outputFiles[0].text.replace(/from\s*["']react["']/, 'from "data:text/javascript,export const useRef=()=>({current:null}),useEffect=()=>{},useState=v=>[v,()=>{}]"');
-const { etaMinutes, etaLabel, installProgress } = await import(`data:text/javascript;base64,${Buffer.from(src).toString('base64')}`);
+const { etaMinutes, etaLabel, installProgress, loadStageText, loadEtaText } = await import(`data:text/javascript;base64,${Buffer.from(src).toString('base64')}`);
 
 test('the time left comes from the recent rate, and says nothing until there is one', () => {
   assert.equal(etaMinutes([{ at: 0, done: 1 }], 50), null);
@@ -19,6 +19,17 @@ test('the label is minutes, and hours past an hour and a half', () => {
   assert.equal(etaLabel(3), 'About 3 min left');
   assert.equal(etaLabel(125), 'About 2 h 5 min left');
   assert.equal(etaLabel(120), 'About 2 h left');
+  assert.equal(etaLabel(0), 'Less than a minute left');
+});
+
+test('a load names the stage the host reported, and counts its ETA down from that stage', () => {
+  assert.equal(loadStageText('reading-experts'), 'Reading the experts into memory…');
+  assert.equal(loadStageText('filling-cache'), "Filling the GPU's expert cache…");
+  assert.equal(loadStageText('waiting-server'), 'Waiting for the server…');
+  assert.equal(loadStageText(undefined), '');
+  assert.equal(loadEtaText({ etaSeconds: 120, since: new Date().toISOString() }), 'About 2 min left');
+  assert.equal(loadEtaText({ etaSeconds: 30, since: new Date().toISOString() }), 'Less than a minute left');
+  assert.equal(loadEtaText({ etaSeconds: null }), '');
 });
 
 test('one count over all the parts of the job: the model files and, when there is one, the engine', () => {
